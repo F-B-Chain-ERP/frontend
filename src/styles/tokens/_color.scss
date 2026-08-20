@@ -1,0 +1,242 @@
+// ============================================================
+// Design System — Color tokens
+// ============================================================
+
+// --- Brand scale -----------------------------------
+$brand-50:  #FDF0E9 !default;
+$brand-100: #FAD9C7 !default;
+$brand-200: #F4B595 !default;
+$brand-300: #EE8F62 !default;
+$brand-400: #EB763F !default;
+$brand-500: #E8632A !default; // primary — override via --brand-500 at runtime
+$brand-600: #CF5117 !default;
+$brand-700: #A94011 !default;
+$brand-800: #7E300C !default;
+
+// --- Brand scale (Orange) -----------------------------------
+$brand-orange-50:  #FDF0E9 !default;
+$brand-orange-100: #FAD9C7 !default;
+$brand-orange-200: #F4B595 !default;
+$brand-orange-300: #EE8F62 !default;
+$brand-orange-400: #EB763F !default;
+$brand-orange-500: #E8632A !default; // primary — override via --brand-500 at runtime
+$brand-orange-600: #CF5117 !default;
+$brand-orange-700: #A94011 !default;
+$brand-orange-800: #7E300C !default;
+
+// --- Navy scale (sidebar / deep surfaces) -------------------
+$navy-950: #070F22 !default;
+$navy-900: #0A1730 !default;
+$navy-800: #0B1B3B !default;
+$navy-700: #132450 !default;
+$navy-600: #1C3066 !default;
+$navy-500: #2A4185 !default;
+
+// -- Sidebar surface -------------------
+$sidebar-surface: #ffffff !default;
+
+// --- Neutral (cool gray) ------------------------------------
+$gray-0:   #FFFFFF !default;
+$gray-50:  #F5F6FA !default;
+$gray-100: #EEF0F6 !default;
+$gray-200: #E5E8F0 !default;
+$gray-300: #D4D9E4 !default;
+$gray-400: #AEB5C5 !default;
+$gray-500: #8B93A7 !default;
+$gray-600: #5A6478 !default;
+$gray-700: #3A4256 !default;
+$gray-800: #232A3B !default;
+$gray-900: #141925 !default;
+
+// --- Semantic palettes --------------------------------------
+$success-50:  #E7F6EC !default;
+$success-100: #D1F0D9 !default;
+$success-500: #16A34A !default;
+$success-600: #128A3E !default;
+
+$danger-50:  #FCEEED !default;
+$danger-100: #F8CCCB !default;
+$danger-500: #dc2626 !default;
+$danger-600: #C01819 !default;
+
+$warning-50:  #FEF4E2 !default;
+$warning-100: #FDE1B5 !default;
+$warning-500: #F59E0B !default;
+$warning-600: #D9890B !default;
+
+$info-50:  #E8EFFD !default;
+$info-100: #D1E0FC !default;
+$info-500: #2563EB !default;
+$info-600: #1D4FD0 !default;
+
+// --- Accent (stat tiles / charts) ---------------------------
+$teal-500:   #0E9384 !default;
+$purple-500: #7C3AED !default;
+$pink-500:   #EC4899 !default;
+$amber-500:  #F5B70A !default;
+$amber-600:  #E06029 !default;
+
+// ============================================================
+// CSS CUSTOM PROPERTIES
+// ============================================================
+:root {
+  // Raw brand scale — runtime-swappable
+  --brand-50:  #{$brand-50};
+  --brand-100: #{$brand-100};
+  --brand-200: #{$brand-200};
+  --brand-300: #{$brand-300};
+  --brand-400: #{$brand-400};
+  --brand-500: #{$brand-500};
+  --brand-600: #{$brand-600};
+  --brand-700: #{$brand-700};
+  --brand-800: #{$brand-800};
+
+  // Raw brand scale (Orange) — runtime-swappable
+  --brand-orange-50:  #{$brand-orange-50};
+  --brand-orange-100: #{$brand-orange-100};
+  --brand-orange-200: #{$brand-orange-200};
+  --brand-orange-300: #{$brand-orange-300};
+  --brand-orange-400: #{$brand-orange-400};
+  --brand-orange-500: #{$brand-orange-500};
+  --brand-orange-600: #{$brand-orange-600};
+  --brand-orange-700: #{$brand-orange-700};
+  --brand-orange-800: #{$brand-orange-800};
+
+  // Navy scale
+  --navy-950: #{$navy-950};
+  --navy-900: #{$navy-900};
+  --navy-800: #{$navy-800};
+  --navy-700: #{$navy-700};
+  --navy-600: #{$navy-600};
+  --navy-500: #{$navy-500};
+
+  // Sidebar surface
+  --sidebar-surface: #{$sidebar-surface};
+
+  // Neutral scale
+  --gray-0:   #{$gray-0};
+  --gray-50:  #{$gray-50};
+  --gray-100: #{$gray-100};
+  --gray-200: #{$gray-200};
+  --gray-300: #{$gray-300};
+  --gray-400: #{$gray-400};
+  --gray-500: #{$gray-500};
+  --gray-600: #{$gray-600};
+  --gray-700: #{$gray-700};
+  --gray-800: #{$gray-800};
+  --gray-900: #{$gray-900};
+
+  // Semantic palettes
+  --success-50:  #{$success-50};
+  --success-100: #{$success-100};
+  --success-500: #{$success-500};
+  --success-600: #{$success-600};
+  --danger-50:   #{$danger-50};
+  --danger-100:  #{$danger-100};
+  --danger-500:  #{$danger-500};
+  --danger-600:  #{$danger-600};
+  --warning-50:  #{$warning-50};
+  --warning-100: #{$warning-100};
+  --warning-500: #{$warning-500};
+  --warning-600: #{$warning-600};
+  --info-50:     #{$info-50};
+  --info-100:    #{$info-100};
+  --info-500:    #{$info-500};
+  --info-600:    #{$info-600};
+
+  // Accents
+  --teal-500:   #{$teal-500};
+  --purple-500: #{$purple-500};
+  --pink-500:   #{$pink-500};
+  --amber-500:  #{$amber-500};
+
+  // ── Semantic aliases — LIGHT (default) ──
+  --surface-app:     var(--gray-50);
+  --surface-card:    var(--gray-0);
+  --surface-raised:  var(--gray-0);
+  --surface-sunken:  var(--gray-50);
+  --surface-hover:   var(--gray-100);
+  --surface-active:  var(--gray-200);
+  --surface-inverse: var(--navy-800);
+
+  --border-subtle:   var(--gray-200);
+  --border-strong:   var(--gray-300);
+  --border-field:    var(--gray-300);
+
+  --text-primary:    var(--gray-900);
+  --text-secondary:  var(--gray-600);
+  --text-muted:      var(--gray-500);
+  --text-disabled:   var(--gray-400);
+  --text-inverse:    var(--gray-0);
+  --text-link:       var(--brand-600);
+
+  --brand:           var(--brand-500);
+  --brand-hover:     var(--brand-600);
+  --brand-active:    var(--brand-700);
+  --brand-soft:      var(--brand-50);
+  --on-brand:        #ffffff;
+
+  --success:         var(--success-500);
+  --success-soft:    var(--success-50);
+  --danger:          var(--danger-500);
+  --danger-soft:     var(--danger-50);
+  --warning:         var(--warning-500);
+  --warning-soft:    var(--warning-50);
+  --info:            var(--info-500);
+  --info-soft:       var(--info-50);
+
+  --focus-ring:      color-mix(in srgb, var(--brand) 35%, transparent);
+  --overlay:         color-mix(in srgb, var(--navy-950) 55%, transparent);
+
+  // ── Sidebar ──
+  --sidebar-bg:           var(--sidebar-surface);
+  --sidebar-fg:           var(--gray-700);
+  --sidebar-muted:        var(--gray-200);
+  --sidebar-heading:      var(--gray-300);
+  --sidebar-item-hover:   color-mix(in srgb, #0D0D0D 6%, transparent);
+  --sidebar-active-bg:    color-mix(in srgb, var(--brand) 14%, transparent);
+  --sidebar-active-fg:    var(--brand-300);
+  --sidebar-border:       color-mix(in srgb, #0D0D0D 8%, transparent);
+}
+
+// ============================================================
+// DARK THEME — semantic aliases only
+// Apply [data-theme="dark"] to <html> or any scoping element.
+// ============================================================
+[data-theme="dark"] {
+  --surface-app:     #0B1220;
+  --surface-card:    #121A2B;
+  --surface-raised:  #162033;
+  --surface-sunken:  #0E1626;
+  --surface-hover:   #1A2438;
+  --surface-active:  #222E47;
+  --surface-inverse: #E7EBF3;
+
+  --sidebar-surface:      var(--navy-950);
+  --sidebar-fg:           #C7CEDF;
+  --sidebar-muted:        #7E89A6;
+  --sidebar-heading:      #5C678A;
+  --sidebar-item-hover:   color-mix(in srgb, #ffffff 6%, transparent);
+  --sidebar-active-bg:    color-mix(in srgb, var(--brand) 14%, transparent);
+  --sidebar-active-fg:    var(--brand-300);
+  --sidebar-border:       color-mix(in srgb, #ffffff 8%, transparent);
+
+  --border-subtle:   #20293D;
+  --border-strong:   #2C374E;
+  --border-field:    #2C374E;
+
+  --text-primary:    #E7EBF3;
+  --text-secondary:  #A4AEC4;
+  --text-muted:      #6E7890;
+  --text-disabled:   #515B72;
+  --text-inverse:    #0B1220;
+  --text-link:       var(--brand-300);
+
+  --brand-soft:      color-mix(in srgb, var(--brand) 18%, transparent);
+  --success-soft:    color-mix(in srgb, var(--success-500) 18%, transparent);
+  --danger-soft:     color-mix(in srgb, var(--danger-500) 18%, transparent);
+  --warning-soft:    color-mix(in srgb, var(--warning-500) 18%, transparent);
+  --info-soft:       color-mix(in srgb, var(--info-500) 18%, transparent);
+
+  --overlay:         color-mix(in srgb, #000000 62%, transparent);
+}

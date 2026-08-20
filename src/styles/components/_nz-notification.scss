@@ -1,0 +1,94 @@
+.ant-notification-notice {
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+  width: 340px;
+
+  .ant-notification-notice-with-icon .ant-notification-notice-icon {
+    font-size: 20px;
+    margin-left: 8px;
+    margin-top: 4px;
+    color: var(--gray-0);
+  }
+
+  .ant-notification-notice-close {
+    color: var(--gray-0);
+  }
+
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    background: rgba(255,255,255,.7);
+    transform: translateX(-100%);
+    animation: notificationProgress var(--notification-duration, 3000ms) linear forwards;
+  }
+}
+
+@keyframes notificationProgress {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.ant-notification-notice-message {
+  font-size: var(--text-md) !important;
+  font-weight: var(--fw-semibold);
+  margin-left: var(--space-11) !important;
+}
+
+.ant-notification-notice-description {
+  font-size: var(--text-sm) !important;
+  color: var(--gray-0);
+  margin-left: var(--space-11) !important;
+}
+
+.success-notification {
+  background-color: var(--success);
+  border: 1px solid var(--success-600);
+  border-left: 4px solid var(--success-100) !important;
+
+  .ant-notification-notice-message {
+    color: var(--gray-0);
+    font-weight: var(--fw-semibold);
+  }
+}
+
+.error-notification {
+  background-color: var(--danger);
+  border: 1px solid var(--danger-600);
+  border-left: 4px solid var(--danger-100) !important;
+  .ant-notification-notice-message {
+    color: var(--gray-0);
+    font-weight: var(--fw-semibold);
+  }
+}
+
+.warning-notification {
+  background-color: var(--warning);
+  border: 1px solid var(--warning-600);
+  border-left: 4px solid var(--warning-100) !important;
+  .ant-notification-notice-message {
+    color: var(--gray-0);
+    font-weight: var(--fw-semibold);
+  }
+}
+
+.info-notification {
+  background-color: var(--info);
+  border: 1px solid var(--info-600);
+  border-left: 4px solid var(--info-100) !important;
+  .ant-notification-notice-message {
+    color: var(--gray-0);
+    font-weight: var(--fw-semibold);
+  }
+}

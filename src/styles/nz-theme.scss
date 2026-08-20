@@ -1,0 +1,67 @@
+// ============================================================
+// Design System — ng-zorro theme bridge
+// ============================================================
+
+:root {
+  // Primary / brand
+  --ant-primary-color:         var(--brand-500);
+  --ant-primary-color-hover:   var(--brand-400);
+  --ant-primary-color-active:  var(--brand-600);
+  --ant-primary-color-outline: var(--focus-ring);
+
+  // Text
+  --ant-text-color:            var(--text-primary);
+  --ant-text-color-secondary:  var(--text-secondary);
+  --ant-text-color-disabled:   var(--text-disabled);
+
+  // Borders & inputs
+  --ant-border-color-base:     var(--border-field);
+  --ant-border-radius-base:    var(--radius-md);
+  --ant-border-radius-sm:      var(--radius-sm);
+
+  // Backgrounds
+  --ant-component-background:  var(--surface-card);
+  --ant-background-color-base: var(--surface-sunken);
+  --ant-popover-background:    var(--surface-raised);
+  --ant-tooltip-color:         var(--surface-inverse);
+
+  // Control heights
+  --ant-height-base:   var(--control-h);
+  --ant-height-sm:     var(--control-h-sm);
+  --ant-height-lg:     var(--control-h-lg);
+
+  // Typography
+  --ant-font-family:   var(--font-sans);
+  --ant-font-size-base:var(--text-base);
+  --ant-font-size-sm:  var(--text-sm);
+  --ant-line-height-base: var(--lh-normal);
+
+  // Motion
+  --ant-animation-duration-slow:  var(--dur-slow);
+  --ant-animation-duration-base:  var(--dur);
+  --ant-animation-duration-fast:  var(--dur-fast);
+
+  // Semantic status
+  --ant-success-color:  var(--success);
+  --ant-warning-color:  var(--warning);
+  --ant-error-color:    var(--danger);
+  --ant-info-color:     var(--info);
+
+  // Table
+  --ant-table-row-height:      var(--row-h);
+  --ant-table-padding-vertical:var(--space-4);
+  --ant-table-header-bg:       var(--surface-sunken);
+  --ant-table-border-color:    var(--border-subtle);
+
+  // Shadows
+  --ant-shadow-1-up:    var(--shadow-sm);
+  --ant-shadow-1-down:  var(--shadow-sm);
+  --ant-shadow-2:       var(--shadow-md);
+}
+
+[data-theme="dark"] {
+  --ant-body-background:    var(--surface-app);
+  --ant-modal-mask-bg:      var(--overlay);
+  --ant-select-dropdown-bg: var(--surface-card);
+  --ant-dropdown-menu-bg:   var(--surface-card);
+}

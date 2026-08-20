@@ -1,0 +1,23 @@
+:host {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-main-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: calc(100% - var(--sidebar-w));
+  background-color: var(--surface-app);
+  transition: min-width var(--dur-fast) var(--ease);
+
+  &.sidebar-collapsed {
+    min-width: calc(100% - var(--sidebar-w-collapsed));
+  }
+}
+
+.app-main-content {
+  flex: 1;
+  padding: var(--gutter-page);
+  margin-top: var(--topbar-h);
+}

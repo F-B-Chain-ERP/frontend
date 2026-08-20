@@ -1,0 +1,286 @@
+// ── Shared: app-button style applied to nz default buttons ──
+%modal-btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-h);
+  padding: 0 var(--space-8);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  font-weight: var(--fw-medium);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+  white-space: nowrap;
+  box-shadow: none;
+
+  // Cancel / secondary
+  &:not(.ant-btn-primary):not(.ant-btn-dangerous) {
+    background: var(--surface-raised);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+    &:hover { background: var(--surface-hover); }
+  }
+
+  // OK → primary
+  &.ant-btn-primary:not(.ant-btn-dangerous) {
+    background: var(--brand);
+    color: var(--on-brand);
+    border-color: transparent;
+    &:hover:not(:disabled) { background: var(--brand-hover); }
+    &:active { background: var(--brand-active); }
+  }
+
+  // Danger (confirm delete)
+  &.ant-btn-dangerous,
+  &.ant-btn-primary.ant-btn-dangerous {
+    background: var(--danger);
+    color: #fff;
+    border-color: transparent;
+    &:hover:not(:disabled) { background: var(--danger-600); }
+  }
+
+  // Loading & disabled
+  &.ant-btn-loading,
+  &[disabled] {
+    opacity: 0.75;
+    pointer-events: none;
+  }
+}
+
+// ── Mask (backdrop) ──────────────────────────────────────
+.ant-modal-mask {
+  background: var(--overlay);
+  backdrop-filter: blur(2px);
+}
+
+// ── Wrap (scroll container) ──────────────────────────────
+.ant-modal-wrap {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-12) var(--space-7);
+}
+
+// ── Modal root ───────────────────────────────────────────
+.ant-modal {
+  top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
+
+  // ── Content card ────────────────────────────────────
+  &-content {
+    pointer-events: auto;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-pop);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  // ── Close button ────────────────────────────────────
+  &-close {
+    top: 14px;
+    inset-inline-end: 14px;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--dur-fast) var(--ease),
+                color     var(--dur-fast) var(--ease);
+
+    &:hover {
+      background: var(--surface-hover);
+      color: var(--text-primary);
+    }
+
+    &-x {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      font-size: 14px;
+      line-height: 1;
+      color: var(--text-muted);
+    }
+  }
+
+  // ── Header ──────────────────────────────────────────
+  &-header {
+    padding: var(--space-7) var(--space-8);
+    border-bottom: 1px solid var(--border-subtle);
+    background: transparent;
+    margin-bottom: 0;
+  }
+
+  &-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-md);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-snug);
+    color: var(--text-primary);
+    padding-inline-end: var(--space-8);
+  }
+
+  // ── Body ────────────────────────────────────────────
+  &-body {
+    padding: var(--space-7) var(--space-8);
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--lh-normal);
+  }
+
+  // ── Footer ──────────────────────────────────────────
+  &-footer {
+    padding: var(--space-5) var(--space-8);
+    border-top: 1px solid var(--border-subtle);
+    background: transparent;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-4);
+
+    button + button { margin-inline-start: 0; }
+
+    .ant-btn { @extend %modal-btn-base; }
+  }
+
+  // ── Confirm / Info / Success / Warning / Error ───────
+  &-confirm {
+    .ant-modal-content { padding: 0; }
+
+    .ant-modal-body {
+      padding: var(--space-8);
+    }
+
+    &-body-wrapper { }
+
+    &-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-5);
+
+      > .anticon {
+        flex-shrink: 0;
+        font-size: 20px;
+        margin: 0 !important;
+      }
+
+      &-has-title > .anticon { margin-top: 3px; }
+
+      .ant-modal-confirm-title {
+        font-size: var(--text-md);
+        font-weight: var(--fw-semibold);
+        color: var(--text-primary) !important;
+        line-height: var(--lh-snug);
+        margin-bottom: var(--space-3);
+      }
+
+      .ant-modal-confirm-content {
+        width: 100%;
+        font-size: var(--text-base);
+        color: var(--text-secondary);
+        line-height: var(--lh-normal);
+        margin: 0 !important;
+        text-align: center !important;
+
+        strong {
+          color: var(--text-primary);
+        }
+      }
+    }
+
+    &-btns {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--space-4);
+      margin-top: var(--space-8);
+      padding-top: var(--space-6);
+      border-top: 1px solid var(--border-subtle);
+
+      button + button { margin-inline-start: 0; }
+
+      .ant-btn { @extend %modal-btn-base; }
+    }
+
+    &-confirm  .ant-modal-confirm-body > .anticon { color: var(--warning); }
+    &-info     .ant-modal-confirm-body > .anticon { color: var(--info); }
+    &-success  .ant-modal-confirm-body > .anticon { color: var(--success); }
+    &-warning  .ant-modal-confirm-body > .anticon { color: var(--warning); }
+    &-error    .ant-modal-confirm-body > .anticon { color: var(--danger); }
+  }
+
+  // ── Centered ────────────────────────────────────────
+  &-centered {
+    .ant-modal-wrap {
+      align-items: center;
+      padding: var(--space-7);
+    }
+
+    .ant-modal { top: 0; }
+  }
+}
+
+.ant-modal-centered .ant-modal-wrap {
+  align-items: center;
+}
+
+// ── Animation ────────────────────────────────────────────
+.ant-zoom-enter,
+.ant-zoom-appear {
+  animation-duration: var(--dur);
+}
+
+.ant-zoom-leave {
+  animation-duration: var(--dur-fast);
+}
+
+// ── Dark theme ────────────────────────────────────────────
+[data-theme="dark"] .ant-modal {
+  &-content {
+    background: var(--surface-card);
+    border-color: var(--border-subtle);
+    box-shadow: var(--shadow-pop);
+  }
+
+  &-header {
+    border-bottom-color: var(--border-subtle);
+  }
+
+  &-footer {
+    border-top-color: var(--border-subtle);
+  }
+
+  &-confirm-btns {
+    border-top-color: var(--border-subtle);
+  }
+}
+
+@keyframes modalBounce {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.01);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+::ng-deep .ant-modal.zoom-feedback {
+  animation: modalBounce 180ms ease-out;
+}

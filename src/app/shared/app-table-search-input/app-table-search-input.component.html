@@ -1,0 +1,14 @@
+@if (type==='text') {
+  <nz-input-wrapper [nzAllowClear]="true">
+    <nz-icon nzInputPrefix nzType="search"></nz-icon>
+    <input [ngModel]="value" (ngModelChange)="onValueChange($event)" nz-input [placeholder]="placeholder" />
+  </nz-input-wrapper>
+} @else if (type==='option') {
+  <nz-select [ngModel]="value" (ngModelChange)="onValueChange($event)" [nzPlaceHolder]="placeholder" [nzAllowClear]="true">
+    @for (option of options; track option[valueField]) {
+      <nz-option [nzLabel]="option[labelField]" [nzValue]="option[valueField]"></nz-option>
+    }
+  </nz-select>
+} @else if (type==='date') {
+  <nz-range-picker [ngModel]="value" (ngModelChange)="onValueChange($event)" nzFormat="dd/MM/yyyy"></nz-range-picker>
+}

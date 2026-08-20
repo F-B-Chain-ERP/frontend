@@ -1,0 +1,17 @@
+<div class="overflow-tags-host">
+  <div class="overflow-tags" #container>
+    @for (item of visibleItems; track $index) {
+      <nz-tag>{{ item }}</nz-tag>
+    }
+    @if (extraItems.length > 0) {
+      <nz-tag [nz-tooltip]="extraTooltip">+{{ extraItems.length }}</nz-tag>
+    }
+  </div>
+
+  <div class="overflow-tags__measure" aria-hidden="true">
+    @for (item of items; track $index) {
+      <nz-tag #measureTag>{{ item }}</nz-tag>
+    }
+    <nz-tag #extraProbe>+99</nz-tag>
+  </div>
+</div>

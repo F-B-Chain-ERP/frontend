@@ -1,0 +1,296 @@
+<div class="user-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div>
+      <h1 class="page__header__title">Quản lý người dùng</h1>
+      <p class="page__header__description">
+        Quản lý danh sách tài khoản, thông tin họ tên, email và phân quyền trạng thái hoạt động trong hệ thống ERP UTT
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        variant="secondary"
+        leftIcon="download"
+        (click)="onExportExcel()">
+        Xuất Excel
+      </app-button>
+      <app-button
+        variant="primary"
+        leftIcon="plus"
+        (click)="openCreateModal()">
+        Thêm mới người dùng
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Search keyword -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập họ tên, email, tên đăng nhập, số điện thoại..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Status dropdown -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Chọn trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%">
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button
+          variant="primary"
+          leftIcon="search"
+          (click)="onSearch()">
+          Tìm kiếm
+        </app-button>
+        <app-button
+          variant="secondary"
+          leftIcon="reload"
+          (click)="onResetFilters()">
+          Làm mới
+        </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+    <div class="selection-banner">
+      <div class="selection-banner__info">
+        <nz-icon nzType="check-circle" class="selection-banner__icon" />
+        <span>Đã chọn <strong>{{ setOfCheckedKeys.size }}</strong> / {{ total() }} người dùng</span>
+      </div>
+      <div class="selection-banner__actions">
+        <app-button
+          variant="secondary"
+          leftIcon="check"
+          (click)="onChangeStatusSelected(UserStatus.ACTIVE)">
+          Kích hoạt
+        </app-button>
+        <app-button
+          variant="secondary"
+          leftIcon="stop"
+          (click)="onChangeStatusSelected(UserStatus.INACTIVE)">
+          Khóa tài khoản
+        </app-button>
+        <app-button
+          variant="danger"
+          leftIcon="delete"
+          (click)="onDeleteSelected()">
+          Xóa đã chọn
+        </app-button>
+        <button class="btn-clear-selection" (click)="clearSelection()">
+          Bỏ chọn
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #userTable
+      [nzData]="users()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1000px' }">
+      <thead>
+        <tr>
+          <!-- Checkbox -->
+          <th
+            [nzWidth]="'48px'"
+            [nzChecked]="allChecked"
+            [nzIndeterminate]="indeterminate"
+            (nzCheckedChange)="onCheckAll($event)">
+          </th>
+
+          <!-- STT -->
+          <th [nzWidth]="'60px'" class="text-center">STT</th>
+
+          <!-- Họ và tên -->
+          <th [nzShowSort]="true" [nzSortFn]="sortNameFn" [nzWidth]="'240px'">Họ và tên</th>
+
+          <!-- Email -->
+          <th [nzShowSort]="true" [nzSortFn]="sortEmailFn" [nzWidth]="'220px'">Email</th>
+
+          <!-- Phòng ban / Đơn vị -->
+          <th [nzWidth]="'180px'">Phòng ban</th>
+
+          <!-- Trạng thái -->
+          <th [nzShowSort]="true" [nzSortFn]="sortStatusFn" [nzWidth]="'170px'" class="text-center">Trạng thái</th>
+
+          <!-- Ngày tạo -->
+          <th [nzShowSort]="true" [nzSortFn]="sortCreatedFn" [nzWidth]="'160px'">Ngày tạo</th>
+
+          <!-- Thao tác -->
+          <th [nzWidth]="'140px'" class="text-center" nzRight>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (data of userTable.data; track data.id; let idx = $index) {
+          <tr [class.row-selected]="setOfCheckedKeys.has(data.id)">
+            <!-- Checkbox row -->
+            <td
+              [nzChecked]="setOfCheckedKeys.has(data.id)"
+              (nzCheckedChange)="onCheckRow(data.id, $event)">
+            </td>
+
+            <!-- STT -->
+            <td class="text-center font-mono text-muted">
+              {{ (pageIndex - 1) * pageSize + idx + 1 }}
+            </td>
+
+            <!-- Họ và tên + Username -->
+            <td>
+              <div class="user-cell" (click)="openDetailModal(data)">
+                <nz-avatar
+                  [nzText]="data.fullName.charAt(0).toUpperCase()"
+                  [nzSize]="36"
+                  [style.backgroundColor]="getAvatarColor(data.fullName)"
+                  class="user-cell__avatar"
+                />
+                <div class="user-cell__info">
+                  <span class="user-cell__name">{{ data.fullName }}</span>
+                  <span class="user-cell__username">
+                    <span class="role-code">{{ data.username }}</span>
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Email -->
+            <td>
+              <a [href]="'mailto:' + data.email" class="email-text" (click)="$event.stopPropagation()">
+                <nz-icon nzType="mail" />
+                <span>{{ data.email }}</span>
+              </a>
+            </td>
+
+            <!-- Phòng ban -->
+            <td>
+              <span class="department-text">{{ data.department || '—' }}</span>
+            </td>
+
+            <!-- Trạng thái + Switch -->
+            <td class="text-center">
+              <div class="status-cell">
+                <span class="ant-tag {{ getStatusMeta(data.status).tagClass }}">
+                  {{ getStatusMeta(data.status).label }}
+                </span>
+                <nz-switch
+                  [ngModel]="data.status === UserStatus.ACTIVE"
+                  nzSize="small"
+                  (click)="onToggleStatus(data)"
+                  [nzControl]="true"
+                  [nzTooltipTitle]="data.status === UserStatus.ACTIVE ? 'Gạt để ngừng hoạt động' : 'Gạt để kích hoạt'"
+                  nz-tooltip>
+                </nz-switch>
+              </div>
+            </td>
+
+            <!-- Ngày tạo -->
+            <td>
+              <span class="date-text">{{ data.createdAt }}</span>
+            </td>
+
+            <!-- Thao tác -->
+            <td class="text-center" nzRight>
+              <div class="action-buttons">
+                <!-- Chi tiết -->
+                <button
+                  class="action-btn action-btn--view"
+                  (click)="openDetailModal(data)"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết">
+                  <nz-icon nzType="eye" />
+                </button>
+
+                <!-- Chỉnh sửa -->
+                <button
+                  class="action-btn action-btn--edit"
+                  (click)="openEditModal(data)"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa thông tin">
+                  <nz-icon nzType="edit" />
+                </button>
+
+                <!-- Xóa -->
+                <button
+                  class="action-btn action-btn--delete"
+                  (click)="onDeleteUser(data)"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa người dùng">
+                  <nz-icon nzType="delete" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="text-center table-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-state__icon" />
+                <p class="empty-state__text">Không có dữ liệu người dùng nào</p>
+                <app-button
+                  variant="secondary"
+                  leftIcon="plus"
+                  (click)="openCreateModal()">
+                  Thêm người dùng mới
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 5. Standard Footer & Pagination ──────────────────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)">
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 6. Modals ──────────────────────────────────────────────────── -->
+  <app-user-form-modal
+    [visible]="isFormModalVisible()"
+    [user]="selectedUserForEdit"
+    (visibleChange)="isFormModalVisible.set($event)"
+    (saved)="onFormModalSaved()">
+  </app-user-form-modal>
+
+  <app-user-detail-modal
+    [visible]="isDetailModalVisible()"
+    [user]="selectedUserForDetail"
+    (visibleChange)="isDetailModalVisible.set($event)"
+    (editRequested)="openEditModal($event)">
+  </app-user-detail-modal>
+</div>

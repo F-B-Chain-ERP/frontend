@@ -1,0 +1,183 @@
+<app-modal
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [title]="modalTitle"
+  size="md"
+  [footer]="modalFooter"
+  (cancelEmit)="handleCancel()">
+
+  <form [formGroup]="userForm" enterAsTabContainer (ngSubmit)="handleSubmit()" class="user-modal-form">
+    <div nz-row [nzGutter]="[16, 16]">
+      
+      <!-- Họ và tên (Bắt buộc) -->
+      <div nz-col [nzSpan]="24" [nzMd]="12">
+        <label class="form-label required" for="fullName">Họ và tên</label>
+        <nz-input-wrapper>
+          <nz-icon nzInputPrefix nzType="user" />
+          <input
+            id="fullName"
+            type="text"
+            nz-input
+            formControlName="fullName"
+            placeholder="Nhập họ và tên (VD: Nguyễn Văn An)"
+            maxlength="100"
+          />
+        </nz-input-wrapper>
+        @if (userForm.get('fullName')?.dirty || userForm.get('fullName')?.touched) {
+          @if (userForm.get('fullName')?.hasError('required')) {
+            <span class="form-error">Họ và tên không được để trống.</span>
+          }
+          @if (userForm.get('fullName')?.hasError('invalidChars')) {
+            <span class="form-error">Họ và tên chứa ký tự không hợp lệ.</span>
+          }
+        }
+      </div>
+
+      <!-- Email (Bắt buộc) -->
+      <div nz-col [nzSpan]="24" [nzMd]="12">
+        <label class="form-label required" for="email">Email</label>
+        <nz-input-wrapper>
+          <nz-icon nzInputPrefix nzType="mail" />
+          <input
+            id="email"
+            type="email"
+            nz-input
+            formControlName="email"
+            placeholder="example@utt.edu.vn"
+            maxlength="100"
+          />
+        </nz-input-wrapper>
+        @if (userForm.get('email')?.dirty || userForm.get('email')?.touched) {
+          @if (userForm.get('email')?.hasError('required')) {
+            <span class="form-error">Email không được để trống.</span>
+          }
+          @if (userForm.get('email')?.hasError('email')) {
+            <span class="form-error">Định dạng email không hợp lệ.</span>
+          }
+        }
+      </div>
+
+      <!-- Tên đăng nhập (Bắt buộc) -->
+      <div nz-col [nzSpan]="24" [nzMd]="12">
+        <label class="form-label required" for="username">Tên đăng nhập</label>
+        <nz-input-wrapper>
+          <nz-icon nzInputPrefix nzType="idcard" />
+          <input
+            id="username"
+            type="text"
+            nz-input
+            formControlName="username"
+            placeholder="Tên đăng nhập / Mã tài khoản"
+            (keypress)="blockSpace($event)"
+            maxlength="50"
+          />
+        </nz-input-wrapper>
+        @if (userForm.get('username')?.dirty || userForm.get('username')?.touched) {
+          @if (userForm.get('username')?.hasError('required')) {
+            <span class="form-error">Tên đăng nhập không được để trống.</span>
+          }
+          @if (userForm.get('username')?.hasError('invalidChars')) {
+            <span class="form-error">Tên đăng nhập chỉ gồm chữ, số và dấu gạch.</span>
+          }
+        }
+      </div>
+
+      <!-- Số điện thoại -->
+      <div nz-col [nzSpan]="24" [nzMd]="12">
+        <label class="form-label" for="phoneNumber">Số điện thoại</label>
+        <nz-input-wrapper>
+          <nz-icon nzInputPrefix nzType="phone" />
+          <input
+            id="phoneNumber"
+            type="text"
+            nz-input
+            formControlName="phoneNumber"
+            placeholder="0912 345 678"
+            maxlength="15"
+          />
+        </nz-input-wrapper>
+        @if (userForm.get('phoneNumber')?.dirty || userForm.get('phoneNumber')?.touched) {
+          @if (userForm.get('phoneNumber')?.hasError('pattern')) {
+            <span class="form-error">Số điện thoại không đúng định dạng.</span>
+          }
+        }
+      </div>
+
+      <!-- Phòng ban / Đơn vị -->
+      <div nz-col [nzSpan]="24" [nzMd]="12">
+        <label class="form-label" for="department">Đơn vị / Phòng ban</label>
+        <nz-select
+          id="department"
+          formControlName="department"
+          nzPlaceHolder="Chọn phòng ban công tác"
+          style="width: 100%">
+          @for (dept of departmentOptions; track dept.value) {
+            <nz-option [nzLabel]="dept.label" [nzValue]="dept.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Vai trò quyền hạn -->
+      <div nz-col [nzSpan]="24" [nzMd]="12">
+        <label class="form-label" for="roles">Vai trò hệ thống</label>
+        <nz-select
+          id="roles"
+          formControlName="roles"
+          nzMode="multiple"
+          nzPlaceHolder="Chọn vai trò"
+          style="width: 100%">
+          @for (role of roleOptions; track role.value) {
+            <nz-option [nzLabel]="role.label" [nzValue]="role.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Trạng thái hoạt động (Bắt buộc) -->
+      <div nz-col [nzSpan]="24">
+        <label class="form-label required">Trạng thái hoạt động</label>
+        <nz-radio-group formControlName="status" class="status-radio-group">
+          <label nz-radio [nzValue]="UserStatus.ACTIVE">
+            <span class="status-indicator status-indicator--active"></span>
+            <span>Đang hoạt động</span>
+          </label>
+          <label nz-radio [nzValue]="UserStatus.INACTIVE">
+            <span class="status-indicator status-indicator--inactive"></span>
+            <span>Ngừng hoạt động (Khóa)</span>
+          </label>
+        </nz-radio-group>
+      </div>
+
+      <!-- Ghi chú -->
+      <div nz-col [nzSpan]="24">
+        <label class="form-label" for="note">Ghi chú</label>
+        <textarea
+          id="note"
+          nz-input
+          formControlName="note"
+          rows="2"
+          placeholder="Nhập thông tin ghi chú bổ sung (nếu có)"
+          maxlength="500"></textarea>
+      </div>
+
+    </div>
+  </form>
+
+  <ng-template #modalFooter>
+    <div class="user-modal-footer">
+      <app-button
+        variant="ghost"
+        leftIcon="close"
+        [disabled]="isSaving()"
+        (click)="handleCancel()">
+        Hủy bỏ
+      </app-button>
+      <app-button
+        variant="primary"
+        leftIcon="check"
+        [loading]="isSaving()"
+        (click)="handleSubmit()">
+        {{ isEditMode ? 'Lưu thay đổi' : 'Thêm người dùng' }}
+      </app-button>
+    </div>
+  </ng-template>
+</app-modal>

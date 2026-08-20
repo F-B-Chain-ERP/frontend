@@ -1,0 +1,323 @@
+.ant-table-wrapper {
+  &:not(.tbl-auto) .ant-table {
+    table-layout: fixed !important;
+
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 0;
+    }
+  }
+
+  .ant-table {
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    border-radius: var(--radius-lg);
+
+    &-container {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-strong);
+      overflow: hidden;
+    }
+
+    .nz-table-hide-scrollbar {
+      scrollbar-color: transparent transparent !important;
+      width: calc(100% + 5px) !important;
+    }
+
+    // ── Header ──────────────────────────────────────────
+    &-thead > tr > th {
+      background: var(--surface-sunken);
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      font-weight: var(--fw-semibold);
+      letter-spacing: var(--ls-caps);
+      border-bottom: 1px solid var(--border-strong) !important;
+      padding: var(--space-5) var(--space-6);
+      white-space: nowrap;
+
+      &::before {
+        display: none;
+      }
+
+      &.ant-table-column-has-sorters {
+        cursor: pointer;
+        user-select: none;
+        transition: background var(--dur-fast) var(--ease);
+
+        &:hover {
+          background: color-mix(in srgb, var(--surface-active) 30%, var(--surface-sunken));
+        }
+
+        &:focus-visible {
+          color: var(--brand);
+          outline: none;
+        }
+
+        &.ant-table-cell-fix-left:hover,
+        &.ant-table-cell-fix-right:hover {
+          background: color-mix(in srgb, var(--surface-sunken) 6%, var(--surface-card));
+        }
+      }
+
+      &.ant-table-column-sort {
+        background: color-mix(in srgb, var(--surface-sunken) 8%, var(--surface-sunken));
+      }
+
+      .ant-table-column-sorter {
+        color: var(--text-muted);
+        transition: color var(--dur-fast) var(--ease);
+      }
+
+      .ant-table-column-sorters:hover .ant-table-column-sorter {
+        color: var(--text-secondary);
+      }
+
+      .ant-table-column-sorter-up.active,
+      .ant-table-column-sorter-down.active {
+        color: var(--brand);
+      }
+
+      .ant-table-filter-trigger {
+        color: var(--text-muted);
+        border-radius: var(--radius-xs);
+        transition: all var(--dur-fast) var(--ease);
+
+        &.active { color: var(--brand); }
+        &:hover  { color: var(--text-secondary); background: var(--surface-active); }
+      }
+    }
+
+    &-thead > tr.thead-search > th {
+      background: var(--surface-card);
+    }
+
+    // ── Body ────────────────────────────────────────────
+    &-tbody > tr {
+      > td {
+        border-bottom: 1px solid var(--border-strong);
+        padding: var(--space-5) var(--space-6);
+        color: var(--text-primary);
+        font-size: var(--text-base);
+        vertical-align: middle;
+        transition: background var(--dur-fast) var(--ease);
+
+        &.ant-table-column-sort {
+          background: var(--surface-sunken);
+        }
+      }
+
+      &:hover:not(.ant-table-expanded-row) > td {
+        background: var(--surface-hover) !important;
+      }
+
+      &.ant-table-row-selected > td {
+        background: var(--brand-soft) !important;
+      }
+
+      &:last-child > td {
+        border-bottom: none;
+      }
+
+      &.ant-table-expanded-row > td {
+        background: var(--surface-sunken);
+        border-bottom: 1px solid var(--border-strong);
+        padding: var(--space-6);
+      }
+    }
+
+    // ── Bordered variant ─────────────────────────────────
+    &.ant-table-bordered {
+      > .ant-table-title,
+      > .ant-table-footer,
+      > .ant-table-container {
+        border-color: var(--border-strong);
+      }
+
+      > .ant-table-container > .ant-table-content > table,
+      > .ant-table-container > .ant-table-header > table,
+      > .ant-table-container > .ant-table-body > table {
+        border-top-color: var(--border-strong);
+
+        > thead > tr > th,
+        > tbody > tr > td,
+        > tfoot > tr > th,
+        > tfoot > tr > td {
+          border-right-color: var(--border-strong);
+        }
+
+        > thead > tr:not(:last-child) > th {
+          border-bottom-color: var(--border-strong);
+        }
+
+        > thead > tr > .ant-table-cell-fix-right-first::after,
+        > tbody > tr > .ant-table-cell-fix-right-first::after,
+        > tfoot > tr > .ant-table-cell-fix-right-first::after {
+          border-right-color: var(--border-strong);
+        }
+      }
+    }
+
+    // ── Size: small ──────────────────────────────────────
+    &.ant-table-small {
+      .ant-table-thead > tr > th {
+        padding: var(--space-3) var(--space-5);
+        font-size: var(--text-2xs);
+      }
+
+      .ant-table-tbody > tr > td {
+        padding: var(--space-3) var(--space-5);
+        font-size: var(--text-sm);
+      }
+    }
+
+    // ── Striped ──────────────────────────────────────────
+    &.table-striped .ant-table-tbody > tr:nth-child(even) > td {
+      background: color-mix(in srgb, var(--surface-sunken) 80%, transparent);
+    }
+
+    // ── Fixed columns shadow ─────────────────────────────
+    &-cell-fix-left,
+    &-cell-fix-right {
+      background: var(--surface-card);
+    }
+
+    &-cell-fix-left-last::after {
+      box-shadow: inset 10px 0 8px -8px
+        color-mix(in srgb, var(--navy-950) 10%, transparent);
+    }
+
+    &-cell-fix-right-first::before {
+      box-shadow: inset -10px 0 8px -8px
+        color-mix(in srgb, var(--navy-950) 10%, transparent);
+    }
+
+    // ── Expand icon ──────────────────────────────────────
+    &-row-expand-icon {
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-xs);
+      background: transparent;
+      color: var(--text-secondary);
+      transition: all var(--dur-fast) var(--ease);
+
+      &:hover              { border-color: var(--brand); color: var(--brand); }
+      &-expanded           { border-color: var(--brand); color: var(--brand); }
+    }
+
+    // ── Selection column ─────────────────────────────────
+    &-selection-column {
+      width: 44px;
+      text-align: center !important;
+      padding-left:  var(--space-4) !important;
+      padding-right: var(--space-4) !important;
+    }
+
+    // ── Empty ────────────────────────────────────────────
+    &-placeholder > td {
+      border-bottom: none !important;
+      padding: var(--space-11) var(--space-7) !important;
+    }
+
+    // ── Scroll body ──────────────────────────────────────
+    &-body,
+    &-content {
+      scrollbar-width: thin;
+      scrollbar-color: var(--gray-300) transparent;
+
+      &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: var(--radius-pill);
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--gray-300);
+        border-radius: var(--radius-pill);
+        transition: background var(--dur-fast) var(--ease);
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background: var(--gray-400);
+      }
+
+      &::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+    }
+  }
+
+  .ant-table-pagination {
+    margin: var(--space-6) 0 0;
+  }
+}
+
+// ── Dark theme scrollbar ─────────────────────────────────
+[data-theme="dark"] .ant-table-wrapper {
+  .ant-table-body,
+  .ant-table-content {
+    scrollbar-color: var(--gray-600) transparent;
+
+    &::-webkit-scrollbar-thumb        { background: var(--gray-600); }
+    &::-webkit-scrollbar-thumb:hover  { background: var(--gray-500); }
+  }
+}
+
+// ── Status badge ─────────────────────────────────────────
+.tbl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 2px var(--space-4);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  line-height: var(--lh-snug);
+  white-space: nowrap;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  &--success {
+    background: var(--success-soft);
+    color: var(--success);
+    &::before { background: var(--success); }
+  }
+
+  &--warning {
+    background: var(--warning-soft);
+    color: var(--warning-600);
+    &::before { background: var(--warning); }
+  }
+
+  &--danger {
+    background: var(--danger-soft);
+    color: var(--danger);
+    &::before { background: var(--danger); }
+  }
+
+  &--info {
+    background: var(--info-soft);
+    color: var(--info);
+    &::before { background: var(--info); }
+  }
+
+  &--neutral {
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+    &::before { background: var(--text-muted); }
+  }
+}

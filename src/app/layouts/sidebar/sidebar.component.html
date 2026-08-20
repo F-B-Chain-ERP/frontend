@@ -1,0 +1,80 @@
+<aside class="sidebar" [class.sidebar--collapsed]="collapsed()">
+  <div class="sidebar__brand">
+    <div class="sidebar__logo">ERP</div>
+    @if (!collapsed()) {
+      <span class="sidebar__app-name">ERP UTT</span>
+    }
+  </div>
+
+  <overlay-scrollbars [defer]="true" [options]="{
+    overflow: { x: 'hidden' },
+    scrollbars: {
+      autoHide: 'leave',
+      autoHideDelay: 200,
+      theme: 'os-theme-light',
+    }
+  }">
+    <nav class="sidebar__nav">
+      @for (item of filteredMenu(); track item.id) {
+        <div class="sidebar__group">{{item.title}}</div>
+        @for (parent of item.items; track parent.id) {
+          <button
+            class="sidebar__item"
+            [class.sidebar__item--active]="isParentActive(parent)"
+            [class.sidebar__item--open]="isParentOpen(parent.id)"
+            (click)="onParentClick(parent.id, parent.route)"
+            [nz-tooltip]="collapsed() ? parent.title : ''"
+          >
+            @if (parent.icon) {
+              <nz-icon [nzType]="parent.icon" class="sidebar__icon"></nz-icon>
+            }
+            @if (!collapsed()) {
+              <span class="sidebar__label">{{ parent.title }}</span>
+            }
+            @if (parent.children.length) {
+              <nz-icon
+                class="sidebar__item__icon"
+                [class.sidebar__item__icon--open]="isParentOpen(parent.id)"
+                nzType="down"
+                nzTheme="outline"
+              />
+            }
+          </button>
+          @if (parent.children.length) {
+            <div class="sidebar__submenu" [class.sidebar__submenu--open]="isParentOpen(parent.id)">
+              <ng-container *ngTemplateOutlet="childTpl; context: { nodes: parent.children }"></ng-container>
+            </div>
+          }
+        }
+      }
+    </nav>
+  </overlay-scrollbars>
+
+  <ng-template #childTpl let-nodes="nodes">
+    @for (node of nodes; track node.id) {
+      <button
+        class="sidebar__item"
+        [class.sidebar__item--active]="isChildActive(node)"
+        [class.sidebar__item--open]="isParentOpen(node.id)"
+        (click)="onChildClick(node)"
+      >
+        @if (!collapsed()) {
+          <span class="sidebar__label">{{ node.title }}</span>
+        }
+        @if (node.children?.length) {
+          <nz-icon
+            class="sidebar__item__icon"
+            [class.sidebar__item__icon--open]="isParentOpen(node.id)"
+            nzType="down"
+            nzTheme="outline"
+          />
+        }
+      </button>
+      @if (node.children?.length) {
+        <div class="sidebar__submenu" [class.sidebar__submenu--open]="isParentOpen(node.id)">
+          <ng-container *ngTemplateOutlet="childTpl; context: { nodes: node.children }"></ng-container>
+        </div>
+      }
+    }
+  </ng-template>
+</aside>

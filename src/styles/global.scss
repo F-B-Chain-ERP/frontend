@@ -1,0 +1,12 @@
+.tooltip-app,
+.tooltip-custom {
+  max-width: 600px !important;
+  width: max-content !important;
+
+  .ant-tooltip-inner {
+    max-width: 600px !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    line-height: 1.5;
+  }
+}

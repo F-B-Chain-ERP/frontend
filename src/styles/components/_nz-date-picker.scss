@@ -1,0 +1,529 @@
+// ── Trigger input ───────────────────────────────────────
+.ant-picker {
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 var(--space-6);
+  background: var(--surface-card);
+  border: 1px solid var(--border-field);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  transition:
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
+
+  // inner input
+  .ant-picker-input {
+    flex: 1;
+    display: flex;
+    align-items: center;
+
+    input {
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: var(--text-base);
+      caret-color: var(--brand);
+
+      &::placeholder {
+        color: var(--text-muted);
+      }
+    }
+  }
+
+  // suffix icon (calendar icon)
+  .ant-picker-suffix {
+    color: var(--text-muted);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  // prefix icon
+  .ant-picker-prefix {
+    color: var(--text-muted);
+    margin-inline-end: var(--space-2);
+    display: flex;
+    align-items: center;
+  }
+
+  // clear button
+  .ant-picker-clear {
+    background: var(--surface-card);
+    color: var(--text-muted);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    transition: color var(--dur-fast) var(--ease);
+
+    &:hover {
+      color: var(--text-secondary);
+    }
+  }
+
+  // range separator "→"
+  .ant-picker-range-separator {
+    color: var(--text-muted);
+    padding: 0 var(--space-2);
+    display: flex;
+    align-items: center;
+  }
+
+  // ── Hover ──────────────────────────────────────────────
+  &:not(.ant-picker-disabled):not(.ant-picker-focused):hover {
+    border-color: var(--brand);
+
+    .ant-picker-suffix {
+      color: var(--text-secondary);
+    }
+  }
+
+  // ── Focus ──────────────────────────────────────────────
+  &.ant-picker-focused {
+    border-color: var(--brand);
+    box-shadow: var(--ring-focus);
+    background: var(--surface-card);
+
+    .ant-picker-suffix {
+      color: var(--brand);
+    }
+  }
+
+  // ── Disabled ───────────────────────────────────────────
+  &.ant-picker-disabled {
+    background: var(--surface-hover);
+    border-color: var(--border-subtle);
+    cursor: not-allowed;
+
+    input {
+      color: var(--text-disabled);
+      cursor: not-allowed;
+    }
+
+    .ant-picker-suffix,
+    .ant-picker-range-separator {
+      color: var(--text-disabled);
+    }
+  }
+
+  // ── Validation: error ──────────────────────────────────
+  &.ant-picker-status-error {
+    border-color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 3%, var(--surface-card));
+
+    &.ant-picker-focused {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 25%, transparent);
+    }
+  }
+
+  // ── Validation: warning ────────────────────────────────
+  &.ant-picker-status-warning {
+    border-color: var(--warning);
+    background: color-mix(in srgb, var(--warning) 3%, var(--surface-card));
+
+    &.ant-picker-focused {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 25%, transparent);
+    }
+  }
+
+  // ── Large ──────────────────────────────────────────────
+  &.ant-picker-large {
+    height: var(--control-h-lg);
+    border-radius: var(--radius-md);
+
+    .ant-picker-input input {
+      font-size: var(--text-md);
+    }
+  }
+
+  // ── Small ──────────────────────────────────────────────
+  &.ant-picker-small {
+    height: var(--control-h-sm);
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-sm);
+
+    .ant-picker-input input {
+      font-size: var(--text-sm);
+    }
+
+    .ant-picker-suffix {
+      font-size: 12px;
+    }
+  }
+}
+
+// ── Active bar (range picker highlight under input) ─────
+.ant-picker-active-bar {
+  background: var(--brand);
+  height: 2px;
+}
+
+// ── Dropdown panel container ────────────────────────────
+.ant-picker-dropdown {
+  font-family: var(--font-sans);
+
+  .ant-picker-panel-container {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+  }
+
+  // ── Panel header (month/year nav) ─────────────────────
+  .ant-picker-header {
+    border-bottom: 1px solid var(--border-subtle);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    align-items: center;
+
+    button {
+      color: var(--text-secondary);
+      font-size: var(--text-sm);
+      line-height: 1;
+      transition: color var(--dur-fast) var(--ease);
+      display: flex;
+      align-items: center;
+
+      &:hover {
+        color: var(--brand);
+      }
+    }
+
+    .ant-picker-header-view {
+      font-size: var(--text-sm);
+      font-weight: 600;
+      color: var(--text-primary);
+      flex: 1;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      button {
+        color: var(--text-primary);
+        font-weight: 600;
+
+        &:hover {
+          color: var(--brand);
+        }
+      }
+    }
+
+    .ant-picker-prev-icon,
+    .ant-picker-next-icon,
+    .ant-picker-super-prev-icon,
+    .ant-picker-super-next-icon {
+      &::before,
+      &::after {
+        border-color: currentColor;
+      }
+    }
+  }
+
+  // ── Calendar body ─────────────────────────────────────
+  .ant-picker-body {
+    padding: var(--space-4);
+  }
+
+  .ant-picker-content {
+    width: 100%;
+
+    th {
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding-bottom: var(--space-3);
+      text-align: center;
+    }
+  }
+
+  // ── Calendar cells ────────────────────────────────────
+  .ant-picker-cell {
+    padding: 2px 0;
+    color: var(--text-disabled);
+
+    &-in-view {
+      color: var(--text-primary);
+    }
+
+    .ant-picker-cell-inner {
+      min-width: 28px;
+      height: 28px;
+      line-height: 28px;
+      border-radius: var(--radius-sm);
+      font-size: var(--text-sm);
+      margin: 0 auto;
+      transition:
+        background var(--dur-fast) var(--ease),
+        color var(--dur-fast) var(--ease);
+
+      &::before {
+        border: 1px solid var(--brand);
+        border-radius: var(--radius-sm);
+      }
+    }
+
+    &:not(.ant-picker-cell-selected):not(.ant-picker-cell-disabled):hover {
+      .ant-picker-cell-inner {
+        background: var(--surface-hover) !important;
+        color: var(--text-primary);
+      }
+    }
+
+    &-today .ant-picker-cell-inner {
+      font-weight: 600;
+      color: var(--brand);
+
+      &::before {
+        border-color: var(--brand);
+      }
+    }
+
+    &-selected .ant-picker-cell-inner,
+    &-range-start .ant-picker-cell-inner,
+    &-range-end .ant-picker-cell-inner {
+      background: var(--brand) !important;
+      color: var(--on-brand) !important;
+      font-weight: 600;
+
+      &::before {
+        border-color: transparent;
+      }
+    }
+
+    &-in-range {
+      &::before {
+        background: var(--brand-soft);
+      }
+
+      .ant-picker-cell-inner {
+        color: var(--text-primary);
+      }
+    }
+
+    &-range-hover,
+    &-range-hover-start,
+    &-range-hover-end {
+      &::after {
+        border-color: var(--brand) !important;
+        background: color-mix(in srgb, var(--brand) 8%, transparent) !important;
+      }
+    }
+
+    &-in-range.ant-picker-cell-range-hover::before,
+    &-range-start.ant-picker-cell-range-hover::before,
+    &-range-end.ant-picker-cell-range-hover::before,
+    &-range-start.ant-picker-cell-range-hover-start::before,
+    &-range-end.ant-picker-cell-range-hover-end::before {
+      background: var(--brand-soft) !important;
+    }
+
+    &-disabled {
+      cursor: not-allowed;
+
+      .ant-picker-cell-inner {
+        color: var(--text-disabled);
+        background: transparent;
+      }
+
+      &::before {
+        background: transparent;
+      }
+    }
+  }
+
+  .ant-picker-date-panel .ant-picker-cell-in-range.ant-picker-cell-range-hover-start .ant-picker-cell-inner::after,
+  .ant-picker-date-panel .ant-picker-cell-in-range.ant-picker-cell-range-hover-end .ant-picker-cell-inner::after {
+    background: var(--brand-soft) !important;
+  }
+
+  // ── Footer ────────────────────────────────────────────
+  .ant-picker-footer {
+    border-top: 1px solid var(--border-subtle);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: unset;
+    line-height: 1;
+  }
+
+  .ant-picker-today-btn {
+    color: var(--brand);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    transition: color var(--dur-fast) var(--ease);
+
+    &:hover {
+      color: var(--brand-hover);
+    }
+
+    &-disabled {
+      color: var(--text-disabled);
+      cursor: not-allowed;
+    }
+  }
+
+  .ant-picker-ok button {
+    height: 26px;
+    padding: 0 var(--space-6);
+    background: var(--brand);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--on-brand);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease);
+
+    &:hover {
+      background: var(--brand-hover);
+    }
+
+    &:disabled {
+      background: var(--surface-active);
+      color: var(--text-disabled);
+      cursor: not-allowed;
+    }
+  }
+
+  .ant-picker-now-btn {
+    color: var(--brand);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    transition: color var(--dur-fast) var(--ease);
+
+    &:hover {
+      color: var(--brand-hover);
+    }
+  }
+
+  // ── Preset shortcuts ──────────────────────────────────
+  .ant-picker-ranges {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--border-subtle);
+
+    li {
+      color: var(--brand);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      transition: color var(--dur-fast) var(--ease);
+
+      &:hover {
+        color: var(--brand-hover);
+      }
+    }
+  }
+
+  // ── Time panel ────────────────────────────────────────
+  .ant-picker-time-panel {
+    border-left: 1px solid var(--border-subtle);
+
+    .ant-picker-header {
+      .ant-picker-header-view {
+        font-size: var(--text-sm);
+        font-weight: 600;
+      }
+    }
+
+    &-column {
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-subtle) transparent;
+
+      &:not(:first-child) {
+        border-left: 1px solid var(--border-subtle);
+      }
+    }
+
+    &-cell {
+      padding: 0;
+
+      &-inner {
+        height: 28px;
+        line-height: 28px;
+        padding: 0 var(--space-5);
+        color: var(--text-primary);
+        font-size: var(--text-sm);
+        border-radius: var(--radius-sm);
+        transition: background var(--dur-fast) var(--ease);
+        cursor: pointer;
+
+        &:hover {
+          background: var(--surface-hover);
+        }
+      }
+
+      &-selected .ant-picker-time-panel-cell-inner {
+        background: var(--brand-soft);
+        color: var(--brand);
+        font-weight: 600;
+      }
+
+      &-disabled .ant-picker-time-panel-cell-inner {
+        color: var(--text-disabled);
+        cursor: not-allowed;
+        background: transparent;
+
+        &:hover {
+          background: transparent;
+        }
+      }
+    }
+  }
+
+  // ── Month / Year / Decade panels ──────────────────────
+  .ant-picker-month-panel,
+  .ant-picker-year-panel,
+  .ant-picker-decade-panel,
+  .ant-picker-quarter-panel {
+    .ant-picker-cell-inner {
+      min-width: 56px;
+      height: 28px;
+      line-height: 28px;
+      border-radius: var(--radius-sm);
+      padding: 0 var(--space-3);
+    }
+  }
+
+  // ── Week number column ────────────────────────────────
+  .ant-picker-week-panel {
+    .ant-picker-cell-week {
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+    }
+
+    .ant-picker-week-panel-row {
+      &:hover td {
+        background: var(--surface-hover);
+      }
+
+      &-selected td {
+        background: var(--brand-soft);
+
+        .ant-picker-cell-inner {
+          color: var(--brand);
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}
+
+.ant-picker-panels > *:not(:last-child) {
+  border-right: 1px solid var(--border-subtle);
+}
+
+.ant-picker-range {
+  .ant-picker-active-bar {
+    background: var(--brand);
+  }
+}
