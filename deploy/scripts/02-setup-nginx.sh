@@ -18,7 +18,11 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 FRONTEND_DIR="/opt/ERP-UTT/frontend"
-NGINX_CONF_SOURCE="$FRONTEND_DIR/deploy/nginx/erp-utt.conf"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+NGINX_CONF_SOURCE="$SCRIPT_DIR/deploy/nginx/erp-utt.conf"
+if [ ! -f "$NGINX_CONF_SOURCE" ]; then
+    NGINX_CONF_SOURCE="$FRONTEND_DIR/deploy/nginx/erp-utt.conf"
+fi
 NGINX_CONF_DEST="/etc/nginx/sites-available/erp-utt"
 NGINX_CONF_ENABLED="/etc/nginx/sites-enabled/erp-utt"
 
@@ -110,6 +114,19 @@ nginx -t
 # 8. Reload / Khởi động lại Nginx
 echo "▶ 7. Khởi động lại Nginx service..."
 systemctl restart nginx
+
+# 9. Kiểm tra file tĩnh Angular
+if [ ! -f "$FRONTEND_DIR/browser/index.html" ]; then
+    echo ""
+    echo "[CẢNH BÁO] Chưa tìm thấy file index.html trong $FRONTEND_DIR/browser/ !"
+    echo "  -> Nginx sẽ trả về lỗi '403 Forbidden' khi truy cập web cho đến khi bạn đưa code đã build vào thư mục này."
+    echo "  -> Cách xử lý:"
+    echo "     1. Nếu bạn build từ máy Local: Chạy script .\\frontend\\deploy\\scripts\\01-build-transfer.ps1"
+    echo "     2. Nếu bạn có source trên VPS (ví dụ ~/frontend): Chạy:"
+    echo "        cd ~/frontend && npm run build:prod"
+    echo "        sudo cp -r dist/frontend/browser/* /opt/ERP-UTT/frontend/browser/ (hoặc dist/frontend/*)"
+    echo "        sudo chown -R www-data:www-data /opt/ERP-UTT/frontend/browser"
+fi
 
 echo ""
 echo "=========================================================="
