@@ -1,0 +1,26 @@
+.overflow-tags-host {
+  position: relative;
+  width: 100%;
+}
+
+.overflow-tags {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.overflow-tags__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  gap: 4px;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  visibility: hidden;
+  pointer-events: none;
+}

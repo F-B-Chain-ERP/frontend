@@ -1,0 +1,335 @@
+// ──────────────────────────────────────────────────────────
+// nz-select overrides
+// Covers:
+//   single / multiple / tags mode
+//   nzSize="large|small"
+//   disabled / error / warning states
+//   prefix icon
+//   dropdown panel + options + groups
+// ──────────────────────────────────────────────────────────
+
+// ── Trigger (selector box) ──────────────────────────────
+.ant-select {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  width: 100%;
+
+  .ant-select-selector {
+    height: var(--control-h) !important;
+    padding: 0 var(--space-6) !important;
+    background: var(--surface-card) !important;
+    border: 1px solid var(--border-field) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: none !important;
+    transition:
+      border-color var(--dur-fast) var(--ease),
+      box-shadow var(--dur-fast) var(--ease) !important;
+    display: flex;
+    align-items: center;
+  }
+
+  // placeholder
+  .ant-select-selection-placeholder {
+    color: var(--text-muted);
+    font-size: var(--text-base);
+    line-height: var(--control-h);
+    padding: 0;
+  }
+
+  // selected value (single mode)
+  .ant-select-selection-item {
+    color: var(--text-primary);
+    font-size: var(--text-base);
+    line-height: var(--control-h) !important;
+    padding: 0;
+  }
+
+  // dropdown arrow
+  .ant-select-arrow {
+    color: var(--text-muted);
+    font-size: 12px;
+    transition: transform var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+    inset-inline-end: var(--space-6);
+  }
+
+  // clear button
+  .ant-select-clear {
+    background: var(--surface-card);
+    color: var(--text-muted);
+    font-size: 12px;
+    inset-inline-end: var(--space-6);
+    transition: color var(--dur-fast) var(--ease);
+
+    &:hover {
+      color: var(--text-secondary);
+    }
+  }
+
+  // prefix icon
+  .ant-select-prefix {
+    color: var(--text-muted);
+    margin-inline-end: var(--space-3);
+    display: flex;
+    align-items: center;
+  }
+
+  // ── Hover ──────────────────────────────────────────────
+  &:not(.ant-select-disabled):not(.ant-select-focused):hover {
+    .ant-select-selector {
+      border-color: var(--brand) !important;
+    }
+  }
+
+  // ── Focus / Open ───────────────────────────────────────
+  &.ant-select-focused,
+  &.ant-select-open {
+    .ant-select-selector {
+      border-color: var(--brand) !important;
+      box-shadow: var(--ring-focus) !important;
+      background: var(--surface-card) !important;
+    }
+  }
+  &.ant-select-open:not(.ant-select-show-search),
+  &.ant-select-focused:not(.ant-select-show-search) {
+    .ant-select-arrow {
+      color: var(--brand);
+      transform: rotate(180deg);
+    }
+  }
+
+  // ── Disabled ───────────────────────────────────────────
+  &.ant-select-disabled {
+    cursor: not-allowed;
+
+    .ant-select-selector {
+      background: var(--surface-hover) !important;
+      border-color: var(--border-subtle) !important;
+      cursor: not-allowed;
+    }
+
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      color: var(--text-disabled);
+    }
+
+    .ant-select-arrow {
+      color: var(--text-disabled);
+    }
+  }
+
+  // ── Validation: error ──────────────────────────────────
+  &.ant-select-status-error {
+    .ant-select-selector {
+      border-color: var(--danger) !important;
+      background: color-mix(in srgb, var(--danger) 3%, var(--surface-card)) !important;
+    }
+
+    &.ant-select-focused .ant-select-selector {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 25%, transparent) !important;
+    }
+  }
+
+  // ── Validation: warning ────────────────────────────────
+  &.ant-select-status-warning {
+    .ant-select-selector {
+      border-color: var(--warning) !important;
+      background: color-mix(in srgb, var(--warning) 3%, var(--surface-card)) !important;
+    }
+
+    &.ant-select-focused .ant-select-selector {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning) 25%, transparent) !important;
+    }
+  }
+
+  // ── Large ──────────────────────────────────────────────
+  &.ant-select-lg {
+    font-size: var(--text-md);
+
+    .ant-select-selector {
+      height: var(--control-h-lg) !important;
+      border-radius: var(--radius-md) !important;
+    }
+
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      font-size: var(--text-md);
+      line-height: var(--control-h-lg) !important;
+    }
+  }
+
+  // ── Small ──────────────────────────────────────────────
+  &.ant-select-sm {
+    font-size: var(--text-sm);
+
+    .ant-select-selector {
+      height: var(--control-h-sm) !important;
+      padding: 0 var(--space-4) !important;
+      border-radius: var(--radius-sm) !important;
+    }
+
+    .ant-select-selection-item,
+    .ant-select-selection-placeholder {
+      font-size: var(--text-sm);
+      line-height: var(--control-h-sm) !important;
+    }
+
+    .ant-select-arrow {
+      inset-inline-end: var(--space-4);
+    }
+  }
+}
+
+// ── Multiple mode ───────────────────────────────────────
+.ant-select-multiple {
+  .ant-select-selector {
+    height: auto !important;
+    min-height: var(--control-h) !important;
+    padding: 0 var(--space-4) !important;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .ant-select-selection-overflow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    flex: 1;
+  }
+
+  .ant-select-selection-item {
+    height: 22px !important;
+    line-height: 22px !important;
+    padding: 0 var(--space-2);
+    margin: 0;
+    background: var(--surface-hover) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary) !important;
+    font-size: var(--text-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+
+    &-content {
+      color: var(--text-primary);
+      font-size: var(--text-sm);
+      line-height: 1;
+    }
+
+    &-remove {
+      color: var(--text-muted) !important;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      transition: color var(--dur-fast) var(--ease);
+      cursor: pointer;
+
+      &:hover {
+        color: var(--danger);
+      }
+    }
+  }
+
+  .ant-select-selection-search {
+    margin: 0;
+
+    &-input {
+      height: 22px;
+      font-size: var(--text-sm);
+    }
+  }
+}
+
+// ── Dropdown panel ──────────────────────────────────────
+.ant-select-dropdown {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: var(--space-2) 0;
+  overflow: hidden;
+
+  // ── Option item ────────────────────────────────────────
+  .ant-select-item {
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    color: var(--text-primary);
+    padding: 0 var(--space-6);
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    transition: background var(--dur-fast) var(--ease);
+    cursor: pointer;
+    border-radius: 0;
+
+    &-option-content {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    // hover
+    &-option-active:not(.ant-select-item-option-disabled) {
+      background: var(--surface-hover);
+    }
+
+    // selected
+    &-option-selected:not(.ant-select-item-option-disabled) {
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-weight: var(--fw-bold);
+
+      .ant-select-item-option-state {
+        color: var(--brand);
+      }
+    }
+
+    // disabled
+    &-option-disabled {
+      color: var(--text-disabled);
+      cursor: not-allowed;
+
+      &:hover {
+        background: transparent;
+      }
+    }
+
+    // group label
+    &-group {
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: var(--ls-caps);
+      padding: var(--space-4) var(--space-6) var(--space-2);
+      min-height: unset;
+      cursor: default;
+    }
+
+    // grouped option — indent
+    &-option-grouped {
+      padding-inline-start: var(--space-9);
+    }
+  }
+
+  // empty state
+  .ant-select-item-empty {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    padding: var(--space-7) var(--space-6);
+    text-align: center;
+  }
+}
+
+.custom-select-all-option {
+  padding: var(--space-4) var(--space-6);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-md);
+  width: 100%;
+
+  &:hover {
+    background: var(--surface-hover);
+  }
+}

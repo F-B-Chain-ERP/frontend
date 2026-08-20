@@ -1,0 +1,84 @@
+.page--has-footer {
+  padding-bottom: 64px;
+}
+
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+
+  &__title {
+    font-size: var(--text-3xl);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+  }
+
+  &__description {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+}
+
+.page__filter-box {
+  margin-bottom: var(--space-8);
+
+  &__row {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-4);
+  }
+
+  &__actions {
+    display: flex;
+    align-items: end;
+    gap: var(--space-4);
+  }
+}
+
+.page__list {
+  .ant-card-body {
+    padding: 0;
+  }
+
+  .ant-table-wrapper .ant-table-container {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .page__pagination {
+    padding: var(--space-6);
+  }
+}
+
+.page__footer--fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  margin-left: var(--sidebar-w);
+  background-color: var(--surface-card);
+  box-shadow: var(--shadow-md);
+  z-index: 100;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: margin-left var(--dur-fast) var(--ease);
+
+  .page__footer__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+  }
+}
+
+.page__footer--collapsed-sidebar {
+  margin-left: var(--sidebar-w-collapsed);
+}

@@ -1,0 +1,17 @@
+@keyframes modalBounce {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.01);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+::ng-deep .ant-modal.zoom-feedback {
+  animation: modalBounce 180ms ease-out;
+}

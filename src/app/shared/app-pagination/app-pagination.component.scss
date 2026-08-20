@@ -1,0 +1,46 @@
+:host {
+  display: block;
+}
+
+.apg {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-5) 0;
+  flex-wrap: wrap;
+
+  &__info {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  &__total strong,
+  &__range strong {
+    color: var(--text-primary);
+    font-weight: var(--fw-semibold);
+  }
+
+  &__divider {
+    display: inline-block;
+    width: 1px;
+    height: 14px;
+    background: var(--border-subtle);
+    flex-shrink: 0;
+  }
+
+  &__controls {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  &__size-select {
+    width: 120px;
+  }
+}

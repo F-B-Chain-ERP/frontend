@@ -1,0 +1,90 @@
+<app-modal
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  title="Thông tin chi tiết người dùng"
+  size="md"
+  [footer]="modalFooter"
+  (cancelEmit)="handleClose()">
+
+  @if (user) {
+    <div class="user-detail-header">
+      <nz-avatar
+        [nzText]="user.fullName.charAt(0).toUpperCase()"
+        [nzSize]="64"
+        class="user-detail-avatar"
+      />
+      <div class="user-detail-main">
+        <div class="user-detail-name">
+          {{ user.fullName }}
+          <span class="user-detail-id">({{ user.id }})</span>
+        </div>
+        <div class="user-detail-meta">
+          <span class="user-detail-tag {{ getStatusMeta(user.status).tagClass }}">
+            {{ getStatusMeta(user.status).label }}
+          </span>
+          <span class="user-detail-dept">
+            <nz-icon nzType="apartment" /> {{ user.department || 'Chưa phân bổ' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <nz-divider style="margin: 16px 0"></nz-divider>
+
+    <nz-descriptions [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 2, sm: 1, xs: 1 }" nzBordered nzSize="small">
+      <nz-descriptions-item nzTitle="Tên đăng nhập">
+        <strong>{{ user.username }}</strong>
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Email liên hệ">
+        <a [href]="'mailto:' + user.email" class="email-link">
+          <nz-icon nzType="mail" /> {{ user.email }}
+        </a>
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Số điện thoại">
+        {{ user.phoneNumber || '—' }}
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Trạng thái tài khoản">
+        <span class="ant-tag {{ getStatusMeta(user.status).tagClass }}">
+          {{ getStatusMeta(user.status).label }}
+        </span>
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Vai trò hệ thống" [nzSpan]="2">
+        <div class="roles-list">
+          @if (user.roles && user.roles.length) {
+            @for (role of user.roles; track role) {
+              <span class="role-code">{{ role }}</span>
+            }
+          } @else {
+            <span>Người dùng hệ thống</span>
+          }
+        </div>
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ngày tạo tài khoản">
+        {{ user.createdAt }}
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Cập nhật lần cuối">
+        {{ user.updatedAt || user.createdAt }}
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ghi chú" [nzSpan]="2">
+        {{ user.note || 'Không có ghi chú nào.' }}
+      </nz-descriptions-item>
+    </nz-descriptions>
+  }
+
+  <ng-template #modalFooter>
+    <div class="user-detail-footer">
+      <app-button
+        variant="secondary"
+        leftIcon="edit"
+        (click)="handleEdit()">
+        Chỉnh sửa
+      </app-button>
+      <app-button
+        variant="primary"
+        leftIcon="check"
+        (click)="handleClose()">
+        Đóng
+      </app-button>
+    </div>
+  </ng-template>
+</app-modal>

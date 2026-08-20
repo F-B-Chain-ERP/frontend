@@ -1,0 +1,36 @@
+<button
+  [type]="type"
+  [tabindex]="tabindex"
+  class="btn"
+  [class.btn--primary]="variant==='primary'"
+  [class.btn--secondary]="variant==='secondary'"
+  [class.btn--ghost]="variant==='ghost'"
+  [class.btn--danger]="variant==='danger'"
+  [class.btn--disabled]="disabled"
+  [class.btn--rounded]="rounded"
+  [class.btn--icon-only]="!!iconOnly"
+  [class.btn--loading]="loading"
+  [class.btn--full-width]="fullWidth"
+  [ngStyle]="buttonStyle"
+  [disabled]="disabled"
+>
+  <span class="btn__content" [class.btn__content--hidden]="loading">
+    @if (iconOnly) {
+      <nz-icon [nzType]="iconOnly" class="btn__icon"></nz-icon>
+    } @else {
+      @if (leftIcon) {
+        <nz-icon [nzType]="leftIcon" class="btn__icon"></nz-icon>
+      }
+      <span class="btn__label">
+        <ng-content></ng-content>
+      </span>
+      @if (rightIcon) {
+        <nz-icon [nzType]="rightIcon" class="btn__icon"></nz-icon>
+      }
+    }
+  </span>
+  @if (loading) {
+    <ng-template #indicatorTemplate><nz-icon class="loading-icon" nzType="loading" /></ng-template>
+    <nz-spin class="btn__spinner" nzSimple [nzIndicator]="indicatorTemplate" />
+  }
+</button>

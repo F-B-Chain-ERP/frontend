@@ -1,0 +1,159 @@
+// ============================================================
+// Design System — Typography tokens
+// Webfonts: Inter (UI) + JetBrains Mono (numeric/code).
+// ============================================================
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+// --- Font family stacks (SCSS vars for interpolation) -------
+$font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !default;
+$font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace !default;
+
+// --- Type scale (compact, 13px body base) -------------------
+$text-3xs:  9.5px !default;
+$text-2xs:  10.5px !default;
+$text-xs:   11.5px !default;
+$text-sm:   12.5px !default;  // secondary / table cells
+$text-base: 13px   !default;  // body default
+$text-md:   14px   !default;
+$text-lg:   15px   !default;
+$text-xl:   17px   !default;  // card titles
+$text-2xl:  20px   !default;
+$text-3xl:  24px   !default;  // page title
+$text-4xl:  30px   !default;  // stat numbers / display
+
+// --- Font weights -------------------------------------------
+$fw-regular:  400 !default;
+$fw-medium:   500 !default;
+$fw-semibold: 600 !default;
+$fw-bold:     700 !default;
+
+// --- Line heights -------------------------------------------
+$lh-tight:  1.2  !default;
+$lh-snug:   1.35 !default;
+$lh-normal: 1.5  !default;
+
+// --- Letter spacing -----------------------------------------
+$ls-tight:  -0.01em !default;
+$ls-normal:  0      !default;
+$ls-wide:    0.04em !default;  // eyebrows / overlines
+$ls-caps:    0.06em !default;
+
+// ============================================================
+// CSS CUSTOM PROPERTIES
+// ============================================================
+:root {
+  --font-sans: #{$font-sans};
+  --font-mono: #{$font-mono};
+
+  --text-3xs:  #{$text-3xs};
+  --text-2xs:  #{$text-2xs};
+  --text-xs:   #{$text-xs};
+  --text-sm:   #{$text-sm};
+  --text-base: #{$text-base};
+  --text-md:   #{$text-md};
+  --text-lg:   #{$text-lg};
+  --text-xl:   #{$text-xl};
+  --text-2xl:  #{$text-2xl};
+  --text-3xl:  #{$text-3xl};
+  --text-4xl:  #{$text-4xl};
+
+  --fw-regular:  #{$fw-regular};
+  --fw-medium:   #{$fw-medium};
+  --fw-semibold: #{$fw-semibold};
+  --fw-bold:     #{$fw-bold};
+
+  --lh-tight:  #{$lh-tight};
+  --lh-snug:   #{$lh-snug};
+  --lh-normal: #{$lh-normal};
+
+  --ls-tight:  #{$ls-tight};
+  --ls-normal: #{$ls-normal};
+  --ls-wide:   #{$ls-wide};
+  --ls-caps:   #{$ls-caps};
+}
+
+// ============================================================
+// BASE RESET
+// ============================================================
+html { font-size: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv05" 1, "ss01" 1;
+}
+
+p {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  color: var(--text-primary);
+}
+
+// ============================================================
+// UTILITY TYPE ROLES
+// Apply as CSS classes: <h1 class="t-page">, <p class="t-body">
+// ============================================================
+.t-display {
+  font-size: var(--text-4xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+}
+
+.t-page {
+  font-size: var(--text-3xl);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--ls-tight);
+}
+
+.t-section {
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+}
+
+.t-card-title {
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  line-height: var(--lh-snug);
+}
+
+.t-body {
+  font-size: var(--text-base);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+}
+
+.t-secondary {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-snug);
+  color: var(--text-secondary);
+}
+
+.t-caption {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-snug);
+  color: var(--text-muted);
+}
+
+.t-eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-caps);
+  color: var(--text-muted);
+}
+
+.t-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}

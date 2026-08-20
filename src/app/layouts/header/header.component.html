@@ -1,0 +1,61 @@
+<div class="topbar" [class.sidebar--collapsed]="sidebarCollapsed()">
+  <div class="topbar__left">
+    <nz-icon (click)="onToggleSidebar()" nzType="menu" class="topbar__toggle-sidebar"></nz-icon>
+    <div>
+      <app-menu-search></app-menu-search>
+    </div>
+  </div>
+  <div class="ant-flex ant-flex-align-center" style="gap: 12px">
+    <label class="topbar__color-pick" for="color-pick" title="Màu thương hiệu">
+      <span class="topbar__color-dot" [style.background]="theme.brand500"></span>
+      <input id="color-pick" type="color" class="topbar__color-input" [value]="theme.brand500" (input)="onBrandColorChange($event)" />
+    </label>
+    <div
+      class="topbar__user"
+      nz-dropdown
+      [nzDropdownMenu]="userMenu"
+      nzTrigger="click"
+      nzPlacement="bottomRight"
+      [nzOverlayStyle]="{ width: '220px' }"
+      [nzVisible]="isVisibleUserMenu()"
+      (nzVisibleChange)="isVisibleUserMenu.set($event)"
+    >
+      <nz-avatar [nzText]="account()?.firstName?.charAt(0)?.toUpperCase() || 'U'" nzSize="default" class="topbar__user-avatar" />
+      <div>
+        <span class="topbar__user-name">{{ account()?.firstName || account()?.login || 'User' }}</span>
+        <span class="topbar__user-role"
+          >{{ account()?.login }} <nz-icon nzType="down" class="topbar__user-caret" [class.topbar__user-caret--open]="isVisibleUserMenu()"
+        /></span>
+      </div>
+    </div>
+
+    <nz-dropdown-menu #userMenu="nzDropdownMenu">
+      <ul nz-menu>
+        <li class="dropdown-header">
+          <nz-avatar [nzText]="account()?.firstName?.charAt(0)?.toUpperCase() || 'U'" nzSize="small" class="topbar__user-avatar" />
+          <div class="dropdown-header__info">
+            <span class="dropdown-header__name">{{ account()?.firstName || account()?.login || 'User' }}</span>
+            <span class="dropdown-header__role">{{ account()?.login }}</span>
+          </div>
+        </li>
+        <li nz-menu-item>
+          <nz-icon nzType="user" />
+          Thông tin cá nhân
+        </li>
+        <li nz-menu-item>
+          <nz-icon nzType="setting" />
+          Cài đặt tài khoản
+        </li>
+        <li nz-menu-item (click)="theme.toggleMode(); isVisibleUserMenu.set(true)">
+          <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'" />
+          Giao diện: {{ theme.mode === 'dark' ? 'Tối' : 'Sáng' }}
+        </li>
+        <li nz-menu-divider></li>
+        <li nz-menu-item class="menu-item--danger" (click)="onLogout()">
+          <nz-icon nzType="logout" />
+          Đăng xuất
+        </li>
+      </ul>
+    </nz-dropdown-menu>
+  </div>
+</div>

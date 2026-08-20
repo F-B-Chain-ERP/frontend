@@ -1,0 +1,127 @@
+.ant-tag {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 22px;
+  margin: 0 var(--space-2) var(--space-2) 0;
+  padding: 0 var(--space-3);
+  background: var(--surface-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 20px;
+  white-space: nowrap;
+  opacity: 1;
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+
+  &,
+  a,
+  a:hover {
+    color: var(--text-primary);
+  }
+
+  // ── Close icon ──────────────────────────────────────────
+  &-close-icon {
+    display: flex;
+    align-items: center;
+    margin-inline-start: var(--space-1);
+    color: var(--text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--ease);
+
+    &:hover {
+      color: var(--danger);
+    }
+  }
+
+  // ── Custom color ────────────────────────────────────────
+  &-has-color {
+    border-color: transparent;
+
+    &,
+    a,
+    a:hover,
+    .ant-tag-close-icon,
+    .ant-tag-close-icon:hover {
+      color: var(--text-inverse);
+    }
+  }
+
+  &.ant-tag-borderless {
+    border-color: transparent;
+  }
+
+  // ── Checkable ───────────────────────────────────────────
+  &-checkable {
+    background: transparent;
+    border-color: transparent;
+    cursor: pointer;
+
+    &:not(&-checked):hover {
+      color: var(--brand);
+      background: var(--brand-soft);
+    }
+
+    &:active,
+    &-checked {
+      color: var(--on-brand);
+    }
+
+    &-checked {
+      background: var(--brand);
+    }
+
+    &:active {
+      background: var(--brand-active);
+    }
+  }
+
+  &-hidden {
+    display: none;
+  }
+
+  // ── Status variants ─────────────────────────────────────
+  &-success {
+    color: var(--success);
+    background: var(--success-soft);
+    border-color: color-mix(in srgb, var(--success) 35%, transparent);
+  }
+
+  &-processing {
+    color: var(--info);
+    background: var(--info-soft);
+    border-color: color-mix(in srgb, var(--info) 35%, transparent);
+  }
+
+  &-error {
+    color: var(--danger);
+    background: var(--danger-soft);
+    border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  }
+
+  &-warning {
+    color: var(--warning);
+    background: var(--warning-soft);
+    border-color: color-mix(in srgb, var(--warning) 35%, transparent);
+  }
+
+  &-default {
+    color: var(--text-primary);
+    background: var(--surface-hover);
+    border-color: var(--border-subtle);
+  }
+
+  > .anticon + span,
+  > span + .anticon,
+  > nz-icon + span,
+  > span + nz-icon {
+    margin-inline-start: var(--space-3);
+  }
+}

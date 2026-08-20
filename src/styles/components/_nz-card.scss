@@ -1,0 +1,183 @@
+.ant-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+
+  // ── Header ──────────────────────────────────────────────
+  .ant-card-head {
+    background: transparent;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 0 var(--gutter-card);
+    min-height: unset;
+
+    .ant-card-head-wrapper {
+      align-items: center;
+    }
+
+    .ant-card-head-title {
+      padding: 12px 0;
+      font-size: var(--text-md);
+      font-weight: 600;
+      line-height: var(--lh-snug);
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ant-card-extra {
+      padding: 12px 0;
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+  }
+
+  // ── Body ────────────────────────────────────────────────
+  .ant-card-body {
+    padding: var(--gutter-card);
+    color: var(--text-primary);
+  }
+
+  // ── Cover (image at top) ────────────────────────────────
+  .ant-card-cover {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    overflow: hidden;
+
+    img {
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+  }
+
+  // ── Actions bar ─────────────────────────────────────────
+  .ant-card-actions {
+    background: var(--surface-sunken);
+    border-top: 1px solid var(--border-subtle);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
+
+    li {
+      color: var(--text-secondary);
+
+      &:not(:last-child) {
+        border-right-color: var(--border-subtle);
+      }
+
+      span {
+        color: var(--text-secondary);
+        transition: color var(--dur-fast) var(--ease);
+
+        &:hover {
+          color: var(--brand);
+        }
+      }
+    }
+  }
+
+  // ── Meta (avatar + title + description) ────────────────
+  .ant-card-meta-title {
+    font-size: var(--text-md);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+  }
+
+  .ant-card-meta-description {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+  }
+
+  // ── nzSize="small" ──────────────────────────────────────
+  &.ant-card-small {
+    .ant-card-head {
+      padding: 0 var(--space-6);
+
+      .ant-card-head-title,
+      .ant-card-extra {
+        padding: var(--space-4) 0;
+        font-size: var(--text-sm);
+      }
+    }
+
+    .ant-card-body {
+      padding: var(--space-6);
+    }
+  }
+
+  // ── [nzHoverable]="true" ────────────────────────────────
+  &.ant-card-hoverable {
+    cursor: pointer;
+
+    &:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+  }
+
+  // ── Loading skeleton ────────────────────────────────────
+  .ant-card-loading-content {
+    .ant-card-loading-block {
+      background: linear-gradient(
+        90deg,
+        var(--surface-hover) 25%,
+        var(--surface-active) 50%,
+        var(--surface-hover) 75%
+      );
+      background-size: 400% 100%;
+      border-radius: var(--radius-sm);
+      animation: card-skeleton 1.4s ease infinite;
+    }
+  }
+}
+
+// ── Skeleton animation ───────────────────────────────────
+@keyframes card-skeleton {
+  0%   { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+// Flat
+.ant-card.card-flat {
+  box-shadow: none;
+  border-color: var(--border-subtle);
+}
+
+// Elevated
+.ant-card.card-elevated {
+  box-shadow: var(--shadow-md);
+  border-color: transparent;
+}
+
+// Section card
+.ant-card.card-section {
+  .ant-card-head {
+    background: var(--surface-sunken);
+    border-bottom-color: var(--border-subtle);
+  }
+}
+
+// Accent variants
+.ant-card.card-accent-brand   { border-left: 3px solid var(--brand); }
+.ant-card.card-accent-success { border-left: 3px solid var(--success); }
+.ant-card.card-accent-warning { border-left: 3px solid var(--warning); }
+.ant-card.card-accent-danger  { border-left: 3px solid var(--danger); }
+.ant-card.card-accent-info    { border-left: 3px solid var(--info); }
+
+// Soft tint variants
+.ant-card.card-tint-success {
+  background: var(--success-soft);
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+}
+.ant-card.card-tint-warning {
+  background: var(--warning-soft);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+}
+.ant-card.card-tint-danger {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+}
+.ant-card.card-tint-info {
+  background: var(--info-soft);
+  border-color: color-mix(in srgb, var(--info) 30%, transparent);
+}

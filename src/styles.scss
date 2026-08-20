@@ -1,1 +1,5 @@
-/* You can add global styles to this file, and also import other style files */
+@use 'overlayscrollbars/styles/overlayscrollbars.css';
+@use './styles/tokens';
+@use './styles/nz-theme';
+@use './styles/components';
+@use './styles/global';

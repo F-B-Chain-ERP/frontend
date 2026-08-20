@@ -1,11 +1,24 @@
 {
-  "printWidth": 100,
   "singleQuote": true,
+  "trailingComma": "all",
+  "printWidth": 140,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "bracketSpacing": true,
+  "arrowParens": "avoid",
+  "endOfLine": "auto",
   "overrides": [
     {
       "files": "*.html",
       "options": {
         "parser": "angular"
+      }
+    },
+    {
+      "files": "*.scss",
+      "options": {
+        "parser": "scss"
       }
     }
   ]
