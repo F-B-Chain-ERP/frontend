@@ -47,13 +47,28 @@ export interface UserListResponse {
 
 export const USER_STATUS_OPTIONS = [
   { value: null, label: 'Tất cả trạng thái' },
-  { value: UserStatus.ACTIVE, label: 'Hoạt động', tagClass: 'ant-tag-success' },
-  { value: UserStatus.INACTIVE, label: 'Ngừng hoạt động', tagClass: 'ant-tag-error' },
+  { value: UserStatus.ACTIVE, label: 'Đang hoạt động', badgeClass: 'tbl-badge--success' },
+  { value: UserStatus.INACTIVE, label: 'Ngừng hoạt động', badgeClass: 'tbl-badge--danger' },
 ];
 
-export function getUserStatusMeta(status: UserStatus | number): { label: string; tagClass: string; color: string } {
+export function getUserStatusMeta(status: UserStatus | number): {
+  label: string;
+  badgeClass: string;
+  tagColor: string;
+  isActive: boolean;
+} {
   if (status === UserStatus.ACTIVE || status === 1) {
-    return { label: 'Đang hoạt động', tagClass: 'ant-tag-success', color: '#10b981' };
+    return {
+      label: 'Đang hoạt động',
+      badgeClass: 'tbl-badge tbl-badge--success',
+      tagColor: 'success',
+      isActive: true,
+    };
   }
-  return { label: 'Ngừng hoạt động', tagClass: 'ant-tag-error', color: '#ef4444' };
+  return {
+    label: 'Ngừng hoạt động',
+    badgeClass: 'tbl-badge tbl-badge--danger',
+    tagColor: 'error',
+    isActive: false,
+  };
 }

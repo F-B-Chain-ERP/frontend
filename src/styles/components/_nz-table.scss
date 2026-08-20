@@ -99,8 +99,48 @@
     &-thead > tr.thead-search > th {
       background: var(--surface-card);
       border-right: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-strong) !important;
+      padding: var(--space-2) var(--space-3);
+      font-weight: normal;
+      white-space: nowrap;
+
       &:last-child {
         border-right: none;
+      }
+
+      app-table-search-input {
+        display: block;
+        width: 100%;
+      }
+
+      app-button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+
+        .btn {
+          height: 28px !important;
+          width: 28px !important;
+          min-width: 28px !important;
+          padding: 0 !important;
+          border-radius: var(--radius-sm, 4px) !important;
+          border: 1px solid transparent !important;
+          background: transparent !important;
+          color: var(--text-secondary) !important;
+          box-shadow: none !important;
+
+          &:hover {
+            color: var(--brand) !important;
+            background: var(--brand-soft) !important;
+          }
+        }
+      }
+
+      .ant-select,
+      .ant-input-wrapper,
+      .ant-picker {
+        width: 100%;
+        font-size: var(--text-xs);
       }
     }
 
@@ -360,5 +400,72 @@
     background: var(--surface-hover);
     color: var(--text-secondary);
     &::before { background: var(--text-muted); }
+  }
+}
+
+// ── Table Actions Container & Default Buttons ────────────────
+.tbl-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  app-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    .btn {
+      height: 28px !important;
+      width: 28px !important;
+      min-width: 28px !important;
+      padding: 0 !important;
+      font-size: 14px !important;
+      border-radius: var(--radius-sm, 4px) !important;
+      border: 1px solid transparent !important;
+      background: transparent !important;
+      color: var(--text-secondary) !important;
+      box-shadow: none !important;
+
+      &:hover {
+        background: var(--surface-hover) !important;
+        color: var(--text-primary) !important;
+      }
+    }
+  }
+}
+
+.tbl-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  outline: none;
+  box-shadow: none;
+  transition: all var(--dur-fast) var(--ease);
+
+  &:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  &--view:hover,
+  &--edit:hover {
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
+
+  &--delete:hover {
+    color: var(--danger);
+    background: var(--danger-soft);
   }
 }

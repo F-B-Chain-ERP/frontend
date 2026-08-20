@@ -1,24 +1,19 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { Injectable } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
+import { delay } from 'rxjs/operators';
 import {
   User,
   UserFilter,
   UserFormDTO,
   UserListResponse,
   UserStatus,
-} from '../models/user.model';
-import { ApplicationConfigService } from '../../../../core/config/application-config.service';
+} from './user.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
-  private readonly http = inject(HttpClient);
-  private readonly appConfig = inject(ApplicationConfigService);
-
-  // In-memory data store for rich instant responsiveness & demo
+  // In-memory data store for instant responsiveness & mock data
   private mockUsers: User[] = [
     {
       id: 'USR001',
@@ -174,9 +169,9 @@ export class UserService {
       const q = filter.query.trim().toLowerCase();
       result = result.filter(
         u =>
-          u.fullName.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q) ||
-          u.username.toLowerCase().includes(q) ||
+          (u.fullName && u.fullName.toLowerCase().includes(q)) ||
+          (u.email && u.email.toLowerCase().includes(q)) ||
+          (u.username && u.username.toLowerCase().includes(q)) ||
           (u.phoneNumber && u.phoneNumber.includes(q)) ||
           (u.department && u.department.toLowerCase().includes(q)),
       );
@@ -202,14 +197,16 @@ export class UserService {
     }
 
     const total = result.length;
-    const startIndex = (filter.pageIndex - 1) * filter.pageSize;
-    const items = result.slice(startIndex, startIndex + filter.pageSize);
+    const pageIndex = filter.pageIndex && filter.pageIndex > 0 ? filter.pageIndex : 1;
+    const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 10;
+    const startIndex = (pageIndex - 1) * pageSize;
+    const items = result.slice(startIndex, startIndex + pageSize);
 
     return of({
       items,
       total,
-      pageIndex: filter.pageIndex,
-      pageSize: filter.pageSize,
+      pageIndex,
+      pageSize,
     }).pipe(delay(200));
   }
 
@@ -231,14 +228,14 @@ export class UserService {
 
     const newUser: User = {
       id: newId,
-      username: dto.username.trim(),
-      fullName: dto.fullName.trim(),
-      email: dto.email.trim().toLowerCase(),
-      phoneNumber: dto.phoneNumber?.trim() || '',
+      username: (dto.username || '').trim(),
+      fullName: (dto.fullName || '').trim(),
+      email: (dto.email || '').trim().toLowerCase(),
+      phoneNumber: (dto.phoneNumber || '').trim(),
       status: Number(dto.status) as UserStatus,
-      department: dto.department?.trim() || 'Phòng ban chung',
-      roles: dto.roles?.length ? dto.roles : ['Người dùng hệ thống'],
-      note: dto.note?.trim() || '',
+      department: (dto.department || '').trim() || 'Phòng Tài chính - Kế toán',
+      roles: dto.roles && dto.roles.length ? dto.roles : ['Người dùng hệ thống'],
+      note: (dto.note || '').trim(),
       createdAt: formattedDate,
       updatedAt: formattedDate,
     };
@@ -253,7 +250,7 @@ export class UserService {
   updateUser(id: string | number, dto: Partial<UserFormDTO>): Observable<User> {
     const index = this.mockUsers.findIndex(u => String(u.id) === String(id));
     if (index === -1) {
-      throw new Error('Người dùng không tồn tại');
+      return throwError(() => new Error('Người dùng không tồn tại'));
     }
 
     const now = new Date();
@@ -283,7 +280,7 @@ export class UserService {
   toggleStatus(id: string | number): Observable<User> {
     const user = this.mockUsers.find(u => String(u.id) === String(id));
     if (!user) {
-      throw new Error('Người dùng không tồn tại');
+      return throwError(() => new Error('Người dùng không tồn tại'));
     }
     const newStatus = user.status === UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE;
     return this.updateUser(id, { status: newStatus });

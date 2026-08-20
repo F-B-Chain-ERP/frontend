@@ -1,11 +1,13 @@
 <nz-card [nzTitle]="'Mode/Theme'" style="margin-bottom: 16px">
   <div class="ant-flex">
-    <button class="topbar__icon-btn" (click)="theme.toggleMode()" [title]="theme.mode === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'">
+    <button class="topbar__icon-btn" (click)="theme.toggleMode()"
+      [title]="theme.mode === 'dark' ? 'Chế độ sáng' : 'Chế độ tối'">
       {{ theme.mode === 'dark' ? '☀' : '🌙' }}
     </button>
     <label class="topbar__color-pick" for="color-pick" title="Màu thương hiệu" style="margin-bottom: 24px">
       <span class="topbar__color-dot" [style.background]="theme.brand500"></span>
-      <input id="color-pick" type="color" class="topbar__color-input" [value]="theme.brand500" (input)="onBrandColorChange($event)" />
+      <input id="color-pick" type="color" class="topbar__color-input" [value]="theme.brand500"
+        (input)="onBrandColorChange($event)" />
     </label>
   </div>
 </nz-card>
@@ -103,7 +105,7 @@
   <div nz-row [nzGutter]="[16, 16]" style="margin-bottom: 24px">
     <span>Default</span>
     <div nz-col nzSpan="24">
-      <input nz-input placeholder="Default input"/>
+      <input nz-input placeholder="Default input" />
     </div>
   </div>
   <div nz-row [nzGutter]="[16, 16]" style="margin-bottom: 24px">
@@ -124,15 +126,15 @@
     </div>
     <div nz-col nzSpan="7">
       <span>small</span>
-      <input nz-input placeholder="Small input" nzSize="small"/>
+      <input nz-input placeholder="Small input" nzSize="small" />
     </div>
     <div nz-col nzSpan="7">
       <span>default</span>
-      <input nz-input placeholder="Default input" nzSize="default"/>
+      <input nz-input placeholder="Default input" nzSize="default" />
     </div>
     <div nz-col nzSpan="7">
       <span>large</span>
-      <input nz-input placeholder="Large input" nzSize="large"/>
+      <input nz-input placeholder="Large input" nzSize="large" />
     </div>
   </div>
   <div nz-row [nzGutter]="[16, 16]" style="margin-bottom: 24px">
@@ -140,7 +142,7 @@
     <div nz-col nzSpan="24">
       <nz-input-wrapper>
         <nz-icon nzInputPrefix nzType="user" />
-        <input nz-input/>
+        <input nz-input />
       </nz-input-wrapper>
     </div>
   </div>
@@ -170,17 +172,10 @@
   <div nz-row [nzGutter]="[16, 16]" style="margin-bottom: 24px">
     <span>Multiple selection</span>
     <div nz-col nzSpan="24">
-      <nz-select
-        [nzMaxTagCount]="5"
-        [nzMaxTagPlaceholder]="tagPlaceHolder"
-        [nzDropdownRender]="selectAllOptionRender"
-        nzMode="multiple"
-        nzAllowClear
-        nzPlaceHolder="Please select"
-        [(ngModel)]="listOfSelectedValue"
-      >
+      <nz-select [nzMaxTagCount]="5" [nzMaxTagPlaceholder]="tagPlaceHolder" [nzDropdownRender]="selectAllOptionRender"
+        nzMode="multiple" nzAllowClear nzPlaceHolder="Please select" [(ngModel)]="listOfSelectedValue">
         @for (item of listOfOption; track item) {
-          <nz-option [nzLabel]="item" [nzValue]="item" />
+        <nz-option [nzLabel]="item" [nzValue]="item" />
         }
       </nz-select>
       <ng-template #tagPlaceHolder let-selectedList>
@@ -190,13 +185,8 @@
       </ng-template>
       <ng-template #selectAllOptionRender>
         <label class="cb custom-select-all-option" for="cb-select-all-option">
-          <input
-            id="cb-select-all-option"
-            type="checkbox"
-            [checked]="isAllOptionSelected()"
-            [indeterminate]="isOptionPartiallySelected()"
-            (change)="toggleSelectAllOption()"
-          />
+          <input id="cb-select-all-option" type="checkbox" [checked]="isAllOptionSelected()"
+            [indeterminate]="isOptionPartiallySelected()" (change)="toggleSelectAllOption()" />
           <span class="cb__box"></span>
           <span>Chọn tất cả</span>
         </label>
@@ -224,13 +214,15 @@
   <div nz-row [nzGutter]="[16, 16]" style="margin-bottom: 24px">
     <span>Default</span>
     <div nz-col nzSpan="24">
-      <nz-range-picker [nzPlaceHolder]="['Ngày bắt đầu', 'Ngày kết thúc']" style="max-width: 380px; width: 100%;"></nz-range-picker>
+      <nz-range-picker [nzPlaceHolder]="['Ngày bắt đầu', 'Ngày kết thúc']"
+        style="max-width: 380px; width: 100%;"></nz-range-picker>
     </div>
   </div>
   <div nz-row [nzGutter]="[16, 16]" style="margin-bottom: 24px">
     <span>Disabled</span>
     <div nz-col nzSpan="24">
-      <nz-range-picker [nzDisabled]="true" [nzPlaceHolder]="['Ngày bắt đầu', 'Ngày kết thúc']" style="max-width: 380px; width: 100%;"></nz-range-picker>
+      <nz-range-picker [nzDisabled]="true" [nzPlaceHolder]="['Ngày bắt đầu', 'Ngày kết thúc']"
+        style="max-width: 380px; width: 100%;"></nz-range-picker>
     </div>
   </div>
 </nz-card>
@@ -250,7 +242,8 @@
         <span>Checked</span>
       </label>
       <label class="cb" for="cb-indeterminate">
-        <input id="cb-indeterminate" type="checkbox" #cbIndet [ngModel]="false" (click)="cbIndet.indeterminate = true" />
+        <input id="cb-indeterminate" type="checkbox" #cbIndet [ngModel]="false"
+          (click)="cbIndet.indeterminate = true" />
         <span class="cb__box"></span>
         <span>Indeterminate</span>
       </label>
@@ -392,72 +385,97 @@
       </div>
       <div nz-col nzSpan="12">
         <span class="form-label required">Ngày gia nhập</span>
-        <nz-date-picker formControlName="joiningDate" nzPlaceHolder="Chọn ngày gia nhập" style="width: 100%"></nz-date-picker>
+        <nz-date-picker formControlName="joiningDate" nzPlaceHolder="Chọn ngày gia nhập"
+          style="width: 100%"></nz-date-picker>
       </div>
     </div>
     <app-button type="submit">Submit</app-button>
   </form>
 </nz-card>
 
-<nz-card [nzTitle]="'Table'" style="margin-bottom: 16px;">
+<nz-card [nzTitle]="'Table (Hỗ trợ lọc theo từng cột — thead-search)'" style="margin-bottom: 16px;">
   @if (setOfCheckedKeys.size > 0) {
-    <div style="margin-bottom: 8px; font-size: var(--text-sm); color: var(--text-secondary);">
-      Đã chọn <strong style="color: var(--brand);">{{ setOfCheckedKeys.size }}</strong> / {{ listOfData.length }} bản ghi
-    </div>
+  <div style="margin-bottom: 8px; font-size: var(--text-sm); color: var(--text-secondary);">
+    Đã chọn <strong style="color: var(--brand);">{{ setOfCheckedKeys.size }}</strong> / {{ filteredListOfData.length }} bản ghi
+  </div>
   }
 
-  <nz-table
-    #tbl
-    [nzData]="listOfData"
-    nzSize="middle"
-    [nzShowPagination]="false"
-    [nzScroll]="{ x: '1000px' }"
-  >
+  <nz-table #tbl [nzData]="filteredListOfData" nzSize="middle" [nzShowPagination]="false" [nzScroll]="{ x: '1100px' }">
     <thead>
       <tr>
         <th scope='col' nzWidth="48px" nzAlign="center">
           <label class="cb" for="cb-check-all">
-            <input
-              id="cb-check-all"
-              #checkAllInput
-              type="checkbox"
-              [checked]="allChecked"
-              [indeterminate]="indeterminate"
-              (change)="onCheckAll(checkAllInput.checked)"
-            />
+            <input id="cb-check-all" #checkAllInput type="checkbox" [checked]="allChecked"
+              [indeterminate]="indeterminate" (change)="onCheckAll(checkAllInput.checked)" />
             <span class="cb__box"></span>
           </label>
         </th>
-        <th scope='col' nzWidth="140px" nzAlign="center" [nzSortFn]="sortKeyFn">Mã nhân viên</th>
-        <th scope='col' nzWidth="240px" nzAlign="left" [nzSortFn]="sortNameFn">Tên nhân viên</th>
+        <th scope='col' nzWidth="130px" nzAlign="center" [nzSortFn]="sortKeyFn">Mã nhân viên</th>
+        <th scope='col' nzWidth="220px" nzAlign="left" [nzSortFn]="sortNameFn">Tên nhân viên</th>
         <th scope='col' nzWidth="100px" nzAlign="center" [nzSortFn]="sortAgeFn">Tuổi</th>
-        <th scope='col' nzWidth="360px" nzAlign="left" [nzSortFn]="sortAddressFn">Địa chỉ</th>
-        <th scope='col' nzWidth="120px" nzAlign="center" nzRight>Thao tác</th>
+        <th scope='col' nzWidth="240px" nzAlign="left" [nzSortFn]="sortDeptFn">Phòng ban</th>
+        <th scope='col' nzWidth="220px" nzAlign="left" [nzSortFn]="sortAddressFn">Địa chỉ</th>
+        <th scope='col' nzWidth="110px" nzAlign="center">Thao tác</th>
+      </tr>
+      <tr class="thead-search">
+        <th></th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('key')" (valueChange)="searchByField('key', $event)" placeholder="Tìm mã NV"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('name')" (valueChange)="searchByField('name', $event)" placeholder="Tìm tên NV"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('age')" (valueChange)="searchByField('age', $event)" placeholder="Tuổi"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('department')"
+            (valueChange)="searchByField('department', $event)"
+            placeholder="Tất cả phòng ban"
+            type="option"
+            labelField="label"
+            valueField="value"
+            [options]="departmentFilterOptions"
+          ></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('address')" (valueChange)="searchByField('address', $event)" placeholder="Tìm địa chỉ"></app-table-search-input>
+        </th>
+        <th nzAlign="center">
+          <app-button iconOnly="reload" nz-tooltip="Đặt lại bộ lọc cột" (click)="resetAllFieldFilter()" variant="ghost"></app-button>
+        </th>
       </tr>
     </thead>
     <tbody>
       @for (row of tbl.data; track row.key) {
-        <tr>
-          <td nzAlign="center">
-            <label class="cb" [for]="'cb-row-' + row.key">
-              <input
-                [id]="'cb-row-' + row.key"
-                #rowInput
-                type="checkbox"
-                [checked]="setOfCheckedKeys.has(row.key)"
-                (change)="onCheckRow(row.key, rowInput.checked)"
-              />
-              <span class="cb__box"></span>
-            </label>
-          </td>
-          <td nzAlign="center" class="font-mono text-muted">{{ row.key }}</td>
-          <td nzAlign="left"><strong>{{ row.name }}</strong></td>
-          <td nzAlign="center">{{ row.age }}</td>
-          <td nzAlign="left">{{ row.address }}</td>
-          <td nzAlign="center" nzRight>
-            <app-button variant="ghost">Xem</app-button>
-          </td>
-        </tr>
+      <tr>
+        <td nzAlign="center">
+          <label class="cb" [for]="'cb-row-' + row.key">
+            <input [id]="'cb-row-' + row.key" #rowInput type="checkbox" [checked]="setOfCheckedKeys.has(row.key)"
+              (change)="onCheckRow(row.key, rowInput.checked)" />
+            <span class="cb__box"></span>
+          </label>
+        </td>
+        <td nzAlign="center" class="font-mono text-muted">{{ row.key }}</td>
+        <td nzAlign="left"><strong>{{ row.name }}</strong></td>
+        <td nzAlign="center">{{ row.age }}</td>
+        <td nzAlign="left">{{ row.department }}</td>
+        <td nzAlign="left">{{ row.address }}</td>
+        <td nzAlign="center">
+          <div class="tbl-actions">
+            <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết"></app-button>
+            <app-button variant="ghost" iconOnly="edit" nz-tooltip nzTooltipTitle="Chỉnh sửa"></app-button>
+            <app-button variant="ghost" iconOnly="delete" nz-tooltip nzTooltipTitle="Xóa"></app-button>
+          </div>
+        </td>
+      </tr>
+      } @empty {
+      <tr>
+        <td colspan="7" style="text-align: center; padding: 24px 0; color: var(--text-muted);">
+          Không tìm thấy dữ liệu phù hợp với bộ lọc cột
+        </td>
+      </tr>
       }
     </tbody>
   </nz-table>
@@ -466,11 +484,7 @@
 <nz-card [nzTitle]="'Pagination'" style="margin-bottom: 16px;">
   <div nz-row [nzGutter]="[0, 24]">
     <div nz-col nzSpan="24">
-      <nz-pagination
-        [(nzPageIndex)]="pageIndex"
-        [(nzPageSize)]="pageSize"
-        [nzTotal]="pageTotal"
-      />
+      <nz-pagination [(nzPageIndex)]="pageIndex" [(nzPageSize)]="pageSize" [nzTotal]="pageTotal" />
     </div>
   </div>
 </nz-card>
@@ -485,7 +499,8 @@
       </div>
     </div>
     <div nz-col nzSpan="24" style="margin-top: 16px;">
-      <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 8px;">Service modal (confirm types)</p>
+      <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 8px;">Service modal (confirm
+        types)</p>
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <app-button variant="secondary" (click)="showConfirm()">Confirm</app-button>
         <app-button variant="secondary" (click)="showInfo()">Info</app-button>
@@ -503,26 +518,28 @@
   <div nz-row [nzGutter]="[24, 24]">
     <div nz-col nzSpan="24">
       <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 16px;">
-        Mẫu component thẻ sản phẩm & đồ uống chuẩn hóa theo Design Tokens (sử dụng vector minh họa, không load ảnh ngoài):
+        Mẫu component thẻ sản phẩm & đồ uống chuẩn hóa theo Design Tokens (sử dụng vector minh họa, không load ảnh
+        ngoài):
       </p>
 
       <div style="display: flex; justify-content: flex-start;">
-        <nz-card
-          [nzHoverable]="true"
-          [nzCover]="specimenCoverTpl"
+        <nz-card [nzHoverable]="true" [nzCover]="specimenCoverTpl"
           style="width: 320px; max-width: 100%; border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm);">
-          
+
           <ng-template #specimenCoverTpl>
-            <div style="height: 150px; background: var(--brand-soft); display: flex; align-items: center; justify-content: center; position: relative;">
+            <div
+              style="height: 150px; background: var(--brand-soft); display: flex; align-items: center; justify-content: center; position: relative;">
               <nz-icon nzType="coffee" style="font-size: 52px; color: var(--brand);" />
-              <span style="position: absolute; top: 12px; left: 12px; background: var(--brand); color: #fff; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; letter-spacing: var(--ls-wide);">
+              <span
+                style="position: absolute; top: 12px; left: 12px; background: var(--brand); color: #fff; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; letter-spacing: var(--ls-wide);">
                 SIGNATURE
               </span>
             </div>
           </ng-template>
 
           <div style="display: flex; flex-direction: column; gap: 4px;">
-            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--ls-wide);">
+            <span
+              style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--ls-wide);">
               Cà phê truyền thống
             </span>
             <h4 style="font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 2px;">
@@ -532,12 +549,17 @@
               Lớp kem béo mằn mặn hòa quyện cùng vị cà phê Robusta rang mộc đậm đà.
             </p>
 
-            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border-subtle); margin-top: auto;">
+            <div
+              style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border-subtle); margin-top: auto;">
               <div style="display: flex; flex-direction: column;">
-                <span style="font-size: var(--text-lg); font-weight: 700; color: var(--brand); line-height: 1.1;">38.000 ₫</span>
-                <span style="font-size: 11px; color: var(--text-muted); text-decoration: line-through; margin-top: 2px;">45.000 ₫</span>
+                <span style="font-size: var(--text-lg); font-weight: 700; color: var(--brand); line-height: 1.1;">38.000
+                  ₫</span>
+                <span
+                  style="font-size: 11px; color: var(--text-muted); text-decoration: line-through; margin-top: 2px;">45.000
+                  ₫</span>
               </div>
-              <app-button variant="primary" leftIcon="plus" [rounded]="true" (click)="toastService.success('Đã thêm Cà Phê Muối vào đơn hàng!')">
+              <app-button variant="primary" leftIcon="plus" [rounded]="true"
+                (click)="toastService.success('Đã thêm Cà Phê Muối vào đơn hàng!')">
                 Chọn món
               </app-button>
             </div>
@@ -554,9 +576,11 @@
     <!-- Overflow Tags -->
     <div nz-col [nzXs]="24" [nzMd]="12">
       <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
-        1. Overflow Tags (<span style="font-family: monospace;">&lt;app-overflow-tags&gt;</span> - Tự động rút gọn khi quá dài)
+        1. Overflow Tags (<span style="font-family: monospace;">&lt;app-overflow-tags&gt;</span> - Tự động rút gọn khi
+        quá dài)
       </h4>
-      <div style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); max-width: 420px;">
+      <div
+        style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); max-width: 420px;">
         <app-overflow-tags [items]="overflowTagsDemo"></app-overflow-tags>
       </div>
     </div>
@@ -564,7 +588,8 @@
     <!-- Status Badges & Tags -->
     <div nz-col [nzXs]="24" [nzMd]="12">
       <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
-        2. Status Badges (<span style="font-family: monospace;">.tbl-badge</span>) & Standard Tags (<span style="font-family: monospace;">nz-tag</span>)
+        2. Status Badges (<span style="font-family: monospace;">.tbl-badge</span>) & Standard Tags (<span
+          style="font-family: monospace;">nz-tag</span>)
       </h4>
       <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;">
         <span class="tbl-badge tbl-badge--success">
@@ -592,7 +617,8 @@
 
 <!-- ── Breadcrumbs Showcase ── -->
 <nz-card [nzTitle]="'Breadcrumbs Navigation (<app-breadcrumbs>)'" style="margin-bottom: 16px;">
-  <div style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+  <div
+    style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
     <app-breadcrumbs></app-breadcrumbs>
   </div>
 </nz-card>
@@ -647,10 +673,14 @@
         3. Alert Banners (<span style="font-family: monospace;">nz-alert</span>)
       </h4>
       <div style="display: flex; flex-direction: column; gap: 12px;">
-        <nz-alert nzType="info" nzMessage="Thông báo hệ thống: Đã cập nhật bảng giá hạt cà phê mùa vụ 2026." nzShowIcon></nz-alert>
-        <nz-alert nzType="success" nzMessage="Thao tác thành công: Đơn hàng #ERP-8921 đã được ghi nhận và in vé." nzShowIcon></nz-alert>
-        <nz-alert nzType="warning" nzMessage="Cảnh báo: Nguyên liệu 'Hạt sen Huế' trong kho sắp hết (còn 2 gói)." nzShowIcon></nz-alert>
-        <nz-alert nzType="error" nzMessage="Lỗi kết nối: Không thể đồng bộ máy quét mã QR VNPAY tại quầy số 2." nzShowIcon></nz-alert>
+        <nz-alert nzType="info" nzMessage="Thông báo hệ thống: Đã cập nhật bảng giá hạt cà phê mùa vụ 2026."
+          nzShowIcon></nz-alert>
+        <nz-alert nzType="success" nzMessage="Thao tác thành công: Đơn hàng #ERP-8921 đã được ghi nhận và in vé."
+          nzShowIcon></nz-alert>
+        <nz-alert nzType="warning" nzMessage="Cảnh báo: Nguyên liệu 'Hạt sen Huế' trong kho sắp hết (còn 2 gói)."
+          nzShowIcon></nz-alert>
+        <nz-alert nzType="error" nzMessage="Lỗi kết nối: Không thể đồng bộ máy quét mã QR VNPAY tại quầy số 2."
+          nzShowIcon></nz-alert>
       </div>
     </div>
   </div>
@@ -664,11 +694,9 @@
       <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
         1. Phân trang tiếng Việt chuẩn ERP (<span style="font-family: monospace;">&lt;app-pagination&gt;</span>)
       </h4>
-      <div style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-        <app-pagination
-          [(pageIndex)]="customPageIndex"
-          [(pageSize)]="customPageSize"
-          [total]="customTotal"
+      <div
+        style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+        <app-pagination [(pageIndex)]="customPageIndex" [(pageSize)]="customPageSize" [total]="customTotal"
           [pageSizeOptions]="[10, 20, 50, 100]">
         </app-pagination>
       </div>
@@ -679,11 +707,9 @@
       <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
         2. Ô tìm kiếm bảng dữ liệu (<span style="font-family: monospace;">&lt;app-table-search-input&gt;</span>)
       </h4>
-      <div style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
-        <app-table-search-input
-          [value]="tableSearchText"
-          (valueChange)="tableSearchText = $any($event)"
-          [type]="'text'"
+      <div
+        style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+        <app-table-search-input [value]="tableSearchText" (valueChange)="tableSearchText = $any($event)" [type]="'text'"
           placeholder="Tìm kiếm nhanh trong bảng...">
         </app-table-search-input>
       </div>
@@ -692,27 +718,16 @@
 </nz-card>
 
 <!-- ── Default footer modal ── -->
-<app-modal
-  [visible]="isBasicVisible()"
-  (visibleChange)="isBasicVisible.set($event)"
-  [title]="'Default Footer Modal'"
-  [okLoading]="isOkLoading()"
-  okText="Xác nhận"
-  cancelText="Hủy"
-  (okEmit)="handleOk()"
->
+<app-modal [visible]="isBasicVisible()" (visibleChange)="isBasicVisible.set($event)" [title]="'Default Footer Modal'"
+  [okLoading]="isOkLoading()" okText="Xác nhận" cancelText="Hủy" (okEmit)="handleOk()">
   <p>Some contents...</p>
   <p>Some contents...</p>
   <p>Some contents...</p>
 </app-modal>
 
 <!-- ── Custom footer modal ── -->
-<app-modal
-  [visible]="isCustomVisible()"
-  (visibleChange)="isCustomVisible.set($event)"
-  [footer]="CustomFooter"
-  [title]="'Custom Footer Modal'"
->
+<app-modal [visible]="isCustomVisible()" (visibleChange)="isCustomVisible.set($event)" [footer]="CustomFooter"
+  [title]="'Custom Footer Modal'">
   <p>Some contents...</p>
   <p>Some contents...</p>
   <p>Some contents...</p>
