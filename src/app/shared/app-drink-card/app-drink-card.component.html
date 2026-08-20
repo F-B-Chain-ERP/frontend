@@ -1,0 +1,43 @@
+<div class="drink-card" (click)="onCardClick()">
+  <!-- ── 1. Drink Image Area (Primary visual focus) ── -->
+  <div class="drink-card__media">
+    <img
+      [src]="item.imageUrl"
+      [alt]="item.name"
+      class="drink-card__img"
+      loading="lazy"
+    />
+    @if (item.badge) {
+      <span class="drink-card__badge drink-card__badge--{{ item.badgeType || 'signature' }}">
+        {{ item.badge }}
+      </span>
+    }
+  </div>
+
+  <!-- ── 2. Information (Clean & Minimal) ── -->
+  <div class="drink-card__body">
+    <span class="drink-card__category">{{ item.categoryName }}</span>
+    <h3 class="drink-card__title" [title]="item.name">{{ item.name }}</h3>
+    <p class="drink-card__desc">{{ item.description }}</p>
+
+    <!-- ── 3. Price & Action ── -->
+    <div class="drink-card__footer">
+      <div class="drink-card__price-box">
+        <span class="drink-card__price">{{ formatPrice(item.price) }}</span>
+        @if (item.originalPrice) {
+          <span class="drink-card__original-price">{{ formatPrice(item.originalPrice) }}</span>
+        }
+      </div>
+
+      <div class="drink-card__action-btn" (click)="$event.stopPropagation()">
+        <app-button
+          variant="primary"
+          leftIcon="plus"
+          [rounded]="true"
+          (click)="onAddClick()">
+          Chọn món
+        </app-button>
+      </div>
+    </div>
+  </div>
+</div>

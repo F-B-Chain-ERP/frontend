@@ -1,0 +1,233 @@
+<div class="store-page">
+  <!-- ── 1. Page Header (Tiêu đề & Hành động chuẩn ERP) ──────────────── -->
+  <div class="page__header">
+    <div>
+      <h1 class="page__header__title">Thực Đơn Cà Phê & Đồ Uống</h1>
+      <p class="page__header__description">
+        Danh sách đồ uống pha chế thủ công, cà phê hạt rang xay nguyên chất và bánh ngọt phục vụ tại chỗ & mang đi
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="shopping-cart" (click)="openCartSummary()">
+        Giỏ hàng ({{ cartItems().length }} món • {{ formatPrice(cartTotal()) }})
+      </app-button>
+      <app-button variant="primary" leftIcon="plus" (click)="onAddNewDrink()">
+        Thêm món mới vào Menu
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Category Pills (Lọc nhanh theo phân loại đồ uống) ────────── -->
+  <div class="category-bar">
+    @for (cat of categories; track cat.id) {
+      <button
+        class="category-bar__pill"
+        [class.category-bar__pill--active]="selectedCategoryId() === cat.id"
+        (click)="onSelectCategory(cat.id)">
+        <span>{{ cat.name }}</span>
+        <span class="category-bar__count">{{ cat.count }}</span>
+      </button>
+    }
+  </div>
+
+  <!-- ── 3. Search & Filter Bar ─────────────────────────────────────── -->
+  <div class="store-filter-card">
+    <div class="store-filter-card__search">
+      <nz-input-wrapper [nzAllowClear]="true">
+        <nz-icon nzInputPrefix nzType="search" />
+        <input
+          nz-input
+          placeholder="Tìm kiếm cà phê, trà trái cây, sinh tố theo tên hoặc mô tả..."
+          [(ngModel)]="searchQuery"
+          (ngModelChange)="onFilterChange()"
+        />
+      </nz-input-wrapper>
+    </div>
+
+    <div class="store-filter-card__meta">
+      Hiển thị <strong>{{ filteredDrinks().length }}</strong> món đồ uống
+    </div>
+
+    <div class="store-filter-card__sort">
+      <nz-select [(ngModel)]="sortBy" (ngModelChange)="onFilterChange()" style="width: 100%;">
+        <nz-option nzValue="featured" nzLabel="Mặc định: Phổ biến"></nz-option>
+        <nz-option nzValue="price-asc" nzLabel="Giá: Thấp đến Cao"></nz-option>
+        <nz-option nzValue="price-desc" nzLabel="Giá: Cao đến Thấp"></nz-option>
+      </nz-select>
+    </div>
+  </div>
+
+  <!-- ── 4. Beverage Cards Grid (Ng-Zorro <nz-card> Customized) ────── -->
+  <div class="drinks-grid">
+    @for (drink of filteredDrinks(); track drink.id) {
+      <nz-card
+        [nzHoverable]="true"
+        [nzCover]="coverTpl"
+        class="store-drink-card"
+        (click)="openCustomizeModal(drink)">
+        
+        <!-- Image Cover Template -->
+        <ng-template #coverTpl>
+          <div class="store-drink-card__cover">
+            <img
+              [src]="drink.imageUrl"
+              [alt]="drink.name"
+              loading="lazy"
+              class="store-drink-card__img"
+            />
+            @if (drink.badge) {
+              <span class="store-drink-card__badge store-drink-card__badge--{{ drink.badgeType || 'signature' }}">
+                {{ drink.badge }}
+              </span>
+            }
+          </div>
+        </ng-template>
+
+        <!-- Information & Actions -->
+        <div class="store-drink-card__content">
+          <span class="store-drink-card__category">{{ drink.categoryName }}</span>
+          <h3 class="store-drink-card__title" [title]="drink.name">{{ drink.name }}</h3>
+          <p class="store-drink-card__desc">{{ drink.description }}</p>
+
+          <div class="store-drink-card__footer">
+            <div class="store-drink-card__price-box">
+              <span class="store-drink-card__price">{{ formatPrice(drink.price) }}</span>
+              @if (drink.originalPrice) {
+                <span class="store-drink-card__original-price">{{ formatPrice(drink.originalPrice) }}</span>
+              }
+            </div>
+
+            <div (click)="$event.stopPropagation()">
+              <app-button
+                variant="primary"
+                leftIcon="plus"
+                [rounded]="true"
+                (click)="quickAddToCart(drink)">
+                Chọn món
+              </app-button>
+            </div>
+          </div>
+        </div>
+      </nz-card>
+    }
+  </div>
+
+  <!-- ── 5. Customize Drink Modal (Tùy biến Size, Đường, Đá, Topping) ── -->
+  <app-modal
+    [visible]="isModalVisible()"
+    (visibleChange)="isModalVisible.set($event)"
+    [title]="selectedDrink() ? 'Tùy chỉnh: ' + selectedDrink()!.name : 'Chọn món'"
+    [footer]="customFooterTemplate"
+    size="md">
+    @if (selectedDrink(); as drink) {
+      <div class="custom-modal-body">
+        <!-- Image & Basic info -->
+        <div class="custom-modal-body__img-col">
+          <img [src]="drink.imageUrl" [alt]="drink.name" class="custom-modal-body__img" />
+          <p class="custom-modal-body__desc">{{ drink.description }}</p>
+        </div>
+
+        <!-- Custom Options -->
+        <div class="custom-modal-body__options-col">
+          <!-- Size Selector -->
+          <div class="option-group">
+            <span class="option-group__label">1. Kích cỡ (Size)</span>
+            <div class="option-group__items">
+              @for (size of sizeOptions; track size.id) {
+                <label class="cb cb--pill" [for]="'size-' + size.id">
+                  <input
+                    [id]="'size-' + size.id"
+                    type="radio"
+                    name="drink-size"
+                    [value]="size.id"
+                    [checked]="selectedSize() === size.id"
+                    (change)="selectedSize.set(size.id)"
+                  />
+                  <span class="cb__box"></span>
+                  <span>{{ size.label }} (+{{ formatPrice(size.extraPrice) }})</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Sugar Selector -->
+          <div class="option-group">
+            <span class="option-group__label">2. Lượng đường</span>
+            <div class="option-group__items">
+              @for (s of sugarOptions; track s) {
+                <label class="cb cb--pill" [for]="'sugar-' + s">
+                  <input
+                    [id]="'sugar-' + s"
+                    type="radio"
+                    name="drink-sugar"
+                    [value]="s"
+                    [checked]="selectedSugar() === s"
+                    (change)="selectedSugar.set(s)"
+                  />
+                  <span class="cb__box"></span>
+                  <span>{{ s }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Ice Selector -->
+          <div class="option-group">
+            <span class="option-group__label">3. Lượng đá</span>
+            <div class="option-group__items">
+              @for (ice of iceOptions; track ice) {
+                <label class="cb cb--pill" [for]="'ice-' + ice">
+                  <input
+                    [id]="'ice-' + ice"
+                    type="radio"
+                    name="drink-ice"
+                    [value]="ice"
+                    [checked]="selectedIce() === ice"
+                    (change)="selectedIce.set(ice)"
+                  />
+                  <span class="cb__box"></span>
+                  <span>{{ ice }}</span>
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Topping Options -->
+          <div class="option-group">
+            <span class="option-group__label">4. Thêm Topping</span>
+            <div class="option-group__items">
+              @for (t of toppingOptions; track t.id) {
+                <label class="cb" [for]="'top-' + t.id">
+                  <input
+                    [id]="'top-' + t.id"
+                    type="checkbox"
+                    [checked]="selectedToppingIds().has(t.id)"
+                    (change)="toggleTopping(t.id)"
+                  />
+                  <span class="cb__box"></span>
+                  <span>{{ t.label }} (+{{ formatPrice(t.price) }})</span>
+                </label>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </app-modal>
+
+  <!-- Modal Footer Template -->
+  <ng-template #customFooterTemplate>
+    <div class="modal-price-footer">
+      <div class="modal-price-footer__total">
+        <span class="modal-price-footer__label">Tổng cộng:</span>
+        <span class="modal-price-footer__amount">{{ formatPrice(computeCurrentModalTotal()) }}</span>
+      </div>
+      <div class="modal-price-footer__btns">
+        <app-button variant="secondary" (click)="isModalVisible.set(false)">Hủy</app-button>
+        <app-button variant="primary" leftIcon="shopping-cart" (click)="confirmAddToCart()">
+          Thêm vào hóa đơn
+        </app-button>
+      </div>
+    </div>
+  </ng-template>
+</div>

@@ -18,6 +18,17 @@ import { LoginService } from '../login/login.service';
 import { NzTooltipDirective } from 'ng-zorro-antd/tooltip';
 import { createSortFn } from '../../shared/helpers/table.helper';
 
+import { DrinkItem } from '../../shared/app-drink-card/app-drink-card.component';
+import { AppOverflowTagsComponent } from '../../shared/app-overflow-tags/app-overflow-tags.component';
+import { AppPaginationComponent } from '../../shared/app-pagination/app-pagination.component';
+import { AppBreadcrumbsComponent } from '../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { BreadcrumbsService } from '../../shared/app-breadcrumbs/breadcrumbs.service';
+import { AppTableSearchInputComponent } from '../../shared/app-table-search-input/app-table-search-input.component';
+import { NzTabsModule, NzTabsComponent, NzTabComponent } from 'ng-zorro-antd/tabs';
+import { NzSwitchComponent } from 'ng-zorro-antd/switch';
+import { NzTagComponent } from 'ng-zorro-antd/tag';
+import { NzAlertComponent } from 'ng-zorro-antd/alert';
+
 function alphabet(): string[] {
   const children: string[] = [];
   for (let i = 10; i < 36; i++) {
@@ -51,12 +62,22 @@ function alphabet(): string[] {
     NzModalModule,
     AppModalComponent,
     NzTooltipDirective,
+    AppOverflowTagsComponent,
+    AppPaginationComponent,
+    AppBreadcrumbsComponent,
+    AppTableSearchInputComponent,
+    NzTabsModule,
+    NzTabsComponent,
+    NzTabComponent,
+    NzSwitchComponent,
+    NzTagComponent,
+    NzAlertComponent,
   ],
   standalone: true,
 })
 export class UiKitComponent {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly toastService = inject(AppNotificationService);
+  readonly toastService = inject(AppNotificationService);
   private readonly router = inject(Router);
   private readonly loginService = inject(LoginService);
 
@@ -254,5 +275,50 @@ export class UiKitComponent {
   sortKeyFn = createSortFn('key');
   sortAgeFn = createSortFn('age');
   sortAddressFn = createSortFn('address');
+
+  // ── New Components Demo State ──────────────────────────
+  switchValue = true;
+  switchDisabled = true;
+
+  customPageIndex = 1;
+  customPageSize = 10;
+  customTotal = 148;
+
+  tableSearchText = '';
+  tableSearchType = 'text';
+
+  readonly overflowTagsDemo = [
+    'Cà phê Phin Robusta',
+    'Arabica Cầu Đất',
+    'Matcha Uji Kyoto',
+    'Trà Oolong Than Củi',
+    'Kem Phô Mai Cheese',
+    'Trân Châu Hoàng Kim',
+    'Hạt Sen Huế',
+    'Thạch Đào Giòn',
+    'Sốt Caramel Nướng',
+    'Sữa Tươi Thanh Trùng',
+  ];
+
+  readonly demoDrinkItem: DrinkItem = {
+    id: 'demo-1',
+    name: 'Cà Phê Muối Đặc Sản Xứ Huế',
+    category: 'traditional-coffee',
+    categoryName: 'Cà phê truyền thống',
+    price: 38000,
+    originalPrice: 45000,
+    imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
+    description: 'Lớp kem béo mằn mặn bồng bềnh hòa quyện cùng vị cà phê đắng êm dịu độc đáo.',
+    badge: 'Signature',
+    badgeType: 'signature',
+  };
+
+  onDrinkCardSelect(item: DrinkItem): void {
+    this.toastService.info(`Đã click chọn món: "${item.name}"`);
+  }
+
+  onDrinkCardAddToCart(item: DrinkItem): void {
+    this.toastService.success(`Đã thêm "${item.name}" vào giỏ hàng!`);
+  }
 }
 export default UiKitComponent;

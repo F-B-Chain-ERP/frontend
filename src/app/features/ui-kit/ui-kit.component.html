@@ -224,13 +224,13 @@
   <div nz-row [nzGutter]="[16, 16]" style="margin-bottom: 24px">
     <span>Default</span>
     <div nz-col nzSpan="24">
-      <nz-range-picker></nz-range-picker>
+      <nz-range-picker [nzPlaceHolder]="['Ngày bắt đầu', 'Ngày kết thúc']" style="max-width: 380px; width: 100%;"></nz-range-picker>
     </div>
   </div>
   <div nz-row [nzGutter]="[16, 16]" style="margin-bottom: 24px">
     <span>Disabled</span>
     <div nz-col nzSpan="24">
-      <nz-range-picker [nzDisabled]="true"></nz-range-picker>
+      <nz-range-picker [nzDisabled]="true" [nzPlaceHolder]="['Ngày bắt đầu', 'Ngày kết thúc']" style="max-width: 380px; width: 100%;"></nz-range-picker>
     </div>
   </div>
 </nz-card>
@@ -392,7 +392,7 @@
       </div>
       <div nz-col nzSpan="12">
         <span class="form-label required">Ngày gia nhập</span>
-        <nz-date-picker [formControlName]="'joiningDate'" style="width: 100%"></nz-date-picker>
+        <nz-date-picker formControlName="joiningDate" nzPlaceHolder="Chọn ngày gia nhập" style="width: 100%"></nz-date-picker>
       </div>
     </div>
     <app-button type="submit">Submit</app-button>
@@ -409,14 +409,13 @@
   <nz-table
     #tbl
     [nzData]="listOfData"
-    nzSize="default"
+    nzSize="middle"
     [nzShowPagination]="false"
-    [nzScroll]="{ y: '240px' }"
-    [nzBordered]="true"
+    [nzScroll]="{ x: '1000px' }"
   >
     <thead>
       <tr>
-        <th scope='col' nzWidth="46px" nzAlign="center">
+        <th scope='col' nzWidth="48px" nzAlign="center">
           <label class="cb" for="cb-check-all">
             <input
               id="cb-check-all"
@@ -429,11 +428,11 @@
             <span class="cb__box"></span>
           </label>
         </th>
-        <th scope='col' nzAlign="center" [nzSortFn]="sortKeyFn">Mã nhân viên</th>
-        <th scope='col' nzWidth="250px" nzAlign="center" [nzSortFn]="sortNameFn">Tên nhân viên</th>
-        <th scope='col' nzAlign="center" [nzSortFn]="sortAgeFn">Tuổi</th>
-        <th scope='col' nzWidth="400px" nzAlign="center" [nzSortFn]="sortAddressFn">Địa chỉ</th>
-        <th scope='col' nzWidth="120px" nzAlign="center">Thao tác</th>
+        <th scope='col' nzWidth="140px" nzAlign="center" [nzSortFn]="sortKeyFn">Mã nhân viên</th>
+        <th scope='col' nzWidth="240px" nzAlign="left" [nzSortFn]="sortNameFn">Tên nhân viên</th>
+        <th scope='col' nzWidth="100px" nzAlign="center" [nzSortFn]="sortAgeFn">Tuổi</th>
+        <th scope='col' nzWidth="360px" nzAlign="left" [nzSortFn]="sortAddressFn">Địa chỉ</th>
+        <th scope='col' nzWidth="120px" nzAlign="center" nzRight>Thao tác</th>
       </tr>
     </thead>
     <tbody>
@@ -451,11 +450,11 @@
               <span class="cb__box"></span>
             </label>
           </td>
-          <td nzAlign="center">{{ row.key }}</td>
-          <td nzAlign="left">{{ row.name }}</td>
-          <td nzAlign="right">{{ row.age }}</td>
+          <td nzAlign="center" class="font-mono text-muted">{{ row.key }}</td>
+          <td nzAlign="left"><strong>{{ row.name }}</strong></td>
+          <td nzAlign="center">{{ row.age }}</td>
           <td nzAlign="left">{{ row.address }}</td>
-          <td nzAlign="center">
+          <td nzAlign="center" nzRight>
             <app-button variant="ghost">Xem</app-button>
           </td>
         </tr>
@@ -493,6 +492,200 @@
         <app-button variant="secondary" (click)="showSuccess()">Success</app-button>
         <app-button variant="secondary" (click)="showWarning()">Warning</app-button>
         <app-button variant="secondary" (click)="showError()">Error</app-button>
+      </div>
+    </div>
+  </div>
+</nz-card>
+
+
+<!-- ── Single Standard Card Specimen Showcase ── -->
+<nz-card [nzTitle]="'Mẫu Component Thẻ Sản Phẩm (<nz-card>)'" style="margin-bottom: 16px;">
+  <div nz-row [nzGutter]="[24, 24]">
+    <div nz-col nzSpan="24">
+      <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 16px;">
+        Mẫu component thẻ sản phẩm & đồ uống chuẩn hóa theo Design Tokens (sử dụng vector minh họa, không load ảnh ngoài):
+      </p>
+
+      <div style="display: flex; justify-content: flex-start;">
+        <nz-card
+          [nzHoverable]="true"
+          [nzCover]="specimenCoverTpl"
+          style="width: 320px; max-width: 100%; border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm);">
+          
+          <ng-template #specimenCoverTpl>
+            <div style="height: 150px; background: var(--brand-soft); display: flex; align-items: center; justify-content: center; position: relative;">
+              <nz-icon nzType="coffee" style="font-size: 52px; color: var(--brand);" />
+              <span style="position: absolute; top: 12px; left: 12px; background: var(--brand); color: #fff; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; letter-spacing: var(--ls-wide);">
+                SIGNATURE
+              </span>
+            </div>
+          </ng-template>
+
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--ls-wide);">
+              Cà phê truyền thống
+            </span>
+            <h4 style="font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 2px;">
+              Cà Phê Muối Đặc Sản Xứ Huế
+            </h4>
+            <p style="font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.45; margin: 0 0 10px;">
+              Lớp kem béo mằn mặn hòa quyện cùng vị cà phê Robusta rang mộc đậm đà.
+            </p>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border-subtle); margin-top: auto;">
+              <div style="display: flex; flex-direction: column;">
+                <span style="font-size: var(--text-lg); font-weight: 700; color: var(--brand); line-height: 1.1;">38.000 ₫</span>
+                <span style="font-size: 11px; color: var(--text-muted); text-decoration: line-through; margin-top: 2px;">45.000 ₫</span>
+              </div>
+              <app-button variant="primary" leftIcon="plus" [rounded]="true" (click)="toastService.success('Đã thêm Cà Phê Muối vào đơn hàng!')">
+                Chọn món
+              </app-button>
+            </div>
+          </div>
+        </nz-card>
+      </div>
+    </div>
+  </div>
+</nz-card>
+
+<!-- ── Overflow Tags & Badges Showcase ── -->
+<nz-card [nzTitle]="'Tags, Overflow Tags & Status Badges'" style="margin-bottom: 16px;">
+  <div nz-row [nzGutter]="[24, 24]">
+    <!-- Overflow Tags -->
+    <div nz-col [nzXs]="24" [nzMd]="12">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
+        1. Overflow Tags (<span style="font-family: monospace;">&lt;app-overflow-tags&gt;</span> - Tự động rút gọn khi quá dài)
+      </h4>
+      <div style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); max-width: 420px;">
+        <app-overflow-tags [items]="overflowTagsDemo"></app-overflow-tags>
+      </div>
+    </div>
+
+    <!-- Status Badges & Tags -->
+    <div nz-col [nzXs]="24" [nzMd]="12">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
+        2. Status Badges (<span style="font-family: monospace;">.tbl-badge</span>) & Standard Tags (<span style="font-family: monospace;">nz-tag</span>)
+      </h4>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 12px;">
+        <span class="tbl-badge tbl-badge--success">
+          <span class="tbl-badge__dot"></span> Hoạt động
+        </span>
+        <span class="tbl-badge tbl-badge--warning">
+          <span class="tbl-badge__dot"></span> Chờ duyệt
+        </span>
+        <span class="tbl-badge tbl-badge--danger">
+          <span class="tbl-badge__dot"></span> Tạm khóa
+        </span>
+        <span class="tbl-badge tbl-badge--neutral">
+          <span class="tbl-badge__dot"></span> Bản nháp
+        </span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <nz-tag nzColor="processing">Processing</nz-tag>
+        <nz-tag nzColor="success">Success</nz-tag>
+        <nz-tag nzColor="warning">Warning</nz-tag>
+        <nz-tag nzColor="error">Error</nz-tag>
+      </div>
+    </div>
+  </div>
+</nz-card>
+
+<!-- ── Breadcrumbs Showcase ── -->
+<nz-card [nzTitle]="'Breadcrumbs Navigation (<app-breadcrumbs>)'" style="margin-bottom: 16px;">
+  <div style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+    <app-breadcrumbs></app-breadcrumbs>
+  </div>
+</nz-card>
+
+<!-- ── Tabs, Switches & Alerts Showcase ── -->
+<nz-card [nzTitle]="'Tabs, Switches & Alert Banners'" style="margin-bottom: 16px;">
+  <div nz-row [nzGutter]="[24, 24]">
+    <!-- Tabs -->
+    <div nz-col [nzXs]="24" [nzMd]="14">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
+        1. Tabs Navigation (<span style="font-family: monospace;">nz-tabset</span>)
+      </h4>
+      <nz-tabs>
+        <nz-tab nzTitle="Tổng quan đồ uống">
+          <p style="padding-top: 12px; color: var(--text-secondary); font-size: var(--text-sm);">
+            Nội dung tab tổng quan: hiển thị các thông số thống kê doanh số bán theo ngày.
+          </p>
+        </nz-tab>
+        <nz-tab nzTitle="Công thức pha chế">
+          <p style="padding-top: 12px; color: var(--text-secondary); font-size: var(--text-sm);">
+            Nội dung tab công thức: tỷ lệ hạt Arabica/Robusta, nhiệt độ nước 92°C, áp suất 9 bar.
+          </p>
+        </nz-tab>
+        <nz-tab nzTitle="Lịch sử đơn hàng">
+          <p style="padding-top: 12px; color: var(--text-secondary); font-size: var(--text-sm);">
+            Nội dung tab lịch sử: danh sách hóa đơn gần nhất đã thanh toán thành công.
+          </p>
+        </nz-tab>
+      </nz-tabs>
+    </div>
+
+    <!-- Switches -->
+    <div nz-col [nzXs]="24" [nzMd]="10">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
+        2. Toggle Switches (<span style="font-family: monospace;">nz-switch</span>)
+      </h4>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: var(--text-sm); color: var(--text-secondary);">Bật thông báo chuông:</span>
+          <nz-switch [(ngModel)]="switchValue"></nz-switch>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: var(--text-sm); color: var(--text-secondary);">Tự động in hóa đơn (Disabled):</span>
+          <nz-switch [ngModel]="true" [nzDisabled]="true"></nz-switch>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Banners -->
+    <div nz-col nzSpan="24">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
+        3. Alert Banners (<span style="font-family: monospace;">nz-alert</span>)
+      </h4>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <nz-alert nzType="info" nzMessage="Thông báo hệ thống: Đã cập nhật bảng giá hạt cà phê mùa vụ 2026." nzShowIcon></nz-alert>
+        <nz-alert nzType="success" nzMessage="Thao tác thành công: Đơn hàng #ERP-8921 đã được ghi nhận và in vé." nzShowIcon></nz-alert>
+        <nz-alert nzType="warning" nzMessage="Cảnh báo: Nguyên liệu 'Hạt sen Huế' trong kho sắp hết (còn 2 gói)." nzShowIcon></nz-alert>
+        <nz-alert nzType="error" nzMessage="Lỗi kết nối: Không thể đồng bộ máy quét mã QR VNPAY tại quầy số 2." nzShowIcon></nz-alert>
+      </div>
+    </div>
+  </div>
+</nz-card>
+
+<!-- ── Custom ERP Pagination & Table Search Input ── -->
+<nz-card [nzTitle]="'Custom ERP Pagination & Table Search Input'" style="margin-bottom: 16px;">
+  <div nz-row [nzGutter]="[24, 24]">
+    <!-- Custom Pagination -->
+    <div nz-col [nzXs]="24" [nzLg]="14">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
+        1. Phân trang tiếng Việt chuẩn ERP (<span style="font-family: monospace;">&lt;app-pagination&gt;</span>)
+      </h4>
+      <div style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+        <app-pagination
+          [(pageIndex)]="customPageIndex"
+          [(pageSize)]="customPageSize"
+          [total]="customTotal"
+          [pageSizeOptions]="[10, 20, 50, 100]">
+        </app-pagination>
+      </div>
+    </div>
+
+    <!-- Table Search Input -->
+    <div nz-col [nzXs]="24" [nzLg]="10">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 12px;">
+        2. Ô tìm kiếm bảng dữ liệu (<span style="font-family: monospace;">&lt;app-table-search-input&gt;</span>)
+      </h4>
+      <div style="background: var(--surface-sunken); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+        <app-table-search-input
+          [value]="tableSearchText"
+          (valueChange)="tableSearchText = $any($event)"
+          [type]="'text'"
+          placeholder="Tìm kiếm nhanh trong bảng...">
+        </app-table-search-input>
       </div>
     </div>
   </div>

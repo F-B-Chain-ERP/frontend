@@ -34,6 +34,14 @@ export const routes: Routes = [
         loadChildren: () => import('./features/system/users/users.routes'),
       },
       {
+        path: 'store',
+        loadChildren: () => import('./features/store/store.routes'),
+      },
+      {
+        path: 'error-pages',
+        loadChildren: () => import('./features/error-pages/error-pages.routes'),
+      },
+      {
         path: 'users',
         redirectTo: 'system/accounts/list',
         pathMatch: 'full',

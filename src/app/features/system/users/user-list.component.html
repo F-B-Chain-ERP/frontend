@@ -115,7 +115,7 @@
       [nzShowPagination]="false"
       [nzFrontPagination]="false"
       nzSize="middle"
-      [nzScroll]="{ x: '1000px' }">
+      [nzScroll]="{ x: '1250px' }">
       <thead>
         <tr>
           <!-- Checkbox -->
@@ -139,7 +139,7 @@
           <th [nzWidth]="'180px'">Phòng ban</th>
 
           <!-- Trạng thái -->
-          <th [nzShowSort]="true" [nzSortFn]="sortStatusFn" [nzWidth]="'170px'" class="text-center">Trạng thái</th>
+          <th [nzShowSort]="true" [nzSortFn]="sortStatusFn" [nzWidth]="'195px'" class="text-center">Trạng thái</th>
 
           <!-- Ngày tạo -->
           <th [nzShowSort]="true" [nzSortFn]="sortCreatedFn" [nzWidth]="'160px'">Ngày tạo</th>
@@ -167,8 +167,7 @@
               <div class="user-cell" (click)="openDetailModal(data)">
                 <nz-avatar
                   [nzText]="data.fullName.charAt(0).toUpperCase()"
-                  [nzSize]="36"
-                  [style.backgroundColor]="getAvatarColor(data.fullName)"
+                  [nzSize]="32"
                   class="user-cell__avatar"
                 />
                 <div class="user-cell__info">

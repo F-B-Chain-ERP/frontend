@@ -26,7 +26,6 @@
 
     .nz-table-hide-scrollbar {
       scrollbar-color: transparent transparent !important;
-      width: calc(100% + 5px) !important;
     }
 
     // ── Header ──────────────────────────────────────────
@@ -37,8 +36,13 @@
       font-weight: var(--fw-semibold);
       letter-spacing: var(--ls-caps);
       border-bottom: 1px solid var(--border-strong) !important;
+      border-right: 1px solid var(--border-subtle);
       padding: var(--space-5) var(--space-6);
       white-space: nowrap;
+
+      &:last-child {
+        border-right: none;
+      }
 
       &::before {
         display: none;
@@ -94,17 +98,26 @@
 
     &-thead > tr.thead-search > th {
       background: var(--surface-card);
+      border-right: 1px solid var(--border-subtle);
+      &:last-child {
+        border-right: none;
+      }
     }
 
     // ── Body ────────────────────────────────────────────
     &-tbody > tr {
       > td {
         border-bottom: 1px solid var(--border-strong);
+        border-right: 1px solid var(--border-subtle);
         padding: var(--space-5) var(--space-6);
         color: var(--text-primary);
         font-size: var(--text-base);
         vertical-align: middle;
         transition: background var(--dur-fast) var(--ease);
+
+        &:last-child {
+          border-right: none;
+        }
 
         &.ant-table-column-sort {
           background: var(--surface-sunken);
@@ -180,20 +193,48 @@
       background: color-mix(in srgb, var(--surface-sunken) 80%, transparent);
     }
 
-    // ── Fixed columns shadow ─────────────────────────────
+    // ── Fixed columns ────────────────────────────────────
     &-cell-fix-left,
     &-cell-fix-right {
+      position: sticky !important;
+      z-index: 2;
       background: var(--surface-card);
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+      will-change: transform;
+      max-width: none !important;
     }
 
-    &-cell-fix-left-last::after {
-      box-shadow: inset 10px 0 8px -8px
-        color-mix(in srgb, var(--navy-950) 10%, transparent);
+    &-cell-fix-right {
+      right: 0 !important;
     }
 
-    &-cell-fix-right-first::before {
-      box-shadow: inset -10px 0 8px -8px
-        color-mix(in srgb, var(--navy-950) 10%, transparent);
+    &-thead > tr > th {
+      &.ant-table-cell-fix-left,
+      &.ant-table-cell-fix-right {
+        background: var(--surface-sunken) !important;
+        z-index: 3;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        will-change: transform;
+        max-width: none !important;
+      }
+    }
+
+    &-cell-fix-left-last {
+      border-right: 1px solid var(--border-subtle) !important;
+      &::after {
+        box-shadow: inset 10px 0 8px -8px
+          color-mix(in srgb, var(--navy-950) 10%, transparent);
+      }
+    }
+
+    &-cell-fix-right-first {
+      border-left: 1px solid var(--border-subtle) !important;
+      &::before {
+        box-shadow: inset -10px 0 8px -8px
+          color-mix(in srgb, var(--navy-950) 10%, transparent);
+      }
     }
 
     // ── Expand icon ──────────────────────────────────────

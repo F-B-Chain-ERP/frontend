@@ -1,0 +1,142 @@
+.drink-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: color-mix(in srgb, var(--brand) 35%, transparent);
+
+    .drink-card__img {
+      transform: scale(1.05);
+    }
+  }
+
+  // ── Image Container (Focus chính của Card) ──
+  &__media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--surface-sunken);
+    margin-bottom: var(--space-4);
+  }
+
+  &__img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform var(--dur-slow) var(--ease);
+  }
+
+  &__badge {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-3);
+    padding: 3px var(--space-3);
+    border-radius: var(--radius-pill);
+    font-size: var(--text-2xs);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+
+    &--signature {
+      background: var(--brand);
+      color: #fff;
+    }
+
+    &--bestseller {
+      background: color-mix(in srgb, #000 65%, transparent);
+      color: #fff;
+    }
+
+    &--new {
+      background: var(--success);
+      color: #fff;
+    }
+  }
+
+  // ── Info Content (Tối giản, Rõ ràng) ──
+  &__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  &__category {
+    font-size: var(--text-2xs);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: var(--ls-wide);
+    margin-bottom: 2px;
+  }
+
+  &__title {
+    font-size: var(--text-base);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+    line-height: 1.35;
+    margin-bottom: var(--space-1);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__desc {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 34px;
+    margin-bottom: var(--space-4);
+  }
+
+  // ── Price & Actions ──
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: var(--space-2);
+  }
+
+  &__price-box {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__price {
+    font-size: var(--text-lg);
+    font-weight: var(--fw-bold);
+    color: var(--brand);
+    line-height: 1.1;
+  }
+
+  &__original-price {
+    font-size: var(--text-2xs);
+    color: var(--text-muted);
+    text-decoration: line-through;
+    margin-top: 2px;
+  }
+
+  &__action-btn {
+    flex-shrink: 0;
+  }
+}

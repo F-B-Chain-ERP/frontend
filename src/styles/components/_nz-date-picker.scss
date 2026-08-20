@@ -518,12 +518,90 @@
   }
 }
 
-.ant-picker-panels > *:not(:last-child) {
-  border-right: 1px solid var(--border-subtle);
-}
+// ── Date Range Picker Segmented Styling ─────────────────
+.ant-picker.ant-picker-range {
+  padding: 3px var(--space-3);
+  gap: var(--space-2);
+  align-items: center;
 
-.ant-picker-range {
+  .ant-picker-input {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0 var(--space-4);
+    height: 24px;
+    transition: all var(--dur-fast) var(--ease);
+
+    input {
+      text-align: center;
+      font-size: var(--text-sm);
+      font-weight: 500;
+      color: var(--text-primary);
+      width: 100%;
+
+      &::placeholder {
+        color: var(--text-muted);
+        font-weight: 400;
+      }
+    }
+
+    // Active segment when user is picking start or end date
+    &-active {
+      background: var(--surface-card);
+      border-color: var(--brand);
+      box-shadow: 0 0 0 2px var(--focus-ring);
+
+      input {
+        color: var(--brand);
+        font-weight: 600;
+      }
+    }
+
+    &:hover:not(.ant-picker-input-active) {
+      border-color: var(--border-strong);
+      background: var(--surface-hover);
+    }
+  }
+
+  // Segment separator badge (→)
+  .ant-picker-range-separator {
+    padding: 0 2px;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .ant-picker-separator {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+  }
+
+  // Active bar indicator
   .ant-picker-active-bar {
-    background: var(--brand);
+    display: none;
+  }
+
+  &.ant-picker-disabled {
+    .ant-picker-input {
+      background: var(--surface-hover);
+      border-color: var(--border-subtle);
+      cursor: not-allowed;
+
+      input {
+        color: var(--text-disabled);
+        cursor: not-allowed;
+      }
+    }
   }
 }
+

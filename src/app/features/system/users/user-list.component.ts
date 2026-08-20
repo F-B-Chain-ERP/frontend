@@ -374,13 +374,4 @@ export class UserListComponent extends BaseComponent implements OnInit {
   getStatusMeta(status: UserStatus | number) {
     return getUserStatusMeta(status);
   }
-
-  getAvatarColor(name: string): string {
-    const colors = ['#1890ff', '#52c41a', '#fa8c16', '#722ed1', '#eb2f96', '#13c2c2'];
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  }
 }
