@@ -1,21 +1,22 @@
-# Hướng dẫn Triển khai Frontend & Toàn Hệ thống ERP UTT (Local → Server)
+# Hướng dẫn Vận hành CI/CD & Triển khai Frontend ERP-UTT
 
 Server triển khai: **Ubuntu 24.04 LTS** (IP: `163.61.72.183`, Hostname: `vm08181524.bnixvps.io.vn`)
 
 ---
 
-## 1. Kiến trúc Hệ thống & Luồng Dữ liệu (Request Flow)
+## 1. Kiến trúc Hệ thống & Luồng Xử lý (Request Flow)
 
 ```
                             [NGƯỜI DÙNG / TRÌNH DUYỆT]
                                          │
-                                         │ HTTP Port 80 (hoặc 443 sau này)
+                                         │ HTTP Port 80 (hoặc 443 HTTPS)
                                          ▼
                  ┌──────────────────────────────────────────────────┐
                  │          NGINX REVERSE PROXY (Port 80)           │
-                 │          - Gzip nén dữ liệu tĩnh (60-80%)       │
-                 │          - Cache static files (JS/CSS/Fonts 1y) │
-                 │          - Định tuyến SPA (try_files index.html)│
+                 │  - Gzip nén dữ liệu tĩnh (tiết kiệm 60-80% BW)   │
+                 │  - Caching 1 năm cho Hashed Chunks (JS/CSS/Fonts)│
+                 │  - no-cache cho index.html (luôn cập nhật mới)   │
+                 │  - Định tuyến SPA Fallback (try_files index.html)│
                  └───────────────┬──────────────────┬───────────────┘
                                  │                  │
                [Request tĩnh]   │                  │   [Request API]
@@ -33,131 +34,145 @@ Server triển khai: **Ubuntu 24.04 LTS** (IP: `163.61.72.183`, Hostname: `vm081
                                  ┌─────────────────┐       ┌─────────────────┐
                                  │  PostgreSQL 16  │       │     Redis 7     │
                                  │  Port 5432      │       │  Port 6379      │
-                                 │  (Docker)       │       │  (Rate Limiting)│
+                                 │  (Docker)       │       │  (Rate Limiter) │
                                  └─────────────────┘       └─────────────────┘
 ```
 
 ---
 
-## 2. Cấu trúc Triển khai trên Server
+## 2. Cấu trúc Triển khai trên Server & Repository
 
-Thư mục trên Server: `/opt/ERP-UTT/frontend`
+### Cấu trúc Thư mục trên Server: `/opt/ERP-UTT/frontend`
 ```
 /opt/ERP-UTT/frontend/
-├── browser/                       # Mã nguồn tĩnh Angular sau khi build
+├── browser/                       # Mã nguồn tĩnh Angular đang phục vụ
 │   ├── index.html
-│   ├── styles.css
-│   ├── main.js
+│   ├── styles-*.css
+│   ├── main-*.js
 │   ├── chunk-*.js
 │   └── assets/
+├── backups/                       # Các bản sao lưu tự động (tối đa 5 bản gần nhất)
+│   ├── backup-sha-abc1234-20260821230000.tar.gz
+│   └── backup-...
+├── .last-stable-build.tar.gz      # Bản snapshot stable gần nhất dùng cho Rollback tức thì
+├── .last-stable-tag               # Ghi nhận tag/commit SHA đang chạy
 └── deploy/
     ├── DEPLOYMENT_GUIDE.md        # Hướng dẫn này
     ├── nginx/
     │   └── erp-utt.conf           # File cấu hình Nginx site
     └── scripts/
-        ├── 01-build-transfer.ps1  # Chạy trên Windows Local: Build & SCP lên server
-        ├── 01-build-transfer.sh   # Chạy trên Linux/Mac Local: Build & SCP lên server
-        ├── 02-setup-nginx.sh      # Chạy trên Server: Cài Nginx & cấu hình site
-        └── 03-check-status.sh     # Chạy trên Server: Kiểm tra sức khỏe hệ thống
+        ├── deploy.sh              # Script triển khai trung tâm trên Server (Atomic + Health Check)
+        ├── rollback.sh            # Script Rollback khẩn cấp tức thì (1s)
+        ├── 01-build-transfer.ps1  # Script build tay trên máy Windows Dev
+        ├── 01-build-transfer.sh   # Script build tay trên máy Linux/macOS Dev
+        ├── 02-setup-nginx.sh      # Script cài đặt & cấu hình Nginx lần đầu
+        └── 03-check-status.sh     # Script chẩn đoán sức khỏe hệ thống
 ```
 
 ---
 
-## 3. Quy trình Triển khai Frontend 3 Bước
+## 3. Hệ thống CI/CD Tự động (GitHub Actions)
 
-```
-[MÁY DEV LOCAL (Windows / Linux)]              [SERVER: 163.61.72.183]
-───────────────────────────────────────        ───────────────────────────────────────
-Bước 1: Build & Truyền mã nguồn lên Server
-  .\frontend\deploy\scripts\01-build-transfer.ps1
-  (hoặc bash 01-build-transfer.sh)
-                                              Bước 2: Cài đặt & Cấu hình Nginx
-                                                SSH vào server và chạy:
-                                                sudo bash /opt/ERP-UTT/frontend/deploy/scripts/02-setup-nginx.sh
+File workflow: `.github/workflows/ci-cd.yml`
 
-                                              Bước 3: Kiểm tra hệ thống toàn diện
-                                                bash /opt/ERP-UTT/frontend/deploy/scripts/03-check-status.sh
+```mermaid
+graph LR
+    A[Push vào nhánh 'dev'] --> B[Job 1: ⚡ Validate & Lint]
+    B --> C[Job 2: 📦 Fast Build & Package]
+    C --> D[Job 3: 🚀 SSH Deploy & Health Check]
+    D --> E[Job 4: 📢 Discord Notifier]
 ```
+
+### Các sự kiện kích hoạt Pipeline:
+1. **Push vào nhánh `dev`**: Tự động validate, build và triển khai lên server VPS.
+2. **Tạo Pull Request vào `dev`**: Chạy validate và test build (không deploy lên server).
+3. **Workflow Dispatch (Bấm chạy thủ công từ GitHub UI)**:
+   - Vào tab **Actions** ➔ Chọn **Frontend CI/CD Pipeline** ➔ Bấm **Run workflow**.
+   - Có thể chọn: `deploy_to_server` (true/false), `build_config` (`production` / `development`), `run_lint` (true/false).
+
+### Cấu hình Secrets trên GitHub Repository (`F-B-Chain-ERP/frontend`):
+Vào **Settings** ➔ **Secrets and variables** ➔ **Actions** ➔ Đảm bảo có các Repository Secrets:
+
+| Secret Name | Mô tả | Giá trị mẫu |
+| :--- | :--- | :--- |
+| `SSH_HOST` | Địa chỉ IP của VPS | `163.61.72.183` |
+| `SSH_USER` | Tên người dùng SSH | `root` |
+| `SSH_PRIVATE_KEY` | Khóa riêng tư SSH Private Key | `-----BEGIN OPENSSH PRIVATE KEY----- ...` |
+| `SSH_PORT` | Cổng SSH | `22` |
+| `DISCORD_WEBHOOK` | Webhook thông báo kênh Discord | `https://discord.com/api/webhooks/...` |
 
 ---
 
-### Chi tiết các bước thực hiện:
+## 4. Các Quy trình Build & Triển khai Thủ công (Manual Options)
 
-### Bước 1: Build & Chuyển file lên Server (Từ Local)
-
-**Trên Windows PowerShell (từ thư mục gốc ERP-UTT):**
+### Cách 1: Build & Deploy một chạm từ máy Windows (PowerShell)
+Mở PowerShell tại thư mục `frontend` hoặc thư mục gốc `ERP-UTT`:
 ```powershell
+# Build production và đẩy thẳng lên Server:
 .\frontend\deploy\scripts\01-build-transfer.ps1
+
+# Chỉ build và đóng gói file nén local (không đẩy lên server):
+.\frontend\deploy\scripts\01-build-transfer.ps1 -BuildOnly
+
+# Build với cấu hình development:
+.\frontend\deploy\scripts\01-build-transfer.ps1 -Config "development"
 ```
 
-*(Tuỳ chọn: Nếu muốn build theo môi trường development, thêm tham số `-Config "development"`)*
-
-**Trên Linux / macOS / Git Bash:**
+### Cách 2: Build & Deploy một chạm từ máy Linux / macOS / Git Bash
 ```bash
+# Build và triển khai lên server:
 bash frontend/deploy/scripts/01-build-transfer.sh 163.61.72.183 root production
+
+# Chỉ build local:
+bash frontend/deploy/scripts/01-build-transfer.sh 163.61.72.183 root production --build-only
 ```
 
-Script sẽ tự động:
-1. Chạy `npm run build:prod` để tối ưu hóa code Angular thành các file tĩnh.
-2. Đóng gói file nén `frontend-dist.tar.gz`.
-3. Chuyển file nén và các script cấu hình sang server qua SSH.
-4. Tự động giải nén vào thư mục `/opt/ERP-UTT/frontend/browser/`.
-
----
-
-### Bước 2: Cài đặt & Khởi chạy Nginx trên Server
-
-SSH vào Server:
+### Cách 3: Chạy Triển khai trực tiếp trên Server (Khi đã có file package)
+SSH vào server:
 ```bash
 ssh root@163.61.72.183
 ```
-
-Chạy script cài đặt và kích hoạt Nginx:
+Chạy script deploy:
 ```bash
-sudo bash /opt/ERP-UTT/frontend/deploy/scripts/02-setup-nginx.sh
+bash /opt/ERP-UTT/frontend/deploy/scripts/deploy.sh frontend-dist-manual.tar.gz manual-v1.0
 ```
-
-Script này sẽ:
-- Tự động cài đặt `nginx` nếu chưa có.
-- Mở cổng 80 (HTTP) và 443 (HTTPS) trên firewall UFW.
-- Thiết lập phân quyền thư mục cho user `www-data`.
-- Áp dụng cấu hình Nginx site `/etc/nginx/sites-available/erp-utt` (kèm Gzip, Caching, SPA Fallback, Reverse Proxy `/api/`).
-- Kiểm tra tính hợp lệ của cấu hình (`nginx -t`) và reload dịch vụ Nginx.
 
 ---
 
-### Bước 3: Kiểm thử Hệ thống
+## 5. Quy trình Rollback Khẩn cấp (Instant Rollback)
 
-Chạy script kiểm tra tự động trên server:
+Hệ thống tự động sao lưu bản build trước đó trước mỗi lần deploy mới. Nếu bản build mới gặp lỗi hoặc có sự cố ngoài dự kiến, bạn có thể rollback chỉ trong **1 giây**:
+
+### Cách thực hiện Rollback:
+SSH vào server và chạy:
+```bash
+sudo bash /opt/ERP-UTT/frontend/deploy/scripts/rollback.sh
+```
+
+Hoặc khôi phục về một bản backup cụ thể trong thư mục `backups/`:
+```bash
+sudo bash /opt/ERP-UTT/frontend/deploy/scripts/rollback.sh /opt/ERP-UTT/frontend/backups/backup-sha-abc1234-20260821230000.tar.gz
+```
+
+---
+
+## 6. Kiểm tra & Giám sát Hệ thống (Diagnostics)
+
+### Chạy script kiểm tra toàn diện:
 ```bash
 bash /opt/ERP-UTT/frontend/deploy/scripts/03-check-status.sh
 ```
 
-Hoặc kiểm tra thủ công từ trình duyệt và terminal:
-1. **Truy cập Giao diện Web:** Mở trình duyệt và truy cập `http://163.61.72.183/`
-2. **Kiểm tra SPA Routing:** Tải lại trang tại đường dẫn `http://163.61.72.183/login` hoặc `http://163.61.72.183/home` (xác nhận không bị lỗi 404).
-3. **Đăng nhập:** Đăng nhập với tài khoản `admin` / `123456789`.
-4. **Kiểm tra API qua Nginx Proxy:**
+### Các lệnh quản trị thường dùng:
 ```bash
-curl -X POST http://163.61.72.183/api/v1/auth/login \
-     -H "Content-Type: application/json" \
-     -d '{"usernameOrEmail":"admin","password":"123456789"}'
-```
-
----
-
-## 4. Các Lệnh Quản trị & Vận hành Thường dùng
-
-### Quản trị Nginx:
-```bash
-# Kiểm tra trạng thái Nginx
+# Xem trạng thái Nginx
 systemctl status nginx
 
-# Kiểm tra cú pháp cấu hình Nginx sau khi sửa đổi
+# Kiểm tra cú pháp Nginx sau khi chỉnh sửa
 nginx -t
 
-# Khởi động lại Nginx
-systemctl restart nginx
+# Reload lại Nginx không gián đoạn dịch vụ
+systemctl reload nginx
 
 # Xem log truy cập Nginx realtime
 tail -f /var/log/nginx/access.log
@@ -166,61 +181,13 @@ tail -f /var/log/nginx/access.log
 tail -f /var/log/nginx/error.log
 ```
 
-### Cập nhật Frontend khi có Code mới:
-Mỗi khi có cập nhật mới ở frontend, chỉ cần chạy lại từ máy local:
-```powershell
-.\frontend\deploy\scripts\01-build-transfer.ps1
-```
-*(Nginx tự động phục vụ file mới mà không cần restart server)*
-
 ---
 
-## 5. Tối ưu Chịu tải Cao (High Load & Performance Tuning)
+## 7. Xử lý Sự cố Thường gặp (Troubleshooting)
 
-Hệ thống được cấu hình sẵn các cơ chế tối ưu hiệu năng:
-
-1. **Nginx Static File Caching:**
-   - Các file bundle (JS/CSS/Fonts) được Angular tự động gắn mã băm (content hash, ví dụ `chunk-CFWC5MMN.js`). Nginx thiết lập header `Cache-Control: public, immutable` với thời hạn `expires 1y`, giúp trình duyệt không cần tải lại file tĩnh trong các lần truy cập tiếp theo.
-2. **Gzip On-the-fly Compression:**
-   - Nén toàn bộ dữ liệu phản hồi (JS, CSS, JSON, SVG) từ level 6, giảm 60% – 80% dung lượng băng thông mạng.
-3. **API Proxy Streaming & Buffering:**
-   - Kết nối giữa Nginx và Spring Boot `:8080` sử dụng HTTP/1.1 loopback nội bộ (`127.0.0.1`), loại bỏ độ trễ mạng ngoại vi.
-4. **Bảo vệ Hệ thống với Rate Limiting:**
-   - Tầng Backend đã tích hợp Redis Bucket4j Rate Limiter:
-     - Khách vãng lai (Anonymous): Giới hạn 20 request / 60 giây.
-     - Người dùng đã đăng nhập (Authenticated): Giới hạn 100 request / 60 giây.
-
----
-
-## 6. Xử lý Sự cố Thường gặp (Troubleshooting)
-
-### 1. Lỗi `404 Not Found` khi F5 (Reload) trang con
-- **Nguyên nhân:** Nginx chưa được cấu hình SPA routing fallback.
-- **Khắc phục:** Đảm bảo trong khối `location /` của `/etc/nginx/sites-available/erp-utt` có dòng `try_files $uri $uri/ /index.html;`, sau đó chạy `nginx -t && systemctl reload nginx`.
-
-### 2. Lỗi `502 Bad Gateway` khi gọi API
-- **Nguyên nhân:** Backend Service (Spring Boot) chưa khởi động hoặc container bị dừng.
-- **Khắc phục:**
-  ```bash
-  # Kiểm tra container backend
-  docker ps -a | grep erp-backend
-  # Xem log lỗi backend
-  docker logs -f erp-backend
-  # Khởi động lại backend
-  docker compose -f /opt/ERP-UTT/backend-service/src/main/docker/app.yml restart backend-service
-  ```
-
-### 3. Lỗi `403 Forbidden` khi truy cập website
-- **Nguyên nhân:** Phân quyền thư mục `/opt/ERP-UTT/frontend/browser` chưa đúng.
-- **Khắc phục:**
-  ```bash
-  sudo chown -R www-data:www-data /opt/ERP-UTT/frontend/browser
-  sudo chmod -R 755 /opt/ERP-UTT/frontend/browser
-  ```
-
----
-
-## 7. Kế hoạch Giai đoạn Sau (Phase 2 Roadmap)
-
-- **Cấu hình SSL/TLS (HTTPS):** Sử dụng `certbot` để kích hoạt chứng chỉ miễn phí Let's Encrypt cho tên miền `vm08181524.bnixvps.io.vn` (hoặc tên miền chính thức của UTT).
-- **Tự động hóa CI/CD:** Thiết lập GitHub Actions / Gitea Actions để tự động build và deploy khi merge code vào nhánh `main`.
+| Vấn đề | Nguyên nhân | Cách khắc phục |
+| :--- | :--- | :--- |
+| **`404 Not Found` khi F5 trang con (`/home`, `/login`)** | Thiếu SPA routing fallback trong Nginx | Đảm bảo khối `location /` có `try_files $uri $uri/ /index.html;`, sau đó chạy `nginx -t && systemctl reload nginx`. |
+| **`403 Forbidden` khi truy cập trang web** | Phân quyền thư mục `/opt/ERP-UTT/frontend/browser` chưa đúng cho user `www-data` | Chạy: `chown -R www-data:www-data /opt/ERP-UTT/frontend/browser && chmod -R 755 /opt/ERP-UTT/frontend/browser`. |
+| **`502 Bad Gateway` khi gọi API `/api/**`** | Backend Service (Spring Boot) đang khởi động hoặc container bị dừng | Chạy `docker ps` kiểm tra container `erp-backend`. Xem log: `docker logs -f erp-backend`. |
+| **Trình duyệt vẫn hiển thị giao diện cũ sau khi deploy** | Trình duyệt bị cache file `index.html` cũ | Cấu hình Nginx đã thiết lập `Cache-Control: no-cache` cho `index.html`. Người dùng chỉ cần F5 một lần là nhận ngay bản mới. |
