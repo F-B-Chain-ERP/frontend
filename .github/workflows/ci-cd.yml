@@ -194,12 +194,12 @@ jobs:
             echo "  Timestamp     : $(date '+%Y-%m-%d %H:%M:%S')"
             echo "=========================================================="
 
-            # Đảm bảo cấu trúc thư mục chính tồn tại trên server (dùng sudo nếu user là non-root)
-            sudo mkdir -p "${FRONTEND_DIR}/browser"
-            sudo mkdir -p "${FRONTEND_DIR}/backups"
-            sudo mkdir -p "${FRONTEND_DIR}/staging"
-            sudo mkdir -p "${FRONTEND_DIR}/deploy/nginx"
-            sudo mkdir -p "${FRONTEND_DIR}/deploy/scripts"
+            # Đảm bảo cấu trúc thư mục chính tồn tại trên server
+            mkdir -p "${FRONTEND_DIR}/browser" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/browser"
+            mkdir -p "${FRONTEND_DIR}/backups" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/backups"
+            mkdir -p "${FRONTEND_DIR}/staging" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/staging"
+            mkdir -p "${FRONTEND_DIR}/deploy/nginx" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/deploy/nginx"
+            mkdir -p "${FRONTEND_DIR}/deploy/scripts" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/deploy/scripts"
 
             # Giải nén deploy-assets.tar.gz để lấy script và nginx config
             if [ -f "${TRANSFER_DIR}/deploy-assets.tar.gz" ]; then
@@ -210,18 +210,18 @@ jobs:
 
             # Đồng bộ deploy scripts và nginx config vào thư mục chuẩn
             if [ -d "${TRANSFER_DIR}/deploy" ]; then
-              sudo cp -r "${TRANSFER_DIR}/deploy/nginx/"* "${FRONTEND_DIR}/deploy/nginx/" 2>/dev/null || true
-              sudo cp -r "${TRANSFER_DIR}/deploy/scripts/"* "${FRONTEND_DIR}/deploy/scripts/" 2>/dev/null || true
-              sudo chmod +x "${FRONTEND_DIR}/deploy/scripts/"*.sh
+              cp -r "${TRANSFER_DIR}/deploy/nginx/"* "${FRONTEND_DIR}/deploy/nginx/" 2>/dev/null || sudo -n cp -r "${TRANSFER_DIR}/deploy/nginx/"* "${FRONTEND_DIR}/deploy/nginx/" 2>/dev/null || true
+              cp -r "${TRANSFER_DIR}/deploy/scripts/"* "${FRONTEND_DIR}/deploy/scripts/" 2>/dev/null || sudo -n cp -r "${TRANSFER_DIR}/deploy/scripts/"* "${FRONTEND_DIR}/deploy/scripts/" 2>/dev/null || true
+              chmod +x "${FRONTEND_DIR}/deploy/scripts/"*.sh 2>/dev/null || sudo -n chmod +x "${FRONTEND_DIR}/deploy/scripts/"*.sh 2>/dev/null || true
               echo "  ✅ Đã đồng bộ scripts và nginx config"
             fi
 
             # Di chuyển gói build vào thư mục frontend
-            sudo mv "${TRANSFER_DIR}/${PKG_NAME}" "${FRONTEND_DIR}/${PKG_NAME}"
+            mv "${TRANSFER_DIR}/${PKG_NAME}" "${FRONTEND_DIR}/${PKG_NAME}" 2>/dev/null || sudo -n mv "${TRANSFER_DIR}/${PKG_NAME}" "${FRONTEND_DIR}/${PKG_NAME}"
             rm -rf "${TRANSFER_DIR}"
 
-            # Gọi unified deploy script trên server với sudo
-            sudo bash "${FRONTEND_DIR}/deploy/scripts/deploy.sh" "${PKG_NAME}" "${SHORT_SHA}"
+            # Gọi unified deploy script trên server
+            bash "${FRONTEND_DIR}/deploy/scripts/deploy.sh" "${PKG_NAME}" "${SHORT_SHA}"
 
   # ----------------------------------------------------------------------------
   # JOB 4: Gửi thông báo kết quả CI/CD lên Discord
