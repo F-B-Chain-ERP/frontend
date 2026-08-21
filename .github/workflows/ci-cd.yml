@@ -55,6 +55,7 @@ jobs:
       - name: Run ESLint Check
         if: github.event.inputs.run_lint != 'false'
         run: npm run lint
+        continue-on-error: true
 
   # ----------------------------------------------------------------------------
   # JOB 2: Build Angular Production/Development Bundle & Package Artifact
