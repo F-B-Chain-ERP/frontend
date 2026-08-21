@@ -75,7 +75,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.theme.applyModeVisualOnly('light');
 
     if (this.stateStorageService.getAuthenticationToken()) {
-      this.router.navigate(['/home']);
+      this.router.navigate(['/admin/home']);
     }
   }
 
@@ -177,7 +177,7 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.theme.restorePreLogoutBrand();
 
           this.loading.set(false);
-          this.router.navigate(['/home']);
+          this.router.navigate(['/admin/home']);
         },
         error: err => this.handleLoginError(err),
       });

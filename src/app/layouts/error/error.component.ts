@@ -66,12 +66,12 @@ export class ErrorComponent implements OnInit {
     if (window.history.length > 1) {
       window.history.back();
     } else {
-      this.router.navigate(['/home']);
+      this.router.navigate(['/admin/home']);
     }
   }
 
   goHome(): void {
-    this.router.navigate(['/home']);
+    this.router.navigate(['/admin/home']);
   }
 }
 export default ErrorComponent;

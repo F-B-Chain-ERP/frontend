@@ -191,9 +191,9 @@ export class UserListComponent extends BaseComponent implements OnInit {
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
-      { label: 'Trang chủ', url: '/home', icon: 'home' },
-      { label: 'Hệ thống', url: '/system' },
-      { label: 'Quản lý người dùng', url: '/system/accounts/list' },
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Hệ thống', url: '/admin/system/accounts/list' },
+      { label: 'Quản lý người dùng', url: '/admin/system/accounts/list' },
     ]);
 
     // Gợi ý username tự động từ email khi thêm mới

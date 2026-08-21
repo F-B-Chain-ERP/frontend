@@ -1,0 +1,114 @@
+.app-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  user-select: none;
+  transition: border-color var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
+
+  &:hover:not(.app-stepper--disabled) {
+    border-color: var(--brand);
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+    border-radius: var(--radius-sm);
+    padding: 0;
+
+    &:hover:not(:disabled) {
+      background: var(--brand-soft);
+      color: var(--brand);
+    }
+
+    &:active:not(:disabled) {
+      background: color-mix(in srgb, var(--brand) 25%, transparent);
+    }
+
+    &:disabled {
+      color: var(--text-disabled);
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+  }
+
+  &__value {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // ── Sizes ──
+  &--sm {
+    height: 26px;
+    padding: 1px;
+
+    .app-stepper__btn {
+      width: 22px;
+      height: 22px;
+      font-size: 11px;
+    }
+
+    .app-stepper__value {
+      min-width: 24px;
+      font-size: var(--text-xs);
+      padding: 0 4px;
+    }
+  }
+
+  &--default {
+    height: 32px;
+    padding: 2px;
+
+    .app-stepper__btn {
+      width: 26px;
+      height: 26px;
+      font-size: 12px;
+    }
+
+    .app-stepper__value {
+      min-width: 32px;
+      font-size: var(--text-sm);
+      padding: 0 6px;
+    }
+  }
+
+  &--lg {
+    height: 40px;
+    padding: 3px;
+
+    .app-stepper__btn {
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+    }
+
+    .app-stepper__value {
+      min-width: 40px;
+      font-size: var(--text-base);
+      padding: 0 8px;
+    }
+  }
+
+  // ── Disabled ──
+  &--disabled {
+    opacity: 0.6;
+    background: var(--surface-sunken);
+    cursor: not-allowed;
+
+    .app-stepper__btn {
+      cursor: not-allowed;
+    }
+  }
+}

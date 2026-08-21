@@ -18,7 +18,10 @@ import { LoginService } from '../login/login.service';
 import { NzTooltipDirective } from 'ng-zorro-antd/tooltip';
 import { createSortFn } from '../../shared/helpers/table.helper';
 
-import { DrinkItem } from '../../shared/app-drink-card/app-drink-card.component';
+import { DrinkItem, AppDrinkCardComponent } from '../../shared/app-drink-card/app-drink-card.component';
+import { AppQuantityStepperComponent } from '../../shared/app-quantity-stepper/app-quantity-stepper.component';
+import { AppCartPanelComponent } from '../../shared/app-cart-panel/app-cart-panel.component';
+import { CartService } from '../../shared/services/cart.service';
 import { AppOverflowTagsComponent } from '../../shared/app-overflow-tags/app-overflow-tags.component';
 import { AppPaginationComponent } from '../../shared/app-pagination/app-pagination.component';
 import { AppBreadcrumbsComponent } from '../../shared/app-breadcrumbs/app-breadcrumbs.component';
@@ -73,12 +76,16 @@ function alphabet(): string[] {
     NzSwitchComponent,
     NzTagComponent,
     NzAlertComponent,
+    AppDrinkCardComponent,
+    AppQuantityStepperComponent,
+    AppCartPanelComponent,
   ],
   standalone: true,
 })
 export class UiKitComponent {
   private readonly formBuilder = inject(FormBuilder);
   readonly toastService = inject(AppNotificationService);
+  readonly cartService = inject(CartService);
   private readonly router = inject(Router);
   private readonly loginService = inject(LoginService);
 

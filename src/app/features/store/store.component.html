@@ -1,124 +1,333 @@
-<div class="store-page">
-  <!-- ── 1. Page Header (Tiêu đề & Hành động chuẩn ERP) ──────────────── -->
-  <div class="page__header">
-    <div>
-      <h1 class="page__header__title">Thực Đơn Cà Phê & Đồ Uống</h1>
-      <p class="page__header__description">
-        Danh sách đồ uống pha chế thủ công, cà phê hạt rang xay nguyên chất và bánh ngọt phục vụ tại chỗ & mang đi
-      </p>
-    </div>
-    <div class="page__header__right">
-      <app-button variant="secondary" leftIcon="shopping-cart" (click)="openCartSummary()">
-        Giỏ hàng ({{ cartItems().length }} món • {{ formatPrice(cartTotal()) }})
-      </app-button>
-      <app-button variant="primary" leftIcon="plus" (click)="onAddNewDrink()">
-        Thêm món mới vào Menu
-      </app-button>
-    </div>
-  </div>
+<div class="store-container">
+  <!-- ── 1. Hero Storefront Section (Figma SHOP.CO 2-Column Style) ── -->
+  <section class="store-hero">
+    <div class="store-hero__wrapper">
+      <!-- Left Column: Content -->
+      <div class="store-hero__content">
+        <div class="store-hero__chip">
+          <span class="store-hero__chip-dot"></span>
+          <span>Thực Đơn Đồ Uống Mới 2026</span>
+        </div>
 
-  <!-- ── 2. Category Pills (Lọc nhanh theo phân loại đồ uống) ────────── -->
-  <div class="category-bar">
-    @for (cat of categories; track cat.id) {
-      <button
-        class="category-bar__pill"
-        [class.category-bar__pill--active]="selectedCategoryId() === cat.id"
-        (click)="onSelectCategory(cat.id)">
-        <span>{{ cat.name }}</span>
-        <span class="category-bar__count">{{ cat.count }}</span>
-      </button>
-    }
-  </div>
+        <h1 class="store-hero__title">
+          TÌM KIẾM HƯƠNG VỊ<br />PHÙ HỢP VỚI GU CỦA BẠN
+        </h1>
 
-  <!-- ── 3. Search & Filter Bar ─────────────────────────────────────── -->
-  <div class="store-filter-card">
-    <div class="store-filter-card__search">
-      <nz-input-wrapper [nzAllowClear]="true">
-        <nz-icon nzInputPrefix nzType="search" />
-        <input
-          nz-input
-          placeholder="Tìm kiếm cà phê, trà trái cây, sinh tố theo tên hoặc mô tả..."
-          [(ngModel)]="searchQuery"
-          (ngModelChange)="onFilterChange()"
-        />
-      </nz-input-wrapper>
-    </div>
+        <p class="store-hero__subtitle">
+          Khám phá các dòng cà phê rang mộc nguyên chất và đồ uống thủ công được pha chế tỉ mỉ mỗi ngày để khơi dậy nguồn cảm hứng bất tận trong bạn.
+        </p>
 
-    <div class="store-filter-card__meta">
-      Hiển thị <strong>{{ filteredDrinks().length }}</strong> món đồ uống
-    </div>
+        <div class="store-hero__cta-row">
+          <button
+            type="button"
+            class="store-hero__btn-primary"
+            (click)="scrollToSection('all-drinks')"
+          >
+            Đặt Món Ngay
+          </button>
+          <button
+            type="button"
+            class="store-hero__btn-secondary"
+            (click)="scrollToSection('browse-style')"
+          >
+            Khám Phá Gu
+          </button>
+        </div>
 
-    <div class="store-filter-card__sort">
-      <nz-select [(ngModel)]="sortBy" (ngModelChange)="onFilterChange()" style="width: 100%;">
-        <nz-option nzValue="featured" nzLabel="Mặc định: Phổ biến"></nz-option>
-        <nz-option nzValue="price-asc" nzLabel="Giá: Thấp đến Cao"></nz-option>
-        <nz-option nzValue="price-desc" nzLabel="Giá: Cao đến Thấp"></nz-option>
-      </nz-select>
-    </div>
-  </div>
-
-  <!-- ── 4. Beverage Cards Grid (Ng-Zorro <nz-card> Customized) ────── -->
-  <div class="drinks-grid">
-    @for (drink of filteredDrinks(); track drink.id) {
-      <nz-card
-        [nzHoverable]="true"
-        [nzCover]="coverTpl"
-        class="store-drink-card"
-        (click)="openCustomizeModal(drink)">
-        
-        <!-- Image Cover Template -->
-        <ng-template #coverTpl>
-          <div class="store-drink-card__cover">
-            <img
-              [src]="drink.imageUrl"
-              [alt]="drink.name"
-              loading="lazy"
-              class="store-drink-card__img"
-            />
-            @if (drink.badge) {
-              <span class="store-drink-card__badge store-drink-card__badge--{{ drink.badgeType || 'signature' }}">
-                {{ drink.badge }}
-              </span>
-            }
+        <!-- 3 Stats Counters -->
+        <div class="store-hero__stats">
+          <div class="store-hero__stat-item">
+            <span class="store-hero__stat-num">200+</span>
+            <span class="store-hero__stat-text">Chi Nhánh & Đối Tác</span>
           </div>
-        </ng-template>
+          <div class="store-hero__stat-divider"></div>
+          <div class="store-hero__stat-item">
+            <span class="store-hero__stat-num">2,000+</span>
+            <span class="store-hero__stat-text">Ly Tươi Mới / Ngày</span>
+          </div>
+          <div class="store-hero__stat-divider"></div>
+          <div class="store-hero__stat-item">
+            <span class="store-hero__stat-num">30,000+</span>
+            <span class="store-hero__stat-text">Khách Hàng Hài Lòng</span>
+          </div>
+        </div>
+      </div>
 
-        <!-- Information & Actions -->
-        <div class="store-drink-card__content">
-          <span class="store-drink-card__category">{{ drink.categoryName }}</span>
-          <h3 class="store-drink-card__title" [title]="drink.name">{{ drink.name }}</h3>
-          <p class="store-drink-card__desc">{{ drink.description }}</p>
+      <!-- Right Column: Visual Hero Art (with Sparkling Stars) -->
+      <div class="store-hero__visual">
+        <div class="store-hero__image-card">
+          <img
+            src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1000&q=80"
+            alt="UTT Coffee Specialty"
+            class="store-hero__img"
+          />
+          <div class="store-hero__sparkle store-hero__sparkle--top">✦</div>
+          <div class="store-hero__sparkle store-hero__sparkle--bottom">✦</div>
 
-          <div class="store-drink-card__footer">
-            <div class="store-drink-card__price-box">
-              <span class="store-drink-card__price">{{ formatPrice(drink.price) }}</span>
-              @if (drink.originalPrice) {
-                <span class="store-drink-card__original-price">{{ formatPrice(drink.originalPrice) }}</span>
-              }
-            </div>
-
-            <div (click)="$event.stopPropagation()">
-              <app-button
-                variant="primary"
-                leftIcon="plus"
-                [rounded]="true"
-                (click)="quickAddToCart(drink)">
-                Chọn món
-              </app-button>
+          <div class="store-hero__floating-badge">
+            <nz-icon nzType="fire" class="fire-icon" />
+            <div class="badge-info">
+              <span class="title">Cà phê Rang Mộc 100%</span>
+              <span class="sub">Hảo hạng từ Buôn Ma Thuột & Cầu Đất</span>
             </div>
           </div>
         </div>
-      </nz-card>
-    }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 2. Brand & Flavor Ribbon (Marquee Strip) ──────────────────── -->
+  <div class="brand-ribbon">
+    <div class="brand-ribbon__track">
+      <span>ROBUSTA BUÔN MA THUỘT</span>
+      <span class="star">✦</span>
+      <span>ARABICA CẦU ĐẤT</span>
+      <span class="star">✦</span>
+      <span>ESPRESSO ITALIAN</span>
+      <span class="star">✦</span>
+      <span>MATCHA KYOTO</span>
+      <span class="star">✦</span>
+      <span>OOLONG BẢO LỘC</span>
+      <span class="star">✦</span>
+      <span>COLD BREW SPECIALTY</span>
+      <span class="star">✦</span>
+      <span>ROBUSTA BUÔN MA THUỘT</span>
+      <span class="star">✦</span>
+      <span>ARABICA CẦU ĐẤT</span>
+      <span class="star">✦</span>
+      <span>ESPRESSO ITALIAN</span>
+      <span class="star">✦</span>
+      <span>MATCHA KYOTO</span>
+      <span class="star">✦</span>
+      <span>OOLONG BẢO LỘC</span>
+    </div>
   </div>
 
-  <!-- ── 5. Customize Drink Modal (Tùy biến Size, Đường, Đá, Topping) ── -->
+  <!-- ── 3. Section: Món Mới Nhất (NEW ARRIVALS) ─────────────────────── -->
+  <section id="new-arrivals" class="section-block">
+    <h2 class="section-title">MÓN MỚI NHẤT</h2>
+    <div class="drinks-grid">
+      @for (drink of newArrivals; track drink.id) {
+        <app-drink-card
+          [item]="drink"
+          (selectItem)="openCustomizeModal($event)"
+          (addToCart)="quickAddToCart($event)"
+        />
+      }
+    </div>
+    <div class="section-action">
+      <button
+        type="button"
+        class="section-btn-outline"
+        (click)="onSelectCategory('all'); scrollToSection('all-drinks')"
+      >
+        Xem Tất Cả
+      </button>
+    </div>
+  </section>
+
+  <hr class="section-divider" />
+
+  <!-- ── 4. Section: Món Bán Chạy (TOP SELLING) ─────────────────────── -->
+  <section id="top-selling" class="section-block">
+    <h2 class="section-title">MÓN BÁN CHẠY NHẤT</h2>
+    <div class="drinks-grid">
+      @for (drink of topSelling; track drink.id) {
+        <app-drink-card
+          [item]="drink"
+          (selectItem)="openCustomizeModal($event)"
+          (addToCart)="quickAddToCart($event)"
+        />
+      }
+    </div>
+    <div class="section-action">
+      <button
+        type="button"
+        class="section-btn-outline"
+        (click)="onSelectCategory('all'); scrollToSection('all-drinks')"
+      >
+        Xem Tất Cả
+      </button>
+    </div>
+  </section>
+
+  <!-- ── 5. Section: Khám Phá Theo Gu (BROWSE BY STYLE - Asymmetric Layout) ── -->
+  <section id="browse-style" class="section-block">
+    <div class="browse-style-card">
+      <h2 class="section-title section-title--inner">KHÁM PHÁ THEO GU THƯỞNG THỨC</h2>
+
+      <div class="style-grid">
+        @for (style of styleCategories; track style.id; let idx = $index) {
+          <div
+            class="style-item"
+            [class.style-item--wide]="idx === 1 || idx === 2"
+            (click)="selectStyleCategory(style.id)"
+            tabindex="0"
+            role="button"
+          >
+            <img [src]="style.imageUrl" [alt]="style.name" class="style-item__bg" />
+            <div class="style-item__content">
+              <h3 class="style-item__title">{{ style.name }}</h3>
+              <span class="style-item__sub">{{ style.subtitle }}</span>
+            </div>
+            <div class="style-item__arrow">
+              <nz-icon nzType="arrow-right" />
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 6. Section: Toàn Bộ Thực Đơn & Bộ Lọc (ALL DRINKS) ────────── -->
+  <section id="all-drinks" class="section-block">
+    <h2 class="section-title">TOÀN BỘ THỰC ĐƠN</h2>
+
+    <!-- Category Pills -->
+    <div class="category-bar">
+      @for (cat of categories; track cat.id) {
+        <button
+          type="button"
+          class="category-bar__pill"
+          [class.category-bar__pill--active]="selectedCategoryId() === cat.id"
+          (click)="onSelectCategory(cat.id)"
+        >
+          <span>{{ cat.name }}</span>
+          <span class="category-bar__count">{{ cat.count }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Search & Filter Card -->
+    <div class="store-filter-card">
+      <div class="store-filter-card__search">
+        <nz-input-wrapper [nzAllowClear]="true" class="store-filter-search-wrapper">
+          <nz-icon nzInputPrefix nzType="search" class="store-filter-search-icon" />
+          <input
+            nz-input
+            placeholder="Tìm kiếm cà phê, trà đào, macchiato theo tên hoặc mô tả..."
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="onFilterChange()"
+            class="store-filter-search-input"
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="store-filter-card__meta">
+        Hiển thị <strong>{{ filteredDrinks().length }}</strong> món đồ uống
+      </div>
+
+      <div class="store-filter-card__sort">
+        <nz-select [(ngModel)]="sortBy" (ngModelChange)="onFilterChange()" class="store-filter-select">
+          <nz-option nzValue="featured" nzLabel="Sắp xếp: Phổ biến nhất"></nz-option>
+          <nz-option nzValue="price-asc" nzLabel="Giá: Thấp đến Cao"></nz-option>
+          <nz-option nzValue="price-desc" nzLabel="Giá: Cao đến Thấp"></nz-option>
+        </nz-select>
+      </div>
+    </div>
+
+    <!-- Drink Cards Grid -->
+    <div class="drinks-grid">
+      @for (drink of filteredDrinks(); track drink.id) {
+        <app-drink-card
+          [item]="drink"
+          (selectItem)="openCustomizeModal($event)"
+          (addToCart)="quickAddToCart($event)"
+        />
+      } @empty {
+        <div class="drinks-empty">
+          <nz-icon nzType="inbox" class="drinks-empty__icon" />
+          <h3>Không tìm thấy món nào phù hợp</h3>
+          <p>Vui lòng thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác nhé.</p>
+          <button
+            type="button"
+            class="section-btn-outline"
+            (click)="onSelectCategory('all'); searchQuery = ''; onFilterChange()"
+          >
+            Đặt lại bộ lọc
+          </button>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ── 7. Section: Đánh Giá Khách Hàng (OUR HAPPY CUSTOMERS) ──────── -->
+  <section class="section-block reviews-section">
+    <div class="reviews-header">
+      <h2 class="section-title section-title--left">KHÁCH HÀNG NÓI GÌ VỀ CHÚNG TÔI</h2>
+      <div class="reviews-header__badge">
+        <nz-icon nzType="star" nzTheme="fill" class="star-icon" />
+        <span>4.9 / 5.0 (Hơn 1,200 đánh giá)</span>
+      </div>
+    </div>
+
+    <div class="reviews-grid">
+      @for (rev of customerReviews; track rev.name) {
+        <div class="review-card">
+          <div class="review-card__stars">
+            @for (star of [1, 2, 3, 4, 5]; track star) {
+              <span class="star">★</span>
+            }
+          </div>
+
+          <div class="review-card__author">
+            <span class="name">{{ rev.name }}</span>
+            @if (rev.verified) {
+              <span class="verified" title="Khách hàng đã xác thực">
+                <nz-icon nzType="check-circle" nzTheme="fill" />
+              </span>
+            }
+          </div>
+
+          <p class="review-card__text">“{{ rev.comment }}”</p>
+
+          <span class="review-card__date">Đăng ngày {{ rev.date }}</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ── 8. Floating Newsletter Banner (Figma SHOP.CO Style) ────────── -->
+  <section class="newsletter-wrapper">
+    <div class="newsletter-card">
+      <div class="newsletter-card__text-col">
+        <h2 class="newsletter-card__title">NHẬN NGAY ƯU ĐÃI &amp; THỰC ĐƠN MỚI NHẤT MỖI TUẦN</h2>
+        <p class="newsletter-card__sub">
+          Đăng ký để nhận voucher giảm 20% và là người đầu tiên trải nghiệm các món đồ uống theo mùa.
+        </p>
+      </div>
+
+      <div class="newsletter-card__form-col">
+        <div class="newsletter-card__input-wrapper">
+          <nz-icon nzType="mail" class="mail-icon" />
+          <input
+            type="email"
+            placeholder="Nhập địa chỉ email của bạn..."
+            [(ngModel)]="newsletterEmail"
+            (keyup.enter)="subscribeNewsletter()"
+            class="newsletter-card__input"
+          />
+        </div>
+
+        <button
+          type="button"
+          class="newsletter-card__btn"
+          (click)="subscribeNewsletter()"
+        >
+          Đăng Ký Nhận Tin
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Modal Tùy Chỉnh Món (Size, Đường, Đá, Topping) ─────────────── -->
   <app-modal
     [visible]="isModalVisible()"
     (visibleChange)="isModalVisible.set($event)"
     [title]="selectedDrink() ? 'Tùy chỉnh: ' + selectedDrink()!.name : 'Chọn món'"
     [footer]="customFooterTemplate"
-    size="md">
+    size="md"
+  >
     @if (selectedDrink(); as drink) {
       <div class="custom-modal-body">
         <!-- Image & Basic info -->
@@ -225,7 +434,7 @@
       <div class="modal-price-footer__btns">
         <app-button variant="secondary" (click)="isModalVisible.set(false)">Hủy</app-button>
         <app-button variant="primary" leftIcon="shopping-cart" (click)="confirmAddToCart()">
-          Thêm vào hóa đơn
+          Thêm vào giỏ hàng
         </app-button>
       </div>
     </div>

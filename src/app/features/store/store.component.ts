@@ -1,26 +1,15 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { NzIconDirective } from 'ng-zorro-antd/icon';
 import { NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent } from 'ng-zorro-antd/input';
 import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
-import { NzCardModule, NzCardComponent } from 'ng-zorro-antd/card';
 import { AppButtonComponent } from '../../shared/app-button/app-button.component';
 import { AppModalComponent } from '../../shared/app-modal/app-modal.component';
+import { AppDrinkCardComponent, DrinkItem } from '../../shared/app-drink-card/app-drink-card.component';
 import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
-import { BreadcrumbsService } from '../../shared/app-breadcrumbs/breadcrumbs.service';
-
-export interface DrinkItem {
-  id: string;
-  name: string;
-  category: string;
-  categoryName: string;
-  price: number;
-  originalPrice?: number;
-  imageUrl: string;
-  description: string;
-  badge?: string;
-  badgeType?: 'signature' | 'bestseller' | 'new';
-}
+import { CartService } from '../../shared/services/cart.service';
 
 export interface CategoryTab {
   id: string;
@@ -40,12 +29,28 @@ export interface ToppingOption {
   price: number;
 }
 
+export interface CustomerReview {
+  name: string;
+  verified: boolean;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
+export interface StyleCategory {
+  id: string;
+  name: string;
+  subtitle: string;
+  imageUrl: string;
+}
+
 @Component({
   selector: 'app-store',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './store.component.html',
   styleUrls: ['./store.component.scss'],
   imports: [
+    CommonModule,
     FormsModule,
     NzIconDirective,
     NzInputDirective,
@@ -53,20 +58,21 @@ export interface ToppingOption {
     NzInputWrapperComponent,
     NzSelectComponent,
     NzOptionComponent,
-    NzCardModule,
-    NzCardComponent,
     AppButtonComponent,
     AppModalComponent,
+    AppDrinkCardComponent,
   ],
   standalone: true,
 })
 export class StoreComponent implements OnInit {
+  readonly cartService = inject(CartService);
   private readonly toast = inject(AppNotificationService);
-  private readonly breadcrumbsService = inject(BreadcrumbsService);
+  private readonly route = inject(ActivatedRoute);
 
   searchQuery = '';
   sortBy = 'featured';
   readonly selectedCategoryId = signal('all');
+  newsletterEmail = '';
 
   // Modal customization state
   readonly isModalVisible = signal(false);
@@ -75,36 +81,6 @@ export class StoreComponent implements OnInit {
   readonly selectedSugar = signal<string>('100%');
   readonly selectedIce = signal<string>('100% đá');
   readonly selectedToppingIds = signal<Set<string>>(new Set());
-
-  // Cart state
-  readonly cartItems = signal<Array<{ drink: DrinkItem; price: number; quantity: number }>>([
-    {
-      drink: {
-        id: 'c-1',
-        name: 'Cà Phê Phin Sữa Đá Truyền Thống',
-        category: 'traditional-coffee',
-        categoryName: 'Cà phê truyền thống',
-        price: 29000,
-        imageUrl: '',
-        description: '',
-      },
-      price: 29000,
-      quantity: 2,
-    },
-    {
-      drink: {
-        id: 't-1',
-        name: 'Trà Đào Cam Sả Tươi Mát',
-        category: 'fruit-tea',
-        categoryName: 'Trà trái cây tươi',
-        price: 45000,
-        imageUrl: '',
-        description: '',
-      },
-      price: 45000,
-      quantity: 1,
-    },
-  ]);
 
   readonly sizeOptions: SizeOption[] = [
     { id: 'S', label: 'Nhỏ (S)', extraPrice: 0 },
@@ -129,6 +105,60 @@ export class StoreComponent implements OnInit {
     { id: 'fruit-tea', name: 'Trà trái cây tươi', count: 2 },
     { id: 'milk-tea', name: 'Trà sữa & Macchiato', count: 2 },
     { id: 'juice-pastry', name: 'Nước ép & Bánh ngọt', count: 2 },
+  ];
+
+  readonly styleCategories: StyleCategory[] = [
+    {
+      id: 'traditional-coffee',
+      name: 'Cà Phê Truyền Thống',
+      subtitle: 'Phin rang mộc & Bạc xỉu béo ngậy',
+      imageUrl: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      id: 'espresso-machine',
+      name: 'Espresso & Cold Brew',
+      subtitle: 'Arabica Cầu Đất & Ủ lạnh 18h thơm lừng',
+      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      id: 'fruit-tea',
+      name: 'Trà Trái Cây Thanh Mát',
+      subtitle: 'Đào cam sả & Trái cây nhiệt đới sảng khoái',
+      imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      id: 'milk-tea',
+      name: 'Trà Sữa & Đá Xay',
+      subtitle: 'Oolong nướng than & Matcha kem cheese',
+      imageUrl: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=800&q=80',
+    },
+  ];
+
+  readonly customerReviews: CustomerReview[] = [
+    {
+      name: 'Sarah M.',
+      verified: true,
+      rating: 5,
+      comment:
+        'Cà phê phin sữa đá ở đây đậm đà đúng chất Robusta mộc, lớp sữa béo vừa phải không bị gắt. Giao hàng rất nhanh chỉ 15 phút là tới nơi!',
+      date: '14/08/2026',
+    },
+    {
+      name: 'Alex K.',
+      verified: true,
+      rating: 5,
+      comment:
+        'Trà đào cam sả và Cold Brew cam vàng cực kỳ tươi mát, thơm sả tự nhiên. Đồ uống cứu cánh cho cả ngày làm việc tập trung cao độ.',
+      date: '18/08/2026',
+    },
+    {
+      name: 'James L.',
+      verified: true,
+      rating: 5,
+      comment:
+        'Bánh sừng bò nướng nóng hổi giòn tan ăn kèm Caramel Macchiato là combo hoàn hảo cho bữa sáng. Rất ưng ý với chất lượng phục vụ của UTT.CO!',
+      date: '20/08/2026',
+    },
   ];
 
   readonly drinksList: DrinkItem[] = [
@@ -261,21 +291,53 @@ export class StoreComponent implements OnInit {
     },
   ];
 
+  // Slices for New Arrivals & Top Selling sections
+  get newArrivals(): DrinkItem[] {
+    return [this.drinksList[3], this.drinksList[5], this.drinksList[9], this.drinksList[11]];
+  }
+
+  get topSelling(): DrinkItem[] {
+    return [this.drinksList[0], this.drinksList[1], this.drinksList[6], this.drinksList[8]];
+  }
+
   readonly filteredDrinks = signal<DrinkItem[]>(this.drinksList);
 
   ngOnInit(): void {
-    this.breadcrumbsService.set([
-      { label: 'Trang chủ', url: '/home', icon: 'home' },
-      { label: 'Thực Đơn Cà Phê & Đồ Uống', url: '/store' },
-    ]);
+    this.route.queryParams.subscribe(params => {
+      if (params['q']) {
+        this.searchQuery = params['q'];
+        this.onFilterChange();
+        this.scrollToSection('all-drinks');
+      }
+    });
   }
 
   formatPrice(amount: number): string {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   }
 
-  cartTotal(): number {
-    return this.cartItems().reduce((sum, item) => sum + item.price * item.quantity, 0);
+  scrollToSection(sectionId: string): void {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  selectStyleCategory(catId: string): void {
+    this.onSelectCategory(catId);
+    this.scrollToSection('all-drinks');
+  }
+
+  subscribeNewsletter(): void {
+    if (!this.newsletterEmail.trim()) {
+      this.toast.warning('Vui lòng nhập địa chỉ email của bạn!', '');
+      return;
+    }
+    this.toast.success(
+      'Đăng ký thành công!',
+      `Chúng tôi đã lưu địa chỉ "${this.newsletterEmail}". Bạn sẽ nhận được các mã ưu đãi độc quyền sớm nhất!`
+    );
+    this.newsletterEmail = '';
   }
 
   onSelectCategory(catId: string): void {
@@ -350,23 +412,30 @@ export class StoreComponent implements OnInit {
     const drink = this.selectedDrink();
     if (!drink) return;
 
-    const finalPrice = this.computeCurrentModalTotal();
-    this.cartItems.update(items => [...items, { drink, price: finalPrice, quantity: 1 }]);
+    const sizeOpt = this.sizeOptions.find(s => s.id === this.selectedSize());
+    const selectedToppings = this.toppingOptions.filter(t => this.selectedToppingIds().has(t.id));
+
+    this.cartService.addItem(
+      drink,
+      {
+        size: this.selectedSize(),
+        sizeExtra: sizeOpt?.extraPrice || 0,
+        sugar: this.selectedSugar(),
+        ice: this.selectedIce(),
+        toppings: selectedToppings,
+      },
+      1
+    );
+
     this.isModalVisible.set(false);
     this.toast.success(
       `Đã thêm "${drink.name}" (${this.selectedSize()}) vào giỏ hàng!`,
-      `Tổng tiền: ${this.formatPrice(finalPrice)}`,
+      `Nhấn vào biểu tượng giỏ hàng ở thanh tiêu đề để xem chi tiết hoặc thanh toán.`
     );
   }
 
   openCartSummary(): void {
-    const count = this.cartItems().length;
-    const total = this.cartTotal();
-    this.toast.info(`Giỏ hàng hiện có ${count} món đồ uống`, `Tổng thanh toán: ${this.formatPrice(total)}`);
-  }
-
-  onAddNewDrink(): void {
-    this.toast.info('Chức năng thêm món mới vào thực đơn (dành cho Quản lý / Thu ngân).');
+    this.cartService.openCart();
   }
 }
 export default StoreComponent;

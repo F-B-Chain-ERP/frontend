@@ -513,62 +513,77 @@
 </nz-card>
 
 
-<!-- ── Single Standard Card Specimen Showcase ── -->
-<nz-card [nzTitle]="'Mẫu Component Thẻ Sản Phẩm (<nz-card>)'" style="margin-bottom: 16px;">
+<!-- ── Standard Beverage Card Component Showcase ── -->
+<nz-card [nzTitle]="'Mẫu Component Thẻ Đồ Uống & Sản Phẩm (<app-drink-card>)'" style="margin-bottom: 16px;">
   <div nz-row [nzGutter]="[24, 24]">
     <div nz-col nzSpan="24">
       <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 16px;">
-        Mẫu component thẻ sản phẩm & đồ uống chuẩn hóa theo Design Tokens (sử dụng vector minh họa, không load ảnh
-        ngoài):
+        Component thẻ món đồ uống chuẩn hóa theo Design Tokens (<code style="font-family: monospace;">&lt;app-drink-card&gt;</code>), có hỗ trợ badges, original price, hover effect, và callback chọn món:
       </p>
 
-      <div style="display: flex; justify-content: flex-start;">
-        <nz-card [nzHoverable]="true" [nzCover]="specimenCoverTpl"
-          style="width: 320px; max-width: 100%; border-radius: var(--radius-xl); overflow: hidden; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm);">
-
-          <ng-template #specimenCoverTpl>
-            <div
-              style="height: 150px; background: var(--brand-soft); display: flex; align-items: center; justify-content: center; position: relative;">
-              <nz-icon nzType="coffee" style="font-size: 52px; color: var(--brand);" />
-              <span
-                style="position: absolute; top: 12px; left: 12px; background: var(--brand); color: #fff; padding: 2px 8px; border-radius: var(--radius-pill); font-size: 10px; font-weight: 700; letter-spacing: var(--ls-wide);">
-                SIGNATURE
-              </span>
-            </div>
-          </ng-template>
-
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <span
-              style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: var(--ls-wide);">
-              Cà phê truyền thống
-            </span>
-            <h4 style="font-size: var(--text-base); font-weight: 700; color: var(--text-primary); margin: 0 0 2px;">
-              Cà Phê Muối Đặc Sản Xứ Huế
-            </h4>
-            <p style="font-size: var(--text-xs); color: var(--text-secondary); line-height: 1.45; margin: 0 0 10px;">
-              Lớp kem béo mằn mặn hòa quyện cùng vị cà phê Robusta rang mộc đậm đà.
-            </p>
-
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border-subtle); margin-top: auto;">
-              <div style="display: flex; flex-direction: column;">
-                <span style="font-size: var(--text-lg); font-weight: 700; color: var(--brand); line-height: 1.1;">38.000
-                  ₫</span>
-                <span
-                  style="font-size: 11px; color: var(--text-muted); text-decoration: line-through; margin-top: 2px;">45.000
-                  ₫</span>
-              </div>
-              <app-button variant="primary" leftIcon="plus" [rounded]="true"
-                (click)="toastService.success('Đã thêm Cà Phê Muối vào đơn hàng!')">
-                Chọn món
-              </app-button>
-            </div>
-          </div>
-        </nz-card>
+      <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+        <div style="width: 300px; max-width: 100%;">
+          <app-drink-card
+            [item]="demoDrinkItem"
+            (selectItem)="onDrinkCardSelect($event)"
+            (addToCart)="onDrinkCardAddToCart($event)"
+          />
+        </div>
       </div>
     </div>
   </div>
 </nz-card>
+
+<!-- ── Quantity Stepper Showcase ── -->
+<nz-card [nzTitle]="'Bộ Đếm Số Lượng (<app-quantity-stepper>)'" style="margin-bottom: 16px;">
+  <div nz-row [nzGutter]="[24, 24]">
+    <div nz-col [nzXs]="24" [nzMd]="8">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 8px;">1. Kích cỡ Nhỏ (size="sm")</h4>
+      <p style="font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: 12px;">Phù hợp cho giỏ hàng, bảng dữ liệu, danh sách nhỏ:</p>
+      <app-quantity-stepper [value]="2" size="sm" (valueChange)="toastService.info('Số lượng: ' + $event)" />
+    </div>
+
+    <div nz-col [nzXs]="24" [nzMd]="8">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 8px;">2. Kích cỡ Mặc định (size="default")</h4>
+      <p style="font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: 12px;">Phù hợp cho form đặt món, trang chi tiết sản phẩm:</p>
+      <app-quantity-stepper [value]="1" size="default" (valueChange)="toastService.info('Số lượng: ' + $event)" />
+    </div>
+
+    <div nz-col [nzXs]="24" [nzMd]="8">
+      <h4 style="font-size: var(--text-sm); font-weight: 600; margin-bottom: 8px;">3. Kích cỡ Lớn (size="lg") & Vô hiệu hóa</h4>
+      <p style="font-size: var(--text-xs); color: var(--text-secondary); margin-bottom: 12px;">Trạng thái disabled hoặc kích cỡ nổi bật:</p>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <app-quantity-stepper [value]="5" size="lg" (valueChange)="toastService.info('Số lượng: ' + $event)" />
+        <app-quantity-stepper [value]="1" [disabled]="true" />
+      </div>
+    </div>
+  </div>
+</nz-card>
+
+<!-- ── Cart Drawer Panel Showcase ── -->
+<nz-card [nzTitle]="'Giỏ Hàng & Ngăn Trượt (<app-cart-panel>)'" style="margin-bottom: 16px;">
+  <div nz-row [nzGutter]="[24, 24]">
+    <div nz-col nzSpan="24">
+      <p style="font-size: var(--text-sm); color: var(--text-secondary); margin-bottom: 16px;">
+        Ngăn kéo giỏ hàng trượt vào từ bên phải, quản lý bằng Angular Signals (<code style="font-family: monospace;">CartService</code>), hỗ trợ cập nhật số lượng, xóa món và thanh toán:
+      </p>
+
+      <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <app-button variant="primary" leftIcon="shopping-cart" (click)="cartService.openCart()">
+          Mở Giỏ Hàng Demo ({{ cartService.totalCount() }} món)
+        </app-button>
+        <app-button variant="secondary" leftIcon="plus" (click)="onDrinkCardAddToCart(demoDrinkItem)">
+          Thêm Món Thử Nghiệm vào Giỏ
+        </app-button>
+        <app-button variant="ghost" leftIcon="delete" (click)="cartService.clearCart()">
+          Xóa Giỏ Hàng
+        </app-button>
+      </div>
+    </div>
+  </div>
+</nz-card>
+
+<app-cart-panel />
 
 <!-- ── Overflow Tags & Badges Showcase ── -->
 <nz-card [nzTitle]="'Tags, Overflow Tags & Status Badges'" style="margin-bottom: 16px;">

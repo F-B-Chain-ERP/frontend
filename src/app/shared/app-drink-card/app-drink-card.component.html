@@ -1,5 +1,5 @@
 <div class="drink-card" (click)="onCardClick()">
-  <!-- ── 1. Drink Image Area (Primary visual focus) ── -->
+  <!-- ── 1. Image Container (Clean square-ish with subtle background) ── -->
   <div class="drink-card__media">
     <img
       [src]="item.imageUrl"
@@ -14,11 +14,21 @@
     }
   </div>
 
-  <!-- ── 2. Information (Clean & Minimal) ── -->
+  <!-- ── 2. Information ── -->
   <div class="drink-card__body">
-    <span class="drink-card__category">{{ item.categoryName }}</span>
     <h3 class="drink-card__title" [title]="item.name">{{ item.name }}</h3>
-    <p class="drink-card__desc">{{ item.description }}</p>
+
+    <!-- Rating Stars -->
+    <div class="drink-card__rating">
+      <div class="stars">
+        <span class="star">★</span>
+        <span class="star">★</span>
+        <span class="star">★</span>
+        <span class="star">★</span>
+        <span class="star">★</span>
+      </div>
+      <span class="score">4.8/5</span>
+    </div>
 
     <!-- ── 3. Price & Action ── -->
     <div class="drink-card__footer">
@@ -26,18 +36,21 @@
         <span class="drink-card__price">{{ formatPrice(item.price) }}</span>
         @if (item.originalPrice) {
           <span class="drink-card__original-price">{{ formatPrice(item.originalPrice) }}</span>
+          <span class="drink-card__discount-tag">-20%</span>
         }
       </div>
 
       <div class="drink-card__action-btn" (click)="$event.stopPropagation()">
         <app-button
           variant="primary"
-          leftIcon="plus"
           [rounded]="true"
-          (click)="onAddClick()">
+          (click)="onAddClick()"
+          class="drink-card__btn"
+        >
           Chọn món
         </app-button>
       </div>
     </div>
   </div>
 </div>
+
