@@ -146,6 +146,14 @@ jobs:
           name: frontend-dist-${{ needs.build.outputs.short_sha }}
           path: .
 
+      - name: Package Deploy Assets into Single Archive
+        run: |
+          # Đóng gói tất cả deploy assets vào 1 file tar duy nhất
+          # để tránh vấn đề glob expansion trong appleboy/scp-action
+          tar -czf deploy-assets.tar.gz deploy/
+          echo "▶ Nội dung deploy-assets.tar.gz:"
+          tar -tzf deploy-assets.tar.gz
+
       - name: Transfer Build Archive & Deploy Assets to Server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -155,7 +163,8 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           password: ${{ secrets.SSH_PASSWORD }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          source: "${{ needs.build.outputs.package_name }},deploy/nginx/erp-utt.conf,deploy/scripts/*"
+          # Chỉ dùng tên file tường minh, KHÔNG dùng glob (*) vì drone-scp không expand glob
+          source: "${{ needs.build.outputs.package_name }},deploy-assets.tar.gz"
           target: "/opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}"
 
       - name: Execute Deployment & Automated Health Check on Server
@@ -189,11 +198,20 @@ jobs:
             mkdir -p "${FRONTEND_DIR}/deploy/nginx"
             mkdir -p "${FRONTEND_DIR}/deploy/scripts"
 
-            # Di chuyển các script và config mới nhất vào /opt/ERP-UTT/frontend
+            # Giải nén deploy-assets.tar.gz để lấy script và nginx config
+            # (file này được tạo bởi bước 'Package Deploy Assets into Single Archive')
+            if [ -f "${TRANSFER_DIR}/deploy-assets.tar.gz" ]; then
+              tar -xzf "${TRANSFER_DIR}/deploy-assets.tar.gz" -C "${TRANSFER_DIR}"
+              rm -f "${TRANSFER_DIR}/deploy-assets.tar.gz"
+              echo "  ✅ Đã giải nén deploy-assets.tar.gz"
+            fi
+
+            # Đồng bộ deploy scripts và nginx config vào thư mục chuẩn
             if [ -d "${TRANSFER_DIR}/deploy" ]; then
               cp -r "${TRANSFER_DIR}/deploy/nginx/"* "${FRONTEND_DIR}/deploy/nginx/" 2>/dev/null || true
               cp -r "${TRANSFER_DIR}/deploy/scripts/"* "${FRONTEND_DIR}/deploy/scripts/" 2>/dev/null || true
               chmod +x "${FRONTEND_DIR}/deploy/scripts/"*.sh
+              echo "  ✅ Đã đồng bộ scripts và nginx config"
             fi
 
             # Di chuyển gói build vào thư mục frontend
