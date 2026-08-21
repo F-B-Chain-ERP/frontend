@@ -154,6 +154,22 @@ jobs:
           echo "▶ Nội dung deploy-assets.tar.gz:"
           tar -tzf deploy-assets.tar.gz
 
+      - name: Pre-create Transfer Directory on Server
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER || 'root' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY || secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            # Tạo thư mục cha và thư mục transfer trước để drone-scp không phải tự tạo
+            mkdir -p /opt/ERP-UTT
+            mkdir -p /opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}
+            chmod 755 /opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}
+            echo "✅ Đã tạo thư mục transfer: /opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}"
+
       - name: Transfer Build Archive & Deploy Assets to Server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -166,6 +182,7 @@ jobs:
           # Chỉ dùng tên file tường minh, KHÔNG dùng glob (*) vì drone-scp không expand glob
           source: "${{ needs.build.outputs.package_name }},deploy-assets.tar.gz"
           target: "/opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}"
+          overwrite: true
 
       - name: Execute Deployment & Automated Health Check on Server
         uses: appleboy/ssh-action@v1.2.0
