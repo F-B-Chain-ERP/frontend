@@ -194,12 +194,10 @@ jobs:
             echo "  Timestamp     : $(date '+%Y-%m-%d %H:%M:%S')"
             echo "=========================================================="
 
-            # Đảm bảo cấu trúc thư mục chính tồn tại trên server
-            mkdir -p "${FRONTEND_DIR}/browser" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/browser"
-            mkdir -p "${FRONTEND_DIR}/backups" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/backups"
-            mkdir -p "${FRONTEND_DIR}/staging" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/staging"
-            mkdir -p "${FRONTEND_DIR}/deploy/nginx" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/deploy/nginx"
-            mkdir -p "${FRONTEND_DIR}/deploy/scripts" 2>/dev/null || sudo -n mkdir -p "${FRONTEND_DIR}/deploy/scripts"
+            # Đảm bảo cấu trúc thư mục chính tồn tại trên server và cấp quyền cho SSH user
+            sudo mkdir -p "${FRONTEND_DIR}/browser" "${FRONTEND_DIR}/backups" "${FRONTEND_DIR}/staging" "${FRONTEND_DIR}/deploy/nginx" "${FRONTEND_DIR}/deploy/scripts"
+            sudo chown -R $(whoami):$(whoami) /opt/ERP-UTT
+            sudo chmod -R 775 /opt/ERP-UTT
 
             # Giải nén deploy-assets.tar.gz để lấy script và nginx config
             if [ -f "${TRANSFER_DIR}/deploy-assets.tar.gz" ]; then
