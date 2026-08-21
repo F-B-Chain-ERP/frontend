@@ -1,0 +1,121 @@
+.selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px var(--space-6, 16px);
+  background: var(--brand-50, #fdf0e9);
+  border: 1px solid var(--brand-200, #f4b595);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  min-height: 48px;
+  animation: selectionBarFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--dur-fast, 120ms) var(--ease);
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3, 8px);
+    flex-wrap: wrap;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #ffffff;
+    flex-shrink: 0;
+
+    &-icon {
+      font-size: 11px;
+      font-weight: var(--fw-bold, 700);
+    }
+  }
+
+  &__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--text-sm, 12.5px);
+    color: var(--text-primary);
+  }
+
+  &__count {
+    color: var(--brand);
+    font-weight: var(--fw-bold, 700);
+    font-size: var(--text-base, 13px);
+  }
+
+  &__total {
+    color: var(--text-muted);
+    font-size: var(--text-xs, 11.5px);
+  }
+
+  &__divider {
+    display: inline-block;
+    width: 1px;
+    height: 16px;
+    background: var(--border-subtle);
+    margin: 0 var(--space-1, 2px);
+  }
+
+  &__clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: var(--text-xs, 11.5px);
+    font-weight: var(--fw-medium, 500);
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm, 5px);
+    transition: all var(--dur-fast, 120ms) var(--ease);
+
+    &:hover {
+      color: var(--danger, #dc2626);
+      background: var(--danger-soft, #fceeed);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 6px);
+    flex-wrap: wrap;
+
+    ::ng-deep .btn {
+      height: 28px !important;
+      padding: 0 var(--space-4, 12px) !important;
+      font-size: var(--text-xs, 11.5px) !important;
+      border-radius: var(--radius-sm, 5px) !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+
+    &__actions {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+}
+
+@keyframes selectionBarFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

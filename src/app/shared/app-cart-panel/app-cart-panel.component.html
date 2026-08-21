@@ -1,0 +1,139 @@
+<!-- Backdrop Overlay -->
+<div
+  class="cart-drawer-overlay"
+  [class.cart-drawer-overlay--visible]="cartService.isCartOpen()"
+  (click)="onClose()"
+></div>
+
+<!-- Drawer Panel -->
+<aside
+  class="cart-drawer"
+  [class.cart-drawer--open]="cartService.isCartOpen()"
+  aria-label="Giỏ hàng mua hàng"
+>
+  <!-- ── 1. Drawer Header ───────────────────────────── -->
+  <div class="cart-drawer__header">
+    <div class="cart-drawer__header-title">
+      <nz-icon nzType="shopping-cart" class="cart-drawer__header-icon" />
+      <h2>Giỏ hàng của bạn</h2>
+      @if (cartService.totalCount() > 0) {
+        <span class="cart-drawer__count-badge">{{ cartService.totalCount() }}</span>
+      }
+    </div>
+    <button
+      type="button"
+      class="cart-drawer__close-btn"
+      (click)="onClose()"
+      title="Đóng giỏ hàng"
+    >
+      <nz-icon nzType="close" />
+    </button>
+  </div>
+
+  <!-- ── 2. Drawer Body (Items List or Empty State) ─── -->
+  <div class="cart-drawer__body">
+    @if (cartService.isEmpty()) {
+      <div class="cart-empty">
+        <div class="cart-empty__icon-box">
+          <nz-icon nzType="shopping" />
+        </div>
+        <h3 class="cart-empty__title">Giỏ hàng đang trống</h3>
+        <p class="cart-empty__desc">
+          Bạn chưa chọn sản phẩm nào. Hãy khám phá thực đơn cà phê và đồ uống đặc sản nhé!
+        </p>
+        <app-button variant="primary" leftIcon="appstore" [rounded]="true" (click)="onClose()">
+          Xem thực đơn ngay
+        </app-button>
+      </div>
+    } @else {
+      <div class="cart-items-list">
+        @for (item of cartService.items(); track item.id) {
+          <div class="cart-item-card">
+            <!-- Thumbnail -->
+            <div class="cart-item-card__thumb">
+              @if (item.drink.imageUrl) {
+                <img [src]="item.drink.imageUrl" [alt]="item.drink.name" loading="lazy" />
+              } @else {
+                <div class="cart-item-card__thumb-placeholder">
+                  <nz-icon nzType="coffee" />
+                </div>
+              }
+            </div>
+
+            <!-- Details -->
+            <div class="cart-item-card__content">
+              <div class="cart-item-card__top">
+                <h4 class="cart-item-card__name" [title]="item.drink.name">{{ item.drink.name }}</h4>
+                <button
+                  type="button"
+                  class="cart-item-card__remove-btn"
+                  (click)="onRemoveItem(item.id, item.drink.name)"
+                  nz-tooltip="Xóa món này"
+                >
+                  <nz-icon nzType="delete" />
+                </button>
+              </div>
+
+              @if (item.optionsSummary) {
+                <p class="cart-item-card__options">{{ item.optionsSummary }}</p>
+              }
+
+              <div class="cart-item-card__bottom">
+                <app-quantity-stepper
+                  [value]="item.quantity"
+                  size="sm"
+                  (valueChange)="onQuantityChange(item.id, $event)"
+                />
+
+                <div class="cart-item-card__price-box">
+                  <span class="cart-item-card__total-price">{{ formatPrice(item.totalPrice) }}</span>
+                  @if (item.quantity > 1) {
+                    <span class="cart-item-card__unit-price">({{ formatPrice(item.unitPrice) }}/ly)</span>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- ── 3. Drawer Footer (Summary & Actions) ────────── -->
+  @if (!cartService.isEmpty()) {
+    <div class="cart-drawer__footer">
+      <div class="cart-drawer__summary">
+        <div class="cart-drawer__summary-row">
+          <span>Tạm tính ({{ cartService.totalCount() }} món):</span>
+          <span>{{ formatPrice(cartService.totalAmount()) }}</span>
+        </div>
+        <div class="cart-drawer__summary-row">
+          <span>Thuế VAT (8%):</span>
+          <span class="text-success">Đã bao gồm</span>
+        </div>
+        <div class="cart-drawer__summary-row cart-drawer__summary-row--total">
+          <span>Tổng thanh toán:</span>
+          <span class="cart-drawer__total-amount">{{ formatPrice(cartService.totalAmount()) }}</span>
+        </div>
+      </div>
+
+      <div class="cart-drawer__actions">
+        <app-button
+          variant="secondary"
+          [fullWidth]="false"
+          (click)="onClearCart()"
+        >
+          Xóa giỏ
+        </app-button>
+        <app-button
+          variant="primary"
+          leftIcon="check-circle"
+          [fullWidth]="true"
+          (click)="onCheckout()"
+        >
+          Tiến hành Đặt hàng
+        </app-button>
+      </div>
+    </div>
+  }
+</aside>

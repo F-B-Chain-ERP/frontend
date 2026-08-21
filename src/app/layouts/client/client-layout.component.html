@@ -1,0 +1,109 @@
+<div class="client-shell">
+  <!-- ── 0. Top Announcement Bar (Figma SHOP.CO style) ────────────────── -->
+  @if (showAnnouncement()) {
+    <aside class="announcement-bar" role="banner">
+      <div class="announcement-bar__content">
+        <span>Đăng ký hôm nay & nhận ưu đãi giảm <strong>20%</strong> cho đơn hàng đầu tiên!</span>
+        <a routerLink="/store" class="announcement-bar__link">Khám Phá Ngay</a>
+      </div>
+      <button
+        type="button"
+        class="announcement-bar__close"
+        (click)="dismissAnnouncement()"
+        aria-label="Đóng thông báo"
+        title="Đóng thông báo"
+      >
+        <nz-icon nzType="close" />
+      </button>
+    </aside>
+  }
+
+  <!-- ── 1. Sticky Navigation Bar ────────────────────────────────────── -->
+  <app-client-navbar></app-client-navbar>
+
+  <!-- ── 2. Main Storefront Content Area ─────────────────────────────── -->
+  <main class="client-main-content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <!-- ── 3. Global Slide-in Cart Drawer ──────────────────────────────── -->
+  <app-cart-panel></app-cart-panel>
+
+  <!-- ── 4. Rich 4-Column Footer (Figma SHOP.CO Style) ───────────────── -->
+  <footer class="client-footer">
+    <div class="client-footer__container">
+      <!-- Main Columns -->
+      <div class="client-footer__grid">
+        <!-- Col 1: Brand & Bio -->
+        <div class="client-footer__col client-footer__col--brand">
+          <div class="client-footer__brand-title">UTT.CO</div>
+          <p class="client-footer__desc">
+            Chúng tôi mang đến những ly cà phê rang mộc hảo hạng cùng đồ uống tươi mát mỗi ngày để nâng tầm phong cách sống năng động của bạn.
+          </p>
+          <div class="client-footer__socials">
+            <a href="javascript:void(0)" class="client-footer__social-btn" aria-label="Twitter">
+              <nz-icon nzType="twitter" />
+            </a>
+            <a href="javascript:void(0)" class="client-footer__social-btn" aria-label="Facebook">
+              <nz-icon nzType="facebook" />
+            </a>
+            <a href="javascript:void(0)" class="client-footer__social-btn" aria-label="Instagram">
+              <nz-icon nzType="instagram" />
+            </a>
+            <a href="javascript:void(0)" class="client-footer__social-btn" aria-label="Github">
+              <nz-icon nzType="github" />
+            </a>
+          </div>
+        </div>
+
+        <!-- Col 2: Company -->
+        <div class="client-footer__col">
+          <h4 class="client-footer__heading">CÔNG TY</h4>
+          <ul class="client-footer__links">
+            <li><a routerLink="/store">Về Chúng Tôi</a></li>
+            <li><a routerLink="/store">Thực Đơn Đặc Sắc</a></li>
+            <li><a routerLink="/store">Chi Nhánh & Quán</a></li>
+            <li><a routerLink="/store">Cơ Hội Nghề Nghiệp</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Help -->
+        <div class="client-footer__col">
+          <h4 class="client-footer__heading">TRỢ GIÚP</h4>
+          <ul class="client-footer__links">
+            <li><a routerLink="/store">Chăm Sóc Khách Hàng</a></li>
+            <li><a routerLink="/store">Chính Sách Giao Hàng</a></li>
+            <li><a routerLink="/store">Điều Khoản & Dịch Vụ</a></li>
+            <li><a routerLink="/store">Chính Sách Bảo Mật</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: FAQ / Categories -->
+        <div class="client-footer__col">
+          <h4 class="client-footer__heading">DANH MỤC</h4>
+          <ul class="client-footer__links">
+            <li><a routerLink="/store">Cà Phê Truyền Thống</a></li>
+            <li><a routerLink="/store">Cà Phê Pha Máy</a></li>
+            <li><a routerLink="/store">Trà Trái Cây Tươi</a></li>
+            <li><a routerLink="/store">Trà Sữa & Macchiato</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Bottom Bar: Copyright & Payment Badges -->
+      <div class="client-footer__bottom">
+        <span class="client-footer__copy">
+          UTT.CO © 2026 ERP Hệ Thống Bán Hàng & Đặt Món Trực Tuyến. All Rights Reserved.
+        </span>
+
+        <div class="client-footer__payments">
+          <span class="payment-badge" title="Visa">VISA</span>
+          <span class="payment-badge" title="Mastercard">MC</span>
+          <span class="payment-badge" title="PayPal">PayPal</span>
+          <span class="payment-badge" title="Apple Pay">Pay</span>
+          <span class="payment-badge" title="Google Pay">GPay</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>

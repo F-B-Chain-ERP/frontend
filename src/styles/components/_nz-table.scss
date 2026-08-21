@@ -26,7 +26,6 @@
 
     .nz-table-hide-scrollbar {
       scrollbar-color: transparent transparent !important;
-      width: calc(100% + 5px) !important;
     }
 
     // ── Header ──────────────────────────────────────────
@@ -37,8 +36,13 @@
       font-weight: var(--fw-semibold);
       letter-spacing: var(--ls-caps);
       border-bottom: 1px solid var(--border-strong) !important;
+      border-right: 1px solid var(--border-subtle);
       padding: var(--space-5) var(--space-6);
       white-space: nowrap;
+
+      &:last-child {
+        border-right: none;
+      }
 
       &::before {
         display: none;
@@ -94,17 +98,66 @@
 
     &-thead > tr.thead-search > th {
       background: var(--surface-card);
+      border-right: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-strong) !important;
+      padding: var(--space-2) var(--space-3);
+      font-weight: normal;
+      white-space: nowrap;
+
+      &:last-child {
+        border-right: none;
+      }
+
+      app-table-search-input {
+        display: block;
+        width: 100%;
+      }
+
+      app-button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+
+        .btn {
+          height: 28px !important;
+          width: 28px !important;
+          min-width: 28px !important;
+          padding: 0 !important;
+          border-radius: var(--radius-sm, 4px) !important;
+          border: 1px solid transparent !important;
+          background: transparent !important;
+          color: var(--text-secondary) !important;
+          box-shadow: none !important;
+
+          &:hover {
+            color: var(--brand) !important;
+            background: var(--brand-soft) !important;
+          }
+        }
+      }
+
+      .ant-select,
+      .ant-input-wrapper,
+      .ant-picker {
+        width: 100%;
+        font-size: var(--text-xs);
+      }
     }
 
     // ── Body ────────────────────────────────────────────
     &-tbody > tr {
       > td {
         border-bottom: 1px solid var(--border-strong);
+        border-right: 1px solid var(--border-subtle);
         padding: var(--space-5) var(--space-6);
         color: var(--text-primary);
         font-size: var(--text-base);
         vertical-align: middle;
         transition: background var(--dur-fast) var(--ease);
+
+        &:last-child {
+          border-right: none;
+        }
 
         &.ant-table-column-sort {
           background: var(--surface-sunken);
@@ -180,20 +233,48 @@
       background: color-mix(in srgb, var(--surface-sunken) 80%, transparent);
     }
 
-    // ── Fixed columns shadow ─────────────────────────────
+    // ── Fixed columns ────────────────────────────────────
     &-cell-fix-left,
     &-cell-fix-right {
+      position: sticky !important;
+      z-index: 2;
       background: var(--surface-card);
+      transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+      will-change: transform;
+      max-width: none !important;
     }
 
-    &-cell-fix-left-last::after {
-      box-shadow: inset 10px 0 8px -8px
-        color-mix(in srgb, var(--navy-950) 10%, transparent);
+    &-cell-fix-right {
+      right: 0 !important;
     }
 
-    &-cell-fix-right-first::before {
-      box-shadow: inset -10px 0 8px -8px
-        color-mix(in srgb, var(--navy-950) 10%, transparent);
+    &-thead > tr > th {
+      &.ant-table-cell-fix-left,
+      &.ant-table-cell-fix-right {
+        background: var(--surface-sunken) !important;
+        z-index: 3;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        will-change: transform;
+        max-width: none !important;
+      }
+    }
+
+    &-cell-fix-left-last {
+      border-right: 1px solid var(--border-subtle) !important;
+      &::after {
+        box-shadow: inset 10px 0 8px -8px
+          color-mix(in srgb, var(--navy-950) 10%, transparent);
+      }
+    }
+
+    &-cell-fix-right-first {
+      border-left: 1px solid var(--border-subtle) !important;
+      &::before {
+        box-shadow: inset -10px 0 8px -8px
+          color-mix(in srgb, var(--navy-950) 10%, transparent);
+      }
     }
 
     // ── Expand icon ──────────────────────────────────────
@@ -319,5 +400,72 @@
     background: var(--surface-hover);
     color: var(--text-secondary);
     &::before { background: var(--text-muted); }
+  }
+}
+
+// ── Table Actions Container & Default Buttons ────────────────
+.tbl-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  app-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    .btn {
+      height: 28px !important;
+      width: 28px !important;
+      min-width: 28px !important;
+      padding: 0 !important;
+      font-size: 14px !important;
+      border-radius: var(--radius-sm, 4px) !important;
+      border: 1px solid transparent !important;
+      background: transparent !important;
+      color: var(--text-secondary) !important;
+      box-shadow: none !important;
+
+      &:hover {
+        background: var(--surface-hover) !important;
+        color: var(--text-primary) !important;
+      }
+    }
+  }
+}
+
+.tbl-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  outline: none;
+  box-shadow: none;
+  transition: all var(--dur-fast) var(--ease);
+
+  &:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+  }
+
+  &--view:hover,
+  &--edit:hover {
+    color: var(--brand);
+    background: var(--brand-soft);
+  }
+
+  &--delete:hover {
+    color: var(--danger);
+    background: var(--danger-soft);
   }
 }

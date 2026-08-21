@@ -75,7 +75,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.theme.applyModeVisualOnly('light');
 
     if (this.stateStorageService.getAuthenticationToken()) {
-      this.router.navigate(['/home']);
+      this.router.navigate(['/admin/home']);
     }
   }
 
@@ -105,18 +105,8 @@ export class LoginComponent implements OnInit, OnDestroy {
       next: data => {
         this.flowData = data;
         const organizations = data.UseOrganizationList ?? [];
-
-        if (organizations.length > 0) {
-          this.fullName.set(data.FullName ?? data.UserName ?? '');
-          this.parentOrganizationName.set(data.CustomerName ?? data.CustomerNameParent ?? '');
-          this.organizations.set(organizations);
-          this.unitForm.reset({ organizationId: organizations[0].OrganizationId });
-          this.loading.set(false);
-          this.viewMode.set('organization');
-          return;
-        }
-
-        this.completeLogin(data, data.DonViTrucThuocId ?? 0);
+        const defaultOrgId = organizations.length > 0 ? organizations[0].OrganizationId : (data.DonViTrucThuocId ?? 0);
+        this.completeLogin(data, defaultOrgId);
       },
       error: err => this.handleLoginError(err),
     });
@@ -187,7 +177,7 @@ export class LoginComponent implements OnInit, OnDestroy {
           this.theme.restorePreLogoutBrand();
 
           this.loading.set(false);
-          this.router.navigate(['/home']);
+          this.router.navigate(['/admin/home']);
         },
         error: err => this.handleLoginError(err),
       });

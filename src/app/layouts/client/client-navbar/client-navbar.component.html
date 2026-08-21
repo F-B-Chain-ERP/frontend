@@ -1,0 +1,152 @@
+<header class="client-navbar">
+  <div class="client-navbar__container">
+    <!-- ── Mobile Menu Toggle ── -->
+    <button
+      type="button"
+      class="client-navbar__hamburger"
+      (click)="isMobileMenuOpen.set(!isMobileMenuOpen())"
+      aria-label="Toggle navigation"
+    >
+      <nz-icon [nzType]="isMobileMenuOpen() ? 'close' : 'menu'" />
+    </button>
+
+    <!-- ── 1. Brand Logo (Figma SHOP.CO typography) ── -->
+    <a routerLink="/store" class="client-navbar__brand">
+      <span class="client-navbar__brand-logo">UTT.CO</span>
+    </a>
+
+    <!-- ── 2. Navigation Links ── -->
+    <nav class="client-navbar__nav" [class.client-navbar__nav--open]="isMobileMenuOpen()">
+      <a
+        routerLink="/store"
+        (click)="scrollToSection('all-drinks')"
+        class="client-navbar__link"
+      >
+        <span>Thực Đơn</span>
+      </a>
+      <a
+        routerLink="/store"
+        (click)="scrollToSection('new-arrivals')"
+        class="client-navbar__link"
+      >
+        <span>Món Mới</span>
+      </a>
+      <a
+        routerLink="/store"
+        (click)="scrollToSection('top-selling')"
+        class="client-navbar__link"
+      >
+        <span>Bán Chạy</span>
+      </a>
+      <a
+        routerLink="/store"
+        (click)="scrollToSection('browse-style')"
+        class="client-navbar__link"
+      >
+        <span>Khám Phá Gu</span>
+      </a>
+      @if (accountService.isAuthenticated()) {
+        <a
+          routerLink="/admin/home"
+          class="client-navbar__link client-navbar__link--admin-badge"
+          title="Truy cập Bàn làm việc Quản trị"
+        >
+          <nz-icon nzType="dashboard" />
+          <span>Admin ERP</span>
+        </a>
+      }
+    </nav>
+
+    <!-- ── 3. Central Search Bar (Figma SHOP.CO style) ── -->
+    <div class="client-navbar__search">
+      <nz-input-wrapper class="client-navbar__search-wrapper">
+        <nz-icon nzInputPrefix nzType="search" class="client-navbar__search-icon" />
+        <input
+          nz-input
+          type="text"
+          placeholder="Tìm kiếm đồ uống, cà phê, trà tươi..."
+          [(ngModel)]="navSearchText"
+          (keyup.enter)="onNavSearch()"
+          class="client-navbar__search-input"
+        />
+      </nz-input-wrapper>
+    </div>
+
+    <!-- ── 4. Right Action Tools ── -->
+    <div class="client-navbar__actions">
+      <!-- Dark/Light Mode Switcher -->
+      <button
+        type="button"
+        class="client-navbar__icon-btn"
+        (click)="toggleTheme()"
+        [title]="theme.mode === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'"
+      >
+        <nz-icon [nzType]="theme.mode === 'dark' ? 'sun' : 'moon'" />
+      </button>
+
+      <!-- Cart Trigger Button -->
+      <button
+        type="button"
+        class="client-navbar__icon-btn client-navbar__icon-btn--cart"
+        (click)="openCart()"
+        title="Xem giỏ hàng"
+      >
+        <nz-icon nzType="shopping-cart" />
+        @if (cartService.totalCount() > 0) {
+          <span class="client-navbar__cart-badge">{{ cartService.totalCount() }}</span>
+        }
+      </button>
+
+      <!-- User Profile / Login -->
+      @if (account(); as user) {
+        <div
+          class="client-navbar__user"
+          nz-dropdown
+          [nzDropdownMenu]="userDropdown"
+          nzTrigger="click"
+          nzPlacement="bottomRight"
+          [nzVisible]="isUserMenuOpen()"
+          (nzVisibleChange)="isUserMenuOpen.set($event)"
+        >
+          <nz-avatar
+            [nzText]="(user.firstName ? user.firstName.charAt(0).toUpperCase() : user.login.charAt(0).toUpperCase()) || 'U'"
+            nzSize="default"
+            class="client-navbar__user-avatar"
+          />
+          <div class="client-navbar__user-info">
+            <span class="client-navbar__user-name">{{ user.firstName || user.login }}</span>
+            <nz-icon nzType="down" class="client-navbar__user-caret" [class.client-navbar__user-caret--open]="isUserMenuOpen()" />
+          </div>
+        </div>
+
+        <nz-dropdown-menu #userDropdown="nzDropdownMenu">
+          <ul nz-menu class="client-user-dropdown-menu">
+            <li class="client-user-dropdown-header">
+              <span class="name">{{ user.firstName || user.login }}</span>
+              <span class="role">{{ user.login }}</span>
+            </li>
+            <li nz-menu-divider></li>
+            <li nz-menu-item (click)="goToAdmin()">
+              <nz-icon nzType="appstore" />
+              <span>Khu vực Quản trị Admin</span>
+            </li>
+            <li nz-menu-divider></li>
+            <li nz-menu-item class="menu-item--danger" (click)="logout()">
+              <nz-icon nzType="logout" />
+              <span>Đăng xuất</span>
+            </li>
+          </ul>
+        </nz-dropdown-menu>
+      } @else {
+        <app-button
+          variant="primary"
+          [rounded]="true"
+          (click)="goToLogin()"
+          class="client-navbar__login-btn"
+        >
+          Đăng nhập
+        </app-button>
+      }
+    </div>
+  </div>
+</header>

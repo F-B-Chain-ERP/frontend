@@ -1,0 +1,89 @@
+<div class="error-pages-module">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div>
+      <h1 class="page__header__title">Trang thông báo lỗi hệ thống</h1>
+      <p class="page__header__description">
+        Danh sách 3 trang mã lỗi tiêu chuẩn của hệ thống: 404 (Không tìm thấy), 403 (Cấm truy cập) và 500 (Lỗi máy chủ)
+      </p>
+    </div>
+  </div>
+
+  <!-- ── 2. Error Cards Grid ────────────────────────────────────────── -->
+  <div class="error-grid">
+    <!-- Card 1: 404 Not Found -->
+    <div class="error-module-card">
+      <span class="error-module-card__badge error-module-card__badge--404">Not Found</span>
+      <div class="error-module-card__icon-wrapper error-module-card__icon-wrapper--404">
+        <nz-icon nzType="compass" />
+      </div>
+      <div class="error-module-card__code error-module-card__code--404">404</div>
+      <h3 class="error-module-card__title">Không tìm thấy trang</h3>
+      <p class="error-module-card__desc">
+        Xảy ra khi người dùng truy cập một URL không tồn tại, đường dẫn sai chính tả hoặc tài nguyên đã bị xóa/chuyển đi.
+      </p>
+      <div class="error-module-card__route">
+        <nz-icon nzType="link" /> Route: <strong>/404</strong>
+      </div>
+      <div class="error-module-card__actions">
+        <app-button
+          variant="primary"
+          leftIcon="arrow-right"
+          [fullWidth]="true"
+          (click)="navigateTo('/404')">
+          Xem trang thực tế /404
+        </app-button>
+      </div>
+    </div>
+
+    <!-- Card 2: 403 Access Denied -->
+    <div class="error-module-card">
+      <span class="error-module-card__badge error-module-card__badge--403">Forbidden</span>
+      <div class="error-module-card__icon-wrapper error-module-card__icon-wrapper--403">
+        <nz-icon nzType="lock" />
+      </div>
+      <div class="error-module-card__code error-module-card__code--403">403</div>
+      <h3 class="error-module-card__title">Không có quyền truy cập</h3>
+      <p class="error-module-card__desc">
+        Xảy ra khi người dùng chưa được phân quyền hạn phù hợp (Role/Permission) để truy cập chức năng hoặc API này.
+      </p>
+      <div class="error-module-card__route">
+        <nz-icon nzType="link" /> Route: <strong>/accessdenied</strong>
+      </div>
+      <div class="error-module-card__actions">
+        <app-button
+          variant="secondary"
+          leftIcon="arrow-right"
+          [fullWidth]="true"
+          (click)="navigateTo('/accessdenied')">
+          Xem trang thực tế /accessdenied
+        </app-button>
+      </div>
+    </div>
+
+    <!-- Card 3: 500 Server Error -->
+    <div class="error-module-card">
+      <span class="error-module-card__badge error-module-card__badge--500">Internal Error</span>
+      <div class="error-module-card__icon-wrapper error-module-card__icon-wrapper--500">
+        <nz-icon nzType="warning" />
+      </div>
+      <div class="error-module-card__code error-module-card__code--500">500</div>
+      <h3 class="error-module-card__title">Lỗi hệ thống máy chủ</h3>
+      <p class="error-module-card__desc">
+        Xảy ra khi máy chủ gặp sự cố không mong muốn (Crash/Exception, mất kết nối cơ sở dữ liệu hoặc gateway timeout).
+      </p>
+      <div class="error-module-card__route">
+        <nz-icon nzType="link" /> Route: <strong>/error</strong>
+      </div>
+      <div class="error-module-card__actions">
+        <app-button
+          variant="danger"
+          leftIcon="arrow-right"
+          [fullWidth]="true"
+          (click)="navigateTo('/error')">
+          Xem trang thực tế /error
+        </app-button>
+      </div>
+    </div>
+  </div>
+</div>

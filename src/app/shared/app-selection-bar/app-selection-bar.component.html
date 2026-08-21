@@ -1,0 +1,30 @@
+<div class="selection-bar" role="alert">
+  <div class="selection-bar__left">
+    <div class="selection-bar__badge">
+      <nz-icon nzType="check" class="selection-bar__badge-icon" />
+    </div>
+    <div class="selection-bar__text">
+      <span>Đã chọn</span>
+      <strong class="selection-bar__count">{{ selectedCount }}</strong>
+      @if (totalCount !== undefined && totalCount !== null) {
+        <span class="selection-bar__total">/ {{ totalCount }}</span>
+      }
+      <span>{{ itemLabel }}</span>
+    </div>
+
+    @if (showClear) {
+      <span class="selection-bar__divider"></span>
+      <button
+        type="button"
+        class="selection-bar__clear-btn"
+        (click)="clearSelection.emit()">
+        <nz-icon nzType="close-circle" />
+        <span>{{ clearText }}</span>
+      </button>
+    }
+  </div>
+
+  <div class="selection-bar__actions">
+    <ng-content></ng-content>
+  </div>
+</div>

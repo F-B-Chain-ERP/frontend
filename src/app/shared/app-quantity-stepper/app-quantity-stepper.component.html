@@ -1,0 +1,26 @@
+<div
+  class="app-stepper app-stepper--{{ size }}"
+  [class.app-stepper--disabled]="disabled"
+>
+  <button
+    type="button"
+    class="app-stepper__btn app-stepper__btn--minus"
+    [disabled]="!canDecrease"
+    (click)="decrease($event)"
+    title="Giảm số lượng"
+  >
+    <nz-icon nzType="minus" />
+  </button>
+
+  <span class="app-stepper__value">{{ value }}</span>
+
+  <button
+    type="button"
+    class="app-stepper__btn app-stepper__btn--plus"
+    [disabled]="!canIncrease"
+    (click)="increase($event)"
+    title="Tăng số lượng"
+  >
+    <nz-icon nzType="plus" />
+  </button>
+</div>

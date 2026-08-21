@@ -1,0 +1,261 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: var(--surface-app);
+}
+
+.client-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+}
+
+// ── 0. Announcement Bar ──────────────────────────────────────────
+.announcement-bar {
+  background-color: #000000;
+  color: #ffffff;
+  padding: 10px 16px;
+  font-size: 13px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  transition: all var(--dur) var(--ease);
+
+  &__content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: center;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    strong {
+      color: #ffffff;
+      font-weight: 700;
+    }
+  }
+
+  &__link {
+    color: #ffffff;
+    text-decoration: underline;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity var(--dur-fast) var(--ease);
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  &__close {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 14px;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-circle);
+    transition: all var(--dur-fast) var(--ease);
+
+    &:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.15);
+    }
+  }
+}
+
+app-client-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  display: block;
+}
+
+.client-main-content {
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
+// ── 4. Rich 4-Column Footer (SHOP.CO Style) ───────────────────────
+.client-footer {
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--border-subtle);
+  padding: 100px 0 var(--space-8) 0;
+  margin-top: 80px;
+  position: relative;
+
+  &__container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: 2.2fr 1fr 1fr 1fr;
+    gap: var(--space-8);
+
+    @media (max-width: 992px) {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: 576px) {
+      grid-template-columns: 1fr;
+      gap: var(--space-6);
+    }
+  }
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+
+    &--brand {
+      padding-right: var(--space-6);
+
+      @media (max-width: 992px) {
+        padding-right: 0;
+        grid-column: span 2;
+      }
+
+      @media (max-width: 576px) {
+        grid-column: span 1;
+      }
+    }
+  }
+
+  &__brand-title {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  &__desc {
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-width: 380px;
+    margin: 0;
+  }
+
+  &__socials {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+  }
+
+  &__social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-circle);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    font-size: 16px;
+    text-decoration: none;
+    transition: all var(--dur-fast) var(--ease);
+
+    &:hover {
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  &__heading {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    margin: 0 0 var(--space-2) 0;
+  }
+
+  &__links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+
+    li a {
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color var(--dur-fast) var(--ease);
+
+      &:hover {
+        color: var(--brand);
+      }
+    }
+  }
+
+  &__bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border-subtle);
+    gap: var(--space-4);
+    flex-wrap: wrap;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      text-align: center;
+      gap: var(--space-4);
+    }
+  }
+
+  &__copy {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  &__payments {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+}
+
+.payment-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+
