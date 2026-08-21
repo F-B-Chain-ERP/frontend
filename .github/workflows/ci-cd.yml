@@ -154,22 +154,6 @@ jobs:
           echo "▶ Nội dung deploy-assets.tar.gz:"
           tar -tzf deploy-assets.tar.gz
 
-      - name: Pre-create Transfer Directory on Server
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER || 'root' }}
-          key: ${{ secrets.SSH_PRIVATE_KEY || secrets.SSH_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          script: |
-            # Tạo thư mục cha và thư mục transfer trước để drone-scp không phải tự tạo
-            mkdir -p /opt/ERP-UTT
-            mkdir -p /opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}
-            chmod 755 /opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}
-            echo "✅ Đã tạo thư mục transfer: /opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}"
-
       - name: Transfer Build Archive & Deploy Assets to Server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -181,7 +165,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           # Chỉ dùng tên file tường minh, KHÔNG dùng glob (*) vì drone-scp không expand glob
           source: "${{ needs.build.outputs.package_name }},deploy-assets.tar.gz"
-          target: "/opt/ERP-UTT/frontend-transfer-${{ needs.build.outputs.short_sha }}"
+          target: "/tmp/frontend-transfer-${{ needs.build.outputs.short_sha }}"
           overwrite: true
 
       - name: Execute Deployment & Automated Health Check on Server
@@ -198,7 +182,7 @@ jobs:
             set -e
             SHORT_SHA="${{ needs.build.outputs.short_sha }}"
             PKG_NAME="${{ needs.build.outputs.package_name }}"
-            TRANSFER_DIR="/opt/ERP-UTT/frontend-transfer-${SHORT_SHA}"
+            TRANSFER_DIR="/tmp/frontend-transfer-${SHORT_SHA}"
             FRONTEND_DIR="/opt/ERP-UTT/frontend"
 
             echo "=========================================================="
@@ -206,17 +190,18 @@ jobs:
             echo "  Target Commit : ${SHORT_SHA}"
             echo "  Transfer Dir  : ${TRANSFER_DIR}"
             echo "  Target Dir    : ${FRONTEND_DIR}"
+            echo "  SSH User      : $(whoami)"
             echo "  Timestamp     : $(date '+%Y-%m-%d %H:%M:%S')"
             echo "=========================================================="
 
-            # Đảm bảo cấu trúc thư mục chính tồn tại
-            mkdir -p "${FRONTEND_DIR}/browser"
-            mkdir -p "${FRONTEND_DIR}/backups"
-            mkdir -p "${FRONTEND_DIR}/deploy/nginx"
-            mkdir -p "${FRONTEND_DIR}/deploy/scripts"
+            # Đảm bảo cấu trúc thư mục chính tồn tại trên server (dùng sudo nếu user là non-root)
+            sudo mkdir -p "${FRONTEND_DIR}/browser"
+            sudo mkdir -p "${FRONTEND_DIR}/backups"
+            sudo mkdir -p "${FRONTEND_DIR}/staging"
+            sudo mkdir -p "${FRONTEND_DIR}/deploy/nginx"
+            sudo mkdir -p "${FRONTEND_DIR}/deploy/scripts"
 
             # Giải nén deploy-assets.tar.gz để lấy script và nginx config
-            # (file này được tạo bởi bước 'Package Deploy Assets into Single Archive')
             if [ -f "${TRANSFER_DIR}/deploy-assets.tar.gz" ]; then
               tar -xzf "${TRANSFER_DIR}/deploy-assets.tar.gz" -C "${TRANSFER_DIR}"
               rm -f "${TRANSFER_DIR}/deploy-assets.tar.gz"
@@ -225,18 +210,18 @@ jobs:
 
             # Đồng bộ deploy scripts và nginx config vào thư mục chuẩn
             if [ -d "${TRANSFER_DIR}/deploy" ]; then
-              cp -r "${TRANSFER_DIR}/deploy/nginx/"* "${FRONTEND_DIR}/deploy/nginx/" 2>/dev/null || true
-              cp -r "${TRANSFER_DIR}/deploy/scripts/"* "${FRONTEND_DIR}/deploy/scripts/" 2>/dev/null || true
-              chmod +x "${FRONTEND_DIR}/deploy/scripts/"*.sh
+              sudo cp -r "${TRANSFER_DIR}/deploy/nginx/"* "${FRONTEND_DIR}/deploy/nginx/" 2>/dev/null || true
+              sudo cp -r "${TRANSFER_DIR}/deploy/scripts/"* "${FRONTEND_DIR}/deploy/scripts/" 2>/dev/null || true
+              sudo chmod +x "${FRONTEND_DIR}/deploy/scripts/"*.sh
               echo "  ✅ Đã đồng bộ scripts và nginx config"
             fi
 
             # Di chuyển gói build vào thư mục frontend
-            mv "${TRANSFER_DIR}/${PKG_NAME}" "${FRONTEND_DIR}/${PKG_NAME}"
+            sudo mv "${TRANSFER_DIR}/${PKG_NAME}" "${FRONTEND_DIR}/${PKG_NAME}"
             rm -rf "${TRANSFER_DIR}"
 
-            # Gọi unified deploy script trên server
-            bash "${FRONTEND_DIR}/deploy/scripts/deploy.sh" "${PKG_NAME}" "${SHORT_SHA}"
+            # Gọi unified deploy script trên server với sudo
+            sudo bash "${FRONTEND_DIR}/deploy/scripts/deploy.sh" "${PKG_NAME}" "${SHORT_SHA}"
 
   # ----------------------------------------------------------------------------
   # JOB 4: Gửi thông báo kết quả CI/CD lên Discord
