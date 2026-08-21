@@ -79,9 +79,9 @@ rm -rf "${BROWSER_DIR:?}"/*
 cp -r "${STAGING_DIR}"/* "${BROWSER_DIR}/"
 rm -rf "${STAGING_DIR:?}"/*
 
-# Phân quyền chuẩn cho web server Nginx
+# Phân quyền chuẩn: SSH user giữ quyền sở hữu, Nginx (www-data) có quyền đọc và duyệt file (755)
+chmod -R 755 "${FRONTEND_DIR}"
 chmod -R 755 "${BROWSER_DIR}"
-chown -R www-data:www-data "${BROWSER_DIR}" 2>/dev/null || true
 
 # 5. Đồng bộ cấu hình Nginx (nếu có) & Reload không gián đoạn
 echo ""
