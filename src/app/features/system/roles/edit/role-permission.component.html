@@ -1,0 +1,575 @@
+<div class="permission-page page page--has-footer">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div>
+      <h1 class="page__header__title">
+        Phân quyền vai trò: <span class="text-brand">{{ role.name || 'Đang tải...' }}</span>
+      </h1>
+      <p class="page__header__description">
+        Thiết lập phạm vi quyền hạn truy cập menu và thực hiện các thao tác Thêm, Sửa, Xóa trong 7 phân hệ ERP UTT
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="arrow-left" (click)="backToList()">
+        Quay lại danh sách
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Top Role Summary & Live Progress Ribbon ──────────────────── -->
+  <div class="role-overview-card">
+    <!-- Top Row: Role Profile Details & Overall Progress Metric -->
+    <div class="role-overview-main">
+      <!-- Left: Role Meta with Avatar/Icon -->
+      <div class="role-profile">
+        <div class="role-avatar">
+          <nz-icon nzType="safety-certificate" />
+        </div>
+        <div class="role-profile-info">
+          <div class="role-title-row">
+            <h2 class="role-title-text">{{ role.name || 'Đang tải vai trò...' }}</h2>
+            @if (role.code) {
+              <span class="role-code-badge font-mono">{{ role.code }}</span>
+            }
+            @if (role.isDefault) {
+              <nz-tag nzColor="purple">Vai trò mặc định</nz-tag>
+            }
+            @if (role.active) {
+              <span class="tbl-badge tbl-badge--success">Hoạt động</span>
+            } @else {
+              <span class="tbl-badge tbl-badge--danger">Ngừng hoạt động</span>
+            }
+          </div>
+          <p class="role-desc-text">
+            {{ role.description || 'Chưa có mô tả chi tiết cho vai trò này.' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: Real-time Metric & Progress Bar -->
+      <div class="role-stat-box">
+        <div class="stat-progress-top">
+          <span class="stat-label">Tiến độ phân quyền tổng thể</span>
+          <div class="stat-numbers">
+            <span class="stat-active">{{ activeRights }}</span>
+            <span class="stat-total">/ {{ totalRights }} quyền</span>
+            <span class="stat-badge" [class.stat-badge--full]="overallPercent === 100">
+              {{ overallPercent }}%
+            </span>
+          </div>
+        </div>
+        <div class="stat-bar-track">
+          <div
+            class="stat-bar-fill"
+            [style.width.%]="overallPercent"
+            [class.stat-bar-fill--full]="overallPercent === 100"
+          ></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Middle Row: Module breakdown pills (Clean, organized status indicators) -->
+    <div class="role-modules-bar">
+      <div class="modules-bar-label">
+        <nz-icon nzType="appstore" />
+        <span>Phân hệ:</span>
+      </div>
+      <div class="modules-bar-list">
+        @for (m of moduleStats; track m.moduleId) {
+          <div
+            class="module-mini-item"
+            [class.module-mini-item--active]="m.activeRights > 0"
+            [class.module-mini-item--full]="m.percent === 100"
+            nz-tooltip
+            [nzTooltipTitle]="m.moduleName + ': ' + m.activeRights + '/' + m.totalRights + ' quyền (' + m.percent + '%)'"
+          >
+            <nz-icon [nzType]="m.icon || 'folder'" class="module-mini-item__icon" />
+            <span class="module-mini-item__name">{{ m.moduleName }}</span>
+            <span class="module-mini-item__pct">{{ m.percent }}%</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Bottom Row: Quick Preset Actions Bar -->
+    <div class="role-presets-bar">
+      <div class="presets-label">
+        <nz-icon nzType="thunderbolt" />
+        <span>Mẫu phân quyền nhanh:</span>
+      </div>
+      <div class="presets-actions">
+        <button
+          type="button"
+          class="preset-btn preset-btn--primary"
+          (click)="applyPreset('fullAdmin')"
+        >
+          <nz-icon nzType="check-circle" />
+          <span>Toàn quyền</span>
+        </button>
+        <button
+          type="button"
+          class="preset-btn"
+          (click)="applyPreset('readOnly')"
+        >
+          <nz-icon nzType="eye" />
+          <span>Chỉ xem</span>
+        </button>
+        <button
+          type="button"
+          class="preset-btn"
+          (click)="applyPreset('warehousePreset')"
+        >
+          <nz-icon nzType="inbox" />
+          <span>Nghiệp vụ Kho</span>
+        </button>
+        <button
+          type="button"
+          class="preset-btn"
+          (click)="applyPreset('accountantPreset')"
+        >
+          <nz-icon nzType="dollar" />
+          <span>Nghiệp vụ Kế toán</span>
+        </button>
+        <button
+          type="button"
+          class="preset-btn preset-btn--danger"
+          (click)="applyPreset('clearAll')"
+        >
+          <nz-icon nzType="clear" />
+          <span>Bỏ chọn tất cả</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. Interactive Control Toolbar ──────────────────────────────── -->
+  <nz-card class="permission-toolbar-card" [nzBordered]="false">
+    <div class="toolbar-wrapper">
+      <!-- Left side: Dual-View Switcher -->
+      <div class="toolbar-left">
+        <div class="view-mode-switch">
+          <button
+            class="view-mode-btn"
+            [class.view-mode-btn--active]="viewMode === 'matrix'"
+            (click)="viewMode = 'matrix'"
+          >
+            <nz-icon nzType="table" />
+            <span>Bảng ma trận</span>
+          </button>
+          <button
+            class="view-mode-btn"
+            [class.view-mode-btn--active]="viewMode === 'tree'"
+            (click)="viewMode = 'tree'"
+          >
+            <nz-icon nzType="apartment" />
+            <span>Dạng thẻ phân hệ</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right side: Search, Module Filter, Expand/Collapse -->
+      <div class="toolbar-right">
+        <!-- Search Keyword -->
+        <div class="search-input-box">
+          <nz-input-wrapper [nzAllowClear]="true">
+            <nz-icon nzInputPrefix nzType="search" />
+            <input
+              nz-input
+              placeholder="Tìm kiếm chức năng..."
+              [(ngModel)]="searchKeyword"
+              (ngModelChange)="onSearch()"
+            />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Filter by Module -->
+        <nz-select
+          [(ngModel)]="selectedModuleFilter"
+          (ngModelChange)="onSearch()"
+          class="module-select"
+        >
+          @for (opt of moduleOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+          }
+        </nz-select>
+
+        <!-- Filter by Permission Status -->
+        <nz-select
+          [(ngModel)]="permissionStatusFilter"
+          (ngModelChange)="onSearch()"
+          class="status-select"
+        >
+          <nz-option nzValue="all" nzLabel="Tất cả trạng thái"></nz-option>
+          <nz-option nzValue="granted" nzLabel="Đã cấp quyền"></nz-option>
+          <nz-option nzValue="ungranted" nzLabel="Chưa cấp quyền"></nz-option>
+        </nz-select>
+
+        <!-- Expand / Collapse All buttons -->
+        <div class="tree-expand-actions">
+          <button
+            type="button"
+            class="icon-tool-btn"
+            (click)="expandAll()"
+            nz-tooltip
+            nzTooltipTitle="Mở rộng tất cả"
+          >
+            <nz-icon nzType="plus-square" />
+          </button>
+          <button
+            type="button"
+            class="icon-tool-btn"
+            (click)="collapseAll()"
+            nz-tooltip
+            nzTooltipTitle="Thu gọn tất cả (1 cấp)"
+          >
+            <nz-icon nzType="minus-square" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4A. VIEW 1: BẢNG MA TRẬN PHÂN QUYỀN (TREE-TABLE MATRIX VIEW) ── -->
+  @if (viewMode === 'matrix') {
+    <nz-card class="matrix-table-card page__list" [nzBordered]="false">
+      <nz-table
+        #permissionTable
+        [nzData]="listOfMapData"
+        [nzShowPagination]="false"
+        nzSize="middle"
+        [nzScroll]="{ x: '1000px', y: 'calc(100vh - 460px)' }"
+      >
+        <thead>
+          <!-- Table Header -->
+          <tr>
+            <th scope="col" nzWidth="90px" nzAlign="center">Truy cập</th>
+            <th scope="col" nzWidth="480px">Chức năng phân hệ ERP</th>
+            <th scope="col" nzWidth="110px" nzAlign="center">Thêm</th>
+            <th scope="col" nzWidth="110px" nzAlign="center">Sửa</th>
+            <th scope="col" nzWidth="110px" nzAlign="center">Xóa</th>
+            <th scope="col" nzWidth="110px" nzAlign="center">Toàn quyền</th>
+          </tr>
+
+          <!-- Select All Columns Header Subrow -->
+          <tr class="matrix-select-all-row">
+            <!-- Access Select All -->
+            <th nzAlign="center">
+              <label class="cb" for="select-all-col-access" nz-tooltip nzTooltipTitle="Chọn tất cả quyền truy cập">
+                <input
+                  id="select-all-col-access"
+                  type="checkbox"
+                  [checked]="isColumnChecked('access')"
+                  [indeterminate]="isColumnIndeterminate('access')"
+                  (change)="toggleColumnAll('access', $any($event.target).checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </th>
+
+            <!-- Function label -->
+            <th class="matrix-select-all-label">
+              <span class="select-all-note">
+                Chọn tất cả theo cột:
+              </span>
+            </th>
+
+            <!-- Add Select All -->
+            <th nzAlign="center">
+              <label class="cb" for="select-all-col-add" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Thêm">
+                <input
+                  id="select-all-col-add"
+                  type="checkbox"
+                  [checked]="isColumnChecked('add')"
+                  [indeterminate]="isColumnIndeterminate('add')"
+                  (change)="toggleColumnAll('add', $any($event.target).checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </th>
+
+            <!-- Edit Select All -->
+            <th nzAlign="center">
+              <label class="cb" for="select-all-col-edit" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Sửa">
+                <input
+                  id="select-all-col-edit"
+                  type="checkbox"
+                  [checked]="isColumnChecked('edit')"
+                  [indeterminate]="isColumnIndeterminate('edit')"
+                  (change)="toggleColumnAll('edit', $any($event.target).checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </th>
+
+            <!-- Delete Select All -->
+            <th nzAlign="center">
+              <label class="cb" for="select-all-col-delete" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Xóa">
+                <input
+                  id="select-all-col-delete"
+                  type="checkbox"
+                  [checked]="isColumnChecked('delete')"
+                  [indeterminate]="isColumnIndeterminate('delete')"
+                  (change)="toggleColumnAll('delete', $any($event.target).checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </th>
+
+            <!-- All Row select placeholder -->
+            <th nzAlign="center"></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (data of permissionTable.data; track data.key) {
+            @for (item of mapOfExpandedData[data.key]; track item.key) {
+              @if (isNodeVisible(item)) {
+                <tr
+                  class="matrix-row"
+                  [class.matrix-row--root]="!item.parent"
+                  [class.matrix-row--level1]="item.level === 1"
+                  [class.matrix-row--active]="item.access"
+                >
+                  <!-- 1. Quyền Truy Cập -->
+                  <td nzAlign="center">
+                    <label class="cb" [for]="'access-' + item.key">
+                      <input
+                        type="checkbox"
+                        [id]="'access-' + item.key"
+                        [ngModel]="item.access"
+                        [indeterminate]="item.accessIndeterminate"
+                        (ngModelChange)="onPermissionChange('access', item, data.key, $event)"
+                      />
+                      <span class="cb__box"></span>
+                    </label>
+                  </td>
+
+                  <!-- 2. Cây Chức Năng (Indent + Expander) -->
+                  <td
+                    [nzIndentSize]="(item.level || 0) * 22"
+                    [nzShowExpand]="!!item.children?.length"
+                    [(nzExpand)]="item.expand"
+                    (nzExpandChange)="collapse(mapOfExpandedData[data.key], item, $event)"
+                  >
+                    <div class="tree-cell-content">
+                      <div class="tree-node-info">
+                        <span class="tree-node-name" [class.font-bold]="!item.parent">
+                          {{ item.name }}
+                        </span>
+                        @if (item.path) {
+                          <span class="tree-node-path">{{ item.path }}</span>
+                        }
+                      </div>
+                    </div>
+                  </td>
+
+                  <!-- 3. Quyền Thêm -->
+                  <td nzAlign="center">
+                    <label
+                      class="cb"
+                      [class.is-disabled]="!item.access"
+                      [for]="'add-' + item.key"
+                      nz-tooltip
+                      [nzTooltipTitle]="!item.access ? 'Cần cấp quyền Truy cập trước' : ''"
+                    >
+                      <input
+                        type="checkbox"
+                        [id]="'add-' + item.key"
+                        [ngModel]="item.add"
+                        [indeterminate]="item.addIndeterminate"
+                        [disabled]="!item.access"
+                        (ngModelChange)="onPermissionChange('add', item, data.key, $event)"
+                      />
+                      <span class="cb__box"></span>
+                    </label>
+                  </td>
+
+                  <!-- 4. Quyền Sửa -->
+                  <td nzAlign="center">
+                    <label
+                      class="cb"
+                      [class.is-disabled]="!item.access"
+                      [for]="'edit-' + item.key"
+                      nz-tooltip
+                      [nzTooltipTitle]="!item.access ? 'Cần cấp quyền Truy cập trước' : ''"
+                    >
+                      <input
+                        type="checkbox"
+                        [id]="'edit-' + item.key"
+                        [ngModel]="item.edit"
+                        [indeterminate]="item.editIndeterminate"
+                        [disabled]="!item.access"
+                        (ngModelChange)="onPermissionChange('edit', item, data.key, $event)"
+                      />
+                      <span class="cb__box"></span>
+                    </label>
+                  </td>
+
+                  <!-- 5. Quyền Xóa -->
+                  <td nzAlign="center">
+                    <label
+                      class="cb"
+                      [class.is-disabled]="!item.access"
+                      [for]="'delete-' + item.key"
+                      nz-tooltip
+                      [nzTooltipTitle]="!item.access ? 'Cần cấp quyền Truy cập trước' : ''"
+                    >
+                      <input
+                        type="checkbox"
+                        [id]="'delete-' + item.key"
+                        [ngModel]="item.delete"
+                        [indeterminate]="item.deleteIndeterminate"
+                        [disabled]="!item.access"
+                        (ngModelChange)="onPermissionChange('delete', item, data.key, $event)"
+                      />
+                      <span class="cb__box"></span>
+                    </label>
+                  </td>
+
+                  <!-- 6. Toàn quyền dòng -->
+                  <td nzAlign="center">
+                    <label
+                      class="cb cb--row-all"
+                      [for]="'all-' + item.key"
+                      nz-tooltip
+                      nzTooltipTitle="Bật/tắt tất cả quyền của dòng này"
+                    >
+                      <input
+                        type="checkbox"
+                        [id]="'all-' + item.key"
+                        [checked]="isRowAllChecked(item)"
+                        [indeterminate]="isRowIndeterminate(item)"
+                        (change)="toggleRowAll(item, data.key, $any($event.target).checked)"
+                      />
+                      <span class="cb__box"></span>
+                    </label>
+                  </td>
+                </tr>
+              }
+            }
+          }
+        </tbody>
+      </nz-table>
+    </nz-card>
+  }
+
+  <!-- ── 4B. VIEW 2: CÂY PHÂN QUYỀN THEO PHÂN HỆ (HIERARCHICAL CARDS) ── -->
+  @if (viewMode === 'tree') {
+    <div class="tree-cards-container">
+      @for (module of listOfMapData; track module.key) {
+        <div class="module-card">
+          <!-- Module Header -->
+          <div class="module-card__header">
+            <div class="module-card__title-box">
+              <div>
+                <h3 class="module-card__title">{{ module.name }}</h3>
+                <span class="module-card__sub">{{ module.children?.length || 0 }} chức năng nghiệp vụ</span>
+              </div>
+            </div>
+
+            <!-- Header actions: toggle module permissions -->
+            <div class="module-card__actions">
+              <button
+                class="module-toggle-btn"
+                [class.module-toggle-btn--active]="isRowAllChecked(module)"
+                (click)="toggleRowAll(module, module.key, !isRowAllChecked(module))"
+              >
+                <span>{{ isRowAllChecked(module) ? 'Đã cấp toàn bộ phân hệ' : 'Cấp nhanh phân hệ' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Module Children List -->
+          <div class="module-card__body">
+            @for (item of mapOfExpandedData[module.key]; track item.key) {
+              @if (item.parent) {
+                <div
+                  class="tree-node-item"
+                  [style.padding-left.px]="((item.level || 1) - 1) * 24 + 16"
+                  [class.tree-node-item--active]="item.access"
+                >
+                  <!-- Node Title & Path -->
+                  <div class="tree-node-item__left">
+                    <div class="tree-item-text">
+                      <span class="tree-item-name">{{ item.name }}</span>
+                      @if (item.path) {
+                        <span class="tree-item-path">{{ item.path }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Interactive Action Toggle Pills -->
+                  <div class="tree-node-item__pills">
+                    <!-- Pill: Truy cập -->
+                    <button
+                      class="perm-pill perm-pill--access"
+                      [class.perm-pill--active]="item.access"
+                      (click)="onPermissionChange('access', item, module.key, !item.access)"
+                    >
+                      <span>Truy cập</span>
+                    </button>
+
+                    <!-- Pill: Thêm -->
+                    <button
+                      class="perm-pill perm-pill--add"
+                      [class.perm-pill--active]="item.add"
+                      [class.perm-pill--disabled]="!item.access"
+                      [disabled]="!item.access"
+                      (click)="onPermissionChange('add', item, module.key, !item.add)"
+                    >
+                      <span>Thêm</span>
+                    </button>
+
+                    <!-- Pill: Sửa -->
+                    <button
+                      class="perm-pill perm-pill--edit"
+                      [class.perm-pill--active]="item.edit"
+                      [class.perm-pill--disabled]="!item.access"
+                      [disabled]="!item.access"
+                      (click)="onPermissionChange('edit', item, module.key, !item.edit)"
+                    >
+                      <span>Sửa</span>
+                    </button>
+
+                    <!-- Pill: Xóa -->
+                    <button
+                      class="perm-pill perm-pill--del"
+                      [class.perm-pill--active]="item.delete"
+                      [class.perm-pill--disabled]="!item.access"
+                      [disabled]="!item.access"
+                      (click)="onPermissionChange('delete', item, module.key, !item.delete)"
+                    >
+                      <span>Xóa</span>
+                    </button>
+                  </div>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<!-- ── 5. Bottom Fixed Action Footer Bar ────────────────────────────── -->
+<div class="page__footer--fixed" [class.page__footer--collapsed-sidebar]="sidebarCollapsed()">
+  <div class="footer-status-info">
+    <div class="status-indicator">
+      <span class="status-dot"></span>
+      <span>
+        Đã chọn: <strong>{{ activeRights }}</strong> / {{ totalRights }} quyền ({{ overallPercent }}%)
+      </span>
+    </div>
+    @if (isDirty()) {
+      <nz-tag nzColor="warning">Có thay đổi chưa lưu</nz-tag>
+    }
+  </div>
+
+  <div class="page__footer__actions">
+    <app-button variant="secondary" (click)="backToList()">Hủy bỏ</app-button>
+    <app-button variant="primary" leftIcon="save" [loading]="saving()" (click)="onSavePermissions()">
+      Lưu thay đổi phân quyền
+    </app-button>
+  </div>
+</div>

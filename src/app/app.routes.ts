@@ -60,12 +60,21 @@ export const routes: Routes = [
         loadChildren: () => import('./features/system/users/users.routes'),
       },
       {
+        path: 'system/roles',
+        loadChildren: () => import('./features/system/roles/roles.routes'),
+      },
+      {
         path: 'error-pages',
         loadChildren: () => import('./features/error-pages/error-pages.routes'),
       },
       {
         path: 'users',
         redirectTo: 'system/accounts/list',
+        pathMatch: 'full',
+      },
+      {
+        path: 'roles',
+        redirectTo: 'system/roles/list',
         pathMatch: 'full',
       },
       ...errorRoute,
@@ -89,8 +98,23 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: 'system/roles/list',
+    redirectTo: 'admin/system/roles/list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'system/roles/edit',
+    redirectTo: 'admin/system/roles/edit',
+    pathMatch: 'full',
+  },
+  {
     path: 'users',
     redirectTo: 'admin/system/accounts/list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'roles',
+    redirectTo: 'admin/system/roles/list',
     pathMatch: 'full',
   },
   {

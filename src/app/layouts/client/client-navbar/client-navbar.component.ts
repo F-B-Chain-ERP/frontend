@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { CartService } from '../../../shared/services/cart.service';
 import { AccountService } from '../../../core/auth/account.service';
@@ -20,12 +21,12 @@ import { ThemeService } from '../../../core/theme/theme.service';
     CommonModule,
     FormsModule,
     RouterLink,
-    RouterLinkActive,
     NzIconModule,
-    NzDropDownModule,
     NzAvatarModule,
     NzTooltipModule,
     NzInputModule,
+    NzDropDownModule,
+    NzMenuModule,
     AppButtonComponent,
   ],
   templateUrl: './client-navbar.component.html',

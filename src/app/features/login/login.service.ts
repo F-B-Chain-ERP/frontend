@@ -46,9 +46,11 @@ export class LoginService {
 
   private toAccount(auth: AuthResponse): Account {
     const acc = auth.account;
+    const isSuperAdmin = acc.username === 'admin';
+    const authorities = isSuperAdmin ? ['FULL_PERMISSION'] : [];
     return new Account(
       acc.status === 'ACTIVE',
-      [],
+      authorities,
       acc.email ?? '',
       acc.fullName ?? null,
       'vi',

@@ -1,0 +1,87 @@
+<app-modal
+  [visible]="visible"
+  (visibleChange)="visibleChange.emit($event)"
+  [title]="'Danh sách tài khoản áp dụng vai trò: ' + (role?.name || '')"
+  size="lg"
+  [maskClosable]="true"
+  [footer]="modalFooter"
+>
+  <div class="role-user-content">
+    <!-- Header banner summary -->
+    <div class="role-summary-bar">
+      <div class="role-summary-bar__left">
+        <div>
+          <h4 class="role-summary-title">{{ role?.name }}</h4>
+          <p class="role-summary-desc">{{ role?.description || 'Không có mô tả chi tiết' }}</p>
+        </div>
+      </div>
+      <div class="role-summary-bar__right">
+        <span class="user-count-badge">
+          Tổng số: <strong>{{ users.length }}</strong> tài khoản
+        </span>
+      </div>
+    </div>
+
+    <!-- Search input -->
+    <div class="user-search-wrapper">
+      <nz-input-wrapper [nzAllowClear]="true">
+        <nz-icon nzInputPrefix nzType="search" />
+        <input
+          nz-input
+          [(ngModel)]="searchQuery"
+          placeholder="Tìm theo họ tên, username, email, phòng ban..."
+        />
+      </nz-input-wrapper>
+    </div>
+
+    <!-- Users Table -->
+    <nz-table
+      #userTable
+      [nzData]="filteredUsers"
+      [nzLoading]="loading"
+      [nzShowPagination]="filteredUsers.length > 5"
+      [nzPageSize]="5"
+      nzSize="small"
+      [nzBordered]="false"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="50px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="220px">Họ và tên</th>
+          <th scope="col" nzWidth="150px">Tên đăng nhập</th>
+          <th scope="col" nzWidth="180px">Phòng ban</th>
+          <th scope="col" nzWidth="140px">Ngày gán vai trò</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of userTable.data; track user.id; let i = $index) {
+          <tr>
+            <td nzAlign="center">{{ i + 1 }}</td>
+            <td>
+              <div class="user-item">
+                <nz-avatar [nzText]="getInitials(user.fullName)" nzSize="small" class="user-avatar"></nz-avatar>
+                <div class="user-item__info">
+                  <span class="user-item__name">{{ user.fullName }}</span>
+                  <span class="user-item__email">{{ user.email }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="username-tag">{{ user.username }}</span>
+            </td>
+            <td>
+              <span class="department-text">{{ user.department || '—' }}</span>
+            </td>
+            <td>
+              <span class="assigned-date">{{ user.assignedAt || '—' }}</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </div>
+</app-modal>
+
+<ng-template #modalFooter>
+  <app-button variant="secondary" (click)="close()">Đóng</app-button>
+</ng-template>
