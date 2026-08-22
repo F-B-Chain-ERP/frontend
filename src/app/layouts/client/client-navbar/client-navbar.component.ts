@@ -53,8 +53,12 @@ export class ClientNavbarComponent {
     this.theme.toggleMode();
   }
 
+  onBrandColorChange(event: Event): void {
+    this.theme.setBrandColor((event.target as HTMLInputElement).value);
+  }
+
   openCart(): void {
-    this.cartService.openCart();
+    this.router.navigate(['/store/cart']);
   }
 
   onNavSearch(): void {

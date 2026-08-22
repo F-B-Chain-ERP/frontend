@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, LOCALE_ID, importProvidersFrom, inject } from '@angular/core';
+import { ApplicationConfig, LOCALE_ID, importProvidersFrom, inject, provideAppInitializer } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import {
   NavigationError,
@@ -18,6 +18,7 @@ import { notificationInterceptor } from './core/interceptor/notification.interce
 
 import { AppPageTitleStrategy } from './app-page-title-strategy';
 import { routes } from './app.routes';
+import { ApplicationConfigService } from './core/config/application-config.service';
 import { provideNzI18n, vi_VN } from 'ng-zorro-antd/i18n';
 import { NzModalModule } from 'ng-zorro-antd/modal';
 
@@ -41,6 +42,9 @@ const routerFeatures: RouterFeatures[] = [
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes, ...routerFeatures),
+    provideAppInitializer(() => {
+      inject(ApplicationConfigService).setEndpointPrefix(SERVER_API_URL);
+    }),
     provideHttpClient(
       withInterceptors([
         authInterceptor,

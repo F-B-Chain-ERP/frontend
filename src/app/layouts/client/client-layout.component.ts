@@ -3,20 +3,12 @@ import { RouterOutlet, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { ClientNavbarComponent } from './client-navbar/client-navbar.component';
-import { AppCartPanelComponent } from '../../shared/app-cart-panel/app-cart-panel.component';
 import { AccountService } from '../../core/auth/account.service';
 
 @Component({
   selector: 'app-client-layout',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterOutlet,
-    RouterLink,
-    NzIconModule,
-    ClientNavbarComponent,
-    AppCartPanelComponent,
-  ],
+  imports: [CommonModule, RouterOutlet, RouterLink, NzIconModule, ClientNavbarComponent],
   templateUrl: './client-layout.component.html',
   styleUrls: ['./client-layout.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

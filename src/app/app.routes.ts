@@ -11,6 +11,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/login/login'),
     title: 'Đăng nhập',
   },
+  {
+    path: 'register',
+    loadComponent: () => import('./features/register/register'),
+    title: 'Đăng ký',
+  },
 
   // ── 2. Client Storefront (Client Layout, Public Access) ─────
   {

@@ -14,7 +14,7 @@
   &:hover {
     transform: translateY(-4px);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
-    border-color: rgba(0, 0, 0, 0.15);
+    border-color: color-mix(in srgb, var(--brand) 25%, transparent);
 
     .drink-card__img {
       transform: scale(1.06);
@@ -54,7 +54,7 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 
     &--signature {
-      background: #000000;
+      background: var(--brand);
       color: #ffffff;
     }
 
@@ -155,17 +155,17 @@
     flex-shrink: 0;
 
     ::ng-deep .app-btn {
-      background: #000000 !important;
-      color: #ffffff !important;
-      border-color: #000000 !important;
+      background: var(--surface-inverse) !important;
+      color: var(--text-inverse) !important;
+      border-color: var(--surface-inverse) !important;
       padding: 7px 16px !important;
       font-size: 13px !important;
       font-weight: 700 !important;
       border-radius: var(--radius-pill) !important;
 
       &:hover {
-        background: #222222 !important;
-        border-color: #222222 !important;
+        background: color-mix(in srgb, var(--surface-inverse) 88%, transparent) !important;
+        border-color: color-mix(in srgb, var(--surface-inverse) 88%, transparent) !important;
         transform: translateY(-1px);
       }
     }

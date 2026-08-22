@@ -323,6 +323,11 @@ export class StoreComponent implements OnInit {
     }
   }
 
+  getStyleCount(styleId: string): number {
+    const cat = this.categories.find(c => c.id === styleId);
+    return cat ? cat.count : 0;
+  }
+
   selectStyleCategory(catId: string): void {
     this.onSelectCategory(catId);
     this.scrollToSection('all-drinks');
