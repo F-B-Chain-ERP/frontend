@@ -46,9 +46,9 @@ export interface UserListResponse {
 }
 
 export const USER_STATUS_OPTIONS = [
-  { value: null, label: 'Tất cả trạng thái' },
-  { value: UserStatus.ACTIVE, label: 'Đang hoạt động', badgeClass: 'tbl-badge--success' },
-  { value: UserStatus.INACTIVE, label: 'Ngừng hoạt động', badgeClass: 'tbl-badge--danger' },
+  {value: null, label: 'Tất cả trạng thái'},
+  {value: UserStatus.ACTIVE, label: 'Đang hoạt động', badgeClass: 'tbl-badge--success'},
+  {value: UserStatus.INACTIVE, label: 'Ngừng hoạt động', badgeClass: 'tbl-badge--danger'},
 ];
 
 export function getUserStatusMeta(status: UserStatus | number): {

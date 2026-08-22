@@ -14,6 +14,9 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
+import { AppBreadcrumbsComponent } from '../../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { HasSomeAuthorityDirective } from '../../../../core/auth/has-some-authority.directive';
+import { ROLE } from '../../../../core/config/functions.constants';
 import { AppButtonComponent } from '../../../../shared/app-button/app-button.component';
 import { BaseComponent } from '../../../../shared/base-component/base.component';
 import { LayoutService } from '../../../../layouts/service/layout.service';
@@ -47,7 +50,9 @@ import { takeUntil } from 'rxjs';
     NzTooltipModule,
     NzAlertModule,
     NzBadgeModule,
+    AppBreadcrumbsComponent,
     AppButtonComponent,
+    HasSomeAuthorityDirective,
   ],
   templateUrl: './role-permission.component.html',
   styleUrls: ['./role-permission.component.scss'],
@@ -58,6 +63,7 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
   private readonly layoutService = inject(LayoutService);
   private readonly roleService = inject(RoleService);
 
+  readonly ROLE = ROLE;
   protected readonly sidebarCollapsed = this.layoutService.sidebarCollapsed;
 
   // ── Role State ────────────────────────────────────────────────────────

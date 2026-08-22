@@ -1,13 +1,13 @@
-import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import {HttpClient} from '@angular/common/http';
+import {inject, Injectable, signal} from '@angular/core';
+import {Router} from '@angular/router';
+import {Observable, of} from 'rxjs';
 
-import { Account } from './account.model';
-import { StateStorageService } from './state-storage.service';
-import { ApplicationConfigService } from '../config/application-config.service';
+import {Account} from './account.model';
+import {StateStorageService} from './state-storage.service';
+import {ApplicationConfigService} from '../config/application-config.service';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class AccountService {
   private readonly userIdentity = signal<Account | null>(null);
   readonly account = this.userIdentity.asReadonly();

@@ -1,11 +1,11 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { EMPTY, throwError } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import {HttpErrorResponse, HttpInterceptorFn} from '@angular/common/http';
+import {inject} from '@angular/core';
+import {EMPTY, throwError} from 'rxjs';
+import {catchError, switchMap} from 'rxjs/operators';
 
-import { StateStorageService } from '../auth/state-storage.service';
-import { AuthServerProvider } from '../auth/auth-jwt.service';
-import { LoginService } from '../../features/login/login.service';
+import {StateStorageService} from '../auth/state-storage.service';
+import {AuthServerProvider} from '../auth/auth-jwt.service';
+import {LoginService} from '../../features/login/login.service';
 
 export const authExpiredInterceptor: HttpInterceptorFn = (req, next) => {
   const stateStorageService = inject(StateStorageService);
@@ -33,7 +33,7 @@ export const authExpiredInterceptor: HttpInterceptorFn = (req, next) => {
           stateStorageService.storeAuthenticationToken(auth.accessToken, true);
           stateStorageService.storeRefreshToken(auth.refreshToken, true);
           const retried = req.clone({
-            setHeaders: { Authorization: `Bearer ${auth.accessToken}` },
+            setHeaders: {Authorization: `Bearer ${auth.accessToken}`},
           });
           return next(retried);
         }),

@@ -4,66 +4,66 @@
 // ============================================================
 
 // --- Space scale --------------------------------------------
-$space-0:  0px   !default;
-$space-px: 1px   !default;
-$space-1:  2px   !default;
-$space-2:  4px   !default;
-$space-3:  6px   !default;
-$space-4:  8px   !default;
-$space-5:  10px  !default;
-$space-6:  12px  !default;
-$space-7:  16px  !default;
-$space-8:  20px  !default;
-$space-9:  24px  !default;
-$space-10: 32px  !default;
-$space-11: 40px  !default;
-$space-12: 48px  !default;
+$space-0: 0px !default;
+$space-px: 1px !default;
+$space-1: 2px !default;
+$space-2: 4px !default;
+$space-3: 6px !default;
+$space-4: 8px !default;
+$space-5: 10px !default;
+$space-6: 12px !default;
+$space-7: 16px !default;
+$space-8: 20px !default;
+$space-9: 24px !default;
+$space-10: 32px !default;
+$space-11: 40px !default;
+$space-12: 48px !default;
 
 // --- Component control heights ------------------------------
 $control-h-sm: 26px !default;
-$control-h:    32px !default;  // default input / button
+$control-h: 32px !default; // default input / button
 $control-h-lg: 38px !default;
-$row-h:        40px !default;  // table row
+$row-h: 40px !default; // table row
 
 // --- Layout gutters -----------------------------------------
-$gutter-card: 16px !default;   // inner card padding
-$gutter-page: 20px !default;   // page edge padding
-$gap-grid:    16px !default;   // gap between cards
+$gutter-card: 16px !default; // inner card padding
+$gutter-page: 20px !default; // page edge padding
+$gap-grid: 16px !default; // gap between cards
 
 // --- Shell dimensions ---------------------------------------
-$sidebar-w:           260px !default;
-$sidebar-w-collapsed:  64px !default;
-$topbar-h:             52px !default;
+$sidebar-w: 260px !default;
+$sidebar-w-collapsed: 64px !default;
+$topbar-h: 52px !default;
 
 // ============================================================
 // CSS CUSTOM PROPERTIES
 // ============================================================
 :root {
-  --space-0:  #{$space-0};
+  --space-0: #{$space-0};
   --space-px: #{$space-px};
-  --space-1:  #{$space-1};
-  --space-2:  #{$space-2};
-  --space-3:  #{$space-3};
-  --space-4:  #{$space-4};
-  --space-5:  #{$space-5};
-  --space-6:  #{$space-6};
-  --space-7:  #{$space-7};
-  --space-8:  #{$space-8};
-  --space-9:  #{$space-9};
+  --space-1: #{$space-1};
+  --space-2: #{$space-2};
+  --space-3: #{$space-3};
+  --space-4: #{$space-4};
+  --space-5: #{$space-5};
+  --space-6: #{$space-6};
+  --space-7: #{$space-7};
+  --space-8: #{$space-8};
+  --space-9: #{$space-9};
   --space-10: #{$space-10};
   --space-11: #{$space-11};
   --space-12: #{$space-12};
 
   --control-h-sm: #{$control-h-sm};
-  --control-h:    #{$control-h};
+  --control-h: #{$control-h};
   --control-h-lg: #{$control-h-lg};
-  --row-h:        #{$row-h};
+  --row-h: #{$row-h};
 
   --gutter-card: #{$gutter-card};
   --gutter-page: #{$gutter-page};
-  --gap-grid:    #{$gap-grid};
+  --gap-grid: #{$gap-grid};
 
-  --sidebar-w:           #{$sidebar-w};
+  --sidebar-w: #{$sidebar-w};
   --sidebar-w-collapsed: #{$sidebar-w-collapsed};
-  --topbar-h:            #{$topbar-h};
+  --topbar-h: #{$topbar-h};
 }

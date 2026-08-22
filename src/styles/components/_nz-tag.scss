@@ -15,10 +15,9 @@
   line-height: 20px;
   white-space: nowrap;
   opacity: 1;
-  transition:
-    background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast) var(--ease),
+  border-color var(--dur-fast) var(--ease),
+  color var(--dur-fast) var(--ease);
 
   &,
   a,

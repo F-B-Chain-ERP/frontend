@@ -1,14 +1,14 @@
-import { NgTemplateOutlet } from '@angular/common';
-import { Component, computed, effect, inject, OnInit, signal, untracked } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs/operators';
-import { SIDEBAR_MENU } from './sidebar.constant';
-import { SidebarChild, SidebarGroup, SidebarParent } from './sidebar.model';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { OverlayscrollbarsModule } from 'overlayscrollbars-ngx';
-import { LayoutService } from '../service/layout.service';
-import { AccountService } from '../../core/auth/account.service';
-import { NzTooltipDirective } from 'ng-zorro-antd/tooltip';
+import {NgTemplateOutlet} from '@angular/common';
+import {Component, computed, effect, inject, OnInit, signal, untracked} from '@angular/core';
+import {NavigationEnd, Router} from '@angular/router';
+import {filter} from 'rxjs/operators';
+import {SIDEBAR_MENU} from './sidebar.constant';
+import {SidebarChild, SidebarGroup, SidebarParent} from './sidebar.model';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {OverlayscrollbarsModule} from 'overlayscrollbars-ngx';
+import {LayoutService} from '../service/layout.service';
+import {AccountService} from '../../core/auth/account.service';
+import {NzTooltipDirective} from 'ng-zorro-antd/tooltip';
 
 @Component({
   selector: 'app-sidebar',

@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import {Injectable, signal} from '@angular/core';
 
 export type SeparatorChar = ',' | '.' | ' ';
 
@@ -9,7 +9,7 @@ const SEPARATOR_MAP: Record<string, SeparatorChar> = {
 };
 const THOUSAND_GROUP_SIZE = 3;
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class NumberFormatSettingsService {
   readonly thousandSeparator = signal<SeparatorChar>(',');
   readonly decimalSeparator = signal<SeparatorChar>('.');

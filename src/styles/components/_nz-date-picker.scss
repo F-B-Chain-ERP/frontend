@@ -10,9 +10,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-3);
-  transition:
-    border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease),
+  box-shadow var(--dur-fast) var(--ease);
 
   // inner input
   .ant-picker-input {
@@ -258,9 +257,8 @@
       border-radius: var(--radius-sm);
       font-size: var(--text-sm);
       margin: 0 auto;
-      transition:
-        background var(--dur-fast) var(--ease),
-        color var(--dur-fast) var(--ease);
+      transition: background var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
 
       &::before {
         border: 1px solid var(--brand);

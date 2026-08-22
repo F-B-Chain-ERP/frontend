@@ -1,8 +1,8 @@
-import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { map } from 'rxjs';
+import {inject} from '@angular/core';
+import {CanActivateFn, Router} from '@angular/router';
+import {map} from 'rxjs';
 
-import { AccountService } from './account.service';
+import {AccountService} from './account.service';
 
 export const AUTH_KEY = 'app_authenticated';
 

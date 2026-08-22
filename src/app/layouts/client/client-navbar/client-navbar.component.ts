@@ -1,18 +1,18 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzAvatarModule } from 'ng-zorro-antd/avatar';
-import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
-import { NzMenuModule } from 'ng-zorro-antd/menu';
-import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
-import { CartService } from '../../../shared/services/cart.service';
-import { AccountService } from '../../../core/auth/account.service';
-import { LoginService } from '../../../features/login/login.service';
-import { ThemeService } from '../../../core/theme/theme.service';
+import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {Router, RouterLink} from '@angular/router';
+import {NzIconModule} from 'ng-zorro-antd/icon';
+import {NzAvatarModule} from 'ng-zorro-antd/avatar';
+import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
+import {NzInputModule} from 'ng-zorro-antd/input';
+import {NzDropDownModule} from 'ng-zorro-antd/dropdown';
+import {NzMenuModule} from 'ng-zorro-antd/menu';
+import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
+import {CartService} from '../../../shared/services/cart.service';
+import {AccountService} from '../../../core/auth/account.service';
+import {LoginService} from '../../../features/login/login.service';
+import {ThemeService} from '../../../core/theme/theme.service';
 
 @Component({
   selector: 'app-client-navbar',
@@ -47,7 +47,7 @@ export class ClientNavbarComponent {
   readonly account = this.accountService.account;
 
   formatPrice(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
   }
 
   toggleTheme(): void {
@@ -64,7 +64,7 @@ export class ClientNavbarComponent {
 
   onNavSearch(): void {
     if (this.navSearchText.trim()) {
-      this.router.navigate(['/store'], { queryParams: { q: this.navSearchText.trim() } });
+      this.router.navigate(['/store'], {queryParams: {q: this.navSearchText.trim()}});
     }
   }
 
@@ -73,10 +73,10 @@ export class ClientNavbarComponent {
     if (this.router.url.startsWith('/store')) {
       const el = document.getElementById(sectionId);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.scrollIntoView({behavior: 'smooth', block: 'start'});
       }
     } else {
-      this.router.navigate(['/store'], { fragment: sectionId });
+      this.router.navigate(['/store'], {fragment: sectionId});
     }
   }
 
@@ -92,4 +92,5 @@ export class ClientNavbarComponent {
     this.loginService.logout().subscribe();
   }
 }
+
 export default ClientNavbarComponent;

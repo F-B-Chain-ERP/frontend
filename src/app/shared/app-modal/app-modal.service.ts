@@ -1,6 +1,6 @@
-import { ModalOptions, NzModalRef, NzModalService } from 'ng-zorro-antd/modal';
-import { inject, Injectable } from '@angular/core';
-import { take } from 'rxjs';
+import {ModalOptions, NzModalRef, NzModalService} from 'ng-zorro-antd/modal';
+import {inject, Injectable} from '@angular/core';
+import {take} from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -61,7 +61,7 @@ export class AppModalService {
           modal.classList.remove('zoom-feedback');
           void modal.offsetWidth;
           modal.classList.add('zoom-feedback');
-          modal.addEventListener('animationend', () => modal.classList.remove('zoom-feedback'), { once: true });
+          modal.addEventListener('animationend', () => modal.classList.remove('zoom-feedback'), {once: true});
         }
       };
 

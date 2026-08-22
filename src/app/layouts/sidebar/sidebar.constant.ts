@@ -1,5 +1,5 @@
-import { SidebarGroup } from './sidebar.model';
-import { ROLE } from '../../core/config/functions.constants';
+import {SidebarGroup} from './sidebar.model';
+import {ROLE} from '../../core/config/functions.constants';
 
 export const SIDEBAR_MENU: SidebarGroup[] = [
   {

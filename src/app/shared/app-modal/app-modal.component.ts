@@ -1,6 +1,6 @@
-import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
-import { NzModalModule } from 'ng-zorro-antd/modal';
-import { ModalMaskClickDirective } from './modal-mask-click.directive';
+import {Component, EventEmitter, Input, Output, TemplateRef} from '@angular/core';
+import {NzModalModule} from 'ng-zorro-antd/modal';
+import {ModalMaskClickDirective} from './modal-mask-click.directive';
 
 @Component({
   selector: 'app-modal',
@@ -63,7 +63,7 @@ export class AppModalComponent {
     modal.addEventListener(
       'animationend',
       () => modal.classList.remove('zoom-feedback'),
-      { once: true },
+      {once: true},
     );
   }
 }

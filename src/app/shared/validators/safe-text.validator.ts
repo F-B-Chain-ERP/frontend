@@ -1,4 +1,4 @@
-import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import {AbstractControl, ValidationErrors, ValidatorFn} from '@angular/forms';
 
 const SAFE_TEXT_PATTERN = /^[\p{L}\p{M}\p{N}\s\-_.]*$/u;
 
@@ -7,7 +7,7 @@ export const SAFE_TEXT_ERROR_MESSAGE =
 
 export function safeTextValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null =>
-    !control.value || SAFE_TEXT_PATTERN.test(control.value) ? null : { invalidChars: true };
+    !control.value || SAFE_TEXT_PATTERN.test(control.value) ? null : {invalidChars: true};
 }
 
 export function maxDigitsValidator(maxDigits: number): ValidatorFn {
@@ -18,6 +18,6 @@ export function maxDigitsValidator(maxDigits: number): ValidatorFn {
     }
     const digitCount = Math.abs(Number(value)).toString().replace('.', '').length;
 
-    return digitCount > maxDigits ? { maxDigits: { requiredDigits: maxDigits, actualDigits: digitCount } } : null;
+    return digitCount > maxDigits ? {maxDigits: {requiredDigits: maxDigits, actualDigits: digitCount}} : null;
   };
 }

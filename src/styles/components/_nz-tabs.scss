@@ -77,16 +77,24 @@
     border-radius: var(--radius-sm);
     transition: all var(--dur-fast) var(--ease);
 
-    &:hover  { color: var(--brand); border-color: var(--brand); }
+    &:hover {
+      color: var(--brand);
+      border-color: var(--brand);
+    }
+
     &:active,
-    &:focus  { color: var(--brand-active); }
+    &:focus {
+      color: var(--brand-active);
+    }
   }
 
   .ant-tabs-nav-operations .ant-tabs-nav-more {
     color: var(--text-secondary);
     transition: color var(--dur-fast) var(--ease);
 
-    &:hover { color: var(--brand); }
+    &:hover {
+      color: var(--brand);
+    }
   }
 
   .ant-tabs-content-holder {
@@ -105,7 +113,7 @@
       color: var(--text-secondary);
       border-radius: var(--radius-md) var(--radius-md) 0 0;
       transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease),
-        border-color var(--dur-fast) var(--ease);
+      border-color var(--dur-fast) var(--ease);
 
       &:hover {
         color: var(--brand-hover);
@@ -116,7 +124,9 @@
         background: var(--surface-card);
         border-bottom-color: var(--surface-card);
 
-        .ant-tabs-tab-btn { color: var(--brand); }
+        .ant-tabs-tab-btn {
+          color: var(--brand);
+        }
       }
     }
 

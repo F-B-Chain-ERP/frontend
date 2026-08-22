@@ -10,9 +10,8 @@
   border-radius: var(--radius-pill);
   background: var(--gray-300);
   cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease),
-    box-shadow  var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast) var(--ease),
+  box-shadow var(--dur-fast) var(--ease);
   box-shadow: none;
   outline: none;
 
@@ -36,8 +35,15 @@
       inset-inline-start: calc(100% - 18px - 2px);
     }
 
-    .ant-switch-inner-checked  { opacity: 1;  transform: translateX(0);     }
-    .ant-switch-inner-unchecked { opacity: 0; transform: translateX(100%);  }
+    .ant-switch-inner-checked {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .ant-switch-inner-unchecked {
+      opacity: 0;
+      transform: translateX(100%);
+    }
   }
 
   // ── Thumb ─────────────────────────────────────────────────
@@ -52,7 +58,9 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
     transition: inset-inline-start var(--dur-fast) var(--ease);
 
-    &::before { content: none; }
+    &::before {
+      content: none;
+    }
   }
 
   // ── Inner labels ──────────────────────────────────────────
@@ -78,8 +86,15 @@
     transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   }
 
-  &-inner-checked  { opacity: 0;  transform: translateX(-100%); }
-  &-inner-unchecked { opacity: 1; transform: translateX(0);     }
+  &-inner-checked {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+
+  &-inner-unchecked {
+    opacity: 1;
+    transform: translateX(0);
+  }
 
   // ── Small ─────────────────────────────────────────────────
   &.ant-switch-small {
@@ -139,7 +154,9 @@
 }
 
 @keyframes switch-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // ── Dark theme ────────────────────────────────────────────────

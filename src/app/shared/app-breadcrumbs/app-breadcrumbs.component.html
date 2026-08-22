@@ -3,12 +3,16 @@
     <nz-breadcrumb-item>
       @if (last) {
         <span class="breadcrumb__current">
-          @if (item.icon) { <nz-icon [nzType]="item.icon" /> }
+          @if (item.icon) {
+            <nz-icon [nzType]="item.icon"/>
+          }
           {{ item.label }}
         </span>
       } @else {
         <a [routerLink]="item.url" class="breadcrumb__link">
-          @if (item.icon) { <nz-icon [nzType]="item.icon" /> }
+          @if (item.icon) {
+            <nz-icon [nzType]="item.icon"/>
+          }
           {{ item.label }}
         </a>
       }

@@ -25,7 +25,7 @@
     <!-- Search input -->
     <div class="user-search-wrapper">
       <nz-input-wrapper [nzAllowClear]="true">
-        <nz-icon nzInputPrefix nzType="search" />
+        <nz-icon nzInputPrefix nzType="search"/>
         <input
           nz-input
           [(ngModel)]="searchQuery"
@@ -45,13 +45,13 @@
       [nzBordered]="false"
     >
       <thead>
-        <tr>
-          <th scope="col" nzWidth="50px" nzAlign="center">STT</th>
-          <th scope="col" nzWidth="220px">Họ và tên</th>
-          <th scope="col" nzWidth="150px">Tên đăng nhập</th>
-          <th scope="col" nzWidth="180px">Phòng ban</th>
-          <th scope="col" nzWidth="140px">Ngày gán vai trò</th>
-        </tr>
+      <tr>
+        <th scope="col" nzWidth="50px" nzAlign="center">STT</th>
+        <th scope="col" nzWidth="220px">Họ và tên</th>
+        <th scope="col" nzWidth="150px">Tên đăng nhập</th>
+        <th scope="col" nzWidth="180px">Phòng ban</th>
+        <th scope="col" nzWidth="140px">Ngày gán vai trò</th>
+      </tr>
       </thead>
       <tbody>
         @for (user of userTable.data; track user.id; let i = $index) {

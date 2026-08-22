@@ -22,9 +22,11 @@
   &--primary {
     background: var(--brand);
     color: var(--on-brand);
+
     &:hover {
       background: var(--brand-hover);
     }
+
     &:active {
       background: var(--brand-active);
     }
@@ -34,6 +36,7 @@
     background: var(--surface-raised);
     border-color: var(--border-strong);
     color: var(--text-primary);
+
     &:hover {
       background: var(--surface-hover);
     }
@@ -42,6 +45,7 @@
   &--ghost {
     background: transparent;
     color: var(--text-primary);
+
     &:hover {
       background: var(--surface-hover);
     }
@@ -50,6 +54,7 @@
   &--danger {
     background: var(--danger);
     color: #fff;
+
     &:hover {
       background: var(--danger-600);
     }

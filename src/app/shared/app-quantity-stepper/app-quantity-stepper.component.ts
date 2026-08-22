@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { NzIconModule } from 'ng-zorro-antd/icon';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {NzIconModule} from 'ng-zorro-antd/icon';
 
 export type StepperSize = 'sm' | 'default' | 'lg';
 
@@ -53,4 +53,5 @@ export class AppQuantityStepperComponent {
     }
   }
 }
+
 export default AppQuantityStepperComponent;

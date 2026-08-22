@@ -16,7 +16,7 @@
   }">
     <nav class="sidebar__nav">
       @for (item of filteredMenu(); track item.id) {
-        <div class="sidebar__group">{{item.title}}</div>
+        <div class="sidebar__group">{{ item.title }}</div>
         @for (parent of item.items; track parent.id) {
           <button
             class="sidebar__item"

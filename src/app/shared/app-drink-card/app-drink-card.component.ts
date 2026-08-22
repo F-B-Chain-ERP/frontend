@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
-import { AppButtonComponent } from '../app-button/app-button.component';
+import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output} from '@angular/core';
+import {AppButtonComponent} from '../app-button/app-button.component';
 
 export interface DrinkItem {
   id: string;
@@ -24,13 +24,13 @@ export interface DrinkItem {
   standalone: true,
 })
 export class AppDrinkCardComponent {
-  @Input({ required: true }) item!: DrinkItem;
+  @Input({required: true}) item!: DrinkItem;
 
   @Output() selectItem = new EventEmitter<DrinkItem>();
   @Output() addToCart = new EventEmitter<DrinkItem>();
 
   formatPrice(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
   }
 
   onCardClick(): void {
@@ -41,4 +41,5 @@ export class AppDrinkCardComponent {
     this.addToCart.emit(this.item);
   }
 }
+
 export default AppDrinkCardComponent;

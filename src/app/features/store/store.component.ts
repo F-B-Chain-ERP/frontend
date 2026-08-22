@@ -1,15 +1,15 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent } from 'ng-zorro-antd/input';
-import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
-import { AppButtonComponent } from '../../shared/app-button/app-button.component';
-import { AppModalComponent } from '../../shared/app-modal/app-modal.component';
-import { AppDrinkCardComponent, DrinkItem } from '../../shared/app-drink-card/app-drink-card.component';
-import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
-import { CartService } from '../../shared/services/cart.service';
+import {ChangeDetectionStrategy, Component, OnInit, inject, signal} from '@angular/core';
+import {FormsModule} from '@angular/forms';
+import {CommonModule} from '@angular/common';
+import {ActivatedRoute} from '@angular/router';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent} from 'ng-zorro-antd/input';
+import {NzOptionComponent, NzSelectComponent} from 'ng-zorro-antd/select';
+import {AppButtonComponent} from '../../shared/app-button/app-button.component';
+import {AppModalComponent} from '../../shared/app-modal/app-modal.component';
+import {AppDrinkCardComponent, DrinkItem} from '../../shared/app-drink-card/app-drink-card.component';
+import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
+import {CartService} from '../../shared/services/cart.service';
 
 export interface CategoryTab {
   id: string;
@@ -83,28 +83,28 @@ export class StoreComponent implements OnInit {
   readonly selectedToppingIds = signal<Set<string>>(new Set());
 
   readonly sizeOptions: SizeOption[] = [
-    { id: 'S', label: 'Nhỏ (S)', extraPrice: 0 },
-    { id: 'M', label: 'Vừa (M)', extraPrice: 6000 },
-    { id: 'L', label: 'Lớn (L)', extraPrice: 12000 },
+    {id: 'S', label: 'Nhỏ (S)', extraPrice: 0},
+    {id: 'M', label: 'Vừa (M)', extraPrice: 6000},
+    {id: 'L', label: 'Lớn (L)', extraPrice: 12000},
   ];
 
   readonly sugarOptions = ['100% (Chuẩn)', '70%', '50%', 'Không đường'];
   readonly iceOptions = ['100% đá', '70% đá', '50% đá', 'Không đá', 'Uống nóng'];
 
   readonly toppingOptions: ToppingOption[] = [
-    { id: 'pearl', label: 'Trân châu hoàng kim', price: 8000 },
-    { id: 'peach', label: 'Thạch đào giòn', price: 10000 },
-    { id: 'cheese', label: 'Kem phô mai Cheese Foam', price: 12000 },
-    { id: 'lotus', label: 'Hạt sen Huế nấu đường phèn', price: 12000 },
+    {id: 'pearl', label: 'Trân châu hoàng kim', price: 8000},
+    {id: 'peach', label: 'Thạch đào giòn', price: 10000},
+    {id: 'cheese', label: 'Kem phô mai Cheese Foam', price: 12000},
+    {id: 'lotus', label: 'Hạt sen Huế nấu đường phèn', price: 12000},
   ];
 
   readonly categories: CategoryTab[] = [
-    { id: 'all', name: 'Tất cả món', count: 12 },
-    { id: 'traditional-coffee', name: 'Cà phê truyền thống', count: 3 },
-    { id: 'espresso-machine', name: 'Cà phê pha máy', count: 3 },
-    { id: 'fruit-tea', name: 'Trà trái cây tươi', count: 2 },
-    { id: 'milk-tea', name: 'Trà sữa & Macchiato', count: 2 },
-    { id: 'juice-pastry', name: 'Nước ép & Bánh ngọt', count: 2 },
+    {id: 'all', name: 'Tất cả món', count: 12},
+    {id: 'traditional-coffee', name: 'Cà phê truyền thống', count: 3},
+    {id: 'espresso-machine', name: 'Cà phê pha máy', count: 3},
+    {id: 'fruit-tea', name: 'Trà trái cây tươi', count: 2},
+    {id: 'milk-tea', name: 'Trà sữa & Macchiato', count: 2},
+    {id: 'juice-pastry', name: 'Nước ép & Bánh ngọt', count: 2},
   ];
 
   readonly styleCategories: StyleCategory[] = [
@@ -313,13 +313,13 @@ export class StoreComponent implements OnInit {
   }
 
   formatPrice(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
   }
 
   scrollToSection(sectionId: string): void {
     const el = document.getElementById(sectionId);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.scrollIntoView({behavior: 'smooth', block: 'start'});
     }
   }
 
@@ -443,4 +443,5 @@ export class StoreComponent implements OnInit {
     this.cartService.openCart();
   }
 }
+
 export default StoreComponent;

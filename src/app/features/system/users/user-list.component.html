@@ -1,17 +1,17 @@
 <div class="user-list-page">
   <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
   <div class="page__header">
-    <div>
+    <div class="page__header__left">
       <h1 class="page__header__title">Quản lý người dùng</h1>
-      <p class="page__header__description">
-        Quản lý danh sách tài khoản, thông tin họ tên, email và phân quyền trạng thái hoạt động trong hệ thống ERP UTT
-      </p>
+      <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button variant="secondary" leftIcon="download" (click)="onExportExcel()">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.VIEW]" variant="secondary" leftIcon="download"
+                  (click)="onExportExcel()">
         Xuất Excel
       </app-button>
-      <app-button variant="primary" leftIcon="plus" (click)="openCreateModal()">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.ADD]" variant="primary" leftIcon="plus"
+                  (click)="openCreateModal()">
         Thêm mới người dùng
       </app-button>
     </div>
@@ -57,13 +57,16 @@
   @if (setOfCheckedKeys.size > 0) {
     <app-selection-bar [selectedCount]="setOfCheckedKeys.size" [totalCount]="total()" itemLabel="người dùng"
                        (clearSelection)="clearSelection()">
-      <app-button variant="secondary" leftIcon="redo" (click)="onChangeStatusSelected(UserStatus.ACTIVE)">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.EDIT]" variant="secondary" leftIcon="redo"
+                  (click)="onChangeStatusSelected(UserStatus.ACTIVE)">
         Khôi phục nhanh
       </app-button>
-      <app-button variant="secondary" leftIcon="lock" (click)="onChangeStatusSelected(UserStatus.INACTIVE)">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.EDIT]" variant="secondary" leftIcon="lock"
+                  (click)="onChangeStatusSelected(UserStatus.INACTIVE)">
         Khóa tài khoản
       </app-button>
-      <app-button variant="danger" leftIcon="delete" (click)="onDeleteSelected()">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.DELETE]" variant="danger" leftIcon="delete"
+                  (click)="onDeleteSelected()">
         Xóa nhanh
       </app-button>
     </app-selection-bar>
@@ -173,7 +176,7 @@
                 <nz-avatar [nzText]="data.fullName.charAt(0).toUpperCase()" [nzSize]="32" class="user-cell__avatar"/>
                 <div class="user-cell__info">
                   <span class="user-cell__name">{{ data.fullName }}</span>
-                  <span class="user-cell__subtext">@{{ data.username }}</span>
+                  <span class="user-cell__subtext">{{ data.username }}</span>
                 </div>
               </div>
             </td>
@@ -214,10 +217,12 @@
                 <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết"
                             (click)="openDetailModal(data)">
                 </app-button>
-                <app-button variant="ghost" iconOnly="edit" nz-tooltip nzTooltipTitle="Chỉnh sửa"
+                <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.EDIT]" variant="ghost" iconOnly="edit"
+                            nz-tooltip nzTooltipTitle="Chỉnh sửa"
                             (click)="openEditModal(data)">
                 </app-button>
-                <app-button variant="ghost" iconOnly="delete" nz-tooltip nzTooltipTitle="Xóa người dùng"
+                <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.DELETE]" variant="ghost" iconOnly="delete"
+                            nz-tooltip nzTooltipTitle="Xóa người dùng"
                             (click)="onDeleteUser(data)">
                 </app-button>
               </div>
@@ -378,7 +383,8 @@
         <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">
           Hủy bỏ
         </app-button>
-        <app-button variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
+        <app-button *erpUTTHasSomeAuthority="[isEditMode ? ROLE.QUAN_LY_NGUOI_DUNG.EDIT : ROLE.QUAN_LY_NGUOI_DUNG.ADD]"
+                    variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
           {{ isEditMode ? 'Lưu thay đổi' : 'Thêm người dùng' }}
         </app-button>
       </div>
@@ -458,7 +464,8 @@
 
     <ng-template #detailModalFooter>
       <div class="modal-footer-actions">
-        <app-button variant="secondary" leftIcon="edit" (click)="switchToEditFromDetail()">
+        <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.EDIT]" variant="secondary" leftIcon="edit"
+                    (click)="switchToEditFromDetail()">
           Chỉnh sửa
         </app-button>
         <app-button variant="primary" leftIcon="check" (click)="closeDetailModal()">

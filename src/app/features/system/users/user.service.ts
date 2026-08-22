@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import {Injectable} from '@angular/core';
+import {Observable, of, throwError} from 'rxjs';
+import {delay} from 'rxjs/operators';
 import {
   User,
   UserFilter,
@@ -215,7 +215,7 @@ export class UserService {
    */
   getUserById(id: string | number): Observable<User | null> {
     const user = this.mockUsers.find(u => String(u.id) === String(id));
-    return of(user ? { ...user } : null).pipe(delay(150));
+    return of(user ? {...user} : null).pipe(delay(150));
   }
 
   /**
@@ -283,7 +283,7 @@ export class UserService {
       return throwError(() => new Error('Người dùng không tồn tại'));
     }
     const newStatus = user.status === UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE;
-    return this.updateUser(id, { status: newStatus });
+    return this.updateUser(id, {status: newStatus});
   }
 
   /**

@@ -47,7 +47,8 @@ export class ModalMaskClickDirective implements AfterViewInit, OnDestroy {
     };
   });
 
-  constructor(private ngZone: NgZone) {}
+  constructor(private ngZone: NgZone) {
+  }
 
   ngAfterViewInit(): void {
     this.ngZone.runOutsideAngular(() => {

@@ -1,37 +1,37 @@
-import { Component, inject, signal } from '@angular/core';
-import { ThemeService } from '../../core/theme/theme.service';
-import { Router } from '@angular/router';
-import { AppButtonComponent } from '../../shared/app-button/app-button.component';
-import { NzColDirective, NzRowDirective } from 'ng-zorro-antd/grid';
-import { NzCardComponent } from 'ng-zorro-antd/card';
-import { NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent } from 'ng-zorro-antd/input';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NzDatePickerComponent, NzRangePickerComponent } from 'ng-zorro-antd/date-picker';
-import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
-import { NzTableComponent, NzTableModule } from 'ng-zorro-antd/table';
-import { NzPaginationComponent } from 'ng-zorro-antd/pagination';
-import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
-import { AppModalComponent } from '../../shared/app-modal/app-modal.component';
-import { LoginService } from '../login/login.service';
-import { NzTooltipDirective } from 'ng-zorro-antd/tooltip';
-import { createSortFn } from '../../shared/helpers/table.helper';
+import {Component, inject, signal} from '@angular/core';
+import {ThemeService} from '../../core/theme/theme.service';
+import {Router} from '@angular/router';
+import {AppButtonComponent} from '../../shared/app-button/app-button.component';
+import {NzColDirective, NzRowDirective} from 'ng-zorro-antd/grid';
+import {NzCardComponent} from 'ng-zorro-antd/card';
+import {NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent} from 'ng-zorro-antd/input';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {NzOptionComponent, NzSelectComponent} from 'ng-zorro-antd/select';
+import {FormBuilder, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import {NzDatePickerComponent, NzRangePickerComponent} from 'ng-zorro-antd/date-picker';
+import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
+import {NzTableComponent, NzTableModule} from 'ng-zorro-antd/table';
+import {NzPaginationComponent} from 'ng-zorro-antd/pagination';
+import {NzModalModule, NzModalService} from 'ng-zorro-antd/modal';
+import {AppModalComponent} from '../../shared/app-modal/app-modal.component';
+import {LoginService} from '../login/login.service';
+import {NzTooltipDirective} from 'ng-zorro-antd/tooltip';
+import {createSortFn} from '../../shared/helpers/table.helper';
 
-import { DrinkItem, AppDrinkCardComponent } from '../../shared/app-drink-card/app-drink-card.component';
-import { AppQuantityStepperComponent } from '../../shared/app-quantity-stepper/app-quantity-stepper.component';
-import { AppCartPanelComponent } from '../../shared/app-cart-panel/app-cart-panel.component';
-import { CartService } from '../../shared/services/cart.service';
-import { AppOverflowTagsComponent } from '../../shared/app-overflow-tags/app-overflow-tags.component';
-import { AppPaginationComponent } from '../../shared/app-pagination/app-pagination.component';
-import { AppBreadcrumbsComponent } from '../../shared/app-breadcrumbs/app-breadcrumbs.component';
-import { BreadcrumbsService } from '../../shared/app-breadcrumbs/breadcrumbs.service';
-import { AppTableSearchInputComponent } from '../../shared/app-table-search-input/app-table-search-input.component';
-import { ColumnTextFilter } from '../../shared/utils/column-text-filter';
-import { NzTabsModule, NzTabsComponent, NzTabComponent } from 'ng-zorro-antd/tabs';
-import { NzSwitchComponent } from 'ng-zorro-antd/switch';
-import { NzTagComponent } from 'ng-zorro-antd/tag';
-import { NzAlertComponent } from 'ng-zorro-antd/alert';
+import {DrinkItem, AppDrinkCardComponent} from '../../shared/app-drink-card/app-drink-card.component';
+import {AppQuantityStepperComponent} from '../../shared/app-quantity-stepper/app-quantity-stepper.component';
+import {AppCartPanelComponent} from '../../shared/app-cart-panel/app-cart-panel.component';
+import {CartService} from '../../shared/services/cart.service';
+import {AppOverflowTagsComponent} from '../../shared/app-overflow-tags/app-overflow-tags.component';
+import {AppPaginationComponent} from '../../shared/app-pagination/app-pagination.component';
+import {AppBreadcrumbsComponent} from '../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import {BreadcrumbsService} from '../../shared/app-breadcrumbs/breadcrumbs.service';
+import {AppTableSearchInputComponent} from '../../shared/app-table-search-input/app-table-search-input.component';
+import {ColumnTextFilter} from '../../shared/utils/column-text-filter';
+import {NzTabsModule, NzTabsComponent, NzTabComponent} from 'ng-zorro-antd/tabs';
+import {NzSwitchComponent} from 'ng-zorro-antd/switch';
+import {NzTagComponent} from 'ng-zorro-antd/tag';
+import {NzAlertComponent} from 'ng-zorro-antd/alert';
 
 function alphabet(): string[] {
   const children: string[] = [];
@@ -110,6 +110,7 @@ export class UiKitComponent {
   }
 
   isLoading = signal(false);
+
   checkLoading() {
     this.isLoading.set(true);
     setTimeout(() => {
@@ -175,16 +176,28 @@ export class UiKitComponent {
     }
   }
 
-  readonly originalListOfData: Array<{ key: string; name: string; age: number; department: string; address: string }> = [
-    { key: 'NV001', name: 'Nguyễn Văn An', age: 32, department: 'Phòng Tài chính - Kế toán', address: 'Hà Nội' },
-    { key: 'NV002', name: 'Trần Thị Bình', age: 42, department: 'Phòng Tổ chức Cán bộ', address: 'Hồ Chí Minh' },
-    { key: 'NV003', name: 'Lê Hoàng Cường', age: 32, department: 'Phòng Công nghệ Thông tin', address: 'Đà Nẵng' },
-    { key: 'NV004', name: 'Phạm Minh Đức', age: 27, department: 'Phòng Đào tạo', address: 'Hải Phòng' },
-    { key: 'NV005', name: 'Vũ Thị Hoa', age: 35, department: 'Phòng Kế hoạch - Đầu tư', address: 'Cần Thơ' },
-    { key: 'NV006', name: 'Đỗ Mạnh Thắng', age: 29, department: 'Ban Quản lý Dự án', address: 'Hà Nội' },
+  readonly originalListOfData: Array<{
+    key: string;
+    name: string;
+    age: number;
+    department: string;
+    address: string
+  }> = [
+    {key: 'NV001', name: 'Nguyễn Văn An', age: 32, department: 'Phòng Tài chính - Kế toán', address: 'Hà Nội'},
+    {key: 'NV002', name: 'Trần Thị Bình', age: 42, department: 'Phòng Tổ chức Cán bộ', address: 'Hồ Chí Minh'},
+    {key: 'NV003', name: 'Lê Hoàng Cường', age: 32, department: 'Phòng Công nghệ Thông tin', address: 'Đà Nẵng'},
+    {key: 'NV004', name: 'Phạm Minh Đức', age: 27, department: 'Phòng Đào tạo', address: 'Hải Phòng'},
+    {key: 'NV005', name: 'Vũ Thị Hoa', age: 35, department: 'Phòng Kế hoạch - Đầu tư', address: 'Cần Thơ'},
+    {key: 'NV006', name: 'Đỗ Mạnh Thắng', age: 29, department: 'Ban Quản lý Dự án', address: 'Hà Nội'},
   ];
 
-  filteredListOfData: Array<{ key: string; name: string; age: number; department: string; address: string }> = [...this.originalListOfData];
+  filteredListOfData: Array<{
+    key: string;
+    name: string;
+    age: number;
+    department: string;
+    address: string
+  }> = [...this.originalListOfData];
 
   columnFilter = new ColumnTextFilter<{ key: string; name: string; age: number; department: string; address: string }>(
     () => this.originalListOfData,
@@ -195,13 +208,13 @@ export class UiKitComponent {
   );
 
   readonly departmentFilterOptions = [
-    { label: 'Tất cả phòng ban', value: '' },
-    { label: 'Phòng Tài chính - Kế toán', value: 'Phòng Tài chính - Kế toán' },
-    { label: 'Phòng Tổ chức Cán bộ', value: 'Phòng Tổ chức Cán bộ' },
-    { label: 'Phòng Công nghệ Thông tin', value: 'Phòng Công nghệ Thông tin' },
-    { label: 'Phòng Đào tạo', value: 'Phòng Đào tạo' },
-    { label: 'Phòng Kế hoạch - Đầu tư', value: 'Phòng Kế hoạch - Đầu tư' },
-    { label: 'Ban Quản lý Dự án', value: 'Ban Quản lý Dự án' },
+    {label: 'Tất cả phòng ban', value: ''},
+    {label: 'Phòng Tài chính - Kế toán', value: 'Phòng Tài chính - Kế toán'},
+    {label: 'Phòng Tổ chức Cán bộ', value: 'Phòng Tổ chức Cán bộ'},
+    {label: 'Phòng Công nghệ Thông tin', value: 'Phòng Công nghệ Thông tin'},
+    {label: 'Phòng Đào tạo', value: 'Phòng Đào tạo'},
+    {label: 'Phòng Kế hoạch - Đầu tư', value: 'Phòng Kế hoạch - Đầu tư'},
+    {label: 'Ban Quản lý Dự án', value: 'Ban Quản lý Dự án'},
   ];
 
   searchByField(field: 'key' | 'name' | 'age' | 'department' | 'address', value: unknown): void {
@@ -250,6 +263,7 @@ export class UiKitComponent {
   protected openBasic(): void {
     this.isBasicVisible.set(true);
   }
+
   protected openCustom(): void {
     this.isCustomVisible.set(true);
   }
@@ -362,4 +376,5 @@ export class UiKitComponent {
     this.toastService.success(`Đã thêm "${item.name}" vào giỏ hàng!`);
   }
 }
+
 export default UiKitComponent;

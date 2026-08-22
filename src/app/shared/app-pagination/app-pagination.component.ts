@@ -1,8 +1,13 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { NzPaginationComponent } from 'ng-zorro-antd/pagination';
-import { NzSelectModule } from 'ng-zorro-antd/select';
-import { FormsModule } from '@angular/forms';
-import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS, DEFAULT_TOTAL_PAGE } from '../constants/constant';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
+import {NzPaginationComponent} from 'ng-zorro-antd/pagination';
+import {NzSelectModule} from 'ng-zorro-antd/select';
+import {FormsModule} from '@angular/forms';
+import {
+  DEFAULT_PAGE_INDEX,
+  DEFAULT_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE_OPTIONS,
+  DEFAULT_TOTAL_PAGE
+} from '../constants/constant';
 
 @Component({
   selector: 'app-pagination',

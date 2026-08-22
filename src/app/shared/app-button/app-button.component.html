@@ -30,7 +30,9 @@
     }
   </span>
   @if (loading) {
-    <ng-template #indicatorTemplate><nz-icon class="loading-icon" nzType="loading" /></ng-template>
-    <nz-spin class="btn__spinner" nzSimple [nzIndicator]="indicatorTemplate" />
+    <ng-template #indicatorTemplate>
+      <nz-icon class="loading-icon" nzType="loading"/>
+    </ng-template>
+    <nz-spin class="btn__spinner" nzSimple [nzIndicator]="indicatorTemplate"/>
   }
 </button>

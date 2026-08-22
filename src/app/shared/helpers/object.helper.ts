@@ -1,4 +1,4 @@
-import { toCamelCase, toPascalCase } from './string.helper';
+import {toCamelCase, toPascalCase} from './string.helper';
 
 export function transformToCamelObject(value: any): any {
   if (Array.isArray(value)) return value.map(item => transformToCamelObject(item));

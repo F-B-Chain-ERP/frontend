@@ -22,9 +22,8 @@
     border: 1px solid var(--border-field) !important;
     border-radius: var(--radius-md) !important;
     box-shadow: none !important;
-    transition:
-      border-color var(--dur-fast) var(--ease),
-      box-shadow var(--dur-fast) var(--ease) !important;
+    transition: border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease) !important;
     display: flex;
     align-items: center;
   }
@@ -90,6 +89,7 @@
       background: var(--surface-card) !important;
     }
   }
+
   &.ant-select-open:not(.ant-select-show-search),
   &.ant-select-focused:not(.ant-select-show-search) {
     .ant-select-arrow {

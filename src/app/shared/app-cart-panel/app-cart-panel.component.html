@@ -14,7 +14,7 @@
   <!-- ── 1. Drawer Header ───────────────────────────── -->
   <div class="cart-drawer__header">
     <div class="cart-drawer__header-title">
-      <nz-icon nzType="shopping-cart" class="cart-drawer__header-icon" />
+      <nz-icon nzType="shopping-cart" class="cart-drawer__header-icon"/>
       <h2>Giỏ hàng của bạn</h2>
       @if (cartService.totalCount() > 0) {
         <span class="cart-drawer__count-badge">{{ cartService.totalCount() }}</span>
@@ -26,7 +26,7 @@
       (click)="onClose()"
       title="Đóng giỏ hàng"
     >
-      <nz-icon nzType="close" />
+      <nz-icon nzType="close"/>
     </button>
   </div>
 
@@ -35,7 +35,7 @@
     @if (cartService.isEmpty()) {
       <div class="cart-empty">
         <div class="cart-empty__icon-box">
-          <nz-icon nzType="shopping" />
+          <nz-icon nzType="shopping"/>
         </div>
         <h3 class="cart-empty__title">Giỏ hàng đang trống</h3>
         <p class="cart-empty__desc">
@@ -52,10 +52,10 @@
             <!-- Thumbnail -->
             <div class="cart-item-card__thumb">
               @if (item.drink.imageUrl) {
-                <img [src]="item.drink.imageUrl" [alt]="item.drink.name" loading="lazy" />
+                <img [src]="item.drink.imageUrl" [alt]="item.drink.name" loading="lazy"/>
               } @else {
                 <div class="cart-item-card__thumb-placeholder">
-                  <nz-icon nzType="coffee" />
+                  <nz-icon nzType="coffee"/>
                 </div>
               }
             </div>
@@ -70,7 +70,7 @@
                   (click)="onRemoveItem(item.id, item.drink.name)"
                   nz-tooltip="Xóa món này"
                 >
-                  <nz-icon nzType="delete" />
+                  <nz-icon nzType="delete"/>
                 </button>
               </div>
 
