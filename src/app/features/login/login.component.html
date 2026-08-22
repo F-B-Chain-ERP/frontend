@@ -1,62 +1,72 @@
-@if (viewMode() === 'credentials') {
-  <div class="login">
-    <!-- LEFT PANEL -->
+<div class="login">
+    <!-- LEFT PANEL — FLOATING 3D SPLIT PREMIUM (80% CUSTOMER) -->
     <div class="login__left">
       <div class="login__left-inner">
-        <div class="login__left-top">
-          <div class="login__brand">
-            <span class="login__brand-name login__brand-name--easy">ERP</span>
-            <span class="login__brand-name login__brand-name--accent">UTT</span>
+        <div class="login__watermark" aria-hidden="true">UTT</div>
+        <div class="login__grain" aria-hidden="true"></div>
+
+        <div class="login__brand">
+          <span class="login__brand-name login__brand-name--easy">ERP</span>
+          <span class="login__brand-name login__brand-name--accent">UTT</span>
+          <span class="login__badge">UTT.CO • Coffee & Tea</span>
+        </div>
+
+        <div class="login__hero">
+          <h2 class="login__hero-title">
+            Chào bạn,<br />
+            ly <span class="grad">cà phê</span> đang chờ
+          </h2>
+          <p class="login__hero-sub">Đặt 30s • Giao 20' • Tích điểm đổi ly miễn phí</p>
+        </div>
+
+        <!-- Floating 3D Scene -->
+        <div class="login__scene">
+          <div class="scene__glow" aria-hidden="true"></div>
+          <div class="scene__shadow" aria-hidden="true"></div>
+
+          <!-- Main 3D coffee -->
+          <div class="scene__coffee">
+            <img
+              src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=520&q=80"
+              alt="Latte art"
+            />
+            <div class="scene__steam"><span></span><span></span><span></span></div>
+          </div>
+          <div class="scene__beans" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+          <!-- Floating perk cards -->
+          <div class="float-card float-card--ship">
+            <div class="float-card__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 3h15v13H1z"/><path d="M16 8h4l3 6v3h-7"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </div>
+            <div class="float-card__text">
+              <strong>Freeship 3km</strong>
+              <span>Đơn từ 99k</span>
+            </div>
+            <span class="float-card__check">✓</span>
           </div>
 
-          <div class="login__hero">
-            <h2 class="login__hero-title">
-              Hệ thống Quản trị<br />
-              Tài chính – Kế toán
-            </h2>
-            <p class="login__hero-sub">
-              Giải pháp quản lý tài chính toàn diện<br />
-              hiện đại, chính xác và hiệu quả
-            </p>
+          <div class="float-card float-card--point">
+            <div class="float-card__icon float-card__icon--amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+            </div>
+            <div class="float-card__text">
+              <strong>+120 điểm</strong>
+              <span>Vừa tích hôm nay</span>
+            </div>
+          </div>
+
+          <div class="float-card float-card--time">
+            <span class="float-card__dot"></span>
+            <span>Giao trong 20'</span>
+            <strong>15:42 — Đang pha chế</strong>
           </div>
         </div>
 
-        <div class="login__features">
-          <div class="login__feature">
-            <div class="login__feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-            </div>
-            <span>Quản lý tài chính<br />minh bạch</span>
-          </div>
-          <div class="login__feature">
-            <div class="login__feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="5" y="2" width="14" height="20" rx="2" />
-                <line x1="9" y1="7" x2="15" y2="7" />
-                <line x1="9" y1="11" x2="15" y2="11" />
-                <line x1="9" y1="15" x2="13" y2="15" />
-              </svg>
-            </div>
-            <span>Kế toán chính xác<br />kịp thời</span>
-          </div>
-          <div class="login__feature">
-            <div class="login__feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-            </div>
-            <span>Tuân thủ quy định<br />nhà nước</span>
-          </div>
-          <div class="login__feature">
-            <div class="login__feature-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </div>
-            <span>Dễ sử dụng hiệu<br />quả</span>
+        <div class="login__left-footer">
+          <div class="login__avatars">
+            <img src="https://i.pravatar.cc/100?img=11" alt="" /><img src="https://i.pravatar.cc/100?img=14" alt="" /><img src="https://i.pravatar.cc/100?img=32" alt="" />
+            <span>30.000+ khách hàng tin dùng • 4.9/5</span>
           </div>
         </div>
       </div>
@@ -77,8 +87,21 @@
           </div>
         </div>
 
-        <h1 class="login__form-title">Đăng nhập hệ thống</h1>
-        <p class="login__form-sub">Vui lòng đăng nhập bằng tài khoản được cấp</p>
+        <h1 class="login__form-title">Chào mừng trở lại</h1>
+        <p class="login__form-sub">Đăng nhập để đặt món, tích điểm & theo dõi đơn hàng</p>
+
+        <!-- Social login — 80% customer -->
+        <div class="login__social">
+          <button type="button" class="login__social-btn login__social-btn--google">
+            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Tiếp tục với Google
+          </button>
+          <button type="button" class="login__social-btn login__social-btn--zalo">
+            <span class="zalo-badge">Z</span> Tiếp tục với Zalo
+          </button>
+        </div>
+
+        <div class="login__divider-or"><span>hoặc</span></div>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmitCredentials()">
           @if (loginError() === 'INVALID_CREDENTIALS') {
@@ -198,6 +221,8 @@
           </app-button>
         </form>
 
+        <p class="login__register">Chưa có tài khoản? <a routerLink="/register" class="login__register-link">Đăng ký ngay — nhận ưu đãi 20%</a></p>
+
         <div class="login__divider"></div>
 
         <div class="login__security">
@@ -223,113 +248,3 @@
       </div>
     </div>
   </div>
-} @else {
-  <div class="select-unit">
-    <!-- LEFT PANEL -->
-    <div class="select-unit__left">
-      <div class="select-unit__left-inner">
-        <div class="select-unit__left-top">
-          <div class="select-unit__brand">
-            <div class="select-unit__brand-text">
-              <div class="select-unit__brand-title">
-                <span class="select-unit__brand-name select-unit__brand-name--easy">ERP</span>
-                <span class="select-unit__brand-name select-unit__brand-name--accent">UTT</span>
-              </div>
-              <p class="select-unit__brand-slogan">Hệ thống Quản lý Kế toán Doanh nghiệp & Đơn vị</p>
-            </div>
-          </div>
-
-          <div class="select-unit__hero">
-            <h2 class="select-unit__hero-title">Chọn đơn vị làm việc</h2>
-            <p class="select-unit__hero-sub">
-              Vui lòng chọn đơn vị trực thuộc để bắt đầu làm<br />
-              việc trên hệ thống
-            </p>
-          </div>
-        </div>
-
-        <div class="select-unit__left-footer">
-          <div class="select-unit__security">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <polyline points="9 11 11 13 15 9" />
-            </svg>
-            <span>Dữ liệu của bạn được bảo mật an toàn</span>
-          </div>
-          <p class="select-unit__copyright">© {{ currentYear }} ERP UTT. All rights reserved.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT PANEL -->
-    <div class="select-unit__right">
-      <div class="select-unit__topbar">
-        <div class="select-unit__user-wrap">
-          <div class="select-unit__user">
-            <div class="select-unit__user-avatar">{{ fullName().charAt(0).toUpperCase() || 'U' }}</div>
-            <div class="select-unit__user-text">
-              <span class="select-unit__user-name">{{ fullName() }}</span>
-            </div>
-          </div>
-          <div class="select-unit__user-dropdown">
-            <div class="select-unit__dropdown-item select-unit__dropdown-item--logout" (click)="backToLogin()" (keydown.enter)="backToLogin()" tabindex="0">Đăng xuất</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="select-unit__right-inner">
-        <h1 class="select-unit__form-title">Thông tin đơn vị</h1>
-
-        @if (errorMessage()) {
-          <div class="select-unit__alert">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="select-unit__alert-icon">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            {{ errorMessage() }}
-          </div>
-        }
-
-        <form [formGroup]="unitForm" (ngSubmit)="onSubmitOrganization()">
-          <div class="select-unit__field">
-            <label>Đơn vị sử dụng</label>
-            <div class="select-unit__readonly">
-              <span class="select-unit__readonly-text">{{ parentOrganizationName() || '—' }}</span>
-              <span class="select-unit__badge">Mặc định</span>
-            </div>
-          </div>
-
-          <div class="select-unit__field">
-            <label for="organizationId">Đơn vị trực thuộc <span style="color: red">*</span></label>
-            <div class="select-unit__input-wrapper">
-              <nz-select
-                id="organizationId"
-                formControlName="organizationId"
-                nzPlaceHolder="Đơn vị trực thuộc"
-                class="select-unit__select"
-                nzShowSearch
-                nzSize="large"
-                style="width: 100%"
-              >
-                @for (org of organizations(); track org.OrganizationId) {
-                  <nz-option [nzLabel]="org.OrganizationName" [nzValue]="org.OrganizationId" />
-                }
-              </nz-select>
-            </div>
-
-            @if (unitForm.controls.organizationId.invalid && unitForm.controls.organizationId.touched) {
-              <span class="select-unit__field-error">Vui lòng chọn đơn vị trực thuộc</span>
-            }
-          </div>
-
-          <div class="select-unit__form-actions">
-            <app-button class="submit-button" type="submit" variant="primary" [fullWidth]="true" [loading]="loading()" [disabled]="loading()">
-              Tiếp tục
-            </app-button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-}

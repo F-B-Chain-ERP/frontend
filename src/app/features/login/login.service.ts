@@ -1,73 +1,34 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, map, from, filter, tap, switchMap } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, catchError, from, filter, map, switchMap, tap, throwError } from 'rxjs';
 
 import { AuthServerProvider } from '../../core/auth/auth-jwt.service';
-import { Login, LoginException, SandboxLoginResponse, AuthenticateRequest } from './login.model';
 import { AccountService } from '../../core/auth/account.service';
 import { PermissionService } from '../../core/auth/permission.service';
+import { StateStorageService } from '../../core/auth/state-storage.service';
+import { Account } from '../../core/auth/account.model';
+import { AuthResponse, LoginCredentials, LoginException } from './login.model';
 
 @Injectable({ providedIn: 'root' })
 export class LoginService {
   private readonly authServerProvider = inject(AuthServerProvider);
   private readonly accountService = inject(AccountService);
   private readonly permissionService = inject(PermissionService);
+  private readonly stateStorageService = inject(StateStorageService);
   private readonly router = inject(Router);
 
-  login(credentials: Login): Observable<SandboxLoginResponse> {
-    return this.authServerProvider.postLogin(credentials).pipe(
+  login(credentials: LoginCredentials): Observable<Account> {
+    return this.authServerProvider.login(credentials).pipe(
       map(res => {
-        switch (res.Code) {
-          case '000':
-            break;
-          case '001':
-            throw new LoginException('INVALID_CREDENTIALS', res.Message);
-          case '002':
-            throw new LoginException('ACCOUNT_LOCKED', res.Message);
-          case '003':
-            throw new LoginException('ACCOUNT_DELETED', res.Message);
-          case '999':
-            throw new LoginException('UNKNOWN', res.Message);
-          default:
-            throw new LoginException('UNKNOWN', res.Message ?? '');
-        }
-
-        const data = res.Data as SandboxLoginResponse | null;
-        if (!data || !data.Id) {
-          throw new LoginException('INVALID_CREDENTIALS', '');
-        }
-
-        return data;
+        const auth = res.data;
+        this.stateStorageService.storeAuthenticationToken(auth.accessToken, credentials.rememberMe);
+        this.stateStorageService.storeRefreshToken(auth.refreshToken, credentials.rememberMe);
+        const account = this.toAccount(auth);
+        this.accountService.authenticate(account);
+        return account;
       }),
-    );
-  }
-
-  authenticate(data: SandboxLoginResponse, organizationId: number | string): Observable<string> {
-    const payload: AuthenticateRequest = {
-      Id: data.Id,
-      EncryptId: data.EncryptId,
-      UserName: data.UserName,
-      FullName: data.FullName,
-      Email: data.Email,
-      DonViSuDungId: data.DonViSuDungId ?? 0,
-      DonViTrucThuocId: organizationId,
-      DonViTrucThuocIds: String(organizationId),
-      RolesCode: data.RoleCode ?? undefined,
-      RolesId: data.RoleId ?? undefined,
-      IsFullPermission: data.IsFullPermission,
-      IsBlacklist: data.IsBlacklist,
-      StatusId: data.StatusId,
-      ApplicationId: data.ApplicationId || 17,
-    };
-
-    return this.authServerProvider.postAuthenticate(payload).pipe(
-      map(res => {
-        if (!res || !res.access_token) {
-          throw new LoginException('UNKNOWN', 'Không nhận được token từ hệ thống');
-        }
-
-        return res.access_token;
-      }),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toLoginException(err))),
     );
   }
 
@@ -81,5 +42,37 @@ export class LoginService {
       switchMap(() => this.authServerProvider.logout()),
       map(() => void 0),
     );
+  }
+
+  private toAccount(auth: AuthResponse): Account {
+    const acc = auth.account;
+    const isSuperAdmin = acc.username === 'admin';
+    const authorities = isSuperAdmin ? ['FULL_PERMISSION'] : [];
+    return new Account(
+      acc.status === 'ACTIVE',
+      authorities,
+      acc.email ?? '',
+      acc.fullName ?? null,
+      'vi',
+      null,
+      acc.username,
+      null,
+      [],
+      null,
+    );
+  }
+
+  private toLoginException(err: HttpErrorResponse): LoginException {
+    const errorCode = err.error?.errorCode;
+    if (err.status === 401 && errorCode === 'ERR_401_BAD_CREDENTIALS') {
+      return new LoginException('INVALID_CREDENTIALS', 'Tên đăng nhập hoặc mật khẩu không đúng.');
+    }
+    if (err.status === 403 && errorCode === 'ERR_403_ACCOUNT_DISABLED') {
+      return new LoginException('ACCOUNT_LOCKED', 'Tài khoản đã bị vô hiệu hóa.');
+    }
+    if (err.status === 401 && errorCode === 'ACCOUNT_LOCKED') {
+      return new LoginException('ACCOUNT_LOCKED', 'Tài khoản tạm thời bị khóa.');
+    }
+    return new LoginException('UNKNOWN', err.error?.message || 'Đã có lỗi xảy ra, vui lòng thử lại.');
   }
 }

@@ -43,18 +43,8 @@
         (click)="scrollToSection('browse-style')"
         class="client-navbar__link"
       >
-        <span>Khám Phá Gu</span>
+        <span>Khám Phá</span>
       </a>
-      @if (accountService.isAuthenticated()) {
-        <a
-          routerLink="/admin/home"
-          class="client-navbar__link client-navbar__link--admin-badge"
-          title="Truy cập Bàn làm việc Quản trị"
-        >
-          <nz-icon nzType="dashboard" />
-          <span>Admin ERP</span>
-        </a>
-      }
     </nav>
 
     <!-- ── 3. Central Search Bar (Figma SHOP.CO style) ── -->
@@ -74,15 +64,11 @@
 
     <!-- ── 4. Right Action Tools ── -->
     <div class="client-navbar__actions">
-      <!-- Dark/Light Mode Switcher -->
-      <button
-        type="button"
-        class="client-navbar__icon-btn"
-        (click)="toggleTheme()"
-        [title]="theme.mode === 'dark' ? 'Chuyển sang Giao diện Sáng' : 'Chuyển sang Giao diện Tối'"
-      >
-        <nz-icon [nzType]="theme.mode === 'dark' ? 'sun' : 'moon'" />
-      </button>
+      <!-- Brand Color Picker -->
+      <label class="client-navbar__color-pick" for="store-color-pick" title="Màu thương hiệu">
+        <span class="client-navbar__color-dot" [style.background]="theme.brand500"></span>
+        <input id="store-color-pick" type="color" class="client-navbar__color-input" [value]="theme.brand500" (input)="onBrandColorChange($event)" />
+      </label>
 
       <!-- Cart Trigger Button -->
       <button
@@ -105,6 +91,7 @@
           [nzDropdownMenu]="userDropdown"
           nzTrigger="click"
           nzPlacement="bottomRight"
+          [nzOverlayStyle]="{ width: '220px' }"
           [nzVisible]="isUserMenuOpen()"
           (nzVisibleChange)="isUserMenuOpen.set($event)"
         >
@@ -129,6 +116,10 @@
             <li nz-menu-item (click)="goToAdmin()">
               <nz-icon nzType="appstore" />
               <span>Khu vực Quản trị Admin</span>
+            </li>
+            <li nz-menu-item (click)="toggleTheme(); isUserMenuOpen.set(true)">
+              <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'" />
+              <span>Giao diện: {{ theme.mode === 'dark' ? 'Tối' : 'Sáng' }}</span>
             </li>
             <li nz-menu-divider></li>
             <li nz-menu-item class="menu-item--danger" (click)="logout()">

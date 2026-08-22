@@ -5,6 +5,7 @@ import { Account } from './account.model';
 export class StateStorageService {
   private readonly previousUrlKey = 'previousUrl';
   private readonly authenticationKey = 'app_auth_token';
+  private readonly refreshTokenKey = 'app_refresh_token';
   private readonly accountKey = 'app_account';
 
   storeUrl(url: string): void {
@@ -35,9 +36,30 @@ export class StateStorageService {
     return authenticationToken ? (JSON.parse(authenticationToken) as string | null) : authenticationToken;
   }
 
+  storeRefreshToken(refreshToken: string, rememberMe: boolean): void {
+    const token = JSON.stringify(refreshToken);
+    this.clearRefreshToken();
+    if (rememberMe) {
+      localStorage.setItem(this.refreshTokenKey, token);
+    } else {
+      sessionStorage.setItem(this.refreshTokenKey, token);
+    }
+  }
+
+  getRefreshToken(): string | null {
+    const refreshToken = localStorage.getItem(this.refreshTokenKey) ?? sessionStorage.getItem(this.refreshTokenKey);
+    return refreshToken ? (JSON.parse(refreshToken) as string | null) : refreshToken;
+  }
+
+  clearRefreshToken(): void {
+    sessionStorage.removeItem(this.refreshTokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
+  }
+
   clearAuthenticationToken(): void {
     sessionStorage.removeItem(this.authenticationKey);
     localStorage.removeItem(this.authenticationKey);
+    this.clearRefreshToken();
   }
 
   storeAccount(account: Account): void {

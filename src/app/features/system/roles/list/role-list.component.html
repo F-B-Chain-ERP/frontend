@@ -1,0 +1,548 @@
+<div class="role-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div>
+      <h1 class="page__header__title">Quản lý vai trò</h1>
+      <p class="page__header__description">
+        Quản lý danh sách vai trò, chức danh và phân quyền truy cập các chức năng trong hệ thống ERP UTT
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="download" (click)="onExportExcel()">
+        Xuất Excel
+      </app-button>
+      <app-button variant="primary" leftIcon="plus" (click)="openAddModal()">
+        Thêm mới vai trò
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Search keyword -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="role-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="role-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập tên vai trò, mã vai trò, mô tả..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Status dropdown -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label" for="role-status-select">Trạng thái</label>
+        <nz-select
+          id="role-status-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">
+          Tìm kiếm
+        </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">
+          Làm mới
+        </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+    <app-selection-bar
+      [selectedCount]="setOfCheckedKeys.size"
+      [totalCount]="total()"
+      itemLabel="vai trò"
+      (clearSelection)="clearSelection()"
+    >
+      <app-button variant="secondary" leftIcon="check" (click)="onBatchStatus(true)">
+        Kích hoạt
+      </app-button>
+      <app-button variant="secondary" leftIcon="lock" (click)="onBatchStatus(false)">
+        Khóa vai trò
+      </app-button>
+      <app-button variant="danger" leftIcon="delete" (click)="onBatchDelete()">
+        Xóa nhanh
+      </app-button>
+    </app-selection-bar>
+  }
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #rolesTable
+      [nzData]="roles()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1350px' }"
+    >
+      <thead>
+        <tr>
+          <!-- UI-Kit Standard Checkbox Column Header -->
+          <th scope="col" nzWidth="48px" nzAlign="center">
+            <label class="cb" for="cb-check-all-roles">
+              <input
+                id="cb-check-all-roles"
+                #checkAllInput
+                type="checkbox"
+                [checked]="allChecked"
+                [indeterminate]="indeterminate"
+                (change)="onCheckAll(checkAllInput.checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
+
+          <!-- STT -->
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+          <!-- Tên vai trò -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortNameFn" nzWidth="240px" nzAlign="left">
+            Tên vai trò
+          </th>
+
+          <!-- Mã vai trò -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCodeFn" nzWidth="170px" nzAlign="left">
+            Mã vai trò
+          </th>
+
+          <!-- Mô tả -->
+          <th scope="col" nzWidth="260px" nzAlign="left">Mô tả</th>
+
+          <!-- Số tài khoản -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortAccountCountFn" nzWidth="130px" nzAlign="center">
+            Tài khoản
+          </th>
+
+          <!-- Trạng thái -->
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+
+          <!-- Ngày tạo -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCreatedFn" nzWidth="150px" nzAlign="center">
+            Ngày tạo
+          </th>
+
+          <!-- Thao tác (Standard Table Actions) -->
+          <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
+        </tr>
+
+        <!-- Thead Search Subrow (Column-based Filter) -->
+        <tr class="thead-search">
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('name')"
+              (valueChange)="searchByField('name', $event)"
+              placeholder="Tìm tên vai trò"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('code')"
+              (valueChange)="searchByField('code', $event)"
+              placeholder="Tìm mã vai trò"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('description')"
+              (valueChange)="searchByField('description', $event)"
+              placeholder="Tìm mô tả"
+            ></app-table-search-input>
+          </th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('active')"
+              (valueChange)="searchByField('active', $event)"
+              placeholder="Trạng thái"
+              type="option"
+              labelField="label"
+              valueField="value"
+              [options]="statusFilterOptions"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('createdAt')"
+              (valueChange)="searchByField('createdAt', $event)"
+              placeholder="Tìm ngày tạo"
+            ></app-table-search-input>
+          </th>
+          <th nzAlign="center">
+            <app-button
+              iconOnly="reload"
+              nz-tooltip
+              nzTooltipTitle="Đặt lại bộ lọc cột"
+              (click)="resetAllFieldFilter()"
+              variant="ghost"
+            ></app-button>
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (data of rolesTable.data; track data.id; let idx = $index) {
+          <tr [class.is-default-row]="data.isDefault" [class.is-deleted-row]="data.deleted">
+            <!-- UI-Kit Standard Checkbox Row -->
+            <td nzAlign="center">
+              @if (!data.isDefault) {
+                <label class="cb" [for]="'cb-role-' + data.id">
+                  <input
+                    [id]="'cb-role-' + data.id"
+                    #rowInput
+                    type="checkbox"
+                    [checked]="setOfCheckedKeys.has(data.id)"
+                    (change)="onCheckRow(data.id, rowInput.checked)"
+                  />
+                  <span class="cb__box"></span>
+                </label>
+              }
+            </td>
+
+            <!-- STT -->
+            <td nzAlign="center" class="font-mono text-muted">
+              {{ (pageIndex - 1) * pageSize + idx + 1 }}
+            </td>
+
+            <!-- Tên vai trò -->
+            <td nzAlign="left">
+              <div class="role-cell" (click)="navigateToPermission(data)">
+                <div class="role-cell__info">
+                  <div class="role-cell__name-row">
+                    <span class="role-cell__name" nz-tooltip nzTooltipTitle="Nhấn để cấu hình phân quyền">
+                      {{ data.name }}
+                    </span>
+                    @if (data.isDefault) {
+                      <nz-tag nzColor="purple">Mặc định</nz-tag>
+                    }
+                  </div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Mã vai trò -->
+            <td nzAlign="left">
+              <span class="role-code-badge font-mono">{{ data.code }}</span>
+            </td>
+
+            <!-- Mô tả -->
+            <td nzAlign="left">
+              <span class="role-desc-text" [title]="data.description || ''">
+                {{ data.description || '—' }}
+              </span>
+            </td>
+
+            <!-- Số tài khoản áp dụng (Chip tương tác mở modal) -->
+            <td nzAlign="center">
+              <button
+                class="account-count-chip"
+                [class.account-count-chip--has-users]="data.accountCount > 0"
+                (click)="openUserModal(data)"
+                nz-tooltip
+                nzTooltipTitle="Xem danh sách tài khoản được gán vai trò"
+              >
+                <span>{{ data.accountCount }} tài khoản</span>
+              </button>
+            </td>
+
+            <!-- Trạng thái (Huy hiệu .tbl-badge sạch sẽ chuẩn UI-Kit) -->
+            <td nzAlign="center">
+              <span [class]="getRoleStatusMeta(data).badgeClass">
+                {{ getRoleStatusMeta(data).label }}
+              </span>
+            </td>
+
+            <!-- Ngày tạo -->
+            <td nzAlign="center">
+              <span class="date-text font-mono text-muted">{{ data.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            </td>
+
+            <!-- Thao tác (Standard Table Actions with Icon Only) -->
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <!-- Icon Phân quyền (KEY ICON) -->
+                <app-button
+                  variant="ghost"
+                  iconOnly="key"
+                  nz-tooltip
+                  nzTooltipTitle="Phân quyền chức năng"
+                  (click)="navigateToPermission(data)"
+                ></app-button>
+
+                <!-- Icon Danh sách tài khoản (TEAM ICON) -->
+                <app-button
+                  variant="ghost"
+                  iconOnly="team"
+                  nz-tooltip
+                  nzTooltipTitle="Danh sách tài khoản"
+                  (click)="openUserModal(data)"
+                ></app-button>
+
+                @if (!data.isDefault) {
+                  <!-- Icon Chỉnh sửa vai trò (EDIT ICON) -->
+                  <app-button
+                    variant="ghost"
+                    iconOnly="edit"
+                    nz-tooltip
+                    nzTooltipTitle="Chỉnh sửa vai trò"
+                    (click)="openEditModal(data)"
+                  ></app-button>
+
+                  <!-- Icon Xóa / Khôi phục vai trò -->
+                  @if (data.deleted) {
+                    <app-button
+                      variant="ghost"
+                      iconOnly="undo"
+                      nz-tooltip
+                      nzTooltipTitle="Khôi phục vai trò"
+                      (click)="onRestoreRole(data)"
+                    ></app-button>
+                  } @else {
+                    <app-button
+                      variant="ghost"
+                      iconOnly="delete"
+                      nz-tooltip
+                      nzTooltipTitle="Xóa vai trò"
+                      (click)="onDeleteRole(data)"
+                    ></app-button>
+                  }
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="text-center table-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-state__icon" />
+                <p class="empty-state__text">Không tìm thấy vai trò nào phù hợp</p>
+                <app-button variant="secondary" leftIcon="plus" (click)="openAddModal()">
+                  Thêm mới vai trò
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 5. Standard Footer & Pagination ──────────────────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+</div>
+
+<!-- ── MODAL: THÊM MỚI VAI TRÒ ──────────────────────────────────────── -->
+<app-modal
+  [visible]="isAddModalVisible"
+  (visibleChange)="isAddModalVisible = $event"
+  title="Thêm mới vai trò"
+  size="md"
+  [maskClosable]="false"
+  [footer]="addModalFooter"
+>
+  <form [formGroup]="addRoleForm" class="role-modal-form">
+    <div class="form-group mb-4">
+      <label class="form-label form-label--required" for="add-role-name">Tên vai trò</label>
+      <input
+        id="add-role-name"
+        nz-input
+        formControlName="name"
+        placeholder="Ví dụ: Quản lý kho, Kế toán bán hàng..."
+      />
+      @if (addRoleForm.get('name')?.touched && addRoleForm.get('name')?.invalid) {
+        <span class="form-error">Tên vai trò là bắt buộc (tối đa 100 ký tự).</span>
+      }
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label" for="add-role-code">Mã vai trò (Mã định danh)</label>
+      <input
+        id="add-role-code"
+        nz-input
+        formControlName="code"
+        placeholder="Ví dụ: WAREHOUSE_MGR, SALES_STAFF..."
+      />
+      <span class="form-help-text">Mã vai trò viết hoa không dấu, tự sinh từ tên vai trò.</span>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label" for="add-role-copy">Sao chép phân quyền từ vai trò mẫu</label>
+      <nz-select
+        id="add-role-copy"
+        formControlName="copyFromRoleId"
+        nzPlaceHolder="Chọn vai trò mẫu (không bắt buộc)"
+        style="width: 100%"
+        [nzAllowClear]="true"
+      >
+        @for (r of allLoadedRoles(); track r.id) {
+          <nz-option [nzLabel]="r.name + ' (' + r.code + ')'" [nzValue]="r.id"></nz-option>
+        }
+      </nz-select>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label" for="add-role-desc">Mô tả chức năng</label>
+      <textarea
+        id="add-role-desc"
+        nz-input
+        rows="3"
+        formControlName="description"
+        placeholder="Mô tả phạm vi quyền hạn và trách nhiệm của vai trò..."
+      ></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Trạng thái ban đầu</label>
+      <div class="status-radio-options">
+        <label class="rb" for="rb-add-active">
+          <input id="rb-add-active" type="radio" [value]="true" formControlName="active" />
+          <span class="rb__box"></span>
+          <span class="rb__label">Kích hoạt ngay</span>
+        </label>
+        <label class="rb" for="rb-add-inactive">
+          <input id="rb-add-inactive" type="radio" [value]="false" formControlName="active" />
+          <span class="rb__box"></span>
+          <span class="rb__label">Dừng kích hoạt</span>
+        </label>
+      </div>
+    </div>
+  </form>
+</app-modal>
+
+<ng-template #addModalFooter>
+  <div class="modal-footer-actions">
+    <app-button variant="secondary" (click)="isAddModalVisible = false">Hủy bỏ</app-button>
+    <app-button variant="primary" leftIcon="save" [loading]="isSaving()" (click)="submitAddRole()">
+      Tạo mới vai trò
+    </app-button>
+  </div>
+</ng-template>
+
+<!-- ── MODAL: CHỈNH SỬA VAI TRÒ ────────────────────────────────────── -->
+<app-modal
+  [visible]="isEditModalVisible"
+  (visibleChange)="isEditModalVisible = $event"
+  [title]="'Chỉnh sửa vai trò: ' + (selectedRoleForAction?.name || '')"
+  size="md"
+  [maskClosable]="false"
+  [footer]="editModalFooter"
+>
+  <form [formGroup]="editRoleForm" class="role-modal-form">
+    <div class="form-group mb-4">
+      <label class="form-label form-label--required" for="edit-role-name">Tên vai trò</label>
+      <input id="edit-role-name" nz-input formControlName="name" />
+      @if (editRoleForm.get('name')?.touched && editRoleForm.get('name')?.invalid) {
+        <span class="form-error">Tên vai trò là bắt buộc.</span>
+      }
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label" for="edit-role-code">Mã vai trò</label>
+      <input id="edit-role-code" nz-input formControlName="code" [disabled]="true" />
+      <span class="form-help-text">Mã vai trò là trường định danh không được sửa.</span>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label" for="edit-role-desc">Mô tả chức năng</label>
+      <textarea id="edit-role-desc" nz-input rows="3" formControlName="description"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Trạng thái hoạt động</label>
+      <div class="status-radio-options">
+        <label class="rb" for="rb-edit-active">
+          <input id="rb-edit-active" type="radio" [value]="true" formControlName="active" />
+          <span class="rb__box"></span>
+          <span class="rb__label">Đang hoạt động</span>
+        </label>
+        <label class="rb" for="rb-edit-inactive">
+          <input id="rb-edit-inactive" type="radio" [value]="false" formControlName="active" />
+          <span class="rb__box"></span>
+          <span class="rb__label">Ngừng hoạt động</span>
+        </label>
+      </div>
+    </div>
+  </form>
+</app-modal>
+
+<ng-template #editModalFooter>
+  <div class="modal-footer-actions">
+    <app-button variant="secondary" (click)="isEditModalVisible = false">Hủy bỏ</app-button>
+    <app-button variant="primary" leftIcon="save" [loading]="isSaving()" (click)="submitEditRole()">
+      Lưu thay đổi
+    </app-button>
+  </div>
+</ng-template>
+
+<!-- ── MODAL: NHÂN BẢN VAI TRÒ ──────────────────────────────────────── -->
+<app-modal
+  [visible]="isCloneModalVisible"
+  (visibleChange)="isCloneModalVisible = $event"
+  title="Nhân bản vai trò & sao chép phân quyền"
+  size="md"
+  [maskClosable]="false"
+  [footer]="cloneModalFooter"
+>
+  <form [formGroup]="cloneRoleForm" class="role-modal-form">
+    <div class="form-group mb-4">
+      <label class="form-label form-label--required" for="clone-role-name">Tên vai trò mới</label>
+      <input id="clone-role-name" nz-input formControlName="name" />
+      @if (cloneRoleForm.get('name')?.touched && cloneRoleForm.get('name')?.invalid) {
+        <span class="form-error">Vui lòng nhập tên vai trò mới.</span>
+      }
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="clone-role-desc">Mô tả vai trò mới</label>
+      <textarea id="clone-role-desc" nz-input rows="3" formControlName="description"></textarea>
+    </div>
+  </form>
+</app-modal>
+
+<ng-template #cloneModalFooter>
+  <div class="modal-footer-actions">
+    <app-button variant="secondary" (click)="isCloneModalVisible = false">Hủy bỏ</app-button>
+    <app-button variant="primary" leftIcon="copy" [loading]="isSaving()" (click)="submitCloneRole()">
+      Tạo bản sao
+    </app-button>
+  </div>
+</ng-template>
+
+<!-- ── MODAL: DANH SÁCH TÀI KHOẢN GÁN VAI TRÒ ────────────────────────── -->
+<app-role-user-modal
+  [(visible)]="isUserModalVisible"
+  [role]="selectedRoleForAction"
+  [users]="selectedRoleUsers"
+  [loading]="userModalLoading"
+></app-role-user-modal>

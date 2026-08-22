@@ -8,6 +8,14 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       max-width: 0;
+
+      &:has(.tbl-actions),
+      &.td-actions,
+      &:has(.cb) {
+        overflow: visible;
+        text-overflow: clip;
+        max-width: none;
+      }
     }
   }
 
@@ -409,6 +417,8 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   app-button {
     display: inline-flex;

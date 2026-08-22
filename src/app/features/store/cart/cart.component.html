@@ -1,0 +1,150 @@
+<div class="cart-page">
+  <!-- Header -->
+  <div class="cart-page__header">
+    <div class="cart-page__header-left">
+      <h1 class="cart-page__title">
+        <nz-icon nzType="shopping-cart" />
+        Giỏ hàng
+        @if (!isEmpty()) {
+          <span class="cart-page__count">{{ totalCount() }} món</span>
+        }
+      </h1>
+      <p class="cart-page__subtitle">
+        @if (isEmpty()) {
+          Giỏ hàng của bạn đang trống — hãy khám phá thực đơn thơm ngon của UTT.CO
+        } @else {
+          Kiểm tra lại đơn hàng trước khi thanh toán
+        }
+      </p>
+    </div>
+
+    <a routerLink="/store" class="cart-page__continue">
+      <nz-icon nzType="arrow-left" />
+      Tiếp tục mua sắm
+    </a>
+  </div>
+
+  @if (isEmpty()) {
+    <div class="cart-empty">
+      <div class="cart-empty__icon">
+        <nz-icon nzType="shopping-cart" />
+      </div>
+      <h3 class="cart-empty__title">Giỏ hàng trống</h3>
+      <p class="cart-empty__desc">Bạn chưa thêm món nào vào giỏ. Khám phá thực đơn với cà phê rang mộc, trà trái cây và bánh ngọt mỗi ngày.</p>
+      <a routerLink="/store">
+        <app-button variant="primary" [rounded]="true">Khám phá thực đơn</app-button>
+      </a>
+    </div>
+  } @else {
+    <div class="cart-page__body">
+      <!-- Items list -->
+      <div class="cart-page__items">
+        <div class="cart-items__head">
+          <span>Sản phẩm</span>
+          <span class="hide-mobile">Đơn giá</span>
+          <span>Số lượng</span>
+          <span>Tổng</span>
+        </div>
+
+        @for (item of items(); track item.id) {
+          <div class="cart-item">
+            <div class="cart-item__main">
+              <div class="cart-item__thumb">
+                <img [src]="item.drink.imageUrl" [alt]="item.drink.name" />
+              </div>
+              <div class="cart-item__info">
+                <h4 class="cart-item__name">{{ item.drink.name }}</h4>
+                @if (item.optionsSummary) {
+                  <p class="cart-item__options">{{ item.optionsSummary }}</p>
+                }
+                <p class="cart-item__unit hide-desktop">{{ formatPrice(item.unitPrice) }}</p>
+              </div>
+            </div>
+
+            <span class="cart-item__price hide-mobile">{{ formatPrice(item.unitPrice) }}</span>
+
+            <div class="cart-item__qty">
+              <app-quantity-stepper
+                [value]="item.quantity"
+                [min]="1"
+                size="sm"
+                (valueChange)="onUpdateQuantity(item.id, $event)"
+              />
+            </div>
+
+            <div class="cart-item__total">
+              <span>{{ formatPrice(item.totalPrice) }}</span>
+              <button type="button" class="cart-item__remove" (click)="onRemove(item.id)" title="Xóa món">
+                <nz-icon nzType="delete" />
+              </button>
+            </div>
+          </div>
+        }
+
+        <div class="cart-page__actions">
+          <button type="button" class="cart-page__clear" (click)="onClear()">
+            <nz-icon nzType="clear" />
+            Xóa giỏ hàng
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <aside class="cart-summary">
+        <h3 class="cart-summary__title">Tạm tính</h3>
+
+        <div class="cart-summary__rows">
+          <div class="cart-summary__row">
+            <span>Tạm tính ({{ totalCount() }} món)</span>
+            <span>{{ formatPrice(totalAmount()) }}</span>
+          </div>
+          <div class="cart-summary__row">
+            <span>Phí giao hàng</span>
+            <span class="cart-summary__ship" [class.free]="shippingFee() === 0">
+              {{ shippingFee() === 0 ? 'Miễn phí' : formatPrice(shippingFee()) }}
+            </span>
+          </div>
+          @if (discount() > 0) {
+            <div class="cart-summary__row cart-summary__row--discount">
+              <span>Giảm giá</span>
+              <span>-{{ formatPrice(discount()) }}</span>
+            </div>
+          }
+          <div class="cart-summary__row cart-summary__row--total">
+            <span>Tổng cộng</span>
+            <span class="cart-summary__grand">{{ formatPrice(grandTotal()) }}</span>
+          </div>
+        </div>
+
+        @if (shippingFee() > 0) {
+          <p class="cart-summary__hint">
+            <nz-icon nzType="info-circle" />
+            Thêm {{ formatPrice(99000 - totalAmount()) }} nữa để được miễn phí ship 3km!
+          </p>
+        } @else {
+          <p class="cart-summary__hint cart-summary__hint--success">
+            <nz-icon nzType="check-circle" nzTheme="fill" />
+            Bạn đã được miễn phí giao hàng 3km!
+          </p>
+        }
+
+        <app-button variant="primary" [fullWidth]="true" (click)="onCheckout()" class="cart-summary__cta">
+          Đặt hàng • {{ formatPrice(grandTotal()) }}
+        </app-button>
+
+        <p class="cart-summary__note">
+          <nz-icon nzType="safety-certificate" />
+          Thanh toán an toàn • Đổi/trả trong 30 phút nếu sai món
+        </p>
+
+        <div class="cart-summary__payments">
+          <span class="payment-badge">VISA</span>
+          <span class="payment-badge">MC</span>
+          <span class="payment-badge">PayPal</span>
+          <span class="payment-badge">Pay</span>
+          <span class="payment-badge">GPay</span>
+        </div>
+      </aside>
+    </div>
+  }
+</div>

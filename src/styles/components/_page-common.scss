@@ -60,25 +60,27 @@
 .page__footer--fixed {
   position: fixed;
   bottom: 0;
-  left: 0;
-  width: 100%;
-  margin-left: var(--sidebar-w);
+  left: var(--sidebar-w);
+  right: 0;
   background-color: var(--surface-card);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.08);
+  border-top: 1px solid var(--border-subtle);
   z-index: 100;
   height: 64px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: margin-left var(--dur-fast) var(--ease);
+  justify-content: space-between;
+  padding: 0 var(--space-8);
+  transition: left var(--dur-fast) var(--ease);
+  box-sizing: border-box;
 
   .page__footer__actions {
     display: flex;
     align-items: center;
-    gap: var(--space-6);
+    gap: var(--space-4);
   }
 }
 
 .page__footer--collapsed-sidebar {
-  margin-left: var(--sidebar-w-collapsed);
+  left: var(--sidebar-w-collapsed);
 }

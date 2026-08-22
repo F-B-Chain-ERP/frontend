@@ -30,7 +30,7 @@
             class="store-hero__btn-secondary"
             (click)="scrollToSection('browse-style')"
           >
-            Khám Phá Gu
+            Khám Phá
           </button>
         </div>
 
@@ -151,26 +151,27 @@
     </div>
   </section>
 
-  <!-- ── 5. Section: Khám Phá Theo Gu (BROWSE BY STYLE - Asymmetric Layout) ── -->
+  <!-- ── 5. Section: Khám Phá Theo Gu (BENTO - NỘI DUNG OVERLAY NHƯ CŨ) ── -->
   <section id="browse-style" class="section-block">
     <div class="browse-style-card">
       <h2 class="section-title section-title--inner">KHÁM PHÁ THEO GU THƯỞNG THỨC</h2>
 
       <div class="style-grid">
-        @for (style of styleCategories; track style.id; let idx = $index) {
+        @for (style of styleCategories; track style.id) {
           <div
             class="style-item"
-            [class.style-item--wide]="idx === 1 || idx === 2"
             (click)="selectStyleCategory(style.id)"
             tabindex="0"
             role="button"
+            (keydown.enter)="selectStyleCategory(style.id)"
+            (keydown.space)="selectStyleCategory(style.id)"
           >
             <img [src]="style.imageUrl" [alt]="style.name" class="style-item__bg" />
             <div class="style-item__content">
               <h3 class="style-item__title">{{ style.name }}</h3>
               <span class="style-item__sub">{{ style.subtitle }}</span>
             </div>
-            <div class="style-item__arrow">
+            <div class="style-item__arrow" aria-hidden="true">
               <nz-icon nzType="arrow-right" />
             </div>
           </div>

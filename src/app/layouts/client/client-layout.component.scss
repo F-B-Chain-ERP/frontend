@@ -22,7 +22,10 @@
   align-items: center;
   justify-content: center;
   z-index: 999;
-  transition: all var(--dur) var(--ease);
+  // Only opacity/transform, not all — 'all' caused sibling header to recalc on hover
+  transition:
+    opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
 
   &__content {
     display: flex;
@@ -77,10 +80,12 @@
 }
 
 app-client-navbar {
+  display: block;
   position: sticky;
   top: 0;
   z-index: 1000;
-  display: block;
+  width: 100%;
+  flex-shrink: 0;
 }
 
 .client-main-content {
@@ -178,9 +183,9 @@ app-client-navbar {
     transition: all var(--dur-fast) var(--ease);
 
     &:hover {
-      background: #000000;
-      color: #ffffff;
-      border-color: #000000;
+      background: var(--surface-inverse);
+      color: var(--text-inverse);
+      border-color: var(--surface-inverse);
       transform: translateY(-2px);
       box-shadow: var(--shadow-sm);
     }
