@@ -1,12 +1,12 @@
-import { Component, inject, signal } from '@angular/core';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { LayoutService } from '../service/layout.service';
-import { ThemeService } from '../../core/theme/theme.service';
-import { NzAvatarComponent } from 'ng-zorro-antd/avatar';
-import { NzDropdownDirective, NzDropdownMenuComponent } from 'ng-zorro-antd/dropdown';
-import { NzMenuDirective, NzMenuItemComponent, NzMenuDividerDirective } from 'ng-zorro-antd/menu';
-import { AccountService } from '../../core/auth/account.service';
-import { LoginService } from '../../features/login/login.service';
+import {Component, inject, signal} from '@angular/core';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {LayoutService} from '../service/layout.service';
+import {ThemeService} from '../../core/theme/theme.service';
+import {NzAvatarComponent} from 'ng-zorro-antd/avatar';
+import {NzDropdownDirective, NzDropdownMenuComponent} from 'ng-zorro-antd/dropdown';
+import {NzMenuDirective, NzMenuItemComponent, NzMenuDividerDirective} from 'ng-zorro-antd/menu';
+import {AccountService} from '../../core/auth/account.service';
+import {LoginService} from '../../features/login/login.service';
 import MenuSearchComponent from '../../shared/app-menu-search/app-menu-search.component';
 
 @Component({

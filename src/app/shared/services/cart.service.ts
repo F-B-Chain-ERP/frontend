@@ -1,5 +1,5 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { DrinkItem } from '../app-drink-card/app-drink-card.component';
+import {Injectable, computed, signal} from '@angular/core';
+import {DrinkItem} from '../app-drink-card/app-drink-card.component';
 
 export interface CartItemOption {
   size?: string;

@@ -1,11 +1,11 @@
-import { Directive, ElementRef, inject, OnDestroy } from '@angular/core';
-import { Router } from '@angular/router';
-import { AppNotificationService } from '../app-notification/app-notification.service';
-import { Subject } from 'rxjs';
-import { AppModalService } from '../app-modal/app-modal.service';
-import { BreadcrumbsService } from '../app-breadcrumbs/breadcrumbs.service';
-import { AbstractControl, FormBuilder, ValidatorFn } from '@angular/forms';
-import { safeTextValidator, maxDigitsValidator } from '../validators/safe-text.validator';
+import {Directive, ElementRef, inject, OnDestroy} from '@angular/core';
+import {Router} from '@angular/router';
+import {AppNotificationService} from '../app-notification/app-notification.service';
+import {Subject} from 'rxjs';
+import {AppModalService} from '../app-modal/app-modal.service';
+import {BreadcrumbsService} from '../app-breadcrumbs/breadcrumbs.service';
+import {AbstractControl, FormBuilder, ValidatorFn} from '@angular/forms';
+import {safeTextValidator, maxDigitsValidator} from '../validators/safe-text.validator';
 
 const INVALID_FIELD_SELECTOR = 'input.ng-invalid, textarea.ng-invalid, select.ng-invalid, nz-select.ng-invalid, nz-input-number';
 const DEFAULT_INVALID_FORM_MESSAGE = 'Vui lòng nhập đầy đủ thông tin bắt buộc.';
@@ -22,6 +22,7 @@ export abstract class BaseComponent implements OnDestroy {
   protected safeTextValidator(): ValidatorFn {
     return safeTextValidator();
   }
+
   protected maxDigitsValidator(maxDigits: number): ValidatorFn {
     return maxDigitsValidator(maxDigits);
   }

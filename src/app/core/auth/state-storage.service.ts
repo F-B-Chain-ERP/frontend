@@ -1,12 +1,53 @@
-import { Injectable } from '@angular/core';
-import { Account } from './account.model';
+import {Injectable} from '@angular/core';
+import {Account} from './account.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class StateStorageService {
   private readonly previousUrlKey = 'previousUrl';
   private readonly authenticationKey = 'app_auth_token';
   private readonly refreshTokenKey = 'app_refresh_token';
   private readonly accountKey = 'app_account';
+
+  constructor() {
+    this.clearLegacyKeys();
+  }
+
+  /**
+   * Tự động dọn dẹp các key cũ/dư thừa từ các dự án khác (HCSN, WHS, JHI, v.v.)
+   * nếu trình duyệt đang lưu chung origin localhost.
+   */
+  clearLegacyKeys(): void {
+    const legacyPrefixes = ['hcsn', 'whs', 'jhi'];
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const localKeysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && legacyPrefixes.some(prefix => key.toLowerCase().startsWith(prefix))) {
+            localKeysToRemove.push(key);
+          }
+        }
+        for (const key of localKeysToRemove) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      if (typeof sessionStorage !== 'undefined') {
+        const sessionKeysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && legacyPrefixes.some(prefix => key.toLowerCase().startsWith(prefix))) {
+            sessionKeysToRemove.push(key);
+          }
+        }
+        for (const key of sessionKeysToRemove) {
+          sessionStorage.removeItem(key);
+        }
+      }
+    } catch {
+      // Bỏ qua lỗi trong môi trường không hỗ trợ storage
+    }
+  }
 
   storeUrl(url: string): void {
     sessionStorage.setItem(this.previousUrlKey, JSON.stringify(url));
@@ -60,6 +101,7 @@ export class StateStorageService {
     sessionStorage.removeItem(this.authenticationKey);
     localStorage.removeItem(this.authenticationKey);
     this.clearRefreshToken();
+    this.clearLegacyKeys();
   }
 
   storeAccount(account: Account): void {
@@ -84,5 +126,6 @@ export class StateStorageService {
   clearAccount(): void {
     sessionStorage.removeItem(this.accountKey);
     localStorage.removeItem(this.accountKey);
+    this.clearLegacyKeys();
   }
 }

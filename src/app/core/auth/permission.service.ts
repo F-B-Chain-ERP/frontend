@@ -1,8 +1,7 @@
-import { inject, Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of } from 'rxjs';
-import { FULL_PERMISSION } from '../config/functions.constants';
-import { CMS_HOST } from '../../shared/constants/constant';
+import {inject, Injectable, signal} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Observable, catchError, map, of} from 'rxjs';
+import {FULL_PERMISSION} from '../config/functions.constants';
 
 export interface IFunction {
   FunctionsId: number;
@@ -23,11 +22,11 @@ export interface IFunction {
   Res: number;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class PermissionService {
   private readonly http = inject(HttpClient);
   private readonly _functions = signal<IFunction[]>([]);
-  private readonly API = CMS_HOST;
+  private readonly API = "local";
   readonly functions = this._functions.asReadonly();
 
   loadFunctions(roleId: number | string, isFullPermission = false): Observable<string[]> {
@@ -36,7 +35,7 @@ export class PermissionService {
     }
     return this.http
       .get<{ Data: IFunction[]; Success: boolean }>(`${this.API}/api/v1.0/Role/GetFunction_Permission`, {
-        params: { ApplicationId: '17', GroupId: String(roleId), Keyword: '' },
+        params: {ApplicationId: '17', GroupId: String(roleId), Keyword: ''},
       })
       .pipe(
         map(res => {

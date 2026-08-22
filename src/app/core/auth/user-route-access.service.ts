@@ -1,9 +1,9 @@
-import { inject, isDevMode } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivateFn, Router, RouterStateSnapshot } from '@angular/router';
-import { map } from 'rxjs';
+import {inject, isDevMode} from '@angular/core';
+import {ActivatedRouteSnapshot, CanActivateFn, Router, RouterStateSnapshot} from '@angular/router';
+import {map} from 'rxjs';
 
-import { AccountService } from './account.service';
-import { StateStorageService } from './state-storage.service';
+import {AccountService} from './account.service';
+import {StateStorageService} from './state-storage.service';
 
 export const UserRouteAccessService: CanActivateFn = (next: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
   const accountService = inject(AccountService);
@@ -13,7 +13,7 @@ export const UserRouteAccessService: CanActivateFn = (next: ActivatedRouteSnapsh
   return accountService.identity().pipe(
     map(account => {
       if (account) {
-        const { authorities } = next.data as { authorities?: string[] };
+        const {authorities} = next.data as { authorities?: string[] };
 
         if (!authorities || authorities.length === 0 || accountService.hasAnyAuthority(authorities)) {
           return true;

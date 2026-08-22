@@ -1,5 +1,5 @@
-import { Injectable, Renderer2, RendererFactory2, inject } from '@angular/core';
-import { DOCUMENT } from '@angular/common';
+import {Injectable, Renderer2, RendererFactory2, inject} from '@angular/core';
+import {DOCUMENT} from '@angular/common';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -61,7 +61,7 @@ export function deriveBrandScale(base500: string): Record<string, string> {
   return Object.fromEntries(stops.map(([stop, lx]) => [`--brand-${stop}`, hslToHex(h, s, lx)]));
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class ThemeService {
   private readonly renderer: Renderer2;
   private readonly document = inject(DOCUMENT);
@@ -73,6 +73,7 @@ export class ThemeService {
   get mode(): ThemeMode {
     return this._mode;
   }
+
   get brand500(): string {
     return this._brand500;
   }
@@ -162,7 +163,8 @@ export class ThemeService {
   private _persist(key: string, value: string): void {
     try {
       localStorage.setItem(key, value);
-    } catch {}
+    } catch {
+    }
   }
 
   private _restoreFromStorage(): void {

@@ -119,10 +119,10 @@
   .ant-card-loading-content {
     .ant-card-loading-block {
       background: linear-gradient(
-        90deg,
-        var(--surface-hover) 25%,
-        var(--surface-active) 50%,
-        var(--surface-hover) 75%
+          90deg,
+          var(--surface-hover) 25%,
+          var(--surface-active) 50%,
+          var(--surface-hover) 75%
       );
       background-size: 400% 100%;
       border-radius: var(--radius-sm);
@@ -133,8 +133,12 @@
 
 // ── Skeleton animation ───────────────────────────────────
 @keyframes card-skeleton {
-  0%   { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 // Flat
@@ -158,25 +162,42 @@
 }
 
 // Accent variants
-.ant-card.card-accent-brand   { border-left: 3px solid var(--brand); }
-.ant-card.card-accent-success { border-left: 3px solid var(--success); }
-.ant-card.card-accent-warning { border-left: 3px solid var(--warning); }
-.ant-card.card-accent-danger  { border-left: 3px solid var(--danger); }
-.ant-card.card-accent-info    { border-left: 3px solid var(--info); }
+.ant-card.card-accent-brand {
+  border-left: 3px solid var(--brand);
+}
+
+.ant-card.card-accent-success {
+  border-left: 3px solid var(--success);
+}
+
+.ant-card.card-accent-warning {
+  border-left: 3px solid var(--warning);
+}
+
+.ant-card.card-accent-danger {
+  border-left: 3px solid var(--danger);
+}
+
+.ant-card.card-accent-info {
+  border-left: 3px solid var(--info);
+}
 
 // Soft tint variants
 .ant-card.card-tint-success {
   background: var(--success-soft);
   border-color: color-mix(in srgb, var(--success) 30%, transparent);
 }
+
 .ant-card.card-tint-warning {
   background: var(--warning-soft);
   border-color: color-mix(in srgb, var(--warning) 30%, transparent);
 }
+
 .ant-card.card-tint-danger {
   background: var(--danger-soft);
   border-color: color-mix(in srgb, var(--danger) 30%, transparent);
 }
+
 .ant-card.card-tint-info {
   background: var(--info-soft);
   border-color: color-mix(in srgb, var(--info) 30%, transparent);

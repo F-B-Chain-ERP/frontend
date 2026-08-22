@@ -1,17 +1,17 @@
 <div class="role-list-page">
   <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
   <div class="page__header">
-    <div>
+    <div class="page__header__left">
       <h1 class="page__header__title">Quản lý vai trò</h1>
-      <p class="page__header__description">
-        Quản lý danh sách vai trò, chức danh và phân quyền truy cập các chức năng trong hệ thống ERP UTT
-      </p>
+      <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button variant="secondary" leftIcon="download" (click)="onExportExcel()">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.VIEW]" variant="secondary" leftIcon="download"
+                  (click)="onExportExcel()">
         Xuất Excel
       </app-button>
-      <app-button variant="primary" leftIcon="plus" (click)="openAddModal()">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.ADD]" variant="primary" leftIcon="plus"
+                  (click)="openAddModal()">
         Thêm mới vai trò
       </app-button>
     </div>
@@ -24,7 +24,7 @@
       <div class="filter-item filter-item--grow">
         <label class="form-label" for="role-search-input">Tìm kiếm</label>
         <nz-input-wrapper [nzAllowClear]="true">
-          <nz-icon nzInputPrefix nzType="search" />
+          <nz-icon nzInputPrefix nzType="search"/>
           <input
             id="role-search-input"
             nz-input
@@ -72,13 +72,16 @@
       itemLabel="vai trò"
       (clearSelection)="clearSelection()"
     >
-      <app-button variant="secondary" leftIcon="check" (click)="onBatchStatus(true)">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="secondary" leftIcon="check"
+                  (click)="onBatchStatus(true)">
         Kích hoạt
       </app-button>
-      <app-button variant="secondary" leftIcon="lock" (click)="onBatchStatus(false)">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="secondary" leftIcon="lock"
+                  (click)="onBatchStatus(false)">
         Khóa vai trò
       </app-button>
-      <app-button variant="danger" leftIcon="delete" (click)="onBatchDelete()">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.DELETE]" variant="danger" leftIcon="delete"
+                  (click)="onBatchDelete()">
         Xóa nhanh
       </app-button>
     </app-selection-bar>
@@ -96,109 +99,109 @@
       [nzScroll]="{ x: '1350px' }"
     >
       <thead>
-        <tr>
-          <!-- UI-Kit Standard Checkbox Column Header -->
-          <th scope="col" nzWidth="48px" nzAlign="center">
-            <label class="cb" for="cb-check-all-roles">
-              <input
-                id="cb-check-all-roles"
-                #checkAllInput
-                type="checkbox"
-                [checked]="allChecked"
-                [indeterminate]="indeterminate"
-                (change)="onCheckAll(checkAllInput.checked)"
-              />
-              <span class="cb__box"></span>
-            </label>
-          </th>
+      <tr>
+        <!-- UI-Kit Standard Checkbox Column Header -->
+        <th scope="col" nzWidth="48px" nzAlign="center">
+          <label class="cb" for="cb-check-all-roles">
+            <input
+              id="cb-check-all-roles"
+              #checkAllInput
+              type="checkbox"
+              [checked]="allChecked"
+              [indeterminate]="indeterminate"
+              (change)="onCheckAll(checkAllInput.checked)"
+            />
+            <span class="cb__box"></span>
+          </label>
+        </th>
 
-          <!-- STT -->
-          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+        <!-- STT -->
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
 
-          <!-- Tên vai trò -->
-          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortNameFn" nzWidth="240px" nzAlign="left">
-            Tên vai trò
-          </th>
+        <!-- Tên vai trò -->
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortNameFn" nzWidth="240px" nzAlign="left">
+          Tên vai trò
+        </th>
 
-          <!-- Mã vai trò -->
-          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCodeFn" nzWidth="170px" nzAlign="left">
-            Mã vai trò
-          </th>
+        <!-- Mã vai trò -->
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCodeFn" nzWidth="170px" nzAlign="left">
+          Mã vai trò
+        </th>
 
-          <!-- Mô tả -->
-          <th scope="col" nzWidth="260px" nzAlign="left">Mô tả</th>
+        <!-- Mô tả -->
+        <th scope="col" nzWidth="260px" nzAlign="left">Mô tả</th>
 
-          <!-- Số tài khoản -->
-          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortAccountCountFn" nzWidth="130px" nzAlign="center">
-            Tài khoản
-          </th>
+        <!-- Số tài khoản -->
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortAccountCountFn" nzWidth="130px" nzAlign="center">
+          Tài khoản
+        </th>
 
-          <!-- Trạng thái -->
-          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+        <!-- Trạng thái -->
+        <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
 
-          <!-- Ngày tạo -->
-          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCreatedFn" nzWidth="150px" nzAlign="center">
-            Ngày tạo
-          </th>
+        <!-- Ngày tạo -->
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCreatedFn" nzWidth="150px" nzAlign="center">
+          Ngày tạo
+        </th>
 
-          <!-- Thao tác (Standard Table Actions) -->
-          <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
-        </tr>
+        <!-- Thao tác (Standard Table Actions) -->
+        <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
+      </tr>
 
-        <!-- Thead Search Subrow (Column-based Filter) -->
-        <tr class="thead-search">
-          <th></th>
-          <th></th>
-          <th>
-            <app-table-search-input
-              [value]="columnFilter.getValue('name')"
-              (valueChange)="searchByField('name', $event)"
-              placeholder="Tìm tên vai trò"
-            ></app-table-search-input>
-          </th>
-          <th>
-            <app-table-search-input
-              [value]="columnFilter.getValue('code')"
-              (valueChange)="searchByField('code', $event)"
-              placeholder="Tìm mã vai trò"
-            ></app-table-search-input>
-          </th>
-          <th>
-            <app-table-search-input
-              [value]="columnFilter.getValue('description')"
-              (valueChange)="searchByField('description', $event)"
-              placeholder="Tìm mô tả"
-            ></app-table-search-input>
-          </th>
-          <th></th>
-          <th>
-            <app-table-search-input
-              [value]="columnFilter.getValue('active')"
-              (valueChange)="searchByField('active', $event)"
-              placeholder="Trạng thái"
-              type="option"
-              labelField="label"
-              valueField="value"
-              [options]="statusFilterOptions"
-            ></app-table-search-input>
-          </th>
-          <th>
-            <app-table-search-input
-              [value]="columnFilter.getValue('createdAt')"
-              (valueChange)="searchByField('createdAt', $event)"
-              placeholder="Tìm ngày tạo"
-            ></app-table-search-input>
-          </th>
-          <th nzAlign="center">
-            <app-button
-              iconOnly="reload"
-              nz-tooltip
-              nzTooltipTitle="Đặt lại bộ lọc cột"
-              (click)="resetAllFieldFilter()"
-              variant="ghost"
-            ></app-button>
-          </th>
-        </tr>
+      <!-- Thead Search Subrow (Column-based Filter) -->
+      <tr class="thead-search">
+        <th></th>
+        <th></th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('name')"
+            (valueChange)="searchByField('name', $event)"
+            placeholder="Tìm tên vai trò"
+          ></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('code')"
+            (valueChange)="searchByField('code', $event)"
+            placeholder="Tìm mã vai trò"
+          ></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('description')"
+            (valueChange)="searchByField('description', $event)"
+            placeholder="Tìm mô tả"
+          ></app-table-search-input>
+        </th>
+        <th></th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('active')"
+            (valueChange)="searchByField('active', $event)"
+            placeholder="Trạng thái"
+            type="option"
+            labelField="label"
+            valueField="value"
+            [options]="statusFilterOptions"
+          ></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('createdAt')"
+            (valueChange)="searchByField('createdAt', $event)"
+            placeholder="Tìm ngày tạo"
+          ></app-table-search-input>
+        </th>
+        <th nzAlign="center">
+          <app-button
+            iconOnly="reload"
+            nz-tooltip
+            nzTooltipTitle="Đặt lại bộ lọc cột"
+            (click)="resetAllFieldFilter()"
+            variant="ghost"
+          ></app-button>
+        </th>
+      </tr>
       </thead>
 
       <tbody>
@@ -283,6 +286,7 @@
               <div class="tbl-actions">
                 <!-- Icon Phân quyền (KEY ICON) -->
                 <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.PHAN_QUYEN_VAI_TRO.BASE, ROLE.QUAN_LY_VAI_TRO.VIEW]"
                   variant="ghost"
                   iconOnly="key"
                   nz-tooltip
@@ -302,6 +306,7 @@
                 @if (!data.isDefault) {
                   <!-- Icon Chỉnh sửa vai trò (EDIT ICON) -->
                   <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.EDIT]"
                     variant="ghost"
                     iconOnly="edit"
                     nz-tooltip
@@ -312,6 +317,7 @@
                   <!-- Icon Xóa / Khôi phục vai trò -->
                   @if (data.deleted) {
                     <app-button
+                      *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.DELETE]"
                       variant="ghost"
                       iconOnly="undo"
                       nz-tooltip
@@ -320,6 +326,7 @@
                     ></app-button>
                   } @else {
                     <app-button
+                      *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.DELETE]"
                       variant="ghost"
                       iconOnly="delete"
                       nz-tooltip
@@ -335,7 +342,7 @@
           <tr>
             <td colspan="9" class="text-center table-empty">
               <div class="empty-state">
-                <nz-icon nzType="inbox" class="empty-state__icon" />
+                <nz-icon nzType="inbox" class="empty-state__icon"/>
                 <p class="empty-state__text">Không tìm thấy vai trò nào phù hợp</p>
                 <app-button variant="secondary" leftIcon="plus" (click)="openAddModal()">
                   Thêm mới vai trò
@@ -426,12 +433,12 @@
       <label class="form-label">Trạng thái ban đầu</label>
       <div class="status-radio-options">
         <label class="rb" for="rb-add-active">
-          <input id="rb-add-active" type="radio" [value]="true" formControlName="active" />
+          <input id="rb-add-active" type="radio" [value]="true" formControlName="active"/>
           <span class="rb__box"></span>
           <span class="rb__label">Kích hoạt ngay</span>
         </label>
         <label class="rb" for="rb-add-inactive">
-          <input id="rb-add-inactive" type="radio" [value]="false" formControlName="active" />
+          <input id="rb-add-inactive" type="radio" [value]="false" formControlName="active"/>
           <span class="rb__box"></span>
           <span class="rb__label">Dừng kích hoạt</span>
         </label>
@@ -443,7 +450,8 @@
 <ng-template #addModalFooter>
   <div class="modal-footer-actions">
     <app-button variant="secondary" (click)="isAddModalVisible = false">Hủy bỏ</app-button>
-    <app-button variant="primary" leftIcon="save" [loading]="isSaving()" (click)="submitAddRole()">
+    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.ADD]" variant="primary" leftIcon="save"
+                [loading]="isSaving()" (click)="submitAddRole()">
       Tạo mới vai trò
     </app-button>
   </div>
@@ -461,7 +469,7 @@
   <form [formGroup]="editRoleForm" class="role-modal-form">
     <div class="form-group mb-4">
       <label class="form-label form-label--required" for="edit-role-name">Tên vai trò</label>
-      <input id="edit-role-name" nz-input formControlName="name" />
+      <input id="edit-role-name" nz-input formControlName="name"/>
       @if (editRoleForm.get('name')?.touched && editRoleForm.get('name')?.invalid) {
         <span class="form-error">Tên vai trò là bắt buộc.</span>
       }
@@ -469,7 +477,7 @@
 
     <div class="form-group mb-4">
       <label class="form-label" for="edit-role-code">Mã vai trò</label>
-      <input id="edit-role-code" nz-input formControlName="code" [disabled]="true" />
+      <input id="edit-role-code" nz-input formControlName="code" [disabled]="true"/>
       <span class="form-help-text">Mã vai trò là trường định danh không được sửa.</span>
     </div>
 
@@ -482,12 +490,12 @@
       <label class="form-label">Trạng thái hoạt động</label>
       <div class="status-radio-options">
         <label class="rb" for="rb-edit-active">
-          <input id="rb-edit-active" type="radio" [value]="true" formControlName="active" />
+          <input id="rb-edit-active" type="radio" [value]="true" formControlName="active"/>
           <span class="rb__box"></span>
           <span class="rb__label">Đang hoạt động</span>
         </label>
         <label class="rb" for="rb-edit-inactive">
-          <input id="rb-edit-inactive" type="radio" [value]="false" formControlName="active" />
+          <input id="rb-edit-inactive" type="radio" [value]="false" formControlName="active"/>
           <span class="rb__box"></span>
           <span class="rb__label">Ngừng hoạt động</span>
         </label>
@@ -499,7 +507,8 @@
 <ng-template #editModalFooter>
   <div class="modal-footer-actions">
     <app-button variant="secondary" (click)="isEditModalVisible = false">Hủy bỏ</app-button>
-    <app-button variant="primary" leftIcon="save" [loading]="isSaving()" (click)="submitEditRole()">
+    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="primary" leftIcon="save"
+                [loading]="isSaving()" (click)="submitEditRole()">
       Lưu thay đổi
     </app-button>
   </div>
@@ -517,7 +526,7 @@
   <form [formGroup]="cloneRoleForm" class="role-modal-form">
     <div class="form-group mb-4">
       <label class="form-label form-label--required" for="clone-role-name">Tên vai trò mới</label>
-      <input id="clone-role-name" nz-input formControlName="name" />
+      <input id="clone-role-name" nz-input formControlName="name"/>
       @if (cloneRoleForm.get('name')?.touched && cloneRoleForm.get('name')?.invalid) {
         <span class="form-error">Vui lòng nhập tên vai trò mới.</span>
       }
@@ -533,7 +542,8 @@
 <ng-template #cloneModalFooter>
   <div class="modal-footer-actions">
     <app-button variant="secondary" (click)="isCloneModalVisible = false">Hủy bỏ</app-button>
-    <app-button variant="primary" leftIcon="copy" [loading]="isSaving()" (click)="submitCloneRole()">
+    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.ADD]" variant="primary" leftIcon="copy"
+                [loading]="isSaving()" (click)="submitCloneRole()">
       Tạo bản sao
     </app-button>
   </div>

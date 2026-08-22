@@ -30,10 +30,9 @@
     margin-top: 1px;
     background: var(--surface-card);
     border: 1.5px solid var(--border-field);
-    transition:
-      background var(--dur-fast) var(--ease),
-      border-color var(--dur-fast) var(--ease),
-      box-shadow var(--dur-fast) var(--ease);
+    transition: background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 
     &::after {
       content: '';
@@ -134,8 +133,13 @@
     background: var(--brand);
     border-color: var(--brand);
 
-    &::before { opacity: 1; }
-    &::after  { opacity: 0; }
+    &::before {
+      opacity: 1;
+    }
+
+    &::after {
+      opacity: 0;
+    }
   }
 
   input[type='checkbox']:focus-visible ~ .cb__box {
@@ -199,9 +203,8 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   background: var(--surface-card);
-  transition:
-    border-color var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease),
+  background var(--dur-fast) var(--ease);
 
   &:not(:has(input:disabled)):hover {
     border-color: var(--brand);

@@ -23,7 +23,8 @@ export class ColumnTextFilter<T extends Record<string, any>> {
     private readonly fieldStrategies: Partial<
       Record<keyof T, FilterStrategyName>
     > = {}
-  ) {}
+  ) {
+  }
 
   /**
    * Registry các strategy

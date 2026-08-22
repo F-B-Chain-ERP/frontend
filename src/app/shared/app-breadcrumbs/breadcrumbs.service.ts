@@ -1,6 +1,6 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { NavigationEnd, Router } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import {Injectable, inject, signal} from '@angular/core';
+import {NavigationEnd, Router} from '@angular/router';
+import {filter} from 'rxjs/operators';
 
 export interface BreadcrumbItem {
   label: string;
@@ -8,7 +8,7 @@ export interface BreadcrumbItem {
   icon?: string;
 }
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class BreadcrumbsService {
   private readonly router = inject(Router);
 
@@ -36,7 +36,7 @@ export class BreadcrumbsService {
 
       const label: string = route.data['breadcrumb'] ?? route.title ?? '';
       if (label) {
-        crumbs.push({ label, url: url || '/', icon: route.data['breadcrumbIcon'] });
+        crumbs.push({label, url: url || '/', icon: route.data['breadcrumbIcon']});
       }
 
       route = route.children[0];

@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { AppButtonComponent } from '../../shared/app-button/app-button.component';
+import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
+import {Router} from '@angular/router';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {AppButtonComponent} from '../../shared/app-button/app-button.component';
 
 @Component({
   selector: 'app-error-pages',
@@ -18,4 +18,5 @@ export class ErrorPagesComponent {
     this.router.navigate([path]);
   }
 }
+
 export default ErrorPagesComponent;

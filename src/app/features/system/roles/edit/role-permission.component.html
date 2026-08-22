@@ -1,13 +1,11 @@
 <div class="permission-page page page--has-footer">
   <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
   <div class="page__header">
-    <div>
+    <div class="page__header__left">
       <h1 class="page__header__title">
         Phân quyền vai trò: <span class="text-brand">{{ role.name || 'Đang tải...' }}</span>
       </h1>
-      <p class="page__header__description">
-        Thiết lập phạm vi quyền hạn truy cập menu và thực hiện các thao tác Thêm, Sửa, Xóa trong 7 phân hệ ERP UTT
-      </p>
+      <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
       <app-button variant="secondary" leftIcon="arrow-left" (click)="backToList()">
@@ -23,7 +21,7 @@
       <!-- Left: Role Meta with Avatar/Icon -->
       <div class="role-profile">
         <div class="role-avatar">
-          <nz-icon nzType="safety-certificate" />
+          <nz-icon nzType="safety-certificate"/>
         </div>
         <div class="role-profile-info">
           <div class="role-title-row">
@@ -71,7 +69,7 @@
     <!-- Middle Row: Module breakdown pills (Clean, organized status indicators) -->
     <div class="role-modules-bar">
       <div class="modules-bar-label">
-        <nz-icon nzType="appstore" />
+        <nz-icon nzType="appstore"/>
         <span>Phân hệ:</span>
       </div>
       <div class="modules-bar-list">
@@ -83,7 +81,7 @@
             nz-tooltip
             [nzTooltipTitle]="m.moduleName + ': ' + m.activeRights + '/' + m.totalRights + ' quyền (' + m.percent + '%)'"
           >
-            <nz-icon [nzType]="m.icon || 'folder'" class="module-mini-item__icon" />
+            <nz-icon [nzType]="m.icon || 'folder'" class="module-mini-item__icon"/>
             <span class="module-mini-item__name">{{ m.moduleName }}</span>
             <span class="module-mini-item__pct">{{ m.percent }}%</span>
           </div>
@@ -94,7 +92,7 @@
     <!-- Bottom Row: Quick Preset Actions Bar -->
     <div class="role-presets-bar">
       <div class="presets-label">
-        <nz-icon nzType="thunderbolt" />
+        <nz-icon nzType="thunderbolt"/>
         <span>Mẫu phân quyền nhanh:</span>
       </div>
       <div class="presets-actions">
@@ -103,7 +101,7 @@
           class="preset-btn preset-btn--primary"
           (click)="applyPreset('fullAdmin')"
         >
-          <nz-icon nzType="check-circle" />
+          <nz-icon nzType="check-circle"/>
           <span>Toàn quyền</span>
         </button>
         <button
@@ -111,7 +109,7 @@
           class="preset-btn"
           (click)="applyPreset('readOnly')"
         >
-          <nz-icon nzType="eye" />
+          <nz-icon nzType="eye"/>
           <span>Chỉ xem</span>
         </button>
         <button
@@ -119,7 +117,7 @@
           class="preset-btn"
           (click)="applyPreset('warehousePreset')"
         >
-          <nz-icon nzType="inbox" />
+          <nz-icon nzType="inbox"/>
           <span>Nghiệp vụ Kho</span>
         </button>
         <button
@@ -127,7 +125,7 @@
           class="preset-btn"
           (click)="applyPreset('accountantPreset')"
         >
-          <nz-icon nzType="dollar" />
+          <nz-icon nzType="dollar"/>
           <span>Nghiệp vụ Kế toán</span>
         </button>
         <button
@@ -135,7 +133,7 @@
           class="preset-btn preset-btn--danger"
           (click)="applyPreset('clearAll')"
         >
-          <nz-icon nzType="clear" />
+          <nz-icon nzType="clear"/>
           <span>Bỏ chọn tất cả</span>
         </button>
       </div>
@@ -153,7 +151,7 @@
             [class.view-mode-btn--active]="viewMode === 'matrix'"
             (click)="viewMode = 'matrix'"
           >
-            <nz-icon nzType="table" />
+            <nz-icon nzType="table"/>
             <span>Bảng ma trận</span>
           </button>
           <button
@@ -161,7 +159,7 @@
             [class.view-mode-btn--active]="viewMode === 'tree'"
             (click)="viewMode = 'tree'"
           >
-            <nz-icon nzType="apartment" />
+            <nz-icon nzType="apartment"/>
             <span>Dạng thẻ phân hệ</span>
           </button>
         </div>
@@ -172,7 +170,7 @@
         <!-- Search Keyword -->
         <div class="search-input-box">
           <nz-input-wrapper [nzAllowClear]="true">
-            <nz-icon nzInputPrefix nzType="search" />
+            <nz-icon nzInputPrefix nzType="search"/>
             <input
               nz-input
               placeholder="Tìm kiếm chức năng..."
@@ -213,7 +211,7 @@
             nz-tooltip
             nzTooltipTitle="Mở rộng tất cả"
           >
-            <nz-icon nzType="plus-square" />
+            <nz-icon nzType="plus-square"/>
           </button>
           <button
             type="button"
@@ -222,7 +220,7 @@
             nz-tooltip
             nzTooltipTitle="Thu gọn tất cả (1 cấp)"
           >
-            <nz-icon nzType="minus-square" />
+            <nz-icon nzType="minus-square"/>
           </button>
         </div>
       </div>
@@ -240,84 +238,84 @@
         [nzScroll]="{ x: '1000px', y: 'calc(100vh - 460px)' }"
       >
         <thead>
-          <!-- Table Header -->
-          <tr>
-            <th scope="col" nzWidth="90px" nzAlign="center">Truy cập</th>
-            <th scope="col" nzWidth="480px">Chức năng phân hệ ERP</th>
-            <th scope="col" nzWidth="110px" nzAlign="center">Thêm</th>
-            <th scope="col" nzWidth="110px" nzAlign="center">Sửa</th>
-            <th scope="col" nzWidth="110px" nzAlign="center">Xóa</th>
-            <th scope="col" nzWidth="110px" nzAlign="center">Toàn quyền</th>
-          </tr>
+        <!-- Table Header -->
+        <tr>
+          <th scope="col" nzWidth="90px" nzAlign="center">Truy cập</th>
+          <th scope="col" nzWidth="480px">Chức năng phân hệ ERP</th>
+          <th scope="col" nzWidth="110px" nzAlign="center">Thêm</th>
+          <th scope="col" nzWidth="110px" nzAlign="center">Sửa</th>
+          <th scope="col" nzWidth="110px" nzAlign="center">Xóa</th>
+          <th scope="col" nzWidth="110px" nzAlign="center">Toàn quyền</th>
+        </tr>
 
-          <!-- Select All Columns Header Subrow -->
-          <tr class="matrix-select-all-row">
-            <!-- Access Select All -->
-            <th nzAlign="center">
-              <label class="cb" for="select-all-col-access" nz-tooltip nzTooltipTitle="Chọn tất cả quyền truy cập">
-                <input
-                  id="select-all-col-access"
-                  type="checkbox"
-                  [checked]="isColumnChecked('access')"
-                  [indeterminate]="isColumnIndeterminate('access')"
-                  (change)="toggleColumnAll('access', $any($event.target).checked)"
-                />
-                <span class="cb__box"></span>
-              </label>
-            </th>
+        <!-- Select All Columns Header Subrow -->
+        <tr class="matrix-select-all-row">
+          <!-- Access Select All -->
+          <th nzAlign="center">
+            <label class="cb" for="select-all-col-access" nz-tooltip nzTooltipTitle="Chọn tất cả quyền truy cập">
+              <input
+                id="select-all-col-access"
+                type="checkbox"
+                [checked]="isColumnChecked('access')"
+                [indeterminate]="isColumnIndeterminate('access')"
+                (change)="toggleColumnAll('access', $any($event.target).checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
 
-            <!-- Function label -->
-            <th class="matrix-select-all-label">
+          <!-- Function label -->
+          <th class="matrix-select-all-label">
               <span class="select-all-note">
                 Chọn tất cả theo cột:
               </span>
-            </th>
+          </th>
 
-            <!-- Add Select All -->
-            <th nzAlign="center">
-              <label class="cb" for="select-all-col-add" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Thêm">
-                <input
-                  id="select-all-col-add"
-                  type="checkbox"
-                  [checked]="isColumnChecked('add')"
-                  [indeterminate]="isColumnIndeterminate('add')"
-                  (change)="toggleColumnAll('add', $any($event.target).checked)"
-                />
-                <span class="cb__box"></span>
-              </label>
-            </th>
+          <!-- Add Select All -->
+          <th nzAlign="center">
+            <label class="cb" for="select-all-col-add" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Thêm">
+              <input
+                id="select-all-col-add"
+                type="checkbox"
+                [checked]="isColumnChecked('add')"
+                [indeterminate]="isColumnIndeterminate('add')"
+                (change)="toggleColumnAll('add', $any($event.target).checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
 
-            <!-- Edit Select All -->
-            <th nzAlign="center">
-              <label class="cb" for="select-all-col-edit" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Sửa">
-                <input
-                  id="select-all-col-edit"
-                  type="checkbox"
-                  [checked]="isColumnChecked('edit')"
-                  [indeterminate]="isColumnIndeterminate('edit')"
-                  (change)="toggleColumnAll('edit', $any($event.target).checked)"
-                />
-                <span class="cb__box"></span>
-              </label>
-            </th>
+          <!-- Edit Select All -->
+          <th nzAlign="center">
+            <label class="cb" for="select-all-col-edit" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Sửa">
+              <input
+                id="select-all-col-edit"
+                type="checkbox"
+                [checked]="isColumnChecked('edit')"
+                [indeterminate]="isColumnIndeterminate('edit')"
+                (change)="toggleColumnAll('edit', $any($event.target).checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
 
-            <!-- Delete Select All -->
-            <th nzAlign="center">
-              <label class="cb" for="select-all-col-delete" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Xóa">
-                <input
-                  id="select-all-col-delete"
-                  type="checkbox"
-                  [checked]="isColumnChecked('delete')"
-                  [indeterminate]="isColumnIndeterminate('delete')"
-                  (change)="toggleColumnAll('delete', $any($event.target).checked)"
-                />
-                <span class="cb__box"></span>
-              </label>
-            </th>
+          <!-- Delete Select All -->
+          <th nzAlign="center">
+            <label class="cb" for="select-all-col-delete" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Xóa">
+              <input
+                id="select-all-col-delete"
+                type="checkbox"
+                [checked]="isColumnChecked('delete')"
+                [indeterminate]="isColumnIndeterminate('delete')"
+                (change)="toggleColumnAll('delete', $any($event.target).checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
 
-            <!-- All Row select placeholder -->
-            <th nzAlign="center"></th>
-          </tr>
+          <!-- All Row select placeholder -->
+          <th nzAlign="center"></th>
+        </tr>
         </thead>
 
         <tbody>
@@ -568,7 +566,13 @@
 
   <div class="page__footer__actions">
     <app-button variant="secondary" (click)="backToList()">Hủy bỏ</app-button>
-    <app-button variant="primary" leftIcon="save" [loading]="saving()" (click)="onSavePermissions()">
+    <app-button
+      *erpUTTHasSomeAuthority="[ROLE.PHAN_QUYEN_VAI_TRO.EDIT, ROLE.QUAN_LY_VAI_TRO.EDIT]"
+      variant="primary"
+      leftIcon="save"
+      [loading]="saving()"
+      (click)="onSavePermissions()"
+    >
       Lưu thay đổi phân quyền
     </app-button>
   </div>

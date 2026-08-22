@@ -1,15 +1,15 @@
-import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { NzTableModule } from 'ng-zorro-antd/table';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzAvatarModule } from 'ng-zorro-antd/avatar';
-import { NzTagModule } from 'ng-zorro-antd/tag';
-import { NzEmptyModule } from 'ng-zorro-antd/empty';
-import { AppModalComponent } from '../../../../shared/app-modal/app-modal.component';
-import { AppButtonComponent } from '../../../../shared/app-button/app-button.component';
-import { Role, RoleAssignedUser } from '../models/role.model';
+import {Component, EventEmitter, Input, Output, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {NzTableModule} from 'ng-zorro-antd/table';
+import {NzInputModule} from 'ng-zorro-antd/input';
+import {NzIconModule} from 'ng-zorro-antd/icon';
+import {NzAvatarModule} from 'ng-zorro-antd/avatar';
+import {NzTagModule} from 'ng-zorro-antd/tag';
+import {NzEmptyModule} from 'ng-zorro-antd/empty';
+import {AppModalComponent} from '../../../../shared/app-modal/app-modal.component';
+import {AppButtonComponent} from '../../../../shared/app-button/app-button.component';
+import {Role, RoleAssignedUser} from '../models/role.model';
 
 @Component({
   selector: 'app-role-user-modal',

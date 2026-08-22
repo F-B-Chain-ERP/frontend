@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { AppButtonComponent } from '../app-button/app-button.component';
-import { AppQuantityStepperComponent } from '../app-quantity-stepper/app-quantity-stepper.component';
-import { CartService, CartItem } from '../services/cart.service';
-import { AppNotificationService } from '../app-notification/app-notification.service';
+import {ChangeDetectionStrategy, Component, EventEmitter, Output, inject} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {NzIconModule} from 'ng-zorro-antd/icon';
+import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
+import {AppButtonComponent} from '../app-button/app-button.component';
+import {AppQuantityStepperComponent} from '../app-quantity-stepper/app-quantity-stepper.component';
+import {CartService, CartItem} from '../services/cart.service';
+import {AppNotificationService} from '../app-notification/app-notification.service';
 
 @Component({
   selector: 'app-cart-panel',
@@ -22,7 +22,7 @@ export class AppCartPanelComponent {
   @Output() checkout = new EventEmitter<CartItem[]>();
 
   formatPrice(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
   }
 
   onClose(): void {
@@ -59,4 +59,5 @@ export class AppCartPanelComponent {
     this.cartService.closeCart();
   }
 }
+
 export default AppCartPanelComponent;

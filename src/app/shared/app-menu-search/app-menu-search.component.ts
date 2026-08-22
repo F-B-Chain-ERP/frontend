@@ -1,15 +1,15 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import {Component, computed, inject, signal} from '@angular/core';
+import {Router} from '@angular/router';
 import {
   NzAutocompleteModule,
   NzAutocompleteOptionComponent,
 } from 'ng-zorro-antd/auto-complete';
-import { NzInputModule } from 'ng-zorro-antd/input';
+import {NzInputModule} from 'ng-zorro-antd/input';
 
-import { FlatMenuItem, flattenSidebarMenu, normalizeVi } from './menu-search.util';
-import { SIDEBAR_MENU } from '../../layouts/sidebar/sidebar.constant';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { AccountService } from '../../core/auth/account.service';
+import {FlatMenuItem, flattenSidebarMenu, normalizeVi} from './menu-search.util';
+import {SIDEBAR_MENU} from '../../layouts/sidebar/sidebar.constant';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {AccountService} from '../../core/auth/account.service';
 
 @Component({
   selector: 'app-menu-search',
@@ -17,7 +17,7 @@ import { AccountService } from '../../core/auth/account.service';
   imports: [NzAutocompleteModule, NzInputModule, NzIconDirective],
   template: `
     <nz-input-wrapper>
-      <input nz-input placeholder="Tìm nhanh chức năng..." [nzAutocomplete]="auto" (input)="onInput($event)" />
+      <input nz-input placeholder="Tìm nhanh chức năng..." [nzAutocomplete]="auto" (input)="onInput($event)"/>
       <nz-icon nzInputSuffix nzType="search"></nz-icon>
     </nz-input-wrapper>
 
@@ -43,13 +43,16 @@ import { AccountService } from '../../core/auth/account.service';
       nz-input-wrapper {
         min-width: 300px;
       }
+
       .menu-option {
         display: flex;
         flex-direction: column;
       }
+
       .menu-option__title {
         font-weight: 500;
       }
+
       .menu-option__path {
         font-size: 12px;
         color: var(--text-muted);
@@ -86,7 +89,8 @@ export default class MenuSearchComponent {
     if (!item) {
       return;
     }
-    this.router.navigateByUrl(item.route).then(() => {});
+    this.router.navigateByUrl(item.route).then(() => {
+    });
     this.keyword.set('');
   }
 }

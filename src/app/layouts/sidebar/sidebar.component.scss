@@ -130,6 +130,7 @@
 .sidebar__item > a {
   color: inherit;
   text-decoration: none;
+
   &--active {
     color: var(--sidebar-active-fg);
   }

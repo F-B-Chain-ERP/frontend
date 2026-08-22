@@ -29,10 +29,12 @@
   display: flex;
   margin-top: var(--space-7);
   align-items: stretch;
+
   [nz-col] {
     display: flex;
     flex-direction: column;
   }
+
   ::ng-deep .ant-card {
     height: 100%;
   }
@@ -227,12 +229,15 @@
     &--brand {
       background: var(--brand);
     }
+
     &--teal {
       background: var(--teal-500);
     }
+
     &--purple {
       background: var(--purple-500);
     }
+
     &--amber {
       background: var(--amber-500);
     }

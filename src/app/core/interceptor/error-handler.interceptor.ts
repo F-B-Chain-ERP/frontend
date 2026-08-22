@@ -1,8 +1,8 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { tap } from 'rxjs';
+import {HttpErrorResponse, HttpInterceptorFn} from '@angular/common/http';
+import {inject} from '@angular/core';
+import {tap} from 'rxjs';
 
-import { EventManager, EventWithContent } from '../util/event-manager.service';
+import {EventManager, EventWithContent} from '../util/event-manager.service';
 
 export const errorHandlerInterceptor: HttpInterceptorFn = (req, next) => {
   const eventManager = inject(EventManager);

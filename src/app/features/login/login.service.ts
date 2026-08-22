@@ -1,16 +1,16 @@
-import { Injectable, inject } from '@angular/core';
-import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, catchError, from, filter, map, switchMap, tap, throwError } from 'rxjs';
+import {Injectable, inject} from '@angular/core';
+import {Router} from '@angular/router';
+import {HttpErrorResponse} from '@angular/common/http';
+import {Observable, catchError, from, filter, map, switchMap, tap, throwError} from 'rxjs';
 
-import { AuthServerProvider } from '../../core/auth/auth-jwt.service';
-import { AccountService } from '../../core/auth/account.service';
-import { PermissionService } from '../../core/auth/permission.service';
-import { StateStorageService } from '../../core/auth/state-storage.service';
-import { Account } from '../../core/auth/account.model';
-import { AuthResponse, LoginCredentials, LoginException } from './login.model';
+import {AuthServerProvider} from '../../core/auth/auth-jwt.service';
+import {AccountService} from '../../core/auth/account.service';
+import {PermissionService} from '../../core/auth/permission.service';
+import {StateStorageService} from '../../core/auth/state-storage.service';
+import {Account} from '../../core/auth/account.model';
+import {AuthResponse, LoginCredentials, LoginException} from './login.model';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class LoginService {
   private readonly authServerProvider = inject(AuthServerProvider);
   private readonly accountService = inject(AccountService);

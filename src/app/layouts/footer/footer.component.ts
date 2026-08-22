@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import {ChangeDetectionStrategy, Component, inject} from '@angular/core';
+import {Router} from '@angular/router';
 
 @Component({
   selector: 'app-footer',
@@ -23,4 +23,5 @@ export class FooterComponent {
     this.router.navigate(['/quy-trinh-su-dung']);
   }
 }
+
 export default FooterComponent;

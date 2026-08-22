@@ -379,6 +379,7 @@
 
     &__ship {
       font-weight: 700;
+
       &.free {
         color: #16A34A;
         background: #E7F6EC;
@@ -409,13 +410,18 @@
       line-height: 1.4;
       margin: 0;
 
-      [nz-icon] { color: var(--brand); }
+      [nz-icon] {
+        color: var(--brand);
+      }
 
       &--success {
         background: #E7F6EC;
         border-color: #C6E9CE;
         color: #16A34A;
-        [nz-icon] { color: #16A34A; }
+
+        [nz-icon] {
+          color: #16A34A;
+        }
       }
     }
 
@@ -437,7 +443,11 @@
       color: var(--text-muted);
       margin: 0;
       text-align: center;
-      [nz-icon] { color: var(--brand); font-size: 12px; }
+
+      [nz-icon] {
+        color: var(--brand);
+        font-size: 12px;
+      }
     }
 
     &__payments {

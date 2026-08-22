@@ -10,34 +10,34 @@ $font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helv
 $font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace !default;
 
 // --- Type scale (compact, 13px body base) -------------------
-$text-3xs:  9.5px !default;
-$text-2xs:  10.5px !default;
-$text-xs:   11.5px !default;
-$text-sm:   12.5px !default;  // secondary / table cells
-$text-base: 13px   !default;  // body default
-$text-md:   14px   !default;
-$text-lg:   15px   !default;
-$text-xl:   17px   !default;  // card titles
-$text-2xl:  20px   !default;
-$text-3xl:  24px   !default;  // page title
-$text-4xl:  30px   !default;  // stat numbers / display
+$text-3xs: 9.5px !default;
+$text-2xs: 10.5px !default;
+$text-xs: 11.5px !default;
+$text-sm: 12.5px !default; // secondary / table cells
+$text-base: 13px !default; // body default
+$text-md: 14px !default;
+$text-lg: 15px !default;
+$text-xl: 17px !default; // card titles
+$text-2xl: 20px !default;
+$text-3xl: 24px !default; // page title
+$text-4xl: 30px !default; // stat numbers / display
 
 // --- Font weights -------------------------------------------
-$fw-regular:  400 !default;
-$fw-medium:   500 !default;
+$fw-regular: 400 !default;
+$fw-medium: 500 !default;
 $fw-semibold: 600 !default;
-$fw-bold:     700 !default;
+$fw-bold: 700 !default;
 
 // --- Line heights -------------------------------------------
-$lh-tight:  1.2  !default;
-$lh-snug:   1.35 !default;
-$lh-normal: 1.5  !default;
+$lh-tight: 1.2 !default;
+$lh-snug: 1.35 !default;
+$lh-normal: 1.5 !default;
 
 // --- Letter spacing -----------------------------------------
-$ls-tight:  -0.01em !default;
-$ls-normal:  0      !default;
-$ls-wide:    0.04em !default;  // eyebrows / overlines
-$ls-caps:    0.06em !default;
+$ls-tight: -0.01em !default;
+$ls-normal: 0 !default;
+$ls-wide: 0.04em !default; // eyebrows / overlines
+$ls-caps: 0.06em !default;
 
 // ============================================================
 // CSS CUSTOM PROPERTIES
@@ -46,37 +46,39 @@ $ls-caps:    0.06em !default;
   --font-sans: #{$font-sans};
   --font-mono: #{$font-mono};
 
-  --text-3xs:  #{$text-3xs};
-  --text-2xs:  #{$text-2xs};
-  --text-xs:   #{$text-xs};
-  --text-sm:   #{$text-sm};
+  --text-3xs: #{$text-3xs};
+  --text-2xs: #{$text-2xs};
+  --text-xs: #{$text-xs};
+  --text-sm: #{$text-sm};
   --text-base: #{$text-base};
-  --text-md:   #{$text-md};
-  --text-lg:   #{$text-lg};
-  --text-xl:   #{$text-xl};
-  --text-2xl:  #{$text-2xl};
-  --text-3xl:  #{$text-3xl};
-  --text-4xl:  #{$text-4xl};
+  --text-md: #{$text-md};
+  --text-lg: #{$text-lg};
+  --text-xl: #{$text-xl};
+  --text-2xl: #{$text-2xl};
+  --text-3xl: #{$text-3xl};
+  --text-4xl: #{$text-4xl};
 
-  --fw-regular:  #{$fw-regular};
-  --fw-medium:   #{$fw-medium};
+  --fw-regular: #{$fw-regular};
+  --fw-medium: #{$fw-medium};
   --fw-semibold: #{$fw-semibold};
-  --fw-bold:     #{$fw-bold};
+  --fw-bold: #{$fw-bold};
 
-  --lh-tight:  #{$lh-tight};
-  --lh-snug:   #{$lh-snug};
+  --lh-tight: #{$lh-tight};
+  --lh-snug: #{$lh-snug};
   --lh-normal: #{$lh-normal};
 
-  --ls-tight:  #{$ls-tight};
+  --ls-tight: #{$ls-tight};
   --ls-normal: #{$ls-normal};
-  --ls-wide:   #{$ls-wide};
-  --ls-caps:   #{$ls-caps};
+  --ls-wide: #{$ls-wide};
+  --ls-caps: #{$ls-caps};
 }
 
 // ============================================================
 // BASE RESET
 // ============================================================
-html { font-size: 100%; }
+html {
+  font-size: 100%;
+}
 
 body {
   font-family: var(--font-sans);

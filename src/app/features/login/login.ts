@@ -1,18 +1,31 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
-import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal} from '@angular/core';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators
+} from '@angular/forms';
+import {Router, RouterLink} from '@angular/router';
 
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { NzButtonModule } from 'ng-zorro-antd/button';
+import {NzInputModule} from 'ng-zorro-antd/input';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {NzButtonModule} from 'ng-zorro-antd/button';
 
-import { AppButtonComponent } from '../../shared/app-button/app-button.component';
-import { StateStorageService } from '../../core/auth/state-storage.service';
-import { LoginException, LoginCredentials } from './login.model';
-import { LoginService } from './login.service';
-import { ThemeService } from '../../core/theme/theme.service';
+import {AppButtonComponent} from '../../shared/app-button/app-button.component';
+import {StateStorageService} from '../../core/auth/state-storage.service';
+import {LoginException, LoginCredentials} from './login.model';
+import {LoginService} from './login.service';
+import {ThemeService} from '../../core/theme/theme.service';
 
-type LoginErrorType = 'INVALID_CREDENTIALS' | 'ACCOUNT_LOCKED' | 'ACCOUNT_DELETED' | 'UNKNOWN' | 'NO_ORGANIZATION' | null;
+type LoginErrorType =
+  'INVALID_CREDENTIALS'
+  | 'ACCOUNT_LOCKED'
+  | 'ACCOUNT_DELETED'
+  | 'UNKNOWN'
+  | 'NO_ORGANIZATION'
+  | null;
 const PASSWORD_REGEX = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/;
 
 function noWhitespaceValidator(control: AbstractControl): ValidationErrors | null {
@@ -20,7 +33,7 @@ function noWhitespaceValidator(control: AbstractControl): ValidationErrors | nul
   if (!value) {
     return null;
   }
-  return /\s/.test(value) ? { whitespace: true } : null;
+  return /\s/.test(value) ? {whitespace: true} : null;
 }
 
 @Component({
@@ -44,12 +57,12 @@ export class LoginComponent implements OnInit, OnDestroy {
   readonly currentYear = new Date().getFullYear();
 
   loginForm = new FormGroup({
-    username: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    username: new FormControl('', {nonNullable: true, validators: [Validators.required]}),
     password: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, noWhitespaceValidator, Validators.pattern(PASSWORD_REGEX)],
     }),
-    rememberMe: new FormControl({ value: true, disabled: false }, { nonNullable: true }),
+    rememberMe: new FormControl({value: true, disabled: false}, {nonNullable: true}),
   });
 
   ngOnInit(): void {
@@ -104,4 +117,5 @@ export class LoginComponent implements OnInit, OnDestroy {
     }
   }
 }
+
 export default LoginComponent;

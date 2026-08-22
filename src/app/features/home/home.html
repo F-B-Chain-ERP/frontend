@@ -2,7 +2,8 @@
   <div class="home__header">
     <div class="home__header__left">
       <h2 class="home__header__title">Xin chào, Nguyễn Văn A</h2>
-      <p class="home__header__description">Tổng quan tình hình tài chính đơn vị &bull; Năm ngân sách <b>2026</b> &bull; Cập nhật 08/06/2026</p>
+      <p class="home__header__description">Tổng quan tình hình tài chính đơn vị &bull; Năm ngân sách <b>2026</b> &bull;
+        Cập nhật 08/06/2026</p>
     </div>
     <div class="home__header__right">
       <app-button [variant]="'secondary'" [leftIcon]="'download'">Xuất báo cáo</app-button>
@@ -145,16 +146,19 @@
         <div class="recent-voucher">
           <div class="recent-voucher__header">
             <h3 class="recent-voucher__title">Chứng từ gần đây</h3>
-            <a class="recent-voucher__link">Xem tất cả <nz-icon nzType="arrow-right"></nz-icon></a>
+            <a class="recent-voucher__link">Xem tất cả
+              <nz-icon nzType="arrow-right"></nz-icon>
+            </a>
           </div>
-          <nz-table class="tbl-auto" #voucherTable [nzData]="recentVouchers" [nzShowPagination]="false" [nzFrontPagination]="false" nzSize="small" [nzBordered]="false">
+          <nz-table class="tbl-auto" #voucherTable [nzData]="recentVouchers" [nzShowPagination]="false"
+                    [nzFrontPagination]="false" nzSize="small" [nzBordered]="false">
             <thead>
-              <tr>
-                <th scope='col'>Số chứng từ</th>
-                <th scope='col'>Diễn giải</th>
-                <th scope='col' nzAlign="right">Số tiền</th>
-                <th scope='col' nzAlign="right">Trạng thái</th>
-              </tr>
+            <tr>
+              <th scope='col'>Số chứng từ</th>
+              <th scope='col'>Diễn giải</th>
+              <th scope='col' nzAlign="right">Số tiền</th>
+              <th scope='col' nzAlign="right">Trạng thái</th>
+            </tr>
             </thead>
             <tbody>
               @for (v of voucherTable.data; track v.code) {

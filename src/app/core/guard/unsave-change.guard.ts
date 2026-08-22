@@ -1,9 +1,10 @@
-import { CanDeactivateFn } from '@angular/router';
-import { inject } from '@angular/core';
-import { AppModalService } from '../../shared/app-modal/app-modal.service';
+import {CanDeactivateFn} from '@angular/router';
+import {inject} from '@angular/core';
+import {AppModalService} from '../../shared/app-modal/app-modal.service';
 
 export interface CanComponentDeactivate {
   canDeactivate: () => boolean | Promise<boolean>;
+
   getLeaveMessage?(): string;
 }
 

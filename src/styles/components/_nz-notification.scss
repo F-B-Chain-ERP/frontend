@@ -24,7 +24,7 @@
     bottom: 0;
     height: 3px;
     width: 100%;
-    background: rgba(255,255,255,.7);
+    background: rgba(255, 255, 255, .7);
     transform: translateX(-100%);
     animation: notificationProgress var(--notification-duration, 3000ms) linear forwards;
   }
@@ -67,6 +67,7 @@
   background-color: var(--danger);
   border: 1px solid var(--danger-600);
   border-left: 4px solid var(--danger-100) !important;
+
   .ant-notification-notice-message {
     color: var(--gray-0);
     font-weight: var(--fw-semibold);
@@ -77,6 +78,7 @@
   background-color: var(--warning);
   border: 1px solid var(--warning-600);
   border-left: 4px solid var(--warning-100) !important;
+
   .ant-notification-notice-message {
     color: var(--gray-0);
     font-weight: var(--fw-semibold);
@@ -87,6 +89,7 @@
   background-color: var(--info);
   border: 1px solid var(--info-600);
   border-left: 4px solid var(--info-100) !important;
+
   .ant-notification-notice-message {
     color: var(--gray-0);
     font-weight: var(--fw-semibold);

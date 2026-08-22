@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, Input, OnInit, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { AppButtonComponent } from '../../shared/app-button/app-button.component';
+import {ChangeDetectionStrategy, Component, Input, OnInit, inject, signal} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {AppButtonComponent} from '../../shared/app-button/app-button.component';
 
 export type ErrorType = '404' | '403' | '500';
 
@@ -74,4 +74,5 @@ export class ErrorComponent implements OnInit {
     this.router.navigate(['/admin/home']);
   }
 }
+
 export default ErrorComponent;

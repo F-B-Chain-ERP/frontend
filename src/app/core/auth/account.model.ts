@@ -18,5 +18,6 @@ export class Account {
     public currentOrganizationId: string | number | null = null,
     public donViSuDungId?: number,
     public donViSuDungName?: string,
-  ) {}
+  ) {
+  }
 }

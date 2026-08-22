@@ -10,11 +10,12 @@
         </div>
 
         <h1 class="store-hero__title">
-          TÌM KIẾM HƯƠNG VỊ<br />PHÙ HỢP VỚI GU CỦA BẠN
+          TÌM KIẾM HƯƠNG VỊ<br/>PHÙ HỢP VỚI GU CỦA BẠN
         </h1>
 
         <p class="store-hero__subtitle">
-          Khám phá các dòng cà phê rang mộc nguyên chất và đồ uống thủ công được pha chế tỉ mỉ mỗi ngày để khơi dậy nguồn cảm hứng bất tận trong bạn.
+          Khám phá các dòng cà phê rang mộc nguyên chất và đồ uống thủ công được pha chế tỉ mỉ mỗi ngày để khơi dậy
+          nguồn cảm hứng bất tận trong bạn.
         </p>
 
         <div class="store-hero__cta-row">
@@ -65,7 +66,7 @@
           <div class="store-hero__sparkle store-hero__sparkle--bottom">✦</div>
 
           <div class="store-hero__floating-badge">
-            <nz-icon nzType="fire" class="fire-icon" />
+            <nz-icon nzType="fire" class="fire-icon"/>
             <div class="badge-info">
               <span class="title">Cà phê Rang Mộc 100%</span>
               <span class="sub">Hảo hạng từ Buôn Ma Thuột & Cầu Đất</span>
@@ -126,7 +127,7 @@
     </div>
   </section>
 
-  <hr class="section-divider" />
+  <hr class="section-divider"/>
 
   <!-- ── 4. Section: Món Bán Chạy (TOP SELLING) ─────────────────────── -->
   <section id="top-selling" class="section-block">
@@ -166,13 +167,13 @@
             (keydown.enter)="selectStyleCategory(style.id)"
             (keydown.space)="selectStyleCategory(style.id)"
           >
-            <img [src]="style.imageUrl" [alt]="style.name" class="style-item__bg" />
+            <img [src]="style.imageUrl" [alt]="style.name" class="style-item__bg"/>
             <div class="style-item__content">
               <h3 class="style-item__title">{{ style.name }}</h3>
               <span class="style-item__sub">{{ style.subtitle }}</span>
             </div>
             <div class="style-item__arrow" aria-hidden="true">
-              <nz-icon nzType="arrow-right" />
+              <nz-icon nzType="arrow-right"/>
             </div>
           </div>
         }
@@ -203,7 +204,7 @@
     <div class="store-filter-card">
       <div class="store-filter-card__search">
         <nz-input-wrapper [nzAllowClear]="true" class="store-filter-search-wrapper">
-          <nz-icon nzInputPrefix nzType="search" class="store-filter-search-icon" />
+          <nz-icon nzInputPrefix nzType="search" class="store-filter-search-icon"/>
           <input
             nz-input
             placeholder="Tìm kiếm cà phê, trà đào, macchiato theo tên hoặc mô tả..."
@@ -237,7 +238,7 @@
         />
       } @empty {
         <div class="drinks-empty">
-          <nz-icon nzType="inbox" class="drinks-empty__icon" />
+          <nz-icon nzType="inbox" class="drinks-empty__icon"/>
           <h3>Không tìm thấy món nào phù hợp</h3>
           <p>Vui lòng thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác nhé.</p>
           <button
@@ -257,7 +258,7 @@
     <div class="reviews-header">
       <h2 class="section-title section-title--left">KHÁCH HÀNG NÓI GÌ VỀ CHÚNG TÔI</h2>
       <div class="reviews-header__badge">
-        <nz-icon nzType="star" nzTheme="fill" class="star-icon" />
+        <nz-icon nzType="star" nzTheme="fill" class="star-icon"/>
         <span>4.9 / 5.0 (Hơn 1,200 đánh giá)</span>
       </div>
     </div>
@@ -275,7 +276,7 @@
             <span class="name">{{ rev.name }}</span>
             @if (rev.verified) {
               <span class="verified" title="Khách hàng đã xác thực">
-                <nz-icon nzType="check-circle" nzTheme="fill" />
+                <nz-icon nzType="check-circle" nzTheme="fill"/>
               </span>
             }
           </div>
@@ -300,7 +301,7 @@
 
       <div class="newsletter-card__form-col">
         <div class="newsletter-card__input-wrapper">
-          <nz-icon nzType="mail" class="mail-icon" />
+          <nz-icon nzType="mail" class="mail-icon"/>
           <input
             type="email"
             placeholder="Nhập địa chỉ email của bạn..."
@@ -333,7 +334,7 @@
       <div class="custom-modal-body">
         <!-- Image & Basic info -->
         <div class="custom-modal-body__img-col">
-          <img [src]="drink.imageUrl" [alt]="drink.name" class="custom-modal-body__img" />
+          <img [src]="drink.imageUrl" [alt]="drink.name" class="custom-modal-body__img"/>
           <p class="custom-modal-body__desc">{{ drink.description }}</p>
         </div>
 

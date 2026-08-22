@@ -9,10 +9,9 @@
   font-family: var(--font-sans);
   font-size: var(--text-base);
   line-height: var(--control-h);
-  transition:
-    border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease),
+  box-shadow var(--dur-fast) var(--ease),
+  background var(--dur-fast) var(--ease);
 
   &::placeholder {
     color: var(--text-muted);
@@ -171,10 +170,9 @@ textarea.ant-input {
   font-size: var(--text-base);
   display: inline-flex;
   align-items: center;
-  transition:
-    border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease),
+  box-shadow var(--dur-fast) var(--ease),
+  background var(--dur-fast) var(--ease);
 
   .ant-input {
     height: 100%;
@@ -313,9 +311,8 @@ textarea.ant-input {
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: var(--text-base);
-  transition:
-    border-color var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease);
+  transition: border-color var(--dur-fast) var(--ease),
+  box-shadow var(--dur-fast) var(--ease);
 
   &-input-wrap {
     height: 100%;

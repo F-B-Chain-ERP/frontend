@@ -1,12 +1,12 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import {HttpClient} from '@angular/common/http';
+import {Injectable, inject} from '@angular/core';
+import {Observable} from 'rxjs';
 
-import { StateStorageService } from './state-storage.service';
-import { ApiResponse, AuthResponse, LoginCredentials, LoginRequest } from '../../features/login/login.model';
-import { ApplicationConfigService } from '../config/application-config.service';
+import {StateStorageService} from './state-storage.service';
+import {ApiResponse, AuthResponse, LoginCredentials, LoginRequest} from '../../features/login/login.model';
+import {ApplicationConfigService} from '../config/application-config.service';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({providedIn: 'root'})
 export class AuthServerProvider {
   private readonly http = inject(HttpClient);
   private readonly stateStorageService = inject(StateStorageService);
@@ -26,7 +26,7 @@ export class AuthServerProvider {
   refreshToken(refreshToken: string): Observable<ApiResponse<AuthResponse>> {
     return this.http.post<ApiResponse<AuthResponse>>(
       this.applicationConfigService.getEndpointFor('api/v1/auth/refresh-token'),
-      { refreshToken },
+      {refreshToken},
     );
   }
 

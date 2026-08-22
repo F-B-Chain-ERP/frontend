@@ -140,8 +140,8 @@
     transition: all var(--dur-fast) var(--ease);
   }
 
-  input[type='checkbox']:checked~.cb__box,
-  input[type='checkbox']:indeterminate~.cb__box {
+  input[type='checkbox']:checked ~ .cb__box,
+  input[type='checkbox']:indeterminate ~ .cb__box {
     background: var(--brand);
     border-color: var(--brand);
     box-shadow: 0 0 0 1px var(--brand);

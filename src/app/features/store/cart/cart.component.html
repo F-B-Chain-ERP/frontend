@@ -3,7 +3,7 @@
   <div class="cart-page__header">
     <div class="cart-page__header-left">
       <h1 class="cart-page__title">
-        <nz-icon nzType="shopping-cart" />
+        <nz-icon nzType="shopping-cart"/>
         Giỏ hàng
         @if (!isEmpty()) {
           <span class="cart-page__count">{{ totalCount() }} món</span>
@@ -19,7 +19,7 @@
     </div>
 
     <a routerLink="/store" class="cart-page__continue">
-      <nz-icon nzType="arrow-left" />
+      <nz-icon nzType="arrow-left"/>
       Tiếp tục mua sắm
     </a>
   </div>
@@ -27,10 +27,11 @@
   @if (isEmpty()) {
     <div class="cart-empty">
       <div class="cart-empty__icon">
-        <nz-icon nzType="shopping-cart" />
+        <nz-icon nzType="shopping-cart"/>
       </div>
       <h3 class="cart-empty__title">Giỏ hàng trống</h3>
-      <p class="cart-empty__desc">Bạn chưa thêm món nào vào giỏ. Khám phá thực đơn với cà phê rang mộc, trà trái cây và bánh ngọt mỗi ngày.</p>
+      <p class="cart-empty__desc">Bạn chưa thêm món nào vào giỏ. Khám phá thực đơn với cà phê rang mộc, trà trái cây và
+        bánh ngọt mỗi ngày.</p>
       <a routerLink="/store">
         <app-button variant="primary" [rounded]="true">Khám phá thực đơn</app-button>
       </a>
@@ -50,7 +51,7 @@
           <div class="cart-item">
             <div class="cart-item__main">
               <div class="cart-item__thumb">
-                <img [src]="item.drink.imageUrl" [alt]="item.drink.name" />
+                <img [src]="item.drink.imageUrl" [alt]="item.drink.name"/>
               </div>
               <div class="cart-item__info">
                 <h4 class="cart-item__name">{{ item.drink.name }}</h4>
@@ -75,7 +76,7 @@
             <div class="cart-item__total">
               <span>{{ formatPrice(item.totalPrice) }}</span>
               <button type="button" class="cart-item__remove" (click)="onRemove(item.id)" title="Xóa món">
-                <nz-icon nzType="delete" />
+                <nz-icon nzType="delete"/>
               </button>
             </div>
           </div>
@@ -83,7 +84,7 @@
 
         <div class="cart-page__actions">
           <button type="button" class="cart-page__clear" (click)="onClear()">
-            <nz-icon nzType="clear" />
+            <nz-icon nzType="clear"/>
             Xóa giỏ hàng
           </button>
         </div>
@@ -118,12 +119,12 @@
 
         @if (shippingFee() > 0) {
           <p class="cart-summary__hint">
-            <nz-icon nzType="info-circle" />
+            <nz-icon nzType="info-circle"/>
             Thêm {{ formatPrice(99000 - totalAmount()) }} nữa để được miễn phí ship 3km!
           </p>
         } @else {
           <p class="cart-summary__hint cart-summary__hint--success">
-            <nz-icon nzType="check-circle" nzTheme="fill" />
+            <nz-icon nzType="check-circle" nzTheme="fill"/>
             Bạn đã được miễn phí giao hàng 3km!
           </p>
         }
@@ -133,7 +134,7 @@
         </app-button>
 
         <p class="cart-summary__note">
-          <nz-icon nzType="safety-certificate" />
+          <nz-icon nzType="safety-certificate"/>
           Thanh toán an toàn • Đổi/trả trong 30 phút nếu sai món
         </p>
 

@@ -13,8 +13,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { NzTagComponent } from 'ng-zorro-antd/tag';
-import { NzTooltipDirective } from 'ng-zorro-antd/tooltip';
+import {NzTagComponent} from 'ng-zorro-antd/tag';
+import {NzTooltipDirective} from 'ng-zorro-antd/tooltip';
 
 @Component({
   selector: 'app-overflow-tags',
@@ -28,8 +28,8 @@ export class AppOverflowTagsComponent implements AfterViewInit, OnChanges {
   @Input() separator = ', ';
 
   @ViewChild('container') private containerRef!: ElementRef<HTMLElement>;
-  @ViewChild('extraProbe', { read: ElementRef }) private extraProbeRef?: ElementRef<HTMLElement>;
-  @ViewChildren('measureTag', { read: ElementRef }) private measureTagRefs!: QueryList<ElementRef<HTMLElement>>;
+  @ViewChild('extraProbe', {read: ElementRef}) private extraProbeRef?: ElementRef<HTMLElement>;
+  @ViewChildren('measureTag', {read: ElementRef}) private measureTagRefs!: QueryList<ElementRef<HTMLElement>>;
 
   protected visibleCount = signal(Number.MAX_SAFE_INTEGER);
 

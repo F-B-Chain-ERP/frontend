@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
+import {Injectable} from '@angular/core';
+import {RouterStateSnapshot, TitleStrategy} from '@angular/router';
 
 @Injectable()
 export class AppPageTitleStrategy extends TitleStrategy {

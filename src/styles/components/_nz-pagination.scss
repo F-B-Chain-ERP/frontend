@@ -1,5 +1,5 @@
-$_h:     28px;   // item height
-$_min-w: 28px;   // item min-width
+$_h: 28px; // item height
+$_min-w: 28px; // item min-width
 
 .ant-pagination {
   display: flex;
@@ -14,7 +14,9 @@ $_min-w: 28px;   // item min-width
   list-style: none;
   user-select: none;
 
-  li { list-style: none; }
+  li {
+    list-style: none;
+  }
 
   // ── Total text ───────────────────────────────────────
   &-total-text {
@@ -37,7 +39,7 @@ $_min-w: 28px;   // item min-width
     text-align: center;
     cursor: pointer;
     transition: border-color var(--dur-fast) var(--ease),
-                background    var(--dur-fast) var(--ease);
+    background var(--dur-fast) var(--ease);
 
     a {
       display: block;
@@ -47,12 +49,17 @@ $_min-w: 28px;   // item min-width
       line-height: calc(#{$_h} - 2px);
       transition: color var(--dur-fast) var(--ease);
 
-      &:hover { text-decoration: none; }
+      &:hover {
+        text-decoration: none;
+      }
     }
 
     &:hover {
       border-color: var(--brand);
-      a { color: var(--brand); }
+
+      a {
+        color: var(--brand);
+      }
     }
 
     &-active {
@@ -61,7 +68,9 @@ $_min-w: 28px;   // item min-width
       font-weight: var(--fw-semibold);
 
       a,
-      &:hover a { color: #fff; }
+      &:hover a {
+        color: #fff;
+      }
     }
   }
 
@@ -86,9 +95,11 @@ $_min-w: 28px;   // item min-width
       color: var(--text-secondary);
       cursor: pointer;
       transition: border-color var(--dur-fast) var(--ease),
-                  color        var(--dur-fast) var(--ease);
+      color var(--dur-fast) var(--ease);
 
-      .anticon { font-size: 12px; }
+      .anticon {
+        font-size: 12px;
+      }
     }
 
     &:hover .ant-pagination-item-link {
@@ -154,8 +165,13 @@ $_min-w: 28px;   // item min-width
     }
 
     &:hover {
-      .ant-pagination-item-link-icon { opacity: 1; }
-      .ant-pagination-item-ellipsis  { opacity: 0; }
+      .ant-pagination-item-link-icon {
+        opacity: 1;
+      }
+
+      .ant-pagination-item-ellipsis {
+        opacity: 0;
+      }
     }
   }
 
@@ -201,10 +217,13 @@ $_min-w: 28px;   // item min-width
         font-size: var(--text-sm);
         text-align: center;
         transition: border-color var(--dur-fast) var(--ease),
-                    box-shadow   var(--dur-fast) var(--ease);
+        box-shadow var(--dur-fast) var(--ease);
 
-        &:hover  { border-color: var(--brand); }
-        &:focus  {
+        &:hover {
+          border-color: var(--brand);
+        }
+
+        &:focus {
           border-color: var(--brand);
           box-shadow: var(--ring-focus);
           outline: none;
@@ -235,8 +254,15 @@ $_min-w: 28px;   // item min-width
       text-align: center;
       transition: border-color var(--dur-fast) var(--ease);
 
-      &:hover { border-color: var(--brand); }
-      &:focus { border-color: var(--brand); box-shadow: var(--ring-focus); outline: none; }
+      &:hover {
+        border-color: var(--brand);
+      }
+
+      &:focus {
+        border-color: var(--brand);
+        box-shadow: var(--ring-focus);
+        outline: none;
+      }
     }
   }
 
@@ -248,7 +274,10 @@ $_min-w: 28px;   // item min-width
       line-height: 22px;
       font-size: var(--text-xs);
 
-      a { font-size: var(--text-xs); line-height: 22px; }
+      a {
+        font-size: var(--text-xs);
+        line-height: 22px;
+      }
     }
 
     .ant-pagination-prev,
@@ -269,7 +298,10 @@ $_min-w: 28px;   // item min-width
   &.ant-pagination-disabled {
     cursor: not-allowed;
     opacity: 0.5;
-    * { pointer-events: none; }
+
+    * {
+      pointer-events: none;
+    }
   }
 }
 
@@ -279,7 +311,9 @@ $_min-w: 28px;   // item min-width
     background: var(--surface-card);
     border-color: var(--border-subtle);
 
-    &-active { background: var(--brand); }
+    &-active {
+      background: var(--brand);
+    }
   }
 
   &-prev .ant-pagination-item-link,

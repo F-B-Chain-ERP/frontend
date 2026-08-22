@@ -23,9 +23,8 @@
   justify-content: center;
   z-index: 999;
   // Only opacity/transform, not all — 'all' caused sibling header to recalc on hover
-  transition:
-    opacity var(--dur) var(--ease),
-    transform var(--dur) var(--ease);
+  transition: opacity var(--dur) var(--ease),
+  transform var(--dur) var(--ease);
 
   &__content {
     display: flex;

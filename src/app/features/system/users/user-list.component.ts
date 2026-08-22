@@ -22,6 +22,9 @@ import { AppModalComponent } from '../../../shared/app-modal/app-modal.component
 import { AppOverflowTagsComponent } from '../../../shared/app-overflow-tags/app-overflow-tags.component';
 import { AppSelectionBarComponent } from '../../../shared/app-selection-bar/app-selection-bar.component';
 import { AppTableSearchInputComponent } from '../../../shared/app-table-search-input/app-table-search-input.component';
+import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
+import { ROLE } from '../../../core/config/functions.constants';
 import { ColumnTextFilter } from '../../../shared/utils/column-text-filter';
 import { EnterAsTabContainerDirective } from '../../../shared/directives/enter-as-tab-container.directive';
 import { UserService } from './user.service';
@@ -58,6 +61,7 @@ import { takeUntil } from 'rxjs/operators';
     NzDividerModule,
     NzGridModule,
     NzDescriptionsModule,
+    AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
@@ -65,6 +69,7 @@ import { takeUntil } from 'rxjs/operators';
     AppSelectionBarComponent,
     AppTableSearchInputComponent,
     EnterAsTabContainerDirective,
+    HasSomeAuthorityDirective,
   ],
   templateUrl: './user-list.component.html',
   styleUrls: ['./user-list.component.scss'],
@@ -72,6 +77,7 @@ import { takeUntil } from 'rxjs/operators';
 export class UserListComponent extends BaseComponent implements OnInit {
   private readonly userService = inject(UserService);
 
+  readonly ROLE = ROLE;
   readonly UserStatus = UserStatus;
   readonly statusOptions = USER_STATUS_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;

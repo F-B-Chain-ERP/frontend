@@ -15,10 +15,9 @@
   border-bottom: 1px solid var(--border-subtle);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
   // Solid background, no backdrop-filter — stable sticky without compositing shift
-  transition:
-    background var(--dur) var(--ease),
-    border-color var(--dur) var(--ease),
-    box-shadow var(--dur) var(--ease);
+  transition: background var(--dur) var(--ease),
+  border-color var(--dur) var(--ease),
+  box-shadow var(--dur) var(--ease);
 
   &__container {
     max-width: 1240px;
@@ -166,10 +165,9 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      transition:
-        background var(--dur-fast) var(--ease),
-        border-color var(--dur-fast) var(--ease),
-        box-shadow var(--dur-fast) var(--ease);
+      transition: background var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease),
+      box-shadow var(--dur-fast) var(--ease);
 
       &:focus-within {
         background: var(--surface-card);
@@ -266,10 +264,9 @@
     color: var(--text-secondary);
     cursor: pointer;
     font-size: 19px;
-    transition:
-      background var(--dur-fast) var(--ease),
-      color var(--dur-fast) var(--ease),
-      border-color var(--dur-fast) var(--ease);
+    transition: background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 
     &:hover {
       background: var(--surface-hover);
@@ -314,9 +311,8 @@
     cursor: pointer;
     background: var(--surface-sunken);
     border: 1px solid var(--border-subtle);
-    transition:
-      background var(--dur-fast) var(--ease),
-      border-color var(--dur-fast) var(--ease);
+    transition: background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 
     &:hover {
       background: var(--surface-hover);

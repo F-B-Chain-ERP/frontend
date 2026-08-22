@@ -1,4 +1,4 @@
-import { SidebarGroup } from '../../layouts/sidebar/sidebar.model';
+import {SidebarGroup} from '../../layouts/sidebar/sidebar.model';
 
 export interface FlatMenuItem {
   id: string;

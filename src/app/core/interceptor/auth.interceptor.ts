@@ -1,10 +1,10 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { EMPTY, catchError, throwError } from 'rxjs';
+import {HttpErrorResponse, HttpInterceptorFn} from '@angular/common/http';
+import {inject} from '@angular/core';
+import {EMPTY, catchError, throwError} from 'rxjs';
 
-import { StateStorageService } from '../auth/state-storage.service';
-import { ApplicationConfigService } from '../config/application-config.service';
-import { LoginService } from '../../features/login/login.service';
+import {StateStorageService} from '../auth/state-storage.service';
+import {ApplicationConfigService} from '../config/application-config.service';
+import {LoginService} from '../../features/login/login.service';
 
 const EXTERNAL_API_PATH_PREFIXES = ['/api/v1.0/Category'];
 

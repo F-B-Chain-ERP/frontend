@@ -8,4 +8,5 @@ export interface Search {
   query: string;
 }
 
-export interface SearchWithPagination extends Search, Pagination {}
+export interface SearchWithPagination extends Search, Pagination {
+}

@@ -36,6 +36,9 @@ import {
   DEFAULT_PAGE_SIZE_OPTIONS,
 } from '../../../../shared/constants/constant';
 import { createSortFn } from '../../../../shared/helpers/table.helper';
+import { AppBreadcrumbsComponent } from '../../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { HasSomeAuthorityDirective } from '../../../../core/auth/has-some-authority.directive';
+import { ROLE } from '../../../../core/config/functions.constants';
 import { RoleUserModalComponent } from '../components/role-user-modal.component';
 import { takeUntil } from 'rxjs';
 
@@ -58,12 +61,14 @@ import { takeUntil } from 'rxjs';
     NzPopconfirmModule,
     NzDividerModule,
     NzGridModule,
+    AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
     AppSelectionBarComponent,
     AppTableSearchInputComponent,
     RoleUserModalComponent,
+    HasSomeAuthorityDirective,
   ],
   templateUrl: './role-list.component.html',
   styleUrls: ['./role-list.component.scss'],
@@ -71,6 +76,7 @@ import { takeUntil } from 'rxjs';
 export class RoleListComponent extends BaseComponent implements OnInit {
   private readonly roleService = inject(RoleService);
 
+  readonly ROLE = ROLE;
   readonly RoleStatus = RoleStatus;
   readonly statusOptions = ROLE_STATUS_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;

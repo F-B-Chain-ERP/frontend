@@ -15,7 +15,9 @@
     text-decoration: none;
     transition: color var(--dur-fast) var(--ease);
 
-    &:hover { color: var(--brand); }
+    &:hover {
+      color: var(--brand);
+    }
   }
 
   // Last item (current page)
@@ -23,6 +25,9 @@
     color: var(--text-primary);
     font-weight: var(--fw-medium);
 
-    a { color: var(--text-primary); pointer-events: none; }
+    a {
+      color: var(--text-primary);
+      pointer-events: none;
+    }
   }
 }

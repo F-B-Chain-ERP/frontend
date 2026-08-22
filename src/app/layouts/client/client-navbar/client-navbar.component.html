@@ -7,7 +7,7 @@
       (click)="isMobileMenuOpen.set(!isMobileMenuOpen())"
       aria-label="Toggle navigation"
     >
-      <nz-icon [nzType]="isMobileMenuOpen() ? 'close' : 'menu'" />
+      <nz-icon [nzType]="isMobileMenuOpen() ? 'close' : 'menu'"/>
     </button>
 
     <!-- ── 1. Brand Logo (Figma SHOP.CO typography) ── -->
@@ -50,7 +50,7 @@
     <!-- ── 3. Central Search Bar (Figma SHOP.CO style) ── -->
     <div class="client-navbar__search">
       <nz-input-wrapper class="client-navbar__search-wrapper">
-        <nz-icon nzInputPrefix nzType="search" class="client-navbar__search-icon" />
+        <nz-icon nzInputPrefix nzType="search" class="client-navbar__search-icon"/>
         <input
           nz-input
           type="text"
@@ -67,7 +67,8 @@
       <!-- Brand Color Picker -->
       <label class="client-navbar__color-pick" for="store-color-pick" title="Màu thương hiệu">
         <span class="client-navbar__color-dot" [style.background]="theme.brand500"></span>
-        <input id="store-color-pick" type="color" class="client-navbar__color-input" [value]="theme.brand500" (input)="onBrandColorChange($event)" />
+        <input id="store-color-pick" type="color" class="client-navbar__color-input" [value]="theme.brand500"
+               (input)="onBrandColorChange($event)"/>
       </label>
 
       <!-- Cart Trigger Button -->
@@ -77,7 +78,7 @@
         (click)="openCart()"
         title="Xem giỏ hàng"
       >
-        <nz-icon nzType="shopping-cart" />
+        <nz-icon nzType="shopping-cart"/>
         @if (cartService.totalCount() > 0) {
           <span class="client-navbar__cart-badge">{{ cartService.totalCount() }}</span>
         }
@@ -102,7 +103,8 @@
           />
           <div class="client-navbar__user-info">
             <span class="client-navbar__user-name">{{ user.firstName || user.login }}</span>
-            <nz-icon nzType="down" class="client-navbar__user-caret" [class.client-navbar__user-caret--open]="isUserMenuOpen()" />
+            <nz-icon nzType="down" class="client-navbar__user-caret"
+                     [class.client-navbar__user-caret--open]="isUserMenuOpen()"/>
           </div>
         </div>
 
@@ -114,16 +116,16 @@
             </li>
             <li nz-menu-divider></li>
             <li nz-menu-item (click)="goToAdmin()">
-              <nz-icon nzType="appstore" />
+              <nz-icon nzType="appstore"/>
               <span>Khu vực Quản trị Admin</span>
             </li>
             <li nz-menu-item (click)="toggleTheme(); isUserMenuOpen.set(true)">
-              <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'" />
+              <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'"/>
               <span>Giao diện: {{ theme.mode === 'dark' ? 'Tối' : 'Sáng' }}</span>
             </li>
             <li nz-menu-divider></li>
             <li nz-menu-item class="menu-item--danger" (click)="logout()">
-              <nz-icon nzType="logout" />
+              <nz-icon nzType="logout"/>
               <span>Đăng xuất</span>
             </li>
           </ul>

@@ -19,7 +19,10 @@
     background: var(--surface-raised);
     border-color: var(--border-strong);
     color: var(--text-primary);
-    &:hover { background: var(--surface-hover); }
+
+    &:hover {
+      background: var(--surface-hover);
+    }
   }
 
   // OK → primary
@@ -27,8 +30,14 @@
     background: var(--brand);
     color: var(--on-brand);
     border-color: transparent;
-    &:hover:not(:disabled) { background: var(--brand-hover); }
-    &:active { background: var(--brand-active); }
+
+    &:hover:not(:disabled) {
+      background: var(--brand-hover);
+    }
+
+    &:active {
+      background: var(--brand-active);
+    }
   }
 
   // Danger (confirm delete)
@@ -37,7 +46,10 @@
     background: var(--danger);
     color: #fff;
     border-color: transparent;
-    &:hover:not(:disabled) { background: var(--danger-600); }
+
+    &:hover:not(:disabled) {
+      background: var(--danger-600);
+    }
   }
 
   // Loading & disabled
@@ -93,7 +105,7 @@
     align-items: center;
     justify-content: center;
     transition: background var(--dur-fast) var(--ease),
-                color     var(--dur-fast) var(--ease);
+    color var(--dur-fast) var(--ease);
 
     &:hover {
       background: var(--surface-hover);
@@ -149,20 +161,27 @@
     justify-content: flex-end;
     gap: var(--space-4);
 
-    button + button { margin-inline-start: 0; }
+    button + button {
+      margin-inline-start: 0;
+    }
 
-    .ant-btn { @extend %modal-btn-base; }
+    .ant-btn {
+      @extend %modal-btn-base;
+    }
   }
 
   // ── Confirm / Info / Success / Warning / Error ───────
   &-confirm {
-    .ant-modal-content { padding: 0; }
+    .ant-modal-content {
+      padding: 0;
+    }
 
     .ant-modal-body {
       padding: var(--space-8);
     }
 
-    &-body-wrapper { }
+    &-body-wrapper {
+    }
 
     &-body {
       display: flex;
@@ -176,7 +195,9 @@
         margin: 0 !important;
       }
 
-      &-has-title > .anticon { margin-top: 3px; }
+      &-has-title > .anticon {
+        margin-top: 3px;
+      }
 
       .ant-modal-confirm-title {
         font-size: var(--text-md);
@@ -209,16 +230,34 @@
       padding-top: var(--space-6);
       border-top: 1px solid var(--border-subtle);
 
-      button + button { margin-inline-start: 0; }
+      button + button {
+        margin-inline-start: 0;
+      }
 
-      .ant-btn { @extend %modal-btn-base; }
+      .ant-btn {
+        @extend %modal-btn-base;
+      }
     }
 
-    &-confirm  .ant-modal-confirm-body > .anticon { color: var(--warning); }
-    &-info     .ant-modal-confirm-body > .anticon { color: var(--info); }
-    &-success  .ant-modal-confirm-body > .anticon { color: var(--success); }
-    &-warning  .ant-modal-confirm-body > .anticon { color: var(--warning); }
-    &-error    .ant-modal-confirm-body > .anticon { color: var(--danger); }
+    &-confirm .ant-modal-confirm-body > .anticon {
+      color: var(--warning);
+    }
+
+    &-info .ant-modal-confirm-body > .anticon {
+      color: var(--info);
+    }
+
+    &-success .ant-modal-confirm-body > .anticon {
+      color: var(--success);
+    }
+
+    &-warning .ant-modal-confirm-body > .anticon {
+      color: var(--warning);
+    }
+
+    &-error .ant-modal-confirm-body > .anticon {
+      color: var(--danger);
+    }
   }
 
   // ── Centered ────────────────────────────────────────
@@ -228,7 +267,9 @@
       padding: var(--space-7);
     }
 
-    .ant-modal { top: 0; }
+    .ant-modal {
+      top: 0;
+    }
   }
 }
 

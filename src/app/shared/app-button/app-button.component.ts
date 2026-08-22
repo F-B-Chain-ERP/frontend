@@ -1,8 +1,8 @@
-import { Component, HostBinding, Input, OnInit } from '@angular/core';
-import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { NzSpinComponent } from 'ng-zorro-antd/spin';
-import { deriveBrandScale } from '../../core/theme/theme.service';
-import { NgStyle } from '@angular/common';
+import {Component, HostBinding, Input, OnInit} from '@angular/core';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {NzSpinComponent} from 'ng-zorro-antd/spin';
+import {deriveBrandScale} from '../../core/theme/theme.service';
+import {NgStyle} from '@angular/common';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 

@@ -50,10 +50,12 @@
       background: var(--brand-soft);
       color: var(--brand);
     }
+
     &--403 {
       background: var(--warning-soft);
       color: var(--warning);
     }
+
     &--500 {
       background: var(--danger-soft);
       color: var(--danger);
@@ -75,10 +77,12 @@
       background: var(--brand-soft);
       color: var(--brand);
     }
+
     &--403 {
       background: var(--warning-soft);
       color: var(--warning);
     }
+
     &--500 {
       background: var(--danger-soft);
       color: var(--danger);
@@ -94,9 +98,11 @@
     &--404 {
       color: var(--brand);
     }
+
     &--403 {
       color: var(--warning);
     }
+
     &--500 {
       color: var(--danger);
     }
