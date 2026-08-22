@@ -20,9 +20,19 @@ export class ApplicationConfigService {
   }
 
   getEndpointFor(api: string, microservice?: string): string {
-    if (microservice) {
-      return `${this.endpointPrefix}services/${microservice}/${api}`;
+    if (!api) {
+      return this.endpointPrefix || '';
     }
-    return `${this.endpointPrefix}${api}`;
+    if (microservice) {
+      const prefix = this.endpointPrefix ? (this.endpointPrefix.endsWith('/') ? this.endpointPrefix : `${this.endpointPrefix}/`) : '';
+      const cleanApi = api.replace(/^\//, '');
+      return `${prefix}services/${microservice}/${cleanApi}`;
+    }
+    if (!this.endpointPrefix) {
+      return api.startsWith('/') ? api : `/${api}`;
+    }
+    const cleanPrefix = this.endpointPrefix.endsWith('/') ? this.endpointPrefix.slice(0, -1) : this.endpointPrefix;
+    const cleanApi = api.startsWith('/') ? api : `/${api}`;
+    return `${cleanPrefix}${cleanApi}`;
   }
 }

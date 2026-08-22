@@ -25,7 +25,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (isExternalApiRequest(req.url)) {
     return next(req);
   }
-  const isAuthUrl = req.url.includes('/api/v1/auth/');
+  const isAuthUrl = req.url.includes('api/v1/auth/');
   const token = stateStorageService.getAuthenticationToken();
 
   if (!token && !isAuthUrl) {
