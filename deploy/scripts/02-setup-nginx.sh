@@ -60,7 +60,7 @@ else
 server {
     listen 80;
     listen [::]:80;
-    server_name erp-utt.duckdns.org 163.61.72.183 vm08181524.bnixvps.io.vn localhost;
+    server_name 163.61.72.183 vm08181524.bnixvps.io.vn localhost;
 
     root /opt/ERP-UTT/frontend/browser;
     index index.html;
@@ -133,8 +133,8 @@ echo "=========================================================="
 echo "  THIẾT LẬP NGINX THÀNH CÔNG!"
 echo "=========================================================="
 echo "Địa chỉ truy cập hệ thống:"
-echo "  - Giao diện Web (Frontend): https://erp-utt.duckdns.org/"
-echo "  - API Backend (qua proxy) : https://erp-utt.duckdns.org/api/v1/auth/login"
+echo "  - Giao diện Web (Frontend): http://163.61.72.183/"
+echo "  - API Backend (qua proxy) : http://163.61.72.183/api/v1/auth/login"
 echo ""
 echo "Kiểm tra nhanh:"
 echo "  curl -I http://localhost/"
