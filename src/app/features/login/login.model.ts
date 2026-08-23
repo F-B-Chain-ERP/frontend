@@ -5,9 +5,33 @@ export interface LoginCredentials {
   organizationId?: string | number | null;
 }
 
+export type PrincipalType = 'ACCOUNT' | 'CUSTOMER';
+
 export interface LoginRequest {
   usernameOrEmail: string;
   password: string;
+  type?: PrincipalType;
+}
+
+export interface RegisterCustomerRequest {
+  fullName: string;
+  phone?: string | null;
+  email?: string | null;
+  password: string;
+  authProvider?: 'LOCAL' | 'GOOGLE' | null;
+}
+
+export interface GoogleOAuth2Request {
+  idToken: string;
+}
+
+export interface VerifyOtpRequest {
+  verifyToken: string;
+  otp: string;
+}
+
+export interface ResendOtpRequest {
+  verifyToken: string;
 }
 
 export interface ApiResponse<T> {
@@ -31,20 +55,49 @@ export interface BackendAccount {
   updatedAt: string | null;
 }
 
+export interface CustomerResponse {
+  id: string;
+  customerCode: string;
+  fullName: string | null;
+  phone: string | null;
+  email: string | null;
+  authProvider: string;
+  hasLocalPassword: boolean;
+  emailVerified: boolean;
+  status: string;
+  lastLoginAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   tokenType: string;
-  account: BackendAccount;
+  principalType: PrincipalType;
+  customer?: CustomerResponse | null;
   requiresScopeAssignment: boolean;
+  requiresEmailVerification: boolean;
+  verifyToken?: string | null;
 }
 
-export type LoginError =
-  | 'INVALID_CREDENTIALS'
-  | 'ACCOUNT_LOCKED'
-  | 'ACCOUNT_DELETED'
-  | 'UNKNOWN'
-  | 'NO_ORGANIZATION';
+export interface SelectBranchRequest {
+  branchId: string;
+}
+
+export interface BranchResponse {
+  id: string;
+  code: string;
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  status?: string | null;
+  parentId?: string | null;
+  parentName?: string | null;
+}
+
+export type LoginError = 'INVALID_CREDENTIALS' | 'ACCOUNT_LOCKED' | 'ACCOUNT_DELETED' | 'UNKNOWN' | 'NO_ORGANIZATION';
 
 export class LoginException extends Error {
   constructor(

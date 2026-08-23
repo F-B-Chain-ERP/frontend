@@ -17,7 +17,7 @@ export const authExpiredInterceptor: HttpInterceptorFn = (req, next) => {
       if (error.status !== 401 || !error.url) {
         return throwError(() => error);
       }
-      if (error.url.includes('api/v1/auth/login') || error.url.includes('api/v1/auth/refresh-token')) {
+      if (error.url.includes('/api/v1/auth/')) {
         return throwError(() => error);
       }
 

@@ -7,6 +7,8 @@ export class StateStorageService {
   private readonly authenticationKey = 'app_auth_token';
   private readonly refreshTokenKey = 'app_refresh_token';
   private readonly accountKey = 'app_account';
+  private readonly selectedBranchKey = 'app_selected_branch';
+  private readonly pendingScopeKey = 'app_pending_scope';
 
   constructor() {
     this.clearLegacyKeys();
@@ -127,5 +129,48 @@ export class StateStorageService {
     sessionStorage.removeItem(this.accountKey);
     localStorage.removeItem(this.accountKey);
     this.clearLegacyKeys();
+  }
+
+  storeSelectedBranch(branchId: string): void {
+    try {
+      sessionStorage.setItem(this.selectedBranchKey, branchId);
+      localStorage.setItem(this.selectedBranchKey, branchId);
+    } catch {
+      // Bỏ qua nếu storage không khả dụng
+    }
+  }
+
+  getSelectedBranch(): string | null {
+    return localStorage.getItem(this.selectedBranchKey) ?? sessionStorage.getItem(this.selectedBranchKey);
+  }
+
+  clearSelectedBranch(): void {
+    sessionStorage.removeItem(this.selectedBranchKey);
+    localStorage.removeItem(this.selectedBranchKey);
+  }
+
+  /** Đánh dấu phiên đăng nhập đang chờ chọn chi nhánh (requiresScopeAssignment). */
+  setPendingScopeAssignment(value: boolean): void {
+    try {
+      if (value) {
+        sessionStorage.setItem(this.pendingScopeKey, '1');
+        localStorage.setItem(this.pendingScopeKey, '1');
+      } else {
+        this.clearPendingScopeAssignment();
+      }
+    } catch {
+      // Bỏ qua nếu storage không khả dụng
+    }
+  }
+
+  hasPendingScopeAssignment(): boolean {
+    return (
+      localStorage.getItem(this.pendingScopeKey) === '1' || sessionStorage.getItem(this.pendingScopeKey) === '1'
+    );
+  }
+
+  clearPendingScopeAssignment(): void {
+    sessionStorage.removeItem(this.pendingScopeKey);
+    localStorage.removeItem(this.pendingScopeKey);
   }
 }

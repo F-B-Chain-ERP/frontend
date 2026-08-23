@@ -1,16 +1,16 @@
-import {Injectable, inject} from '@angular/core';
-import {Router} from '@angular/router';
-import {HttpErrorResponse} from '@angular/common/http';
-import {Observable, catchError, from, filter, map, switchMap, tap, throwError} from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable, catchError, from, map, of, switchMap, tap, throwError } from 'rxjs';
 
-import {AuthServerProvider} from '../../core/auth/auth-jwt.service';
-import {AccountService} from '../../core/auth/account.service';
-import {PermissionService} from '../../core/auth/permission.service';
-import {StateStorageService} from '../../core/auth/state-storage.service';
-import {Account} from '../../core/auth/account.model';
-import {AuthResponse, LoginCredentials, LoginException} from './login.model';
+import { AuthServerProvider } from '../../core/auth/auth-jwt.service';
+import { AccountService } from '../../core/auth/account.service';
+import { PermissionService } from '../../core/auth/permission.service';
+import { StateStorageService } from '../../core/auth/state-storage.service';
+import { Account } from '../../core/auth/account.model';
+import { AuthResponse, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest, ResendOtpRequest, SelectBranchRequest } from './login.model';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class LoginService {
   private readonly authServerProvider = inject(AuthServerProvider);
   private readonly accountService = inject(AccountService);
@@ -18,48 +18,120 @@ export class LoginService {
   private readonly stateStorageService = inject(StateStorageService);
   private readonly router = inject(Router);
 
-  login(credentials: LoginCredentials): Observable<Account> {
-    return this.authServerProvider.login(credentials).pipe(
+  /** Đăng nhập tài khoản nội bộ (admin/nhân viên). Mặc định type = ACCOUNT. */
+  login(credentials: LoginCredentials, type: PrincipalType = 'ACCOUNT'): Observable<AuthResponse> {
+    return this.authServerProvider.login(credentials, type).pipe(
       map(res => {
         const auth = res.data;
-        this.stateStorageService.storeAuthenticationToken(auth.accessToken, credentials.rememberMe);
-        this.stateStorageService.storeRefreshToken(auth.refreshToken, credentials.rememberMe);
-        const account = this.toAccount(auth);
-        this.accountService.authenticate(account);
-        return account;
+        this.applyAuthResult(auth, credentials.rememberMe);
+        this.toAccount(auth, credentials.username);
+        this.stateStorageService.setPendingScopeAssignment(auth.requiresScopeAssignment);
+        return auth;
+      }),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toLoginException(err))),
+    );
+  }
+
+  /** Đăng nhập / đăng ký khách hàng qua Google (gửi Google ID token). */
+  loginWithGoogle(idToken: string, rememberMe = true): Observable<AuthResponse> {
+    return this.authServerProvider.loginWithGoogle(idToken).pipe(
+      map(res => {
+        const auth = res.data;
+        this.applyAuthResult(auth, rememberMe);
+        this.toAccount(auth);
+        this.stateStorageService.setPendingScopeAssignment(auth.requiresScopeAssignment);
+        return auth;
+      }),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toLoginException(err))),
+    );
+  }
+
+  /**
+   * Đăng ký khách hàng. Khi email chưa cần xác thực (backend trả access token),
+   * tự động lưu token và thiết lập tài khoản. Khi cần OTP, trả về AuthResponse
+   * chứa verifyToken để component chuyển sang màn xác thực.
+   */
+  register(request: RegisterCustomerRequest): Observable<AuthResponse> {
+    return this.authServerProvider.registerCustomer(request).pipe(
+      map(res => {
+        const auth = res.data;
+        if (auth.accessToken && auth.refreshToken) {
+          this.applyAuthResult(auth, true);
+          this.toAccount(auth);
+        }
+        return auth;
+      }),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toRegisterException(err))),
+    );
+  }
+
+  /** Gửi lại mã OTP xác thực email, trả về verifyToken mới. */
+  resendOtp(verifyToken: string): Observable<AuthResponse> {
+    const request: ResendOtpRequest = { verifyToken };
+    return this.authServerProvider.resendOtp(request).pipe(
+      map(res => res.data),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toRegisterException(err))),
+    );
+  }
+
+  /** Xác thực OTP email sau khi đăng ký / đăng nhập, trả về tài khoản đã xác thực. */
+  verifyEmail(verifyToken: string, otp: string, rememberMe = true): Observable<Account> {
+    return this.authServerProvider.verifyEmail({ verifyToken, otp }).pipe(
+      map(res => {
+        const auth = res.data;
+        this.applyAuthResult(auth, rememberMe);
+        return this.toAccount(auth);
+      }),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toLoginException(err))),
+    );
+  }
+
+  /** Chọn đơn vị (chi nhánh) làm việc sau khi đăng nhập, trả về token chứa branchId. */
+  selectBranch(branchId: string, rememberMe = true): Observable<AuthResponse> {
+    const request: SelectBranchRequest = { branchId };
+    return this.authServerProvider.selectBranch(request).pipe(
+      map(res => {
+        const auth = res.data;
+        this.applyAuthResult(auth, rememberMe);
+        this.toAccount(auth);
+        this.stateStorageService.storeSelectedBranch(branchId);
+        this.stateStorageService.setPendingScopeAssignment(false);
+        return auth;
       }),
       catchError((err: HttpErrorResponse) => throwError(() => this.toLoginException(err))),
     );
   }
 
   logout(): Observable<void> {
-    return from(this.router.navigate(['/login'])).pipe(
-      filter(success => success),
+    return this.authServerProvider.logout().pipe(
+      catchError(() => of(null)),
       tap(() => {
         this.accountService.authenticate(null);
         this.permissionService.clear();
+        this.stateStorageService.clearSelectedBranch();
+        this.stateStorageService.clearPendingScopeAssignment();
       }),
-      switchMap(() => this.authServerProvider.logout()),
+      switchMap(() => from(this.router.navigate(['/login']))),
       map(() => void 0),
     );
   }
 
-  private toAccount(auth: AuthResponse): Account {
-    const acc = auth.account;
-    const isSuperAdmin = acc.username === 'admin';
+  private applyAuthResult(auth: AuthResponse, rememberMe: boolean): void {
+    this.stateStorageService.storeAuthenticationToken(auth.accessToken, rememberMe);
+    this.stateStorageService.storeRefreshToken(auth.refreshToken, rememberMe);
+  }
+
+  private toAccount(auth: AuthResponse, fallbackLogin = ''): Account {
+    const isCustomer = auth.principalType === 'CUSTOMER';
+    const customer = auth.customer;
+    const login = isCustomer ? (customer?.email ?? customer?.phone ?? fallbackLogin) : fallbackLogin;
+    const email = isCustomer ? (customer?.email ?? '') : '';
+    const fullName = isCustomer ? (customer?.fullName ?? null) : null;
+    const isSuperAdmin = login === 'admin';
     const authorities = isSuperAdmin ? ['FULL_PERMISSION'] : [];
-    return new Account(
-      acc.status === 'ACTIVE',
-      authorities,
-      acc.email ?? '',
-      acc.fullName ?? null,
-      'vi',
-      null,
-      acc.username,
-      null,
-      [],
-      null,
-    );
+    const account = new Account(true, authorities, email, fullName, 'vi', null, login, null, [], null);
+    this.accountService.authenticate(account);
+    return account;
   }
 
   private toLoginException(err: HttpErrorResponse): LoginException {
@@ -74,5 +146,13 @@ export class LoginService {
       return new LoginException('ACCOUNT_LOCKED', 'Tài khoản tạm thời bị khóa.');
     }
     return new LoginException('UNKNOWN', err.error?.message || 'Đã có lỗi xảy ra, vui lòng thử lại.');
+  }
+
+  private toRegisterException(err: HttpErrorResponse): LoginException {
+    const errorCode = err.error?.errorCode;
+    if (errorCode === 'USER_EXISTED') {
+      return new LoginException('INVALID_CREDENTIALS', 'Email hoặc số điện thoại đã được đăng ký.');
+    }
+    return new LoginException('UNKNOWN', err.error?.message || 'Đăng ký thất bại, vui lòng thử lại.');
   }
 }

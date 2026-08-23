@@ -16,6 +16,16 @@ export const routes: Routes = [
     loadComponent: () => import('./features/register/register'),
     title: 'Đăng ký',
   },
+  {
+    path: 'select-branch',
+    loadComponent: () => import('./features/login/select-unit.component'),
+    title: 'Chọn đơn vị',
+  },
+  {
+    path: 'verify-email',
+    loadComponent: () => import('./features/login/verify-email.component'),
+    title: 'Xác thực email',
+  },
 
   // ── 2. Client Storefront (Client Layout, Public Access) ─────
   {

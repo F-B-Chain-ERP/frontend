@@ -288,7 +288,7 @@ jobs:
                   "inline": False
               },
               {"name": "🖥️ Server", "value": "`163.61.72.183`", "inline": True},
-              {"name": "🌐 Website", "value": "[http://163.61.72.183](http://163.61.72.183/)", "inline": True}
+              {"name": "🌐 Website", "value": "[http://erp-utt.duckdns.org](http://erp-utt.duckdns.org/)", "inline": True}
           ]
 
           payload = {

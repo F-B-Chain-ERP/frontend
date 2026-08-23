@@ -1,0 +1,59 @@
+<div class="verify-email">
+  <div class="verify-email__card">
+    <div class="verify-email__icon">
+      <nz-icon nzType="mail" nzTheme="outline"></nz-icon>
+    </div>
+    <h1 class="verify-email__title">Xác thực email</h1>
+    <p class="verify-email__desc">
+      Chúng tôi đã gửi mã xác thực 6 số đến
+      <strong>{{ email() }}</strong>.
+      Vui lòng nhập mã để hoàn tất đăng ký.
+    </p>
+
+    <form (ngSubmit)="verify()">
+      <nz-form-item>
+        <nz-form-control [nzErrorTip]="otpError">
+          <input
+            nz-input
+            [formControl]="otp"
+            maxlength="6"
+            inputmode="numeric"
+            placeholder="Nhập mã OTP 6 số"
+            class="verify-email__otp"
+            autocomplete="one-time-code"
+          />
+        </nz-form-control>
+      </nz-form-item>
+      <ng-template #otpError>
+        @if (otp.hasError('required')) {
+          <span>Vui lòng nhập mã OTP</span>
+        }
+        @if (otp.hasError('pattern')) {
+          <span>Mã OTP phải gồm 6 chữ số</span>
+        }
+      </ng-template>
+
+      <button
+        nz-button
+        nzType="primary"
+        nzBlock
+        type="submit"
+        [nzLoading]="verifying()"
+        [disabled]="otp.invalid"
+      >
+        Xác thực
+      </button>
+    </form>
+
+    <div class="verify-email__footer">
+      <span>Không nhận được mã?</span>
+      <a class="verify-email__resend" (click)="resend()" [class.is-loading]="resending()">
+        {{ resending() ? 'Đang gửi...' : 'Gửi lại' }}
+      </a>
+    </div>
+
+    <div class="verify-email__back">
+      <a (click)="goToRegister()">Quay lại đăng ký</a>
+    </div>
+  </div>
+</div>

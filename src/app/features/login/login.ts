@@ -1,31 +1,21 @@
-import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal} from '@angular/core';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators
-} from '@angular/forms';
-import {Router, RouterLink} from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 
-import {NzInputModule} from 'ng-zorro-antd/input';
-import {NzIconDirective} from 'ng-zorro-antd/icon';
-import {NzButtonModule} from 'ng-zorro-antd/button';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzIconDirective } from 'ng-zorro-antd/icon';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 
-import {AppButtonComponent} from '../../shared/app-button/app-button.component';
-import {StateStorageService} from '../../core/auth/state-storage.service';
-import {LoginException, LoginCredentials} from './login.model';
-import {LoginService} from './login.service';
-import {ThemeService} from '../../core/theme/theme.service';
+import { AppButtonComponent } from '../../shared/app-button/app-button.component';
+import { StateStorageService } from '../../core/auth/state-storage.service';
+import { LoginException, LoginCredentials } from './login.model';
+import { LoginService } from './login.service';
+import { ThemeService } from '../../core/theme/theme.service';
+import { GoogleIdentityService } from '../../core/auth/google-identity.service';
+import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
 
-type LoginErrorType =
-  'INVALID_CREDENTIALS'
-  | 'ACCOUNT_LOCKED'
-  | 'ACCOUNT_DELETED'
-  | 'UNKNOWN'
-  | 'NO_ORGANIZATION'
-  | null;
+type LoginErrorType = 'INVALID_CREDENTIALS' | 'ACCOUNT_LOCKED' | 'ACCOUNT_DELETED' | 'UNKNOWN' | 'NO_ORGANIZATION' | null;
 const PASSWORD_REGEX = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/;
 
 function noWhitespaceValidator(control: AbstractControl): ValidationErrors | null {
@@ -33,7 +23,7 @@ function noWhitespaceValidator(control: AbstractControl): ValidationErrors | nul
   if (!value) {
     return null;
   }
-  return /\s/.test(value) ? {whitespace: true} : null;
+  return /\s/.test(value) ? { whitespace: true } : null;
 }
 
 @Component({
@@ -49,36 +39,69 @@ export class LoginComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly stateStorageService = inject(StateStorageService);
   private readonly theme = inject(ThemeService);
+  private readonly googleIdentity = inject(GoogleIdentityService);
+  private readonly toast = inject(AppNotificationService);
+  private googleSub?: Subscription;
 
   readonly loginError = signal<LoginErrorType>(null);
   readonly errorMessage = signal<string>('');
   readonly loading = signal(false);
+  readonly googleLoading = signal(false);
   readonly showPassword = signal(false);
   readonly currentYear = new Date().getFullYear();
 
   loginForm = new FormGroup({
-    username: new FormControl('', {nonNullable: true, validators: [Validators.required]}),
+    username: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     password: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, noWhitespaceValidator, Validators.pattern(PASSWORD_REGEX)],
     }),
-    rememberMe: new FormControl({value: true, disabled: false}, {nonNullable: true}),
+    rememberMe: new FormControl({ value: true, disabled: false }, { nonNullable: true }),
   });
 
   ngOnInit(): void {
     this.theme.applyModeVisualOnly('light');
 
     if (this.stateStorageService.getAuthenticationToken()) {
-      this.router.navigate(['/admin/home']);
+      if (this.stateStorageService.hasPendingScopeAssignment()) {
+        this.router.navigate(['/select-branch']);
+      } else {
+        this.router.navigate(['/admin/home']);
+      }
     }
+
+    this.googleIdentity.load();
+    this.googleSub = this.googleIdentity.onCredential().subscribe(idToken => this.onGoogleCredential(idToken));
   }
 
   ngOnDestroy(): void {
     this.theme.restoreSavedMode();
+    this.googleSub?.unsubscribe();
   }
 
   togglePassword(): void {
     this.showPassword.update(v => !v);
+  }
+
+  onGoogleLogin(): void {
+    this.googleLoading.set(true);
+    this.loginError.set(null);
+    this.googleIdentity.signIn();
+  }
+
+  private onGoogleCredential(idToken: string): void {
+    this.loginService.loginWithGoogle(idToken).subscribe({
+      next: auth => {
+        this.googleLoading.set(false);
+        this.theme.restorePreLogoutMode();
+        this.theme.restorePreLogoutBrand();
+        this.router.navigate(auth.requiresScopeAssignment ? ['/select-branch'] : ['/store']);
+      },
+      error: err => {
+        this.googleLoading.set(false);
+        this.handleLoginError(err);
+      },
+    });
   }
 
   onSubmitCredentials(): void {
@@ -96,11 +119,11 @@ export class LoginComponent implements OnInit, OnDestroy {
     const credentials = this.loginForm.getRawValue();
 
     this.loginService.login(credentials).subscribe({
-      next: () => {
+      next: auth => {
         this.loading.set(false);
         this.theme.restorePreLogoutMode();
         this.theme.restorePreLogoutBrand();
-        this.router.navigate(['/admin/home']);
+        this.router.navigate(auth.requiresScopeAssignment ? ['/select-branch'] : ['/admin/home']);
       },
       error: err => this.handleLoginError(err),
     });
