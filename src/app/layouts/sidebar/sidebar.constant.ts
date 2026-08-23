@@ -1,5 +1,5 @@
-import {SidebarGroup} from './sidebar.model';
-import {ROLE} from '../../core/config/functions.constants';
+import { SidebarGroup } from './sidebar.model';
+import { ROLE } from '../../core/config/functions.constants';
 
 export const SIDEBAR_MENU: SidebarGroup[] = [
   {
@@ -38,6 +38,22 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
         icon: 'warning',
         route: '/admin/error-pages',
         children: [],
+      },
+      {
+        kind: 'parent',
+        id: 'procurement',
+        title: 'Mua hàng',
+        icon: 'shopping',
+        children: [
+          {
+            kind: 'child',
+            id: 'manage-purchase-orders',
+            title: 'Đơn mua hàng',
+            route: '/admin/procurement/purchase-orders/list',
+            activePrefix: '/admin/procurement/purchase-orders',
+            authorities: [ROLE.DON_MUA_HANG.VIEW],
+          },
+        ],
       },
       {
         kind: 'parent',

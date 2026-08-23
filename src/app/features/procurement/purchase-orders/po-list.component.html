@@ -1,0 +1,172 @@
+<div class="po-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý đơn mua hàng</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="primary" leftIcon="plus" (click)="openFormPlaceholder('create')"> Tạo đơn mua hàng </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Search keyword -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="po-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="po-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập số PO, tên nhà cung cấp, tên nguyên liệu..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Status dropdown -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label" for="po-status-select">Trạng thái</label>
+        <nz-select
+          id="po-status-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #poTable
+      [nzData]="purchaseOrders()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1150px' }"
+    >
+      <thead>
+        <tr>
+          <!-- STT -->
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+          <!-- Số PO -->
+          <th scope="col" nzWidth="150px" nzAlign="left">Số PO</th>
+
+          <!-- Nhà cung cấp -->
+          <th scope="col" nzWidth="260px" nzAlign="left">Nhà cung cấp</th>
+
+          <!-- Ngày đặt -->
+          <th scope="col" nzWidth="120px" nzAlign="center">Ngày đặt</th>
+
+          <!-- Ngày dự kiến nhận -->
+          <th scope="col" nzWidth="140px" nzAlign="center">Dự kiến nhận</th>
+
+          <!-- Số mặt hàng -->
+          <th scope="col" nzWidth="110px" nzAlign="center">Số mặt hàng</th>
+
+          <!-- Tổng tiền -->
+          <th scope="col" nzWidth="150px" nzAlign="right">Tổng tiền</th>
+
+          <!-- Trạng thái -->
+          <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
+
+          <!-- Thao tác -->
+          <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (po of purchaseOrders(); track po.id) {
+          <tr>
+            <td nzAlign="center">{{ pageIndex === 1 ? $index + 1 : (pageIndex - 1) * pageSize + $index + 1 }}</td>
+            <td>
+              <span class="po-code">{{ po.code }}</span>
+            </td>
+            <td>
+              <span class="supplier-name">{{ po.supplierName }}</span>
+            </td>
+            <td nzAlign="center">{{ po.orderDate }}</td>
+            <td nzAlign="center">{{ po.expectedDate || '—' }}</td>
+            <td nzAlign="center">{{ po.items.length }}</td>
+            <td nzAlign="right">
+              <span class="po-total">{{ po.totalAmount | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="center">
+              <span [class]="getStatusMeta(po.status).badgeClass">
+                {{ getStatusMeta(po.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                @if (po.status === PurchaseOrderStatus.PENDING) {
+                  <app-button
+                    variant="ghost"
+                    iconOnly="check"
+                    nz-tooltip
+                    nzTooltipTitle="Duyệt đơn"
+                    (click)="changeStatusPlaceholder(PurchaseOrderStatus.APPROVED)"
+                  >
+                  </app-button>
+                  <app-button
+                    variant="ghost"
+                    iconOnly="stop"
+                    nz-tooltip
+                    nzTooltipTitle="Hủy đơn"
+                    (click)="changeStatusPlaceholder(PurchaseOrderStatus.CANCELLED)"
+                  >
+                  </app-button>
+                } @else {
+                  <app-button
+                    variant="ghost"
+                    iconOnly="edit"
+                    nz-tooltip
+                    nzTooltipTitle="Cập nhật đơn"
+                    [disabled]="po.status === PurchaseOrderStatus.APPROVED || po.status === PurchaseOrderStatus.CANCELLED"
+                    (click)="openFormPlaceholder('edit')"
+                  >
+                  </app-button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="tbl-empty">Không có dữ liệu đơn mua hàng</td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+</div>
