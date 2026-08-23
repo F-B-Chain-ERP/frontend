@@ -1,6 +1,6 @@
-import {Routes} from '@angular/router';
-import {AuthGuard} from './core/auth/auth.guard';
-import {errorRoute} from './layouts/error/error.route';
+import { Routes } from '@angular/router';
+import { AuthGuard } from './core/auth/auth.guard';
+import { errorRoute } from './layouts/error/error.route';
 import MainComponent from './layouts/main/main.component';
 import ClientLayoutComponent from './layouts/client/client-layout.component';
 
@@ -64,6 +64,10 @@ export const routes: Routes = [
         path: 'ui-kit',
         loadComponent: () => import('./features/ui-kit/ui-kit.component'),
         title: 'UI Design System Showcase',
+      },
+      {
+        path: 'procurement/purchase-orders',
+        loadChildren: () => import('./features/procurement/purchase-orders/purchase-orders.routes'),
       },
       {
         path: 'system/accounts',
