@@ -11,6 +11,8 @@ import {
   LoginRequest,
   PrincipalType,
   RegisterCustomerRequest,
+  ResendOtpRequest,
+  SelectBranchRequest,
   VerifyOtpRequest,
 } from '../../features/login/login.model';
 import { ApplicationConfigService } from '../config/application-config.service';
@@ -43,10 +45,21 @@ export class AuthServerProvider {
     return this.http.post<ApiResponse<AuthResponse>>(this.applicationConfigService.getEndpointFor('api/v1/auth/verify-email'), request);
   }
 
+  resendOtp(request: ResendOtpRequest): Observable<ApiResponse<AuthResponse>> {
+    return this.http.post<ApiResponse<AuthResponse>>(this.applicationConfigService.getEndpointFor('api/v1/auth/resend-otp'), request);
+  }
+
   refreshToken(refreshToken: string): Observable<ApiResponse<AuthResponse>> {
     return this.http.post<ApiResponse<AuthResponse>>(this.applicationConfigService.getEndpointFor('api/v1/auth/refresh-token'), {
       refreshToken,
     });
+  }
+
+  selectBranch(request: SelectBranchRequest): Observable<ApiResponse<AuthResponse>> {
+    return this.http.post<ApiResponse<AuthResponse>>(
+      this.applicationConfigService.getEndpointFor('api/v1/auth/select-branch'),
+      request,
+    );
   }
 
   logout(): Observable<void> {

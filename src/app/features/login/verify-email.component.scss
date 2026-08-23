@@ -1,0 +1,98 @@
+.verify-email {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--surface-card, #f5f7fa);
+  font-family: var(--font-sans, sans-serif);
+}
+
+.verify-email__card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface-raised, #ffffff);
+  border: 1px solid var(--border-subtle, #ececec);
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: var(--shadow-md, 0 8px 30px rgba(0, 0, 0, 0.08));
+  padding: 40px 32px;
+  text-align: center;
+}
+
+.verify-email__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: var(--radius-pill, 999px);
+  background: var(--brand-soft, #e8f0fe);
+  color: var(--brand, #2f6fed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  nz-icon {
+    font-size: 30px;
+  }
+}
+
+.verify-email__title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary, #1a1a1a);
+  margin: 0 0 12px;
+}
+
+.verify-email__desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary, #5a5a5a);
+  margin: 0 0 28px;
+
+  strong {
+    color: var(--text-primary, #1a1a1a);
+  }
+}
+
+.verify-email__otp {
+  text-align: center;
+  letter-spacing: 6px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.verify-email__footer {
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--text-secondary, #5a5a5a);
+
+  .verify-email__resend {
+    margin-left: 6px;
+    color: var(--brand, #2f6fed);
+    cursor: pointer;
+    font-weight: 500;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &.is-loading {
+      opacity: 0.6;
+      cursor: default;
+      text-decoration: none;
+    }
+  }
+}
+
+.verify-email__back {
+  margin-top: 14px;
+  font-size: 13px;
+
+  a {
+    color: var(--text-secondary, #5a5a5a);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--brand, #2f6fed);
+    }
+  }
+}

@@ -1,0 +1,108 @@
+<div class="select-unit">
+  <!-- Left Side: Product Showcase -->
+  <div class="select-unit__left">
+    <div class="select-unit__showcase">
+      <!-- CSS Mobile Mockup -->
+      <div class="mockup mockup-mobile">
+        <div class="mockup-mobile__notch"></div>
+        <div class="mockup-mobile__screen">
+          <div class="mockup-mobile__header"></div>
+          <div class="mockup-mobile__chart"></div>
+          <div class="mockup-mobile__card"></div>
+          <div class="mockup-mobile__card"></div>
+        </div>
+      </div>
+
+      <!-- CSS Laptop Mockup -->
+      <div class="mockup mockup-laptop">
+        <div class="mockup-laptop__screen">
+          <div class="mockup-laptop__header"></div>
+          <div class="mockup-laptop__body">
+            <div class="mockup-laptop__sidebar"></div>
+            <div class="mockup-laptop__content">
+              <div class="mockup-laptop__row">
+                <div class="mockup-laptop__card mockup-laptop__card--main">
+                  <div class="mockup-laptop__chart-bar"></div>
+                  <div class="mockup-laptop__chart-bar"></div>
+                  <div class="mockup-laptop__chart-bar"></div>
+                  <div class="mockup-laptop__chart-bar"></div>
+                </div>
+                <div class="mockup-laptop__card mockup-laptop__card--side"></div>
+              </div>
+              <div class="mockup-laptop__table">
+                <div class="mockup-laptop__table-row"></div>
+                <div class="mockup-laptop__table-row"></div>
+                <div class="mockup-laptop__table-row"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mockup-laptop__base"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Form Card -->
+  <div class="select-unit__right">
+    <!-- Topbar for User Profile -->
+    <div class="select-unit__topbar">
+      <div class="select-unit__user-wrap" (click)="logout()" title="Đăng xuất">
+        <div class="select-unit__user">
+          <div class="select-unit__user-avatar">{{ initials }}</div>
+          <div class="select-unit__user-name">{{ currentAccount()?.login }}</div>
+        </div>
+        <div class="select-unit__user-dropdown">
+          <div class="select-unit__dropdown-item select-unit__dropdown-item--logout">Đăng xuất</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Centered Card -->
+    <div class="select-unit__card">
+      <div class="select-unit__card-inner">
+        <h1 class="select-unit__title">CHỌN ĐƠN VỊ LÀM VIỆC</h1>
+        <p class="select-unit__subtitle">Vui lòng chọn đơn vị/chi nhánh để tiếp tục</p>
+
+        @if (loading()) {
+          <div class="select-unit__loading">
+            <nz-spin nzTip="Đang tải danh sách chi nhánh..."></nz-spin>
+          </div>
+        } @else if (branches().length === 0) {
+          <nz-empty nzDescription="Tài khoản chưa được gán phạm vi chi nhánh nào. Vui lòng liên hệ quản trị viên."></nz-empty>
+        } @else {
+          <div class="select-unit__form">
+            <div class="select-unit__form-item">
+              <label>Đơn vị / Chi nhánh</label>
+              <nz-select
+                [ngModel]="selectedId()"
+                (ngModelChange)="selectedId.set($event)"
+                nzPlaceHolder="Chọn đơn vị làm việc"
+                nzSize="large"
+                nzShowSearch
+                class="select-unit__dropdown"
+                nzDropdownClassName="select-unit-dropdown-menu"
+              >
+                @for (branch of branches(); track branch.id) {
+                  <nz-option [nzValue]="branch.id" [nzLabel]="branch.name"></nz-option>
+                }
+              </nz-select>
+            </div>
+            
+            <button
+              nz-button
+              nzType="primary"
+              nzSize="large"
+              nzBlock
+              class="select-unit__submit"
+              [disabled]="!selectedId()"
+              [nzLoading]="selecting()"
+              (click)="submit()"
+            >
+              Đăng nhập
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>

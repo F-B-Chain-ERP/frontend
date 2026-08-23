@@ -30,6 +30,10 @@ export interface VerifyOtpRequest {
   otp: string;
 }
 
+export interface ResendOtpRequest {
+  verifyToken: string;
+}
+
 export interface ApiResponse<T> {
   status: number;
   errorCode: string | null;
@@ -75,6 +79,22 @@ export interface AuthResponse {
   requiresScopeAssignment: boolean;
   requiresEmailVerification: boolean;
   verifyToken?: string | null;
+}
+
+export interface SelectBranchRequest {
+  branchId: string;
+}
+
+export interface BranchResponse {
+  id: string;
+  code: string;
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  status?: string | null;
+  parentId?: string | null;
+  parentName?: string | null;
 }
 
 export type LoginError = 'INVALID_CREDENTIALS' | 'ACCOUNT_LOCKED' | 'ACCOUNT_DELETED' | 'UNKNOWN' | 'NO_ORGANIZATION';

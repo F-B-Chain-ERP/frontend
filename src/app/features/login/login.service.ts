@@ -8,7 +8,7 @@ import { AccountService } from '../../core/auth/account.service';
 import { PermissionService } from '../../core/auth/permission.service';
 import { StateStorageService } from '../../core/auth/state-storage.service';
 import { Account } from '../../core/auth/account.model';
-import { AuthResponse, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest } from './login.model';
+import { AuthResponse, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest, ResendOtpRequest, SelectBranchRequest } from './login.model';
 
 @Injectable({ providedIn: 'root' })
 export class LoginService {
@@ -19,35 +19,56 @@ export class LoginService {
   private readonly router = inject(Router);
 
   /** Đăng nhập tài khoản nội bộ (admin/nhân viên). Mặc định type = ACCOUNT. */
-  login(credentials: LoginCredentials, type: PrincipalType = 'ACCOUNT'): Observable<Account> {
+  login(credentials: LoginCredentials, type: PrincipalType = 'ACCOUNT'): Observable<AuthResponse> {
     return this.authServerProvider.login(credentials, type).pipe(
       map(res => {
         const auth = res.data;
         this.applyAuthResult(auth, credentials.rememberMe);
-        return this.toAccount(auth, credentials.username);
+        this.toAccount(auth, credentials.username);
+        this.stateStorageService.setPendingScopeAssignment(auth.requiresScopeAssignment);
+        return auth;
       }),
       catchError((err: HttpErrorResponse) => throwError(() => this.toLoginException(err))),
     );
   }
 
   /** Đăng nhập / đăng ký khách hàng qua Google (gửi Google ID token). */
-  loginWithGoogle(idToken: string, rememberMe = true): Observable<Account> {
+  loginWithGoogle(idToken: string, rememberMe = true): Observable<AuthResponse> {
     return this.authServerProvider.loginWithGoogle(idToken).pipe(
       map(res => {
         const auth = res.data;
         this.applyAuthResult(auth, rememberMe);
-        return this.toAccount(auth);
+        this.toAccount(auth);
+        this.stateStorageService.setPendingScopeAssignment(auth.requiresScopeAssignment);
+        return auth;
       }),
       catchError((err: HttpErrorResponse) => throwError(() => this.toLoginException(err))),
     );
   }
 
   /**
-   * Đăng ký khách hàng. Backend trả về verifyToken (chưa cấp access token) khi
-   * cần xác thực email qua OTP. Trả về AuthResponse thô để component xử lý tiếp.
+   * Đăng ký khách hàng. Khi email chưa cần xác thực (backend trả access token),
+   * tự động lưu token và thiết lập tài khoản. Khi cần OTP, trả về AuthResponse
+   * chứa verifyToken để component chuyển sang màn xác thực.
    */
   register(request: RegisterCustomerRequest): Observable<AuthResponse> {
     return this.authServerProvider.registerCustomer(request).pipe(
+      map(res => {
+        const auth = res.data;
+        if (auth.accessToken && auth.refreshToken) {
+          this.applyAuthResult(auth, true);
+          this.toAccount(auth);
+        }
+        return auth;
+      }),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toRegisterException(err))),
+    );
+  }
+
+  /** Gửi lại mã OTP xác thực email, trả về verifyToken mới. */
+  resendOtp(verifyToken: string): Observable<AuthResponse> {
+    const request: ResendOtpRequest = { verifyToken };
+    return this.authServerProvider.resendOtp(request).pipe(
       map(res => res.data),
       catchError((err: HttpErrorResponse) => throwError(() => this.toRegisterException(err))),
     );
@@ -65,12 +86,30 @@ export class LoginService {
     );
   }
 
+  /** Chọn đơn vị (chi nhánh) làm việc sau khi đăng nhập, trả về token chứa branchId. */
+  selectBranch(branchId: string, rememberMe = true): Observable<AuthResponse> {
+    const request: SelectBranchRequest = { branchId };
+    return this.authServerProvider.selectBranch(request).pipe(
+      map(res => {
+        const auth = res.data;
+        this.applyAuthResult(auth, rememberMe);
+        this.toAccount(auth);
+        this.stateStorageService.storeSelectedBranch(branchId);
+        this.stateStorageService.setPendingScopeAssignment(false);
+        return auth;
+      }),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toLoginException(err))),
+    );
+  }
+
   logout(): Observable<void> {
     return this.authServerProvider.logout().pipe(
       catchError(() => of(null)),
       tap(() => {
         this.accountService.authenticate(null);
         this.permissionService.clear();
+        this.stateStorageService.clearSelectedBranch();
+        this.stateStorageService.clearPendingScopeAssignment();
       }),
       switchMap(() => from(this.router.navigate(['/login']))),
       map(() => void 0),

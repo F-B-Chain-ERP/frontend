@@ -63,7 +63,11 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.theme.applyModeVisualOnly('light');
 
     if (this.stateStorageService.getAuthenticationToken()) {
-      this.router.navigate(['/admin/home']);
+      if (this.stateStorageService.hasPendingScopeAssignment()) {
+        this.router.navigate(['/select-branch']);
+      } else {
+        this.router.navigate(['/admin/home']);
+      }
     }
 
     this.googleIdentity.load();
@@ -87,11 +91,11 @@ export class LoginComponent implements OnInit, OnDestroy {
 
   private onGoogleCredential(idToken: string): void {
     this.loginService.loginWithGoogle(idToken).subscribe({
-      next: () => {
+      next: auth => {
         this.googleLoading.set(false);
         this.theme.restorePreLogoutMode();
         this.theme.restorePreLogoutBrand();
-        this.router.navigate(['/store']);
+        this.router.navigate(auth.requiresScopeAssignment ? ['/select-branch'] : ['/store']);
       },
       error: err => {
         this.googleLoading.set(false);
@@ -115,11 +119,11 @@ export class LoginComponent implements OnInit, OnDestroy {
     const credentials = this.loginForm.getRawValue();
 
     this.loginService.login(credentials).subscribe({
-      next: () => {
+      next: auth => {
         this.loading.set(false);
         this.theme.restorePreLogoutMode();
         this.theme.restorePreLogoutBrand();
-        this.router.navigate(['/admin/home']);
+        this.router.navigate(auth.requiresScopeAssignment ? ['/select-branch'] : ['/admin/home']);
       },
       error: err => this.handleLoginError(err),
     });

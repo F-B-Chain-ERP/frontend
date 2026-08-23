@@ -109,7 +109,7 @@ export class RegisterComponent implements OnInit, OnDestroy {
     };
 
     this.loginService.register(request).subscribe({
-      next: (auth: AuthResponse) => this.handleRegisterResult(auth, fullName),
+      next: auth => this.handleRegisterResult(auth, request.email ?? ''),
       error: err => this.handleError(err),
     });
   }
@@ -134,17 +134,18 @@ export class RegisterComponent implements OnInit, OnDestroy {
     });
   }
 
-  private handleRegisterResult(auth: AuthResponse, fullName: string): void {
+  private handleRegisterResult(auth: AuthResponse, email: string): void {
     this.loading.set(false);
-    if (auth.requiresEmailVerification) {
-      this.toast.success(
-        `Chào mừng ${fullName}!`,
-        'Mã xác thực đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư để kích hoạt tài khoản.',
-      );
+    if (auth.requiresEmailVerification && auth.verifyToken) {
+      this.toast.success('Đăng ký thành công!', 'Mã xác thực đã được gửi đến email của bạn.');
+      this.router.navigate(['/verify-email'], { queryParams: { token: auth.verifyToken, email } });
+    } else if (auth.accessToken && auth.refreshToken) {
+      this.toast.success('Đăng ký thành công!', 'Chào mừng bạn đến với ERP UTT.');
+      this.router.navigate(['/store']);
     } else {
-      this.toast.success(`Chào mừng ${fullName}!`, 'Tài khoản đã được tạo.');
+      this.toast.success('Đăng ký thành công!');
+      this.router.navigate(['/login']);
     }
-    this.router.navigate(['/login']);
   }
 
   private handleError(err: unknown): void {
