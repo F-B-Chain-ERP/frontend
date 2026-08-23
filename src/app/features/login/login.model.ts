@@ -15,6 +15,7 @@ export interface LoginRequest {
 
 export interface RegisterCustomerRequest {
   fullName: string;
+  username?: string | null;
   phone?: string | null;
   email?: string | null;
   password: string;
@@ -58,6 +59,7 @@ export interface BackendAccount {
 export interface CustomerResponse {
   id: string;
   customerCode: string;
+  username: string | null;
   fullName: string | null;
   phone: string | null;
   email: string | null;
