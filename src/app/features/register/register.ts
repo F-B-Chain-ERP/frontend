@@ -99,9 +99,10 @@ export class RegisterComponent implements OnInit, OnDestroy {
     }
 
     this.loading.set(true);
-    const { fullName, phone, email, password } = this.registerForm.getRawValue();
+    const { fullName, phone, email, username, password } = this.registerForm.getRawValue();
     const request: RegisterCustomerRequest = {
       fullName: fullName.trim(),
+      username: username.trim(),
       phone,
       email,
       password,
