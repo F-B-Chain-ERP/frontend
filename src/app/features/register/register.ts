@@ -1,28 +1,25 @@
-import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal} from '@angular/core';
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators
-} from '@angular/forms';
-import {Router, RouterLink} from '@angular/router';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 
-import {NzInputModule} from 'ng-zorro-antd/input';
-import {NzIconDirective} from 'ng-zorro-antd/icon';
-import {NzButtonModule} from 'ng-zorro-antd/button';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzIconDirective } from 'ng-zorro-antd/icon';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 
-import {AppButtonComponent} from '../../shared/app-button/app-button.component';
-import {ThemeService} from '../../core/theme/theme.service';
-import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
+import { AppButtonComponent } from '../../shared/app-button/app-button.component';
+import { ThemeService } from '../../core/theme/theme.service';
+import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
+import { GoogleIdentityService } from '../../core/auth/google-identity.service';
+import { AuthResponse, LoginException, RegisterCustomerRequest } from '../login/login.model';
+import { LoginService } from '../login/login.service';
 
 const PASSWORD_REGEX = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/;
 
 function noWhitespaceValidator(control: AbstractControl): ValidationErrors | null {
   const value = control.value as string;
   if (!value) return null;
-  return /\s/.test(value) ? {whitespace: true} : null;
+  return /\s/.test(value) ? { whitespace: true } : null;
 }
 
 @Component({
@@ -37,47 +34,54 @@ export class RegisterComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly theme = inject(ThemeService);
   private readonly toast = inject(AppNotificationService);
+  private readonly loginService = inject(LoginService);
+  private readonly googleIdentity = inject(GoogleIdentityService);
+  private googleSub?: Subscription;
 
   readonly loading = signal(false);
+  readonly googleLoading = signal(false);
   readonly showPassword = signal(false);
   readonly showConfirm = signal(false);
   readonly currentYear = new Date().getFullYear();
 
   registerForm = new FormGroup(
     {
-      fullName: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.minLength(2)]}),
+      fullName: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(2)] }),
       phone: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.pattern(/^[0-9]{9,11}$/)]
+        validators: [Validators.required, Validators.pattern(/^[0-9]{9,11}$/)],
       }),
-      email: new FormControl('', {nonNullable: true, validators: [Validators.required, Validators.email]}),
+      email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
       username: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.minLength(3), noWhitespaceValidator]
+        validators: [Validators.required, Validators.minLength(3), noWhitespaceValidator],
       }),
       password: new FormControl('', {
         nonNullable: true,
         validators: [Validators.required, Validators.minLength(6), noWhitespaceValidator, Validators.pattern(PASSWORD_REGEX)],
       }),
-      confirmPassword: new FormControl('', {nonNullable: true, validators: [Validators.required]}),
-      agree: new FormControl(false, {nonNullable: true, validators: [Validators.requiredTrue]}),
+      confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+      agree: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] }),
     },
-    {validators: this.passwordMatchValidator},
+    { validators: this.passwordMatchValidator },
   );
 
   private passwordMatchValidator(group: AbstractControl): ValidationErrors | null {
     const pwd = (group.get('password')?.value as string) ?? '';
     const confirm = (group.get('confirmPassword')?.value as string) ?? '';
     if (!confirm) return null;
-    return pwd === confirm ? null : {mismatch: true};
+    return pwd === confirm ? null : { mismatch: true };
   }
 
   ngOnInit(): void {
     this.theme.applyModeVisualOnly('light');
+    this.googleIdentity.load();
+    this.googleSub = this.googleIdentity.onCredential().subscribe(idToken => this.onGoogleCredential(idToken));
   }
 
   ngOnDestroy(): void {
     this.theme.restoreSavedMode();
+    this.googleSub?.unsubscribe();
   }
 
   togglePassword(): void {
@@ -95,17 +99,59 @@ export class RegisterComponent implements OnInit, OnDestroy {
     }
 
     this.loading.set(true);
+    const { fullName, phone, email, password } = this.registerForm.getRawValue();
+    const request: RegisterCustomerRequest = {
+      fullName: fullName.trim(),
+      phone,
+      email,
+      password,
+      authProvider: 'LOCAL',
+    };
 
-    // Simulate API — 900ms
-    setTimeout(() => {
-      this.loading.set(false);
-      const {fullName} = this.registerForm.getRawValue();
+    this.loginService.register(request).subscribe({
+      next: (auth: AuthResponse) => this.handleRegisterResult(auth, fullName),
+      error: err => this.handleError(err),
+    });
+  }
+
+  onGoogleSignUp(): void {
+    this.googleLoading.set(true);
+    this.googleIdentity.signIn();
+  }
+
+  private onGoogleCredential(idToken: string): void {
+    this.googleLoading.set(true);
+    this.loginService.loginWithGoogle(idToken).subscribe({
+      next: () => {
+        this.googleLoading.set(false);
+        this.toast.success('Đăng ký qua Google thành công!', 'Chào mừng bạn đến với ERP UTT.');
+        this.router.navigate(['/store']);
+      },
+      error: err => {
+        this.googleLoading.set(false);
+        this.handleError(err);
+      },
+    });
+  }
+
+  private handleRegisterResult(auth: AuthResponse, fullName: string): void {
+    this.loading.set(false);
+    if (auth.requiresEmailVerification) {
       this.toast.success(
-        `Chào mừng ${fullName}! Tài khoản đã được tạo.`,
-        'Vui lòng đăng nhập để bắt đầu đặt món và tích điểm. Ưu đãi 20% đã được áp dụng cho đơn đầu tiên!',
+        `Chào mừng ${fullName}!`,
+        'Mã xác thực đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư để kích hoạt tài khoản.',
       );
-      this.router.navigate(['/login']);
-    }, 900);
+    } else {
+      this.toast.success(`Chào mừng ${fullName}!`, 'Tài khoản đã được tạo.');
+    }
+    this.router.navigate(['/login']);
+  }
+
+  private handleError(err: unknown): void {
+    this.loading.set(false);
+    this.googleLoading.set(false);
+    const message = err instanceof LoginException ? err.message : 'Đã có lỗi xảy ra, vui lòng thử lại.';
+    this.toast.error(message);
   }
 
   goToLogin(): void {
