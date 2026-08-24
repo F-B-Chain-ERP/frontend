@@ -329,6 +329,26 @@
           }
         </div>
 
+        <!-- Mật khẩu (chỉ khi thêm mới) -->
+        @if (!isEditMode) {
+          <div nz-col [nzSpan]="24" [nzMd]="12">
+            <label class="form-label required" for="modal-password">Mật khẩu</label>
+            <nz-input-wrapper>
+              <nz-icon nzInputPrefix nzType="lock"/>
+              <input id="modal-password" type="password" nz-input formControlName="password"
+                     placeholder="Ít nhất 8 ký tự" maxlength="128"/>
+            </nz-input-wrapper>
+            @if (userForm.get('password')?.dirty || userForm.get('password')?.touched) {
+              @if (userForm.get('password')?.hasError('required')) {
+                <span class="form-error">Mật khẩu không được để trống.</span>
+              }
+              @if (userForm.get('password')?.hasError('minlength')) {
+                <span class="form-error">Mật khẩu phải có ít nhất 8 ký tự.</span>
+              }
+            }
+          </div>
+        }
+
         <!-- Phòng ban / Đơn vị -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label" for="modal-department">Đơn vị / Phòng ban</label>

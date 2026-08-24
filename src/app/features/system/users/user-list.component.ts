@@ -173,6 +173,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
     email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
     username: ['', [Validators.required, this.safeTextValidator(), Validators.maxLength(50)]],
     phoneNumber: ['', [Validators.pattern(/^[0-9+() -]*$/), Validators.maxLength(15)]],
+    password: ['', [Validators.minLength(8), Validators.maxLength(128)]],
     status: [UserStatus.ACTIVE, [Validators.required]],
     department: ['Phòng Tài chính - Kế toán'],
     roles: [['Người dùng hệ thống']],
@@ -334,12 +335,15 @@ export class UserListComponent extends BaseComponent implements OnInit {
       email: '',
       username: '',
       phoneNumber: '',
+      password: '',
       status: UserStatus.ACTIVE,
       department: 'Phòng Tài chính - Kế toán',
       roles: ['Người dùng hệ thống'],
       note: '',
     });
     this.userForm.get('username')?.enable();
+    this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(8), Validators.maxLength(128)]);
+    this.userForm.get('password')?.enable();
     this.isFormModalVisible.set(true);
   }
 
@@ -353,12 +357,16 @@ export class UserListComponent extends BaseComponent implements OnInit {
       email: user.email,
       username: user.username,
       phoneNumber: user.phoneNumber || '',
+      password: '',
       status: user.status,
       department: user.department || 'Phòng Tài chính - Kế toán',
       roles: user.roles && user.roles.length ? user.roles : ['Người dùng hệ thống'],
       note: user.note || '',
     });
     this.userForm.get('username')?.disable();
+    this.userForm.get('password')?.clearValidators();
+    this.userForm.get('password')?.setValue('');
+    this.userForm.get('password')?.disable();
     this.isFormModalVisible.set(true);
   }
 
@@ -400,6 +408,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
       email: formRaw.email || '',
       username: formRaw.username || '',
       phoneNumber: formRaw.phoneNumber || '',
+      password: formRaw.password || '',
       status: Number(formRaw.status) as UserStatus,
       department: formRaw.department || '',
       roles: formRaw.roles || [],
