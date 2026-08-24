@@ -1,5 +1,6 @@
 import {provideHttpClient, withInterceptors} from '@angular/common/http';
 import {ApplicationConfig, LOCALE_ID, importProvidersFrom, inject, provideAppInitializer} from '@angular/core';
+import {provideAnimationsAsync} from '@angular/platform-browser/animations/async';
 import {Title} from '@angular/platform-browser';
 import {
   NavigationError,
@@ -41,6 +42,7 @@ const routerFeatures: RouterFeatures[] = [
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    provideAnimationsAsync(),
     provideRouter(routes, ...routerFeatures),
     provideAppInitializer(() => {
       inject(ApplicationConfigService).setEndpointPrefix(SERVER_API_URL);

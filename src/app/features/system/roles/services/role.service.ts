@@ -1,12 +1,17 @@
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, of, forkJoin } from 'rxjs';
+import { map, catchError, switchMap } from 'rxjs/operators';
+import { ApplicationConfigService } from '../../../../core/config/application-config.service';
 import {
   FunctionPermission,
+  PageResponseBE,
   PermissionApiResponse,
   Role,
   RoleAssignedUser,
   RoleFilter,
   RoleFormDTO,
+  RoleResponseBE,
   RoleStatsKPI,
   UpdatePermissionPayload,
 } from '../models/role.model';
@@ -15,6 +20,41 @@ import {
   providedIn: 'root',
 })
 export class RoleService {
+  private http = inject(HttpClient);
+  private applicationConfigService = inject(ApplicationConfigService);
+
+  private get roleApi(): string {
+    return this.applicationConfigService.getEndpointFor('api/v1/roles');
+  }
+
+  private toRole(r: RoleResponseBE): Role {
+    const active = r.status === 'ACTIVE';
+    const deleted = r.status === 'DELETED';
+    return {
+      id: r.id,
+      name: r.name,
+      code: r.code,
+      description: r.description ?? '',
+      active,
+      deleted,
+      isDefault: r.roleType === 'SYSTEM',
+      accountCount: 0,
+      createdAt: '',
+      createdBy: undefined,
+      updatedAt: undefined,
+    };
+  }
+
+  private fetchAllRoles(): Observable<Role[]> {
+    return this.http
+      .get<{ data: PageResponseBE<RoleResponseBE> }>(this.roleApi, {
+        params: new HttpParams().set('page', '0').set('size', '1000'),
+      })
+      .pipe(
+        map((res) => res.data?.content ?? []),
+        map((list) => list.map((r) => this.toRole(r)))
+      );
+  }
 
   // ── 1. MOCK ROLES DATA STORE (CHUẨN ERP) ─────────────────────────────
   private mockRoles: Role[] = [
@@ -1068,170 +1108,124 @@ export class RoleService {
   // ── 4. ROLE SERVICE METHODS ───────────────────────────────────────────
 
   getKPIStats(): Observable<RoleStatsKPI> {
-    const total = this.mockRoles.length;
-    const active = this.mockRoles.filter(r => r.active && !r.deleted).length;
-    const inactive = this.mockRoles.filter(r => !r.active && !r.deleted).length;
-    const system = this.mockRoles.filter(r => r.isDefault).length;
-
-    return of({ total, active, inactive, system });
+    return this.fetchAllRoles().pipe(
+      map((roles) => {
+        const total = roles.length;
+        const active = roles.filter((r) => r.active && !r.deleted).length;
+        const inactive = roles.filter((r) => !r.active && !r.deleted).length;
+        const system = roles.filter((r) => r.isDefault).length;
+        return { total, active, inactive, system };
+      })
+    );
   }
 
   getRoles(filter?: RoleFilter): Observable<{ items: Role[]; total: number }> {
-    let filtered = [...this.mockRoles];
-
-    if (filter) {
-      if (filter.query?.trim()) {
-        const q = filter.query.trim().toLowerCase();
-        filtered = filtered.filter(
-          r =>
-            r.name.toLowerCase().includes(q) ||
-            r.code.toLowerCase().includes(q) ||
-            (r.description && r.description.toLowerCase().includes(q))
-        );
-      }
-
-      if (filter.status && filter.status !== 'all') {
-        if (filter.status === 'active') {
-          filtered = filtered.filter(r => r.active && !r.deleted);
-        } else if (filter.status === 'inactive') {
-          filtered = filtered.filter(r => !r.active && !r.deleted);
-        } else if (filter.status === 'deleted') {
-          filtered = filtered.filter(r => r.deleted);
-        }
-      }
-
-      if (filter.dateFrom && filter.dateTo) {
-        const from = new Date(filter.dateFrom).getTime();
-        const to = new Date(filter.dateTo).getTime() + 86400000;
-        filtered = filtered.filter(r => {
-          const t = new Date(r.createdAt).getTime();
-          return t >= from && t <= to;
-        });
-      }
+    let params = new HttpParams()
+      .set('page', String((filter?.pageIndex ?? 1) - 1))
+      .set('size', String(filter?.pageSize ?? 10));
+    if (filter?.query?.trim()) {
+      params = params.set('search', filter.query.trim());
     }
-
-    const total = filtered.length;
-    const pageIndex = filter?.pageIndex ?? 1;
-    const pageSize = filter?.pageSize ?? 10;
-    const start = (pageIndex - 1) * pageSize;
-    const items = filtered.slice(start, start + pageSize);
-
-    return of({ items, total });
+    return this.http
+      .get<{ data: PageResponseBE<RoleResponseBE> }>(this.roleApi, { params })
+      .pipe(
+        map((res) => ({
+          items: (res.data?.content ?? []).map((r) => this.toRole(r)),
+          total: res.data?.totalElements ?? 0,
+        }))
+      );
   }
 
   getRoleById(id: string): Observable<Role | undefined> {
-    const role = this.mockRoles.find(r => r.id === id);
-    return of(role);
+    return this.http
+      .get<{ data: RoleResponseBE }>(`${this.roleApi}/${id}`)
+      .pipe(
+        map((res) => (res.data ? this.toRole(res.data) : undefined)),
+        catchError(() => of(undefined))
+      );
   }
 
   saveRole(dto: RoleFormDTO): Observable<Role> {
-    if (dto.id) {
-      // Update
-      const idx = this.mockRoles.findIndex(r => r.id === dto.id);
-      if (idx !== -1) {
-        this.mockRoles[idx] = {
-          ...this.mockRoles[idx],
-          name: dto.name,
-          description: dto.description,
-          active: dto.active,
-          updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-        };
-        return of(this.mockRoles[idx]);
-      }
-    }
-
-    // Insert new
-    const newId = String(Date.now());
-    const newRole: Role = {
-      id: newId,
+    const body = {
       name: dto.name,
-      code: dto.code ? dto.code.toUpperCase() : `ROLE_${newId.slice(-4)}`,
-      description: dto.description || '',
-      active: dto.active,
-      deleted: false,
-      isDefault: false,
-      accountCount: 0,
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      createdBy: 'admin',
+      description: dto.description || null,
+      roleType: 'TENANT',
+      status: dto.active ? 'ACTIVE' : 'INACTIVE',
     };
-
-    this.mockRoles.unshift(newRole);
-    return of(newRole);
+    if (dto.id) {
+      return this.http
+        .put<{ data: RoleResponseBE }>(`${this.roleApi}/${dto.id}`, body)
+        .pipe(map((res) => this.toRole(res.data)));
+    }
+    return this.http
+      .post<{ data: RoleResponseBE }>(this.roleApi, body)
+      .pipe(map((res) => this.toRole(res.data)));
   }
 
   cloneRole(sourceRoleId: string, newName: string, newDescription?: string): Observable<Role> {
-    const source = this.mockRoles.find(r => r.id === sourceRoleId);
-    const newId = String(Date.now());
-    const clonedRole: Role = {
-      id: newId,
+    const body = {
       name: newName,
-      code: `CLONE_${newId.slice(-4)}`,
-      description: newDescription || `Nhân bản từ [${source?.name || 'Vai trò'}]`,
-      active: true,
-      deleted: false,
-      isDefault: false,
-      accountCount: 0,
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      createdBy: 'admin',
+      description: newDescription || `Nhân bản từ role ${sourceRoleId}`,
+      roleType: 'TENANT',
+      status: 'ACTIVE',
     };
-
-    this.mockRoles.unshift(clonedRole);
-    return of(clonedRole);
+    return this.http
+      .post<{ data: RoleResponseBE }>(this.roleApi, body)
+      .pipe(map((res) => this.toRole(res.data)));
   }
 
   toggleStatus(id: string, active: boolean): Observable<boolean> {
-    const role = this.mockRoles.find(r => r.id === id);
-    if (role) {
-      role.active = active;
-      role.updatedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
-      return of(true);
-    }
-    return of(false);
+    return this.getRoleById(id).pipe(
+      switchMap((role) => {
+        if (!role) return of(false);
+        const body = {
+          name: role.name,
+          description: role.description || null,
+          roleType: role.isDefault ? 'SYSTEM' : 'TENANT',
+          status: active ? 'ACTIVE' : 'INACTIVE',
+        };
+        return this.http
+          .put<{ data: RoleResponseBE }>(`${this.roleApi}/${id}`, body)
+          .pipe(map(() => true));
+      }),
+      catchError(() => of(false))
+    );
   }
 
   deleteRole(id: string): Observable<boolean> {
-    const role = this.mockRoles.find(r => r.id === id);
-    if (role) {
-      role.deleted = true;
-      role.active = false;
-      role.updatedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
-      return of(true);
-    }
-    return of(false);
+    return this.http
+      .delete<{ data: null }>(`${this.roleApi}/${id}`)
+      .pipe(map(() => true), catchError(() => of(false)));
   }
 
   restoreRole(id: string): Observable<boolean> {
-    const role = this.mockRoles.find(r => r.id === id);
-    if (role) {
-      role.deleted = false;
-      role.active = true;
-      role.updatedAt = new Date().toISOString().replace('T', ' ').substring(0, 19);
-      return of(true);
-    }
-    return of(false);
+    return this.getRoleById(id).pipe(
+      switchMap((role) => {
+        if (!role) return of(false);
+        const body = {
+          name: role.name,
+          description: role.description || null,
+          roleType: role.isDefault ? 'SYSTEM' : 'TENANT',
+          status: 'ACTIVE',
+        };
+        return this.http
+          .put<{ data: RoleResponseBE }>(`${this.roleApi}/${id}`, body)
+          .pipe(map(() => true));
+      }),
+      catchError(() => of(false))
+    );
   }
 
   batchUpdateStatus(ids: string[], active: boolean): Observable<number> {
-    let count = 0;
-    this.mockRoles.forEach(r => {
-      if (ids.includes(r.id) && !r.isDefault) {
-        r.active = active;
-        count++;
-      }
-    });
-    return of(count);
+    return forkJoin(ids.map((id) => this.toggleStatus(id, active))).pipe(
+      map((results) => results.filter(Boolean).length)
+    );
   }
 
   batchDelete(ids: string[]): Observable<number> {
-    let count = 0;
-    this.mockRoles.forEach(r => {
-      if (ids.includes(r.id) && !r.isDefault) {
-        r.deleted = true;
-        r.active = false;
-        count++;
-      }
-    });
-    return of(count);
+    return forkJoin(ids.map((id) => this.deleteRole(id))).pipe(
+      map((results) => results.filter(Boolean).length)
+    );
   }
 
   // ── 5. PERMISSION MANAGEMENT METHODS (100% PURE MOCK) ─────────────────
