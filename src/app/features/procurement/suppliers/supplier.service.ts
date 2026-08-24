@@ -1,174 +1,204 @@
-import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
-import { delay } from 'rxjs/operators';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { ApiResponse } from '../../login/login.model';
+import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import { Supplier, SupplierFilter, SupplierFormDTO, SupplierListResponse, SupplierStatus } from './supplier.model';
 
+/** Shape of the backend paginated supplier list. */
+interface BackendPageResponse {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  content: BackendSupplier[];
+}
+
+/** Shape of a supplier as returned by the backend. */
+interface BackendSupplier {
+  id: string;
+  code: string;
+  name: string;
+  taxCode?: string | null;
+  contactName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  paymentTermDays?: number | null;
+  status?: string | null;
+  createdBy?: string | null;
+  createdAt?: string | null;
+}
+
+/** Field names expected by the backend create/update request. */
+interface BackendSupplierRequest {
+  code: string;
+  name: string;
+  taxCode?: string | null;
+  contactName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  paymentTermDays?: number | null;
+  status?: string | null;
+}
+
+const STATUS_TO_BACKEND: Record<SupplierStatus, string> = {
+  [SupplierStatus.ACTIVE]: 'ACTIVE',
+  [SupplierStatus.INACTIVE]: 'INACTIVE',
+};
+
+function statusFromBackend(value?: string | null): SupplierStatus {
+  return value === 'ACTIVE' ? SupplierStatus.ACTIVE : SupplierStatus.INACTIVE;
+}
+
 /**
- * TODO(S2-10): Hiện dùng mock data in-memory theo chuẩn màn mẫu users.
- * Khi backend có API, thay thân các method bằng HttpClient gọi /api/v1/...
+ * Kết nối với API thật của backend (SupplierController: /api/v1/proc/suppliers).
+ * Giữ nguyên chữ ký public cũ (trả về Observable, shape giống mock) để component/UI
+ * không bị thay đổi; chuyển đổi field giữa FE model và BE DTO bên trong service.
  */
 @Injectable({
   providedIn: 'root',
 })
 export class SupplierService {
-  private mockSuppliers: Supplier[] = [
-    {
-      id: 'SUP001',
-      code: 'NCC-001',
-      name: 'Công ty TNHH Nguyên liệu Phúc An',
-      phoneNumber: '0241234567',
-      email: 'kinhdoanh@phucan.vn',
-      address: 'Số 12 Nguyễn Trãi, Thanh Xuân, Hà Nội',
-      taxCode: '0101234567',
-      contactPerson: 'Nguyễn Văn Phúc',
-      status: SupplierStatus.ACTIVE,
-      note: 'NCC cà phê nhân chính',
-      createdAt: '2026-01-10 08:30:00',
-      updatedAt: '2026-02-15 10:20:00',
-    },
-    {
-      id: 'SUP002',
-      code: 'NCC-002',
-      name: 'Nhà phân phối Sữa Sao Băng',
-      phoneNumber: '0283888999',
-      email: 'info@saobang.com',
-      address: '55 Trần Hưng Đạo, Quận 1, TP.HCM',
-      taxCode: '0309876543',
-      contactPerson: 'Trần Thị Mai',
-      status: SupplierStatus.ACTIVE,
-      createdAt: '2026-01-18 09:00:00',
-    },
-    {
-      id: 'SUP003',
-      code: 'NCC-003',
-      name: 'Hợp tác xã Trà Thái Nguyên',
-      phoneNumber: '02083556677',
-      email: 'tratha@thainguyen.vn',
-      address: 'Khu phố Quyết Thắng, TP. Thái Nguyên',
-      contactPerson: 'Lê Văn Chín',
-      status: SupplierStatus.INACTIVE,
-      note: 'Tạm ngừng do hết vụ thu hoạch',
-      createdAt: '2026-02-01 14:15:00',
-    },
-  ];
+  private readonly http = inject(HttpClient);
+  private readonly applicationConfigService = inject(ApplicationConfigService);
+
+  private get baseUrl(): string {
+    return this.applicationConfigService.getEndpointFor('api/v1/proc/suppliers');
+  }
 
   getSuppliers(filter: SupplierFilter): Observable<SupplierListResponse> {
-    let result = [...this.mockSuppliers];
-
+    const params = new URLSearchParams();
+    params.set('page', String(Math.max((filter.pageIndex ?? 1) - 1, 0)));
+    params.set('size', String(filter.pageSize ?? 10));
     if (filter.query?.trim()) {
-      const q = filter.query.trim().toLowerCase();
-      result = result.filter(
-        s =>
-          s.name?.toLowerCase().includes(q) ||
-          s.code?.toLowerCase().includes(q) ||
-          s.phoneNumber?.includes(q) ||
-          s.email?.toLowerCase().includes(q) ||
-          s.address?.toLowerCase().includes(q),
-      );
+      params.set('search', filter.query.trim());
     }
-
     if (filter.status !== null && filter.status !== undefined) {
-      const statusFilter = filter.status;
-      result = result.filter(s => s.status === statusFilter);
+      params.set('status', STATUS_TO_BACKEND[filter.status] ?? '');
     }
 
-    if (filter.sortField) {
-      const key = filter.sortField as keyof Supplier;
-      const isAsc = filter.sortOrder === 'ascend';
-      result.sort((a, b) => {
-        const valA = String(a[key] ?? '');
-        const valB = String(b[key] ?? '');
-        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-      });
-    } else {
-      result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    }
-
-    const total = result.length;
-    const pageIndex = filter.pageIndex && filter.pageIndex > 0 ? filter.pageIndex : 1;
-    const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 10;
-    const startIndex = (pageIndex - 1) * pageSize;
-    const items = result.slice(startIndex, startIndex + pageSize);
-
-    return of({ items, total, pageIndex, pageSize }).pipe(delay(200));
+    return this.http.get<ApiResponse<BackendPageResponse>>(`${this.baseUrl}?${params.toString()}`).pipe(
+      map(res => {
+        const page = res.data;
+        const content = page?.content ?? [];
+        return {
+          items: content.map(s => this.toSupplier(s)),
+          total: page?.totalElements ?? 0,
+          pageIndex: (page?.pageNumber ?? 0) + 1,
+          pageSize: page?.pageSize ?? filter.pageSize ?? 10,
+        };
+      }),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   getSupplierById(id: string | number): Observable<Supplier | null> {
-    const supplier = this.mockSuppliers.find(s => String(s.id) === String(id));
-    return of(supplier ? { ...supplier } : null).pipe(delay(150));
+    return this.http.get<ApiResponse<BackendSupplier>>(`${this.baseUrl}/${id}`).pipe(
+      map(res => (res.data ? this.toSupplier(res.data) : null)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   createSupplier(dto: SupplierFormDTO): Observable<Supplier> {
-    const now = this.formatDate(new Date());
-    const newId = `SUP${String(this.mockSuppliers.length + 1).padStart(3, '0')}`;
-
-    const newSupplier: Supplier = {
-      id: newId,
-      code: (dto.code || '').trim(),
-      name: (dto.name || '').trim(),
-      phoneNumber: (dto.phoneNumber || '').trim(),
-      email: (dto.email || '').trim().toLowerCase(),
-      address: (dto.address || '').trim(),
-      taxCode: (dto.taxCode || '').trim(),
-      contactPerson: (dto.contactPerson || '').trim(),
-      status: dto.status,
-      note: (dto.note || '').trim(),
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.mockSuppliers.unshift(newSupplier);
-    return of(newSupplier).pipe(delay(300));
+    const body = this.toRequest(dto);
+    return this.http.post<ApiResponse<BackendSupplier>>(this.baseUrl, body).pipe(
+      map(res => this.toSupplier(res.data)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   updateSupplier(id: string | number, dto: Partial<SupplierFormDTO>): Observable<Supplier> {
-    const index = this.mockSuppliers.findIndex(s => String(s.id) === String(id));
-    if (index === -1) {
-      return throwError(() => new Error('Nhà cung cấp không tồn tại'));
-    }
-
-    const current = this.mockSuppliers[index];
-    const updatedSupplier: Supplier = {
-      ...current,
-      code: dto.code !== undefined ? dto.code.trim() : current.code,
-      name: dto.name !== undefined ? dto.name.trim() : current.name,
-      phoneNumber: dto.phoneNumber !== undefined ? dto.phoneNumber.trim() : current.phoneNumber,
-      email: dto.email !== undefined ? dto.email.trim().toLowerCase() : current.email,
-      address: dto.address !== undefined ? dto.address.trim() : current.address,
-      taxCode: dto.taxCode !== undefined ? dto.taxCode.trim() : current.taxCode,
-      contactPerson: dto.contactPerson !== undefined ? dto.contactPerson.trim() : current.contactPerson,
-      status: dto.status !== undefined ? dto.status : current.status,
-      note: dto.note !== undefined ? dto.note.trim() : current.note,
-      updatedAt: this.formatDate(new Date()),
-    };
-
-    this.mockSuppliers[index] = updatedSupplier;
-    return of(updatedSupplier).pipe(delay(300));
+    // Backend yêu cầu gửi đủ các trường (PUT), nên merge với dữ liệu hiện tại.
+    return this.getSupplierById(id).pipe(
+      switchMap(current => {
+        if (!current) {
+          return throwError(() => new Error('Nhà cung cấp không tồn tại'));
+        }
+        const merged: SupplierFormDTO = { ...this.toFormDTO(current), ...dto };
+        const body = this.toRequest(merged);
+        return this.http.put<ApiResponse<BackendSupplier>>(`${this.baseUrl}/${id}`, body).pipe(map(res => this.toSupplier(res.data)));
+      }),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   toggleStatus(id: string | number): Observable<Supplier> {
-    const supplier = this.mockSuppliers.find(s => String(s.id) === String(id));
-    if (!supplier) {
-      return throwError(() => new Error('Nhà cung cấp không tồn tại'));
-    }
-    const newStatus = supplier.status === SupplierStatus.ACTIVE ? SupplierStatus.INACTIVE : SupplierStatus.ACTIVE;
-    return this.updateSupplier(id, { status: newStatus });
+    return this.getSupplierById(id).pipe(
+      switchMap(current => {
+        if (!current) {
+          return throwError(() => new Error('Nhà cung cấp không tồn tại'));
+        }
+        const newStatus = current.status === SupplierStatus.ACTIVE ? SupplierStatus.INACTIVE : SupplierStatus.ACTIVE;
+        return this.updateSupplier(id, { status: newStatus });
+      }),
+    );
   }
 
   deleteSupplier(id: string | number): Observable<boolean> {
-    const initialLen = this.mockSuppliers.length;
-    this.mockSuppliers = this.mockSuppliers.filter(s => String(s.id) !== String(id));
-    return of(this.mockSuppliers.length < initialLen).pipe(delay(250));
+    return this.http.delete<ApiResponse<unknown>>(`${this.baseUrl}/${id}`).pipe(
+      map(() => true),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
-  private formatDate(date: Date): string {
-    const pad = (n: number): string => String(n).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    const MM = pad(date.getMonth() + 1);
-    const dd = pad(date.getDate());
-    const hh = pad(date.getHours());
-    const mm = pad(date.getMinutes());
-    const ss = pad(date.getSeconds());
-    return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
+  // ── Mapping helpers ────────────────────────────────────────────────
+
+  private toSupplier(s: BackendSupplier): Supplier {
+    return {
+      id: s.id,
+      code: s.code,
+      name: s.name,
+      phoneNumber: s.phone ?? undefined,
+      email: s.email ?? undefined,
+      address: s.address ?? undefined,
+      taxCode: s.taxCode ?? undefined,
+      contactPerson: s.contactName ?? undefined,
+      status: statusFromBackend(s.status),
+      paymentTermDays: s.paymentTermDays ?? undefined,
+      createdAt: s.createdAt ?? '',
+    };
+  }
+
+  private toFormDTO(s: Supplier): SupplierFormDTO {
+    return {
+      code: s.code,
+      name: s.name,
+      phoneNumber: s.phoneNumber,
+      email: s.email,
+      address: s.address,
+      taxCode: s.taxCode,
+      contactPerson: s.contactPerson,
+      status: s.status,
+      paymentTermDays: s.paymentTermDays,
+      note: s.note,
+    };
+  }
+
+  private toRequest(dto: SupplierFormDTO): BackendSupplierRequest {
+    return {
+      code: (dto.code || '').trim(),
+      name: (dto.name || '').trim(),
+      taxCode: (dto.taxCode || '').trim() || null,
+      contactName: (dto.contactPerson || '').trim() || null,
+      phone: (dto.phoneNumber || '').trim() || null,
+      email: (dto.email || '').trim() || null,
+      address: (dto.address || '').trim() || null,
+      paymentTermDays: dto.paymentTermDays != null ? Number(dto.paymentTermDays) : null,
+      status: STATUS_TO_BACKEND[dto.status] ?? 'ACTIVE',
+    };
+  }
+
+  private errorMessage(err: unknown): string {
+    const e = err as { status?: number; error?: { message?: string }; message?: string };
+    if (e?.error?.message) {
+      return e.error.message;
+    }
+    if (e?.message) {
+      return e.message;
+    }
+    return 'Không thể kết nối tới máy chủ.';
   }
 }

@@ -6,7 +6,7 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button variant="primary" leftIcon="plus" (click)="openFormPlaceholder('create')"> Thêm mới nhà cung cấp </app-button>
+      <app-button variant="primary" leftIcon="plus" (click)="openCreateModal()"> Thêm mới nhà cung cấp </app-button>
     </div>
   </div>
 
@@ -120,7 +120,23 @@
                   iconOnly="edit"
                   nz-tooltip
                   nzTooltipTitle="Chỉnh sửa nhà cung cấp"
-                  (click)="openFormPlaceholder('edit')"
+                  (click)="openEditModal(supplier)"
+                >
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  iconOnly="swap"
+                  nz-tooltip
+                  nzTooltipTitle="Đổi trạng thái"
+                  (click)="onToggleStatus(supplier)"
+                >
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa nhà cung cấp"
+                  (click)="onDelete(supplier)"
                 >
                 </app-button>
               </div>
@@ -147,4 +163,133 @@
       </app-pagination>
     </div>
   </nz-card>
+
+  <!-- ── 5. Form Modal (Thêm mới / Cập nhật) ───────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="formModalTitle"
+    size="lg"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="supplierForm" class="supplier-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Mã nhà cung cấp (Bắt buộc) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-code">Mã nhà cung cấp</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="tag" />
+            <input id="modal-code" type="text" nz-input formControlName="code" placeholder="VD: NCC001" maxlength="50" />
+          </nz-input-wrapper>
+          @if (supplierForm.get('code')?.dirty || supplierForm.get('code')?.touched) {
+            @if (supplierForm.get('code')?.hasError('required')) {
+              <span class="form-error">Mã nhà cung cấp không được để trống.</span>
+            }
+            @if (supplierForm.get('code')?.hasError('maxlength')) {
+              <span class="form-error">Mã nhà cung cấp tối đa 50 ký tự.</span>
+            }
+          }
+        </div>
+
+        <!-- Tên nhà cung cấp (Bắt buộc) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-name">Tên nhà cung cấp</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="shop" />
+            <input id="modal-name" type="text" nz-input formControlName="name" placeholder="VD: Công ty TNHH ABC" maxlength="200" />
+          </nz-input-wrapper>
+          @if (supplierForm.get('name')?.dirty || supplierForm.get('name')?.touched) {
+            @if (supplierForm.get('name')?.hasError('required')) {
+              <span class="form-error">Tên nhà cung cấp không được để trống.</span>
+            }
+            @if (supplierForm.get('name')?.hasError('maxlength')) {
+              <span class="form-error">Tên nhà cung cấp tối đa 200 ký tự.</span>
+            }
+          }
+        </div>
+
+        <!-- Mã số thuế -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-taxCode">Mã số thuế</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="file" />
+            <input id="modal-taxCode" type="text" nz-input formControlName="taxCode" placeholder="VD: 0101234567" maxlength="30" />
+          </nz-input-wrapper>
+          @if (supplierForm.get('taxCode')?.dirty || supplierForm.get('taxCode')?.touched) {
+            @if (supplierForm.get('taxCode')?.hasError('maxlength')) {
+              <span class="form-error">Mã số thuế tối đa 30 ký tự.</span>
+            }
+          }
+        </div>
+
+        <!-- Người liên hệ -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-contactPerson">Người liên hệ</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="user" />
+            <input id="modal-contactPerson" type="text" nz-input formControlName="contactPerson" placeholder="VD: Nguyễn Văn A" maxlength="150" />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Số điện thoại -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-phoneNumber">Số điện thoại</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="phone" />
+            <input id="modal-phoneNumber" type="text" nz-input formControlName="phoneNumber" placeholder="VD: 0912 345 678" maxlength="20" />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Email -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-email">Email</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="mail" />
+            <input id="modal-email" type="email" nz-input formControlName="email" placeholder="VD: contact@example.com" maxlength="150" />
+          </nz-input-wrapper>
+          @if (supplierForm.get('email')?.dirty || supplierForm.get('email')?.touched) {
+            @if (supplierForm.get('email')?.hasError('email')) {
+              <span class="form-error">Định dạng email không hợp lệ.</span>
+            }
+          }
+        </div>
+
+        <!-- Kỳ hạn thanh toán -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-paymentTermDays">Kỳ hạn thanh toán (ngày)</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="calendar" />
+            <input id="modal-paymentTermDays" type="number" min="0" nz-input formControlName="paymentTermDays" placeholder="VD: 30" />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Địa chỉ -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="modal-address">Địa chỉ</label>
+          <textarea id="modal-address" nz-input formControlName="address" rows="2" placeholder="VD: Số 1, đường A, quận B, TP.HCM" maxlength="255"></textarea>
+        </div>
+
+        <!-- Trạng thái -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label required">Trạng thái</label>
+          <nz-radio-group formControlName="status">
+            <label nz-radio [nzValue]="SupplierStatus.ACTIVE">Đang hợp tác</label>
+            <label nz-radio [nzValue]="SupplierStatus.INACTIVE">Ngừng hợp tác</label>
+          </nz-radio-group>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">
+          Hủy bỏ
+        </app-button>
+        <app-button variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
+          {{ isEditMode ? 'Lưu thay đổi' : 'Thêm nhà cung cấp' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
 </div>

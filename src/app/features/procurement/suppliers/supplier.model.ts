@@ -14,6 +14,7 @@ export interface Supplier {
   contactPerson?: string;
   status: SupplierStatus;
   note?: string;
+  paymentTermDays?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -36,6 +37,7 @@ export interface SupplierFormDTO {
   taxCode?: string;
   contactPerson?: string;
   status: SupplierStatus;
+  paymentTermDays?: number;
   note?: string;
 }
 
