@@ -41,22 +41,6 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
       },
       {
         kind: 'parent',
-        id: 'procurement',
-        title: 'Mua hàng',
-        icon: 'shopping',
-        children: [
-          {
-            kind: 'child',
-            id: 'manage-suppliers',
-            title: 'Nhà cung cấp',
-            route: '/admin/procurement/suppliers/list',
-            activePrefix: '/admin/procurement/suppliers',
-            authorities: [ROLE.NHA_CUNG_CAP.VIEW],
-          },
-        ],
-      },
-      {
-        kind: 'parent',
         id: 'system',
         title: 'Hệ thống',
         icon: 'appstore',
