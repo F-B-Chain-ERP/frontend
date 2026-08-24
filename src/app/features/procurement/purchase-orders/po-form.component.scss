@@ -1,0 +1,83 @@
+.po-form-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.po-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+// ── Card chi tiết nguyên liệu ───────────────────────────────────
+.items-card {
+  .items-card__footer {
+    display: flex;
+    justify-content: flex-start;
+    padding-top: var(--space-3, 12px);
+  }
+}
+
+.line-total {
+  font-family: var(--font-mono, monospace);
+  font-weight: var(--fw-semibold);
+}
+
+// ── Card tổng tiền & hành động ──────────────────────────────────
+.summary-card {
+  position: sticky;
+  bottom: var(--space-3, 12px);
+  z-index: 10;
+
+  .summary-card__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3, 12px);
+    flex-wrap: wrap;
+  }
+
+  .summary-card__total {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2, 8px);
+  }
+
+  .summary-card__label {
+    color: var(--color-text-secondary, #595959);
+    font-size: var(--fs-body, 14px);
+  }
+
+  .summary-card__amount {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--fs-h4, 22px);
+    font-weight: var(--fw-bold, 700);
+    color: var(--color-primary, #1677ff);
+  }
+
+  .summary-card__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2, 8px);
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-card {
+    position: static;
+
+    .summary-card__row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .summary-card__total {
+      justify-content: space-between;
+    }
+
+    .summary-card__actions {
+      justify-content: flex-end;
+    }
+  }
+}
