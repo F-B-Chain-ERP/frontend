@@ -32,10 +32,61 @@ export interface UserFormDTO {
   email: string;
   username: string;
   phoneNumber?: string;
+  password?: string;
   status: UserStatus;
   department?: string;
   roles?: string[];
   note?: string;
+}
+
+// ── Backend (BE) response contracts for /api/v1/accounts ──
+export interface AccountResponseBE {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  authProvider: string;
+  hasLocalPassword: boolean;
+  status: string;
+  primaryBranchId: string | null;
+  lastLoginAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface PageResponseBE<T> {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  content: T[];
+}
+
+export interface ApiResponseBE<T> {
+  status: number;
+  errorCode: string | null;
+  message: string;
+  data: T;
+  timestamp: string;
+}
+
+/** Map trạng thái BE (EntityStatus) sang UserStatus (số) của FE. */
+export function backendStatusToUserStatus(status: string | null | undefined): UserStatus {
+  return status === 'ACTIVE' ? UserStatus.ACTIVE : UserStatus.INACTIVE;
+}
+
+/** Format Instant (ISO-8601) sang "YYYY-MM-DD HH:mm:ss" để hiển thị nhất quán. */
+export function formatInstant(value: string | null | undefined): string {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+    `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  );
 }
 
 export interface UserListResponse {
