@@ -9,7 +9,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 
 import { AppButtonComponent } from '../../shared/app-button/app-button.component';
 import { StateStorageService } from '../../core/auth/state-storage.service';
-import { LoginException, LoginCredentials } from './login.model';
+import { LoginException, LoginCredentials, PrincipalType } from './login.model';
 import { LoginService } from './login.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { GoogleIdentityService } from '../../core/auth/google-identity.service';
@@ -65,6 +65,8 @@ export class LoginComponent implements OnInit, OnDestroy {
     if (this.stateStorageService.getAuthenticationToken()) {
       if (this.stateStorageService.hasPendingScopeAssignment()) {
         this.router.navigate(['/select-branch']);
+      } else if (this.principalTypeFromToken() === 'CUSTOMER') {
+        this.router.navigate(['/store']);
       } else {
         this.router.navigate(['/admin/home']);
       }
@@ -95,7 +97,13 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.googleLoading.set(false);
         this.theme.restorePreLogoutMode();
         this.theme.restorePreLogoutBrand();
-        this.router.navigate(auth.requiresScopeAssignment ? ['/select-branch'] : ['/store']);
+        if (auth.requiresScopeAssignment) {
+          this.router.navigate(['/select-branch']);
+        } else if (auth.principalType === 'CUSTOMER') {
+          this.router.navigate(['/store']);
+        } else {
+          this.router.navigate(['/admin/home']);
+        }
       },
       error: err => {
         this.googleLoading.set(false);
@@ -123,10 +131,30 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.loading.set(false);
         this.theme.restorePreLogoutMode();
         this.theme.restorePreLogoutBrand();
-        this.router.navigate(auth.requiresScopeAssignment ? ['/select-branch'] : ['/admin/home']);
+        if (auth.requiresScopeAssignment) {
+          this.router.navigate(['/select-branch']);
+        } else if (auth.principalType === 'CUSTOMER') {
+          this.router.navigate(['/store']);
+        } else {
+          this.router.navigate(['/admin/home']);
+        }
       },
       error: err => this.handleLoginError(err),
     });
+  }
+
+  private principalTypeFromToken(): PrincipalType | null {
+    const token = this.stateStorageService.getAuthenticationToken();
+    if (!token) {
+      return null;
+    }
+    try {
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+      return decoded.principalType ?? null;
+    } catch {
+      return null;
+    }
   }
 
   private handleLoginError(err: unknown): void {
