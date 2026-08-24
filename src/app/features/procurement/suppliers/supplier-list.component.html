@@ -1,0 +1,295 @@
+<div class="supplier-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý nhà cung cấp</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="primary" leftIcon="plus" (click)="openCreateModal()"> Thêm mới nhà cung cấp </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Search keyword -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="supplier-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="supplier-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập mã NCC, tên, số điện thoại, email, địa chỉ..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Status dropdown -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label" for="supplier-status-select">Trạng thái</label>
+        <nz-select
+          id="supplier-status-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #supplierTable
+      [nzData]="suppliers()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1100px' }"
+    >
+      <thead>
+        <tr>
+          <!-- STT -->
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+          <!-- Mã NCC -->
+          <th scope="col" nzWidth="110px" nzAlign="left">Mã NCC</th>
+
+          <!-- Tên nhà cung cấp -->
+          <th scope="col" nzWidth="240px" nzAlign="left">Tên nhà cung cấp</th>
+
+          <!-- Người liên hệ -->
+          <th scope="col" nzWidth="160px" nzAlign="left">Người liên hệ</th>
+
+          <!-- Số điện thoại -->
+          <th scope="col" nzWidth="140px" nzAlign="left">Số điện thoại</th>
+
+          <!-- Email -->
+          <th scope="col" nzWidth="200px" nzAlign="left">Email</th>
+
+          <!-- Địa chỉ -->
+          <th scope="col" nzWidth="260px" nzAlign="left">Địa chỉ</th>
+
+          <!-- Trạng thái -->
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+
+          <!-- Thao tác -->
+          <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (supplier of suppliers(); track supplier.id) {
+          <tr>
+            <td nzAlign="center">{{ pageIndex === 1 ? $index + 1 : (pageIndex - 1) * pageSize + $index + 1 }}</td>
+            <td>
+              <span class="supplier-code">{{ supplier.code }}</span>
+            </td>
+            <td>
+              <span class="supplier-name">{{ supplier.name }}</span>
+            </td>
+            <td>{{ supplier.contactPerson || '—' }}</td>
+            <td>{{ supplier.phoneNumber || '—' }}</td>
+            <td>{{ supplier.email || '—' }}</td>
+            <td>{{ supplier.address || '—' }}</td>
+            <td nzAlign="center">
+              <span [class]="getStatusMeta(supplier.status).badgeClass">
+                {{ getStatusMeta(supplier.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa nhà cung cấp"
+                  (click)="openEditModal(supplier)"
+                >
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  iconOnly="swap"
+                  nz-tooltip
+                  nzTooltipTitle="Đổi trạng thái"
+                  (click)="onToggleStatus(supplier)"
+                >
+                </app-button>
+                <app-button
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa nhà cung cấp"
+                  (click)="onDelete(supplier)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" class="tbl-empty">Không có dữ liệu nhà cung cấp</td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Form Modal (Thêm mới / Cập nhật) ───────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="formModalTitle"
+    size="lg"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="supplierForm" class="supplier-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Mã nhà cung cấp (Bắt buộc) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-code">Mã nhà cung cấp</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="tag" />
+            <input id="modal-code" type="text" nz-input formControlName="code" placeholder="VD: NCC001" maxlength="50" />
+          </nz-input-wrapper>
+          @if (supplierForm.get('code')?.dirty || supplierForm.get('code')?.touched) {
+            @if (supplierForm.get('code')?.hasError('required')) {
+              <span class="form-error">Mã nhà cung cấp không được để trống.</span>
+            }
+            @if (supplierForm.get('code')?.hasError('maxlength')) {
+              <span class="form-error">Mã nhà cung cấp tối đa 50 ký tự.</span>
+            }
+          }
+        </div>
+
+        <!-- Tên nhà cung cấp (Bắt buộc) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-name">Tên nhà cung cấp</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="shop" />
+            <input id="modal-name" type="text" nz-input formControlName="name" placeholder="VD: Công ty TNHH ABC" maxlength="200" />
+          </nz-input-wrapper>
+          @if (supplierForm.get('name')?.dirty || supplierForm.get('name')?.touched) {
+            @if (supplierForm.get('name')?.hasError('required')) {
+              <span class="form-error">Tên nhà cung cấp không được để trống.</span>
+            }
+            @if (supplierForm.get('name')?.hasError('maxlength')) {
+              <span class="form-error">Tên nhà cung cấp tối đa 200 ký tự.</span>
+            }
+          }
+        </div>
+
+        <!-- Mã số thuế -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-taxCode">Mã số thuế</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="file" />
+            <input id="modal-taxCode" type="text" nz-input formControlName="taxCode" placeholder="VD: 0101234567" maxlength="30" />
+          </nz-input-wrapper>
+          @if (supplierForm.get('taxCode')?.dirty || supplierForm.get('taxCode')?.touched) {
+            @if (supplierForm.get('taxCode')?.hasError('maxlength')) {
+              <span class="form-error">Mã số thuế tối đa 30 ký tự.</span>
+            }
+          }
+        </div>
+
+        <!-- Người liên hệ -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-contactPerson">Người liên hệ</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="user" />
+            <input id="modal-contactPerson" type="text" nz-input formControlName="contactPerson" placeholder="VD: Nguyễn Văn A" maxlength="150" />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Số điện thoại -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-phoneNumber">Số điện thoại</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="phone" />
+            <input id="modal-phoneNumber" type="text" nz-input formControlName="phoneNumber" placeholder="VD: 0912 345 678" maxlength="20" />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Email -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-email">Email</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="mail" />
+            <input id="modal-email" type="email" nz-input formControlName="email" placeholder="VD: contact@example.com" maxlength="150" />
+          </nz-input-wrapper>
+          @if (supplierForm.get('email')?.dirty || supplierForm.get('email')?.touched) {
+            @if (supplierForm.get('email')?.hasError('email')) {
+              <span class="form-error">Định dạng email không hợp lệ.</span>
+            }
+          }
+        </div>
+
+        <!-- Kỳ hạn thanh toán -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-paymentTermDays">Kỳ hạn thanh toán (ngày)</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="calendar" />
+            <input id="modal-paymentTermDays" type="number" min="0" nz-input formControlName="paymentTermDays" placeholder="VD: 30" />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Địa chỉ -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="modal-address">Địa chỉ</label>
+          <textarea id="modal-address" nz-input formControlName="address" rows="2" placeholder="VD: Số 1, đường A, quận B, TP.HCM" maxlength="255"></textarea>
+        </div>
+
+        <!-- Trạng thái -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label required">Trạng thái</label>
+          <nz-radio-group formControlName="status">
+            <label nz-radio [nzValue]="SupplierStatus.ACTIVE">Đang hợp tác</label>
+            <label nz-radio [nzValue]="SupplierStatus.INACTIVE">Ngừng hợp tác</label>
+          </nz-radio-group>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">
+          Hủy bỏ
+        </app-button>
+        <app-button variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
+          {{ isEditMode ? 'Lưu thay đổi' : 'Thêm nhà cung cấp' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

@@ -53,6 +53,14 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
             activePrefix: '/admin/procurement/purchase-orders',
             authorities: [ROLE.DON_MUA_HANG.VIEW],
           },
+          {
+            kind: 'child',
+            id: 'manage-suppliers',
+            title: 'Nhà cung cấp',
+            route: '/admin/procurement/suppliers/list',
+            activePrefix: '/admin/procurement/suppliers',
+            authorities: [ROLE.NHA_CUNG_CAP.VIEW],
+          },
         ],
       },
       {

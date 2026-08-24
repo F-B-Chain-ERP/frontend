@@ -70,6 +70,15 @@ export const routes: Routes = [
         loadChildren: () => import('./features/procurement/purchase-orders/purchase-orders.routes'),
       },
       {
+        path: 'procurement/suppliers',
+        loadChildren: () => import('./features/procurement/suppliers/suppliers.routes'),
+      },
+      {
+        path: 'procurement/supplier',
+        redirectTo: 'procurement/suppliers',
+        pathMatch: 'prefix',
+      },
+      {
         path: 'system/accounts',
         loadChildren: () => import('./features/system/users/users.routes'),
       },
@@ -104,6 +113,16 @@ export const routes: Routes = [
   {
     path: 'ui-kit',
     redirectTo: 'admin/ui-kit',
+    pathMatch: 'full',
+  },
+  {
+    path: 'procurement/suppliers/list',
+    redirectTo: 'admin/procurement/suppliers/list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'procurement/supplier/list',
+    redirectTo: 'admin/procurement/suppliers/list',
     pathMatch: 'full',
   },
   {
