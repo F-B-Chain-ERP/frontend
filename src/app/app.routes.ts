@@ -66,10 +66,6 @@ export const routes: Routes = [
         title: 'UI Design System Showcase',
       },
       {
-        path: 'procurement/suppliers',
-        loadChildren: () => import('./features/procurement/suppliers/suppliers.routes'),
-      },
-      {
         path: 'system/accounts',
         loadChildren: () => import('./features/system/users/users.routes'),
       },
