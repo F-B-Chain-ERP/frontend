@@ -26,9 +26,22 @@
         <nz-input-wrapper [nzAllowClear]="true">
           <nz-icon nzInputPrefix nzType="search"/>
           <input id="user-search-input" nz-input [(ngModel)]="searchQuery" (keyup.enter)="onSearch()"
-                 placeholder="Nhập họ tên, email, tên đăng nhập, số điện thoại..."/>
+                 placeholder="Nhập họ tên, email, tên đăng nhập, số điện thoại, chi nhánh..."/>
         </nz-input-wrapper>
       </div>
+
+      <!-- Branch filter dropdown -->
+      @if (branchOptions().length > 0) {
+        <div class="filter-item filter-item--branch">
+          <label class="form-label" for="user-branch-select">Chi nhánh</label>
+          <nz-select id="user-branch-select" [(ngModel)]="selectedBranchId" (ngModelChange)="onSearch()"
+                     nzPlaceHolder="Tất cả chi nhánh" [nzAllowClear]="true" style="width: 100%">
+            @for (b of branchOptions(); track b.value) {
+              <nz-option [nzLabel]="b.label" [nzValue]="b.value"></nz-option>
+            }
+          </nz-select>
+        </div>
+      }
 
       <!-- Status dropdown -->
       <div class="filter-item filter-item--status">
@@ -96,8 +109,8 @@
         <!-- Email -->
         <th scope="col" [nzShowSort]="true" [nzSortFn]="sortEmailFn" nzWidth="200px" nzAlign="left">Email</th>
 
-        <!-- Phòng ban / Đơn vị -->
-        <th scope="col" nzWidth="180px" nzAlign="left">Phòng ban</th>
+        <!-- Chi nhánh công tác -->
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortBranchFn" nzWidth="200px" nzAlign="left">Chi nhánh</th>
 
         <!-- Vai trò hệ thống (Sử dụng AppOverflowTagsComponent) -->
         <th scope="col" nzWidth="190px" nzAlign="left">Vai trò</th>
@@ -125,11 +138,9 @@
                                   placeholder="Tìm email"></app-table-search-input>
         </th>
         <th>
-          <app-table-search-input [value]="columnFilter.getValue('department')"
-                                  (valueChange)="searchByField('department', $event)" placeholder="Tất cả phòng ban"
-                                  type="option"
-                                  labelField="label" valueField="value"
-                                  [options]="departmentFilterOptions"></app-table-search-input>
+          <app-table-search-input [value]="columnFilter.getValue('primaryBranchName')"
+                                  (valueChange)="searchByField('primaryBranchName', $event)"
+                                  placeholder="Tìm chi nhánh"></app-table-search-input>
         </th>
         <th>
           <app-table-search-input [value]="columnFilter.getValue('roles')"
@@ -189,14 +200,17 @@
               </a>
             </td>
 
-            <!-- Phòng ban -->
+            <!-- Chi nhánh công tác -->
             <td nzAlign="left">
-              <span class="department-text">{{ data.department || '—' }}</span>
+              <span class="branch-text">
+                <nz-icon nzType="shop" style="margin-right: 4px; color: var(--brand);"/>
+                {{ data.primaryBranchName || getBranchName(data.primaryBranchId) }}
+              </span>
             </td>
 
             <!-- Vai trò (Sử dụng AppOverflowTagsComponent) -->
             <td nzAlign="left">
-              <app-overflow-tags [items]="data.roles || ['Người dùng hệ thống']"></app-overflow-tags>
+              <app-overflow-tags [items]="data.roles && data.roles.length ? data.roles : ['Nhân viên']"></app-overflow-tags>
             </td>
 
             <!-- Trạng thái (Huy hiệu .tbl-badge sạch sẽ chuẩn UI-Kit) -->
@@ -349,23 +363,28 @@
           </div>
         }
 
-        <!-- Phòng ban / Đơn vị -->
+        <!-- Chi nhánh công tác (Bắt buộc) -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
-          <label class="form-label" for="modal-department">Đơn vị / Phòng ban</label>
-          <nz-select id="modal-department" formControlName="department" nzPlaceHolder="Chọn phòng ban công tác"
+          <label class="form-label required" for="modal-primaryBranch">Chi nhánh công tác</label>
+          <nz-select id="modal-primaryBranch" formControlName="primaryBranchId" nzPlaceHolder="Chọn chi nhánh công tác"
                      style="width: 100%">
-            @for (dept of departmentOptions; track dept.value) {
-              <nz-option [nzLabel]="dept.label" [nzValue]="dept.value"></nz-option>
+            @for (b of branchOptions(); track b.value) {
+              <nz-option [nzLabel]="b.label" [nzValue]="b.value"></nz-option>
             }
           </nz-select>
+          @if (userForm.get('primaryBranchId')?.dirty || userForm.get('primaryBranchId')?.touched) {
+            @if (userForm.get('primaryBranchId')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn chi nhánh công tác.</span>
+            }
+          }
         </div>
 
-        <!-- Vai trò quyền hạn -->
+        <!-- Vai trò hệ thống -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label" for="modal-roles">Vai trò hệ thống</label>
-          <nz-select id="modal-roles" formControlName="roles" nzMode="multiple" nzPlaceHolder="Chọn vai trò"
+          <nz-select id="modal-roles" formControlName="roleIds" nzMode="multiple" nzPlaceHolder="Chọn vai trò (tùy chọn)"
                      style="width: 100%">
-            @for (role of roleOptions; track role.value) {
+            @for (role of roleOptions(); track role.value) {
               <nz-option [nzLabel]="role.label" [nzValue]="role.value"></nz-option>
             }
           </nz-select>
@@ -426,13 +445,13 @@
             <span class="user-detail-id font-mono">({{ selectedUserForDetail.id }})</span>
           </div>
           <div class="user-detail-meta">
-          <span [class]="getStatusMeta(selectedUserForDetail.status).badgeClass">
-            {{ getStatusMeta(selectedUserForDetail.status).label }}
-          </span>
+            <span [class]="getStatusMeta(selectedUserForDetail.status).badgeClass">
+              {{ getStatusMeta(selectedUserForDetail.status).label }}
+            </span>
             <span class="user-detail-dept">
-            <nz-icon nzType="apartment"/>
-              {{ selectedUserForDetail.department || 'Chưa phân bổ' }}
-          </span>
+              <nz-icon nzType="shop"/>
+              {{ getBranchName(selectedUserForDetail.primaryBranchId) || selectedUserForDetail.primaryBranchName || 'Chưa phân bổ chi nhánh' }}
+            </span>
           </div>
         </div>
       </div>
@@ -449,13 +468,19 @@
             {{ selectedUserForDetail.email }}
           </a>
         </nz-descriptions-item>
+        <nz-descriptions-item nzTitle="Chi nhánh công tác" [nzSpan]="2">
+          <span class="font-semibold">
+            <nz-icon nzType="shop" style="margin-right: 6px; color: var(--brand);"/>
+            {{ getBranchName(selectedUserForDetail.primaryBranchId) || selectedUserForDetail.primaryBranchName || 'Chưa phân bổ' }}
+          </span>
+        </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Số điện thoại">
           <span class="font-mono">{{ selectedUserForDetail.phoneNumber || '—' }}</span>
         </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Trạng thái tài khoản">
-        <span [class]="getStatusMeta(selectedUserForDetail.status).badgeClass">
-          {{ getStatusMeta(selectedUserForDetail.status).label }}
-        </span>
+          <span [class]="getStatusMeta(selectedUserForDetail.status).badgeClass">
+            {{ getStatusMeta(selectedUserForDetail.status).label }}
+          </span>
         </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Vai trò hệ thống" [nzSpan]="2">
           <div class="roles-list">
@@ -464,7 +489,7 @@
                 <span class="role-code">{{ role }}</span>
               }
             } @else {
-              <span class="text-muted">Người dùng hệ thống</span>
+              <span class="text-muted">Nhân viên</span>
             }
           </div>
         </nz-descriptions-item>
@@ -472,7 +497,7 @@
           <span class="font-mono text-muted">{{ selectedUserForDetail.createdAt }}</span>
         </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Cập nhật lần cuối">
-        <span class="font-mono text-muted">{{
+          <span class="font-mono text-muted">{{
             selectedUserForDetail.updatedAt || selectedUserForDetail.createdAt
           }}</span>
         </nz-descriptions-item>

@@ -60,6 +60,14 @@
   font-weight: var(--fw-semibold);
 }
 
+.warehouse-name {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  font-weight: var(--fw-medium);
+}
+
 .po-total {
   font-family: var(--font-mono, monospace);
   font-weight: var(--fw-semibold);

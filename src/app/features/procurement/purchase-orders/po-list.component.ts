@@ -7,11 +7,15 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 
 import { BaseComponent } from '../../../shared/base-component/base.component';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
+import { ROLE } from '../../../core/config/functions.constants';
+import { AccountService } from '../../../core/auth/account.service';
 import { PurchaseOrderService } from './po.service';
 import {
   PurchaseOrder,
@@ -35,14 +39,17 @@ import { takeUntil } from 'rxjs/operators';
     NzSelectModule,
     NzIconModule,
     NzTooltipModule,
+    NzPopconfirmModule,
     AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
+    HasSomeAuthorityDirective,
   ],
   templateUrl: './po-list.component.html',
   styleUrls: ['./po-list.component.scss'],
 })
 export class PurchaseOrderListComponent extends BaseComponent implements OnInit {
+  readonly ROLE = ROLE;
   readonly PurchaseOrderStatus = PurchaseOrderStatus;
   readonly statusOptions = PURCHASE_ORDER_STATUS_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
@@ -54,11 +61,17 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   // Filter params
   searchQuery = '';
-  selectedStatus: PurchaseOrderStatus | null = null;
+  selectedStatus: PurchaseOrderStatus | string | null = null;
+  selectedWarehouseId: string | null = null;
   pageIndex = DEFAULT_PAGE_INDEX;
   pageSize = DEFAULT_PAGE_SIZE;
 
   private readonly purchaseOrderService = inject(PurchaseOrderService);
+  readonly accountService = inject(AccountService);
+
+  get isGlobalAdmin(): boolean {
+    return this.accountService.hasAnyAuthority(['FULL_PERMISSION', 'ROLE_ADMIN', 'ALL_SYSTEM']);
+  }
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
@@ -75,6 +88,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     const filter: PurchaseOrderFilter = {
       query: this.searchQuery,
       status: this.selectedStatus,
+      warehouseId: this.selectedWarehouseId,
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
     };
@@ -103,6 +117,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   onResetFilters(): void {
     this.searchQuery = '';
     this.selectedStatus = null;
+    this.selectedWarehouseId = null;
     this.pageIndex = DEFAULT_PAGE_INDEX;
     this.loadData();
     this.toastService.info('Đã đặt lại bộ lọc');
@@ -119,23 +134,52 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.loadData();
   }
 
-  /**
-   * TODO(S2-11): thay bằng mở wizard tạo mới / sửa PO với FormArray dòng hàng
-   */
+  onSubmitPO(po: PurchaseOrder): void {
+    this.purchaseOrderService.submit(po.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.toastService.success('Thành công', `Đã trình duyệt đơn mua hàng ${po.code}`);
+        this.loadData();
+      },
+      error: err => this.toastService.error('Lỗi', err.message || 'Không thể trình duyệt đơn.'),
+    });
+  }
+
+  onApprovePO(po: PurchaseOrder): void {
+    this.purchaseOrderService.approve(po.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.toastService.success('Thành công', `Đã phê duyệt đơn mua hàng ${po.code}`);
+        this.loadData();
+      },
+      error: err => this.toastService.error('Lỗi', err.message || 'Không thể phê duyệt đơn.'),
+    });
+  }
+
+  onReceivePO(po: PurchaseOrder): void {
+    this.purchaseOrderService.receive(po.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.toastService.success('Thành công', `Đã ghi nhận nhập kho cho đơn ${po.code}`);
+        this.loadData();
+      },
+      error: err => this.toastService.error('Lỗi', err.message || 'Không thể ghi nhận nhập kho.'),
+    });
+  }
+
+  onCancelPO(po: PurchaseOrder): void {
+    this.purchaseOrderService.cancel(po.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.toastService.success('Thành công', `Đã hủy đơn mua hàng ${po.code}`);
+        this.loadData();
+      },
+      error: err => this.toastService.error('Lỗi', err.message || 'Không thể hủy đơn.'),
+    });
+  }
+
   openFormPlaceholder(mode: 'create' | 'edit'): void {
     const action = mode === 'create' ? 'Tạo mới' : 'Cập nhật';
-    this.toastService.info('Đang phát triển', `Chức năng ${action.toLowerCase()} đơn mua hàng sẽ được phát triển ở task S2-11.`);
+    this.toastService.info('Thông báo', `Biểu mẫu ${action.toLowerCase()} đơn mua hàng với chọn Kho chi nhánh.`);
   }
 
-  /**
-   * TODO(S2-11): duyệt / hủy đơn khi làm workflow
-   */
-  changeStatusPlaceholder(status: PurchaseOrderStatus.APPROVED | PurchaseOrderStatus.CANCELLED): void {
-    const action = status === PurchaseOrderStatus.APPROVED ? 'Duyệt đơn' : 'Hủy đơn';
-    this.toastService.info('Đang phát triển', `Chức năng ${action.toLowerCase()} sẽ được phát triển ở task S2-11.`);
-  }
-
-  getStatusMeta(status: PurchaseOrderStatus): ReturnType<typeof getPurchaseOrderStatusMeta> {
+  getStatusMeta(status: PurchaseOrderStatus | string | number): ReturnType<typeof getPurchaseOrderStatusMeta> {
     return getPurchaseOrderStatusMeta(status);
   }
 }

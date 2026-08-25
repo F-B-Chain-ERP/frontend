@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -28,6 +29,10 @@ import { ROLE } from '../../../core/config/functions.constants';
 import { ColumnTextFilter } from '../../../shared/utils/column-text-filter';
 import { EnterAsTabContainerDirective } from '../../../shared/directives/enter-as-tab-container.directive';
 import { UserService } from './user.service';
+import { BranchManagementService } from '../branches/branch-management.service';
+import { BranchService } from '../../../core/auth/branch.service';
+import { AccountService } from '../../../core/auth/account.service';
+import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import {
   User,
   UserFilter,
@@ -76,35 +81,22 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class UserListComponent extends BaseComponent implements OnInit {
   private readonly userService = inject(UserService);
+  private readonly branchManagementService = inject(BranchManagementService);
+  private readonly branchService = inject(BranchService);
+  private readonly accountService = inject(AccountService);
+  private readonly http = inject(HttpClient);
+  private readonly applicationConfigService = inject(ApplicationConfigService);
 
   readonly ROLE = ROLE;
   readonly UserStatus = UserStatus;
   readonly statusOptions = USER_STATUS_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
 
-  // Options for forms
-  readonly departmentOptions = [
-    { label: 'Phòng Tài chính - Kế toán', value: 'Phòng Tài chính - Kế toán' },
-    { label: 'Phòng Công nghệ Thông tin', value: 'Phòng Công nghệ Thông tin' },
-    { label: 'Phòng Đào tạo', value: 'Phòng Đào tạo' },
-    { label: 'Phòng Tổ chức Cán bộ', value: 'Phòng Tổ chức Cán bộ' },
-    { label: 'Phòng Kế hoạch - Đầu tư', value: 'Phòng Kế hoạch - Đầu tư' },
-    { label: 'Ban Quản lý Dự án', value: 'Ban Quản lý Dự án' },
-    { label: 'Khoa Công nghệ Thông tin', value: 'Khoa Công nghệ Thông tin' },
-    { label: 'Văn phòng Trường', value: 'Văn phòng Trường' },
-    { label: 'Phòng Quản trị Thiết bị', value: 'Phòng Quản trị Thiết bị' },
-  ];
-
-  readonly roleOptions = [
-    { label: 'Quản trị hệ thống', value: 'Quản trị hệ thống' },
-    { label: 'Kế toán trưởng', value: 'Kế toán trưởng' },
-    { label: 'Kế toán viên', value: 'Kế toán viên' },
-    { label: 'Thủ quỹ', value: 'Thủ quỹ' },
-    { label: 'Chuyên viên tài vụ', value: 'Chuyên viên tài vụ' },
-    { label: 'Chuyên viên đào tạo', value: 'Chuyên viên đào tạo' },
-    { label: 'Quản lý dự án XDCB', value: 'Quản lý dự án XDCB' },
-    { label: 'Người dùng hệ thống', value: 'Người dùng hệ thống' },
-  ];
+  // Branch & Role state
+  readonly branchOptions = signal<{ label: string; value: string }[]>([]);
+  readonly branchMap = new Map<string, string>();
+  readonly roleOptions = signal<{ label: string; value: string }[]>([]);
+  readonly roleMap = new Map<string, string>();
 
   // State signals
   readonly allLoadedUsers = signal<User[]>([]);
@@ -118,16 +110,11 @@ export class UserListComponent extends BaseComponent implements OnInit {
     () => this.allLoadedUsers(),
     {
       status: 'equals',
-      department: 'equals',
+      primaryBranchName: 'contains',
       roles: 'contains',
       createdAt: 'contains',
     }
   );
-
-  readonly departmentFilterOptions = [
-    { label: 'Tất cả phòng ban', value: '' },
-    ...this.departmentOptions,
-  ];
 
   readonly statusFilterOptions = [
     { label: 'Tất cả trạng thái', value: '' },
@@ -151,6 +138,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
   // Filter params
   searchQuery = '';
   selectedStatus: UserStatus | null = null;
+  selectedBranchId: string | null = null;
   pageIndex = DEFAULT_PAGE_INDEX;
   pageSize = DEFAULT_PAGE_SIZE;
   sortField?: string;
@@ -175,14 +163,15 @@ export class UserListComponent extends BaseComponent implements OnInit {
     phoneNumber: ['', [Validators.pattern(/^[0-9+() -]*$/), Validators.maxLength(15)]],
     password: ['', [Validators.minLength(8), Validators.maxLength(128)]],
     status: [UserStatus.ACTIVE, [Validators.required]],
-    department: ['Phòng Tài chính - Kế toán'],
-    roles: [['Người dùng hệ thống']],
+    primaryBranchId: ['', [Validators.required]],
+    roleIds: [[] as string[]],
     note: ['', [Validators.maxLength(500)]],
   });
 
   // Sorting helpers
   sortNameFn = createSortFn<User>('fullName');
   sortEmailFn = createSortFn<User>('email');
+  sortBranchFn = createSortFn<User>('primaryBranchName');
   sortStatusFn = createSortFn<User>('status');
   sortCreatedFn = createSortFn<User>('createdAt');
 
@@ -214,7 +203,89 @@ export class UserListComponent extends BaseComponent implements OnInit {
       }
     });
 
+    this.loadBranches();
+    this.loadRoles();
     this.loadData();
+  }
+
+  /**
+   * Tải danh sách chi nhánh (Admin xem full, Manager xem chi nhánh được phân công)
+   */
+  private loadBranches(): void {
+    const isGlobalAdmin = this.accountService.hasAnyAuthority(['FULL_PERMISSION', 'sys:branch:view', 'ROLE_ADMIN']);
+    const branchSource$ = isGlobalAdmin
+      ? this.branchManagementService.getAll()
+      : this.branchService.getMine();
+
+    branchSource$.pipe(takeUntil(this.destroy$)).subscribe({
+      next: branches => {
+        const opts = (branches || []).map(b => ({
+          label: `${b.name} (${b.code})`,
+          value: b.id,
+        }));
+        this.branchOptions.set(opts);
+        this.branchMap.clear();
+        (branches || []).forEach(b => this.branchMap.set(b.id, b.name));
+
+        // Re-map primaryBranchName on loaded users
+        if (this.allLoadedUsers().length > 0) {
+          const updated = this.allLoadedUsers().map(u => ({
+            ...u,
+            primaryBranchName: (u.primaryBranchId ? this.branchMap.get(u.primaryBranchId) : undefined) || u.primaryBranchName || '—',
+          }));
+          this.allLoadedUsers.set(updated);
+          this.users.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : updated);
+        }
+      },
+      error: () => {
+        // Fallback options
+        this.branchOptions.set([]);
+      },
+    });
+  }
+
+  /**
+   * Tải danh sách vai trò từ API backend
+   */
+  private loadRoles(): void {
+    const roleApi = this.applicationConfigService.getEndpointFor('api/v1/roles');
+    this.http.get<{ data?: { content?: Array<{ id: string; name: string; code: string }> } }>(roleApi, {
+      params: { page: '0', size: '100' }
+    }).pipe(takeUntil(this.destroy$)).subscribe({
+      next: res => {
+        const roles = res.data?.content || [];
+        if (roles.length > 0) {
+          const opts = roles.map(r => ({ label: `${r.name} (${r.code})`, value: r.id }));
+          this.roleOptions.set(opts);
+          this.roleMap.clear();
+          roles.forEach(r => this.roleMap.set(r.id, r.name));
+        } else {
+          this.setFallbackRoles();
+        }
+      },
+      error: () => {
+        this.setFallbackRoles();
+      }
+    });
+  }
+
+  private setFallbackRoles(): void {
+    const fallback = [
+      { label: 'Quản trị hệ thống (ADMIN)', value: 'ADMIN' },
+      { label: 'Quản lý chi nhánh (BRANCH_MGR)', value: 'BRANCH_MGR' },
+      { label: 'Quản lý kho (WAREHOUSE_MGR)', value: 'WAREHOUSE_MGR' },
+      { label: 'Nhân viên bán hàng (POS_STAFF)', value: 'POS_STAFF' },
+      { label: 'Nhân viên kho (WAREHOUSE_STAFF)', value: 'WAREHOUSE_STAFF' },
+      { label: 'Nhân viên pha chế (BARISTA)', value: 'BARISTA' },
+      { label: 'Kế toán viên (ACCOUNTANT)', value: 'ACCOUNTANT' },
+    ];
+    this.roleOptions.set(fallback);
+    fallback.forEach(r => this.roleMap.set(r.value, r.label));
+  }
+
+  getBranchName(branchId: string | null | undefined): string {
+    if (!branchId) return '—';
+    return this.branchMap.get(branchId) || branchId;
   }
 
   /**
@@ -225,6 +296,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
     const filter: UserFilter = {
       query: this.searchQuery,
       status: this.selectedStatus,
+      branchId: this.selectedBranchId,
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
       sortField: this.sortField,
@@ -236,8 +308,12 @@ export class UserListComponent extends BaseComponent implements OnInit {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-          this.allLoadedUsers.set(res.items);
-          this.users.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : res.items);
+          const mappedItems = res.items.map(u => ({
+            ...u,
+            primaryBranchName: (u.primaryBranchId ? this.branchMap.get(u.primaryBranchId) : undefined) || u.primaryBranchName || '—',
+          }));
+          this.allLoadedUsers.set(mappedItems);
+          this.users.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : mappedItems);
           this.total.set(res.total);
           this.loading.set(false);
           this.refreshCheckState();
@@ -330,6 +406,8 @@ export class UserListComponent extends BaseComponent implements OnInit {
    */
   openCreateModal(): void {
     this.selectedUserForEdit = null;
+    const branches = this.branchOptions();
+    const defaultBranchId = branches.length === 1 ? branches[0].value : (branches.length > 0 ? branches[0].value : '');
     this.userForm.reset({
       fullName: '',
       email: '',
@@ -337,8 +415,8 @@ export class UserListComponent extends BaseComponent implements OnInit {
       phoneNumber: '',
       password: '',
       status: UserStatus.ACTIVE,
-      department: 'Phòng Tài chính - Kế toán',
-      roles: ['Người dùng hệ thống'],
+      primaryBranchId: defaultBranchId,
+      roleIds: [],
       note: '',
     });
     this.userForm.get('username')?.enable();
@@ -359,8 +437,8 @@ export class UserListComponent extends BaseComponent implements OnInit {
       phoneNumber: user.phoneNumber || '',
       password: '',
       status: user.status,
-      department: user.department || 'Phòng Tài chính - Kế toán',
-      roles: user.roles && user.roles.length ? user.roles : ['Người dùng hệ thống'],
+      primaryBranchId: user.primaryBranchId || '',
+      roleIds: user.roleIds || [],
       note: user.note || '',
     });
     this.userForm.get('username')?.disable();
@@ -410,8 +488,8 @@ export class UserListComponent extends BaseComponent implements OnInit {
       phoneNumber: formRaw.phoneNumber || '',
       password: formRaw.password || '',
       status: Number(formRaw.status) as UserStatus,
-      department: formRaw.department || '',
-      roles: formRaw.roles || [],
+      primaryBranchId: formRaw.primaryBranchId || null,
+      roleIds: formRaw.roleIds || [],
       note: formRaw.note || '',
     };
 

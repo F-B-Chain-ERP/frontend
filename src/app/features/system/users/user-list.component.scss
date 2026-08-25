@@ -19,6 +19,11 @@
       min-width: 260px;
     }
 
+    &--branch {
+      width: 240px;
+      flex-shrink: 0;
+    }
+
     &--status {
       width: 220px;
       flex-shrink: 0;
@@ -31,6 +36,7 @@
       align-items: stretch;
     }
 
+    .filter-item--branch,
     .filter-item--status {
       width: 100%;
     }
@@ -122,6 +128,14 @@
       color: var(--brand);
     }
   }
+}
+
+.branch-text {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: var(--fw-medium);
 }
 
 .department-text {
