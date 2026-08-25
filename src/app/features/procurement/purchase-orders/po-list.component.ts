@@ -174,8 +174,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     });
   }
 
-  openFormPlaceholder(mode: 'create' | 'edit'): void {
-    const action = mode === 'create' ? 'Tạo mới' : 'Cập nhật';
+  openFormPlaceholder(mode: 'create' | 'edit' | 'view'): void {
+    const action = mode === 'create' ? 'Tạo mới' : mode === 'edit' ? 'Cập nhật' : 'Xem chi tiết';
     this.toastService.info('Thông báo', `Biểu mẫu ${action.toLowerCase()} đơn mua hàng với chọn Kho chi nhánh.`);
   }
 

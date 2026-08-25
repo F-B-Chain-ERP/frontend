@@ -1,5 +1,5 @@
 import { SidebarGroup } from './sidebar.model';
-import { ROLE } from '../../core/config/functions.constants';
+import { ROLE, FULL_PERMISSION } from '../../core/config/functions.constants';
 
 export const SIDEBAR_MENU: SidebarGroup[] = [
   {
@@ -30,6 +30,7 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
         icon: 'sketch',
         route: '/admin/ui-kit',
         children: [],
+        authorities: [FULL_PERMISSION, 'ROLE_ADMIN'],
       },
       {
         kind: 'parent',
@@ -38,6 +39,7 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
         icon: 'warning',
         route: '/admin/error-pages',
         children: [],
+        authorities: [FULL_PERMISSION, 'ROLE_ADMIN'],
       },
       {
         kind: 'parent',

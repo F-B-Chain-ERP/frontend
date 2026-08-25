@@ -35,21 +35,39 @@ export class AccountService {
   hasAnyAuthority(authorities: string[] | string): boolean {
     const userIdentity = this.userIdentity();
     if (!userIdentity) {
-      // Fallback in dev/mock if user not initialized
+      return false;
+    }
+
+    if (!authorities || (Array.isArray(authorities) && authorities.length === 0)) {
       return true;
     }
+
     if (
       userIdentity.authorities.includes('FULL_PERMISSION') ||
       userIdentity.login === 'admin' ||
       userIdentity.authorities.includes('ROLE_ADMIN') ||
-      userIdentity.authorities.length === 0 // If authorities list is empty in mock/dev, default to accessible
+      userIdentity.authorities.includes('ADMIN')
     ) {
       return true;
     }
+
     if (!Array.isArray(authorities)) {
       authorities = [authorities];
     }
-    return userIdentity.authorities.some((authority: string) => (authorities as string[]).includes(authority));
+
+    return (authorities as string[]).some((auth: string) => {
+      if (userIdentity.authorities.includes(auth)) {
+        return true;
+      }
+      // Khớp quyền VIEW nếu người dùng có mã quyền gốc (BASE code)
+      if (auth.endsWith('_VIEW')) {
+        const baseCode = auth.replace('_VIEW', '');
+        if (userIdentity.authorities.includes(baseCode)) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   identity(_force?: boolean): Observable<Account | null> {

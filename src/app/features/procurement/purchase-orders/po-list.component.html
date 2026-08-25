@@ -129,9 +129,20 @@
             </td>
             <td nzAlign="center">
               <div class="tbl-actions">
-                <!-- DRAFT: Submit for Approval -->
+                <!-- Xem chi tiết (Quyền VIEW - luôn khả dụng) -->
+                <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết"
+                  (click)="openFormPlaceholder('view')"
+                >
+                </app-button>
+
+                <!-- DRAFT: Submit for Approval / Edit / Cancel -->
                 @if (po.status === PurchaseOrderStatus.DRAFT || po.status === '0') {
                   <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
                     variant="ghost"
                     iconOnly="send"
                     nz-tooltip
@@ -140,6 +151,7 @@
                   >
                   </app-button>
                   <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
                     variant="ghost"
                     iconOnly="edit"
                     nz-tooltip
@@ -148,6 +160,7 @@
                   >
                   </app-button>
                   <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE, ROLE.DON_MUA_HANG.EDIT]"
                     variant="ghost"
                     iconOnly="close"
                     nz-tooltip
@@ -157,7 +170,7 @@
                   </app-button>
                 }
 
-                <!-- SUBMITTED: Approve (Admin only) or Cancel -->
+                <!-- SUBMITTED: Approve (Admin only) or Reject/Cancel -->
                 @if (po.status === PurchaseOrderStatus.SUBMITTED || po.status === 'PENDING' || po.status === '1') {
                   <app-button
                     *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT, 'ALL_SYSTEM']"
@@ -169,6 +182,7 @@
                   >
                   </app-button>
                   <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE, ROLE.DON_MUA_HANG.EDIT, 'ALL_SYSTEM']"
                     variant="ghost"
                     iconOnly="close"
                     nz-tooltip
@@ -181,6 +195,7 @@
                 <!-- APPROVED: Receive Stock into Warehouse -->
                 @if (po.status === PurchaseOrderStatus.APPROVED || po.status === '2') {
                   <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
                     variant="ghost"
                     iconOnly="inbox"
                     nz-tooltip
@@ -188,11 +203,6 @@
                     (click)="onReceivePO(po)"
                   >
                   </app-button>
-                }
-
-                <!-- CANCELLED or RECEIVED: View Detail -->
-                @if (po.status === PurchaseOrderStatus.CANCELLED || po.status === PurchaseOrderStatus.RECEIVED || po.status === '3') {
-                  <span class="text-muted text-xs font-mono">—</span>
                 }
               </div>
             </td>

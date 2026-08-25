@@ -15,6 +15,8 @@ import { AppButtonComponent } from '../../../shared/app-button/app-button.compon
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
+import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
+import { ROLE } from '../../../core/config/functions.constants';
 import { SupplierService } from './supplier.service';
 import { Supplier, SupplierFilter, SupplierFormDTO, SupplierStatus, SUPPLIER_STATUS_OPTIONS, getSupplierStatusMeta } from './supplier.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
@@ -39,11 +41,13 @@ import { takeUntil } from 'rxjs/operators';
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
+    HasSomeAuthorityDirective,
   ],
   templateUrl: './supplier-list.component.html',
   styleUrls: ['./supplier-list.component.scss'],
 })
 export class SupplierListComponent extends BaseComponent implements OnInit {
+  readonly ROLE = ROLE;
   readonly SupplierStatus = SupplierStatus;
   readonly statusOptions = SUPPLIER_STATUS_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
