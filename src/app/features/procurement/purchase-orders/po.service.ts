@@ -24,6 +24,10 @@ export class PurchaseOrderService {
       code: 'PO-2026-0001',
       supplierId: 'SUP001',
       supplierName: 'Công ty TNHH Nguyên liệu Phúc An',
+      warehouseId: 'WH001',
+      warehouseName: 'Kho Tổng Trung Tâm',
+      branchId: 'BR001',
+      branchName: 'Chi nhánh Hà Nội - Cầu Giấy',
       orderDate: '2026-08-01',
       expectedDate: '2026-08-05',
       status: PurchaseOrderStatus.APPROVED,
@@ -41,9 +45,13 @@ export class PurchaseOrderService {
       code: 'PO-2026-0002',
       supplierId: 'SUP002',
       supplierName: 'Nhà phân phối Sữa Sao Băng',
+      warehouseId: 'WH002',
+      warehouseName: 'Kho Chi Nhánh Cầu Giấy',
+      branchId: 'BR001',
+      branchName: 'Chi nhánh Hà Nội - Cầu Giấy',
       orderDate: '2026-08-10',
       expectedDate: '2026-08-14',
-      status: PurchaseOrderStatus.PENDING,
+      status: PurchaseOrderStatus.SUBMITTED,
       items: [
         { id: 1, materialName: 'Sữa tươi thanh trùng', unit: 'thùng', quantity: 60, unitPrice: 320000 },
         { id: 2, materialName: 'Kem tươi', unit: 'hộp', quantity: 30, unitPrice: 275000 },
@@ -56,6 +64,10 @@ export class PurchaseOrderService {
       code: 'PO-2026-0003',
       supplierId: 'SUP003',
       supplierName: 'Hợp tác xã Trà Thái Nguyên',
+      warehouseId: 'WH003',
+      warehouseName: 'Kho Chi Nhánh Đống Đa',
+      branchId: 'BR002',
+      branchName: 'Chi nhánh Hà Nội - Đống Đa',
       orderDate: '2026-08-18',
       status: PurchaseOrderStatus.DRAFT,
       items: [{ id: 1, materialName: 'Trà xanh búp', unit: 'kg', quantity: 40, unitPrice: 210000 }],
@@ -68,6 +80,10 @@ export class PurchaseOrderService {
       code: 'PO-2026-0004',
       supplierId: 'SUP001',
       supplierName: 'Công ty TNHH Nguyên liệu Phúc An',
+      warehouseId: 'WH001',
+      warehouseName: 'Kho Tổng Trung Tâm',
+      branchId: 'BR001',
+      branchName: 'Chi nhánh Hà Nội - Cầu Giấy',
       orderDate: '2026-07-02',
       expectedDate: '2026-07-06',
       status: PurchaseOrderStatus.CANCELLED,
@@ -88,13 +104,23 @@ export class PurchaseOrderService {
         po =>
           po.code?.toLowerCase().includes(q) ||
           po.supplierName?.toLowerCase().includes(q) ||
+          po.warehouseName?.toLowerCase().includes(q) ||
+          po.branchName?.toLowerCase().includes(q) ||
           (po.items ?? []).some(i => i.materialName?.toLowerCase().includes(q)),
       );
     }
 
     if (filter.status !== null && filter.status !== undefined) {
-      const statusFilter = filter.status;
-      result = result.filter(po => po.status === statusFilter);
+      const statusFilter = String(filter.status);
+      result = result.filter(po => String(po.status) === statusFilter);
+    }
+
+    if (filter.warehouseId) {
+      result = result.filter(po => String(po.warehouseId) === String(filter.warehouseId));
+    }
+
+    if (filter.branchId) {
+      result = result.filter(po => String(po.branchId) === String(filter.branchId));
     }
 
     if (filter.sortField) {
@@ -133,6 +159,10 @@ export class PurchaseOrderService {
       code: dto.code || `PO-2026-${String(nextSeq).padStart(4, '0')}`,
       supplierId: dto.supplierId,
       supplierName: dto.supplierName,
+      warehouseId: dto.warehouseId,
+      warehouseName: dto.warehouseName || 'Kho Tổng',
+      branchId: dto.branchId,
+      branchName: dto.branchName,
       orderDate: dto.orderDate,
       expectedDate: dto.expectedDate || '',
       status: dto.status ?? PurchaseOrderStatus.DRAFT,
@@ -160,6 +190,10 @@ export class PurchaseOrderService {
       code: dto.code !== undefined ? dto.code : current.code,
       supplierId: dto.supplierId !== undefined ? dto.supplierId : current.supplierId,
       supplierName: dto.supplierName !== undefined ? dto.supplierName : current.supplierName,
+      warehouseId: dto.warehouseId !== undefined ? dto.warehouseId : current.warehouseId,
+      warehouseName: dto.warehouseName !== undefined ? dto.warehouseName : current.warehouseName,
+      branchId: dto.branchId !== undefined ? dto.branchId : current.branchId,
+      branchName: dto.branchName !== undefined ? dto.branchName : current.branchName,
       orderDate: dto.orderDate !== undefined ? dto.orderDate : current.orderDate,
       expectedDate: dto.expectedDate !== undefined ? dto.expectedDate : current.expectedDate,
       status: dto.status !== undefined ? dto.status : current.status,
@@ -181,8 +215,16 @@ export class PurchaseOrderService {
     return this.updatePurchaseOrder(id, { status });
   }
 
+  submit(id: string | number): Observable<PurchaseOrder> {
+    return this.changeStatus(id, PurchaseOrderStatus.SUBMITTED);
+  }
+
   approve(id: string | number): Observable<PurchaseOrder> {
     return this.changeStatus(id, PurchaseOrderStatus.APPROVED);
+  }
+
+  receive(id: string | number): Observable<PurchaseOrder> {
+    return this.changeStatus(id, PurchaseOrderStatus.RECEIVED);
   }
 
   cancel(id: string | number): Observable<PurchaseOrder> {

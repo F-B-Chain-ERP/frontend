@@ -6,7 +6,7 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button variant="primary" leftIcon="plus" (click)="openCreateModal()"> Thêm mới nhà cung cấp </app-button>
+      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.ADD]" variant="primary" leftIcon="plus" (click)="openCreateModal()"> Thêm mới nhà cung cấp </app-button>
     </div>
   </div>
 
@@ -116,6 +116,7 @@
             <td nzAlign="center">
               <div class="tbl-actions">
                 <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]"
                   variant="ghost"
                   iconOnly="edit"
                   nz-tooltip
@@ -124,6 +125,7 @@
                 >
                 </app-button>
                 <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]"
                   variant="ghost"
                   iconOnly="swap"
                   nz-tooltip
@@ -132,6 +134,7 @@
                 >
                 </app-button>
                 <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.DELETE]"
                   variant="ghost"
                   iconOnly="delete"
                   nz-tooltip
@@ -286,7 +289,13 @@
         <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">
           Hủy bỏ
         </app-button>
-        <app-button variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
+        <app-button
+          *erpUTTHasSomeAuthority="[isEditMode ? ROLE.NHA_CUNG_CAP.EDIT : ROLE.NHA_CUNG_CAP.ADD]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitForm()"
+        >
           {{ isEditMode ? 'Lưu thay đổi' : 'Thêm nhà cung cấp' }}
         </app-button>
       </div>

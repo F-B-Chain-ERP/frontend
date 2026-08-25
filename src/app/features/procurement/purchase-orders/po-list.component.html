@@ -6,7 +6,10 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button variant="primary" leftIcon="plus" (click)="openFormPlaceholder('create')"> Tạo đơn mua hàng </app-button>
+      <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.ADD]" variant="primary" leftIcon="plus"
+                  (click)="openFormPlaceholder('create')">
+        Tạo đơn mua hàng
+      </app-button>
     </div>
   </div>
 
@@ -17,13 +20,13 @@
       <div class="filter-item filter-item--grow">
         <label class="form-label" for="po-search-input">Tìm kiếm</label>
         <nz-input-wrapper [nzAllowClear]="true">
-          <nz-icon nzInputPrefix nzType="search" />
+          <nz-icon nzInputPrefix nzType="search"/>
           <input
             id="po-search-input"
             nz-input
             [(ngModel)]="searchQuery"
             (keyup.enter)="onSearch()"
-            placeholder="Nhập số PO, tên nhà cung cấp, tên nguyên liệu..."
+            placeholder="Nhập số PO, tên nhà cung cấp, kho nhận, tên nguyên liệu..."
           />
         </nz-input-wrapper>
       </div>
@@ -47,8 +50,8 @@
 
       <!-- Actions -->
       <div class="page__filter-box__actions">
-        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
-        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới</app-button>
       </div>
     </div>
   </nz-card>
@@ -62,37 +65,40 @@
       [nzShowPagination]="false"
       [nzFrontPagination]="false"
       nzSize="middle"
-      [nzScroll]="{ x: '1150px' }"
+      [nzScroll]="{ x: '1250px' }"
     >
       <thead>
-        <tr>
-          <!-- STT -->
-          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+      <tr>
+        <!-- STT -->
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
 
-          <!-- Số PO -->
-          <th scope="col" nzWidth="150px" nzAlign="left">Số PO</th>
+        <!-- Số PO -->
+        <th scope="col" nzWidth="140px" nzAlign="left">Số PO</th>
 
-          <!-- Nhà cung cấp -->
-          <th scope="col" nzWidth="260px" nzAlign="left">Nhà cung cấp</th>
+        <!-- Nhà cung cấp -->
+        <th scope="col" nzWidth="220px" nzAlign="left">Nhà cung cấp</th>
 
-          <!-- Ngày đặt -->
-          <th scope="col" nzWidth="120px" nzAlign="center">Ngày đặt</th>
+        <!-- Kho nhận -->
+        <th scope="col" nzWidth="180px" nzAlign="left">Kho nhận</th>
 
-          <!-- Ngày dự kiến nhận -->
-          <th scope="col" nzWidth="140px" nzAlign="center">Dự kiến nhận</th>
+        <!-- Ngày đặt -->
+        <th scope="col" nzWidth="110px" nzAlign="center">Ngày đặt</th>
 
-          <!-- Số mặt hàng -->
-          <th scope="col" nzWidth="110px" nzAlign="center">Số mặt hàng</th>
+        <!-- Ngày dự kiến nhận -->
+        <th scope="col" nzWidth="130px" nzAlign="center">Dự kiến nhận</th>
 
-          <!-- Tổng tiền -->
-          <th scope="col" nzWidth="150px" nzAlign="right">Tổng tiền</th>
+        <!-- Số mặt hàng -->
+        <th scope="col" nzWidth="100px" nzAlign="center">Số mặt hàng</th>
 
-          <!-- Trạng thái -->
-          <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
+        <!-- Tổng tiền -->
+        <th scope="col" nzWidth="140px" nzAlign="right">Tổng tiền</th>
 
-          <!-- Thao tác -->
-          <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
-        </tr>
+        <!-- Trạng thái -->
+        <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+
+        <!-- Thao tác -->
+        <th scope="col" nzWidth="180px" nzAlign="center">Thao tác</th>
+      </tr>
       </thead>
       <tbody>
         @for (po of purchaseOrders(); track po.id) {
@@ -104,11 +110,17 @@
             <td>
               <span class="supplier-name">{{ po.supplierName }}</span>
             </td>
+            <td>
+              <span class="warehouse-name">
+                <nz-icon nzType="home" style="margin-right: 4px; color: var(--brand);"/>
+                {{ po.warehouseName || 'Kho Chi Nhánh' }}
+              </span>
+            </td>
             <td nzAlign="center">{{ po.orderDate }}</td>
             <td nzAlign="center">{{ po.expectedDate || '—' }}</td>
             <td nzAlign="center">{{ po.items.length }}</td>
             <td nzAlign="right">
-              <span class="po-total">{{ po.totalAmount | number: '1.0-0' }} ₫</span>
+              <span class="po-total font-mono font-semibold">{{ po.totalAmount | number: '1.0-0' }} ₫</span>
             </td>
             <td nzAlign="center">
               <span [class]="getStatusMeta(po.status).badgeClass">
@@ -117,31 +129,78 @@
             </td>
             <td nzAlign="center">
               <div class="tbl-actions">
-                @if (po.status === PurchaseOrderStatus.PENDING) {
+                <!-- Xem chi tiết (Quyền VIEW - luôn khả dụng) -->
+                <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết"
+                  (click)="openFormPlaceholder('view')"
+                >
+                </app-button>
+
+                <!-- DRAFT: Submit for Approval / Edit / Cancel -->
+                @if (po.status === PurchaseOrderStatus.DRAFT || po.status === '0') {
                   <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
                     variant="ghost"
-                    iconOnly="check"
+                    iconOnly="send"
                     nz-tooltip
-                    nzTooltipTitle="Duyệt đơn"
-                    (click)="changeStatusPlaceholder(PurchaseOrderStatus.APPROVED)"
+                    nzTooltipTitle="Trình duyệt đơn"
+                    (click)="onSubmitPO(po)"
                   >
                   </app-button>
                   <app-button
-                    variant="ghost"
-                    iconOnly="stop"
-                    nz-tooltip
-                    nzTooltipTitle="Hủy đơn"
-                    (click)="changeStatusPlaceholder(PurchaseOrderStatus.CANCELLED)"
-                  >
-                  </app-button>
-                } @else {
-                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
                     variant="ghost"
                     iconOnly="edit"
                     nz-tooltip
-                    nzTooltipTitle="Cập nhật đơn"
-                    [disabled]="po.status === PurchaseOrderStatus.APPROVED || po.status === PurchaseOrderStatus.CANCELLED"
+                    nzTooltipTitle="Chỉnh sửa"
                     (click)="openFormPlaceholder('edit')"
+                  >
+                  </app-button>
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE, ROLE.DON_MUA_HANG.EDIT]"
+                    variant="ghost"
+                    iconOnly="close"
+                    nz-tooltip
+                    nzTooltipTitle="Hủy đơn"
+                    (click)="onCancelPO(po)"
+                  >
+                  </app-button>
+                }
+
+                <!-- SUBMITTED: Approve (Admin only) or Reject/Cancel -->
+                @if (po.status === PurchaseOrderStatus.SUBMITTED || po.status === 'PENDING' || po.status === '1') {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT, 'ALL_SYSTEM']"
+                    variant="ghost"
+                    iconOnly="check"
+                    nz-tooltip
+                    nzTooltipTitle="Phê duyệt đơn"
+                    (click)="onApprovePO(po)"
+                  >
+                  </app-button>
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE, ROLE.DON_MUA_HANG.EDIT, 'ALL_SYSTEM']"
+                    variant="ghost"
+                    iconOnly="close"
+                    nz-tooltip
+                    nzTooltipTitle="Từ chối / Hủy"
+                    (click)="onCancelPO(po)"
+                  >
+                  </app-button>
+                }
+
+                <!-- APPROVED: Receive Stock into Warehouse -->
+                @if (po.status === PurchaseOrderStatus.APPROVED || po.status === '2') {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
+                    variant="ghost"
+                    iconOnly="inbox"
+                    nz-tooltip
+                    nzTooltipTitle="Ghi nhận nhập kho"
+                    (click)="onReceivePO(po)"
                   >
                   </app-button>
                 }
@@ -150,7 +209,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="9" class="tbl-empty">Không có dữ liệu đơn mua hàng</td>
+            <td colspan="10" class="tbl-empty">Không có dữ liệu đơn mua hàng</td>
           </tr>
         }
       </tbody>

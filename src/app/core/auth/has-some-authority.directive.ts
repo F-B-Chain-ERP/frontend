@@ -1,4 +1,4 @@
-import {Directive, inject, Input, TemplateRef, ViewContainerRef} from '@angular/core';
+import {Directive, effect, inject, Input, signal, TemplateRef, ViewContainerRef} from '@angular/core';
 import {AccountService} from './account.service';
 
 /**
@@ -21,24 +21,33 @@ export class HasSomeAuthorityDirective {
   private readonly templateRef = inject(TemplateRef<unknown>);
   private readonly vcr = inject(ViewContainerRef);
 
+  private readonly authoritiesInput = signal<Array<string | boolean | null | undefined> | string | boolean | null | undefined>(undefined);
+
+  constructor() {
+    effect(() => {
+      this.accountService.account();
+      this.updateView(this.authoritiesInput());
+    });
+  }
+
   @Input('erpUTTHasSomeAuthority')
   set erpUTTHasSomeAuthority(value: Array<string | boolean | null | undefined> | string | boolean | null | undefined) {
-    this.updateView(value);
+    this.authoritiesInput.set(value);
   }
 
   @Input('erpUTTHasAuthority')
   set erpUTTHasAuthority(value: Array<string | boolean | null | undefined> | string | boolean | null | undefined) {
-    this.updateView(value);
+    this.authoritiesInput.set(value);
   }
 
   @Input('appHasSomeAuthority')
   set appHasSomeAuthority(value: Array<string | boolean | null | undefined> | string | boolean | null | undefined) {
-    this.updateView(value);
+    this.authoritiesInput.set(value);
   }
 
   @Input('ebHasSomeAuthority')
   set ebHasSomeAuthority(value: Array<string | boolean | null | undefined> | string | boolean | null | undefined) {
-    this.updateView(value);
+    this.authoritiesInput.set(value);
   }
 
   private updateView(value: Array<string | boolean | null | undefined> | string | boolean | null | undefined): void {
@@ -47,7 +56,7 @@ export class HasSomeAuthorityDirective {
     const override = list.some(v => v === true);
 
     this.vcr.clear();
-    if (override || this.accountService.hasAnyAuthority(authorities)) {
+    if (override || (authorities.length > 0 && this.accountService.hasAnyAuthority(authorities))) {
       this.vcr.createEmbeddedView(this.templateRef);
     }
   }

@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/auth/auth.guard';
+import { UserRouteAccessService } from './core/auth/user-route-access.service';
+import { ROLE, FULL_PERMISSION } from './core/config/functions.constants';
 import { errorRoute } from './layouts/error/error.route';
 import MainComponent from './layouts/main/main.component';
 import ClientLayoutComponent from './layouts/client/client-layout.component';
@@ -64,14 +66,26 @@ export const routes: Routes = [
         path: 'ui-kit',
         loadComponent: () => import('./features/ui-kit/ui-kit.component'),
         title: 'UI Design System Showcase',
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [FULL_PERMISSION, 'ROLE_ADMIN'],
+        },
       },
       {
         path: 'procurement/purchase-orders',
         loadChildren: () => import('./features/procurement/purchase-orders/purchase-orders.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.DON_MUA_HANG.VIEW],
+        },
       },
       {
         path: 'procurement/suppliers',
         loadChildren: () => import('./features/procurement/suppliers/suppliers.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.NHA_CUNG_CAP.VIEW],
+        },
       },
       {
         path: 'procurement/supplier',
@@ -81,14 +95,42 @@ export const routes: Routes = [
       {
         path: 'system/accounts',
         loadChildren: () => import('./features/system/users/users.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.QUAN_LY_NGUOI_DUNG.VIEW],
+        },
       },
       {
         path: 'system/roles',
         loadChildren: () => import('./features/system/roles/roles.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.QUAN_LY_VAI_TRO.VIEW],
+        },
+      },
+      {
+        path: 'system/branches',
+        loadChildren: () => import('./features/system/branches/branches.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.QUAN_LY_CHI_NHANH.VIEW],
+        },
+      },
+      {
+        path: 'system/scopes',
+        loadChildren: () => import('./features/system/scopes/scopes.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.QUAN_LY_PHAM_VI.VIEW],
+        },
       },
       {
         path: 'error-pages',
         loadChildren: () => import('./features/error-pages/error-pages.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [FULL_PERMISSION, 'ROLE_ADMIN'],
+        },
       },
       {
         path: 'users',
