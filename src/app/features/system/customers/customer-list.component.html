@@ -1,0 +1,356 @@
+<div class="customer-list-page">
+  <!-- ── 1. Page Header ───────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý khách hàng</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.VIEW]" variant="secondary" leftIcon="download"
+                  (click)="onExportExcel()">Xuất Excel</app-button>
+      <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.ADD]" variant="primary" leftIcon="plus"
+                  (click)="openCreateModal()">Thêm mới khách hàng</app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ───────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="customer-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search"/>
+          <input id="customer-search-input" nz-input [(ngModel)]="searchQuery" (keyup.enter)="onSearch()"
+                 placeholder="Nhập họ tên, email, tên đăng nhập, mã khách hàng..."/>
+        </nz-input-wrapper>
+      </div>
+      <div class="filter-item filter-item--status">
+        <label class="form-label" for="customer-status-select">Trạng thái</label>
+        <nz-select id="customer-status-select" [(ngModel)]="selectedStatus" (ngModelChange)="onSearch()"
+                   nzPlaceHolder="Tất cả trạng thái" [nzAllowClear]="true" style="width: 100%">
+          @for (opt of statusOptions; track opt.value) {
+          <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+  <app-selection-bar [selectedCount]="setOfCheckedKeys.size" [totalCount]="total()" itemLabel="khách hàng"
+                     (clearSelection)="clearSelection()">
+    <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="secondary" leftIcon="redo"
+                (click)="onChangeStatusSelected(CustomerStatus.ACTIVE)">Khôi phục nhanh</app-button>
+    <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="secondary" leftIcon="lock"
+                (click)="onChangeStatusSelected(CustomerStatus.INACTIVE)">Khóa tài khoản</app-button>
+    <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.DELETE]" variant="danger" leftIcon="delete"
+                (click)="onDeleteSelected()">Xóa nhanh</app-button>
+  </app-selection-bar>
+  }
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table #customerTable [nzData]="customers()" [nzLoading]="loading()" [nzShowPagination]="false"
+              [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1300px' }">
+      <thead>
+      <tr>
+        <th scope="col" nzWidth="48px" nzAlign="center">
+          <label class="cb" for="cb-check-all">
+            <input id="cb-check-all" #checkAllInput type="checkbox" [checked]="allChecked"
+                   [indeterminate]="indeterminate" (change)="onCheckAll(checkAllInput.checked)"/>
+            <span class="cb__box"></span>
+          </label>
+        </th>
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortNameFn" nzWidth="220px" nzAlign="left">Họ và tên</th>
+        <th scope="col" nzWidth="150px" nzAlign="left">Mã khách hàng</th>
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortEmailFn" nzWidth="200px" nzAlign="left">Email</th>
+        <th scope="col" nzWidth="150px" nzAlign="left">Số điện thoại</th>
+        <th scope="col" nzWidth="120px" nzAlign="left">Giới tính</th>
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortStatusFn" nzWidth="150px" nzAlign="center">Trạng thái</th>
+        <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCreatedFn" nzWidth="150px" nzAlign="center">Ngày tạo</th>
+        <th scope="col" nzWidth="140px" nzAlign="center">Thao tác</th>
+      </tr>
+      <tr class="thead-search">
+        <th></th>
+        <th></th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('fullName')"
+                                  (valueChange)="searchByField('fullName', $event)" placeholder="Tìm họ tên"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('customerCode')"
+                                  (valueChange)="searchByField('customerCode', $event)" placeholder="Tìm mã KH"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('email')"
+                                  (valueChange)="searchByField('email', $event)" placeholder="Tìm email"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('phone')"
+                                  (valueChange)="searchByField('phone', $event)" placeholder="Tìm SĐT"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('gender')"
+                                  (valueChange)="searchByField('gender', $event)" placeholder="Giới tính" type="option"
+                                  labelField="label" valueField="value" [options]="genderFilterOptions"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('status')"
+                                  (valueChange)="searchByField('status', $event)" placeholder="Trạng thái" type="option"
+                                  labelField="label" valueField="value" [options]="statusFilterOptions"></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input [value]="columnFilter.getValue('createdAt')"
+                                  (valueChange)="searchByField('createdAt', $event)" placeholder="Tìm ngày tạo"></app-table-search-input>
+        </th>
+        <th nzAlign="center">
+          <app-button iconOnly="reload" nz-tooltip="Đặt lại bộ lọc cột" (click)="resetAllFieldFilter()" variant="ghost"></app-button>
+        </th>
+      </tr>
+      </thead>
+      <tbody>
+      @for (data of customerTable.data; track data.id; let idx = $index) {
+      <tr>
+        <td nzAlign="center">
+          <label class="cb" [for]="'cb-row-' + data.id">
+            <input [id]="'cb-row-' + data.id" #rowInput type="checkbox" [checked]="setOfCheckedKeys.has(data.id)"
+                   (change)="onCheckRow(data.id, rowInput.checked)"/>
+            <span class="cb__box"></span>
+          </label>
+        </td>
+        <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+        <td nzAlign="left">
+          <div class="customer-cell" (click)="openDetailModal(data)">
+            <nz-avatar [nzText]="data.fullName.charAt(0).toUpperCase()" [nzSize]="32" class="customer-cell__avatar"/>
+            <div class="customer-cell__info">
+              <span class="customer-cell__name">{{ data.fullName }}</span>
+              <span class="customer-cell__subtext">{{ data.username }}</span>
+            </div>
+          </div>
+        </td>
+        <td nzAlign="left"><span class="code-text font-mono">{{ data.customerCode }}</span></td>
+        <td nzAlign="left">
+          <a [href]="'mailto:' + data.email" class="email-text" (click)="$event.stopPropagation()">
+            <nz-icon nzType="mail" class="email-icon"/><span>{{ data.email }}</span>
+          </a>
+        </td>
+        <td nzAlign="left"><span class="phone-text font-mono">{{ data.phone || '—' }}</span></td>
+        <td nzAlign="left"><span class="gender-text">{{ getGenderLabel(data.gender) }}</span></td>
+        <td nzAlign="center">
+          <span [class]="getStatusMeta(data.status).badgeClass">{{ getStatusMeta(data.status).label }}</span>
+        </td>
+        <td nzAlign="center"><span class="date-text font-mono text-muted">{{ data.createdAt }}</span></td>
+        <td nzAlign="center">
+          <div class="tbl-actions">
+            <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết" (click)="openDetailModal(data)"></app-button>
+            <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="ghost" iconOnly="edit"
+                        nz-tooltip nzTooltipTitle="Chỉnh sửa" (click)="openEditModal(data)"></app-button>
+            <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="ghost" iconOnly="key"
+                        nz-tooltip nzTooltipTitle="Đặt lại mật khẩu" (click)="openResetModal(data)"></app-button>
+            <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.DELETE]" variant="ghost" iconOnly="delete"
+                        nz-tooltip nzTooltipTitle="Xóa khách hàng" (click)="onDeleteCustomer(data)"></app-button>
+          </div>
+        </td>
+      </tr>
+      } @empty {
+      <tr>
+        <td colspan="10" class="text-center table-empty">
+          <div class="empty-state">
+            <nz-icon nzType="inbox" class="empty-state__icon"/>
+            <p class="empty-state__text">Không có dữ liệu khách hàng nào</p>
+            <app-button variant="secondary" leftIcon="plus" (click)="openCreateModal()">Thêm khách hàng mới</app-button>
+          </div>
+        </td>
+      </tr>
+      }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination [total]="total()" [pageIndex]="pageIndex" [pageSize]="pageSize"
+                      [pageSizeOptions]="pageSizeOptions" (pageIndexChange)="onPageIndexChange($event)"
+                      (pageSizeChange)="onPageSizeChange($event)"></app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Form Modal (Thêm mới / Cập nhật) ───────────────── -->
+  <app-modal [visible]="isFormModalVisible()" (visibleChange)="isFormModalVisible.set($event)" [title]="formModalTitle"
+             size="md" [footer]="formModalFooter" (cancelEmit)="closeFormModal()">
+    <form [formGroup]="customerForm" enterAsTabContainer (ngSubmit)="onSubmitForm()" class="customer-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-fullName">Họ và tên</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="user"/>
+            <input id="modal-fullName" type="text" nz-input formControlName="fullName" maxlength="150"/>
+          </nz-input-wrapper>
+          @if (customerForm.get('fullName')?.dirty || customerForm.get('fullName')?.touched) {
+          @if (customerForm.get('fullName')?.hasError('required')) { <span class="form-error">Họ và tên không được để trống.</span> }
+          @if (customerForm.get('fullName')?.hasError('invalidChars')) { <span class="form-error">Họ và tên chứa ký tự không hợp lệ.</span> }
+          }
+        </div>
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-email">Email</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="mail"/>
+            <input id="modal-email" type="email" nz-input formControlName="email" maxlength="150"/>
+          </nz-input-wrapper>
+          @if (customerForm.get('email')?.dirty || customerForm.get('email')?.touched) {
+          @if (customerForm.get('email')?.hasError('required')) { <span class="form-error">Email không được để trống.</span> }
+          @if (customerForm.get('email')?.hasError('email')) { <span class="form-error">Định dạng email không hợp lệ.</span> }
+          }
+        </div>
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-username">Tên đăng nhập</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="idcard"/>
+            <input id="modal-username" type="text" nz-input formControlName="username" (keypress)="blockSpace($event)" maxlength="100"/>
+          </nz-input-wrapper>
+          @if (customerForm.get('username')?.dirty || customerForm.get('username')?.touched) {
+          @if (customerForm.get('username')?.hasError('required')) { <span class="form-error">Tên đăng nhập không được để trống.</span> }
+          @if (customerForm.get('username')?.hasError('invalidChars')) { <span class="form-error">Tên đăng nhập chỉ gồm chữ, số và dấu gạch.</span> }
+          }
+        </div>
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-phoneNumber">Số điện thoại</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="phone"/>
+            <input id="modal-phoneNumber" type="text" nz-input formControlName="phoneNumber" maxlength="20"/>
+          </nz-input-wrapper>
+          @if (customerForm.get('phoneNumber')?.dirty || customerForm.get('phoneNumber')?.touched) {
+          @if (customerForm.get('phoneNumber')?.hasError('pattern')) { <span class="form-error">Số điện thoại không đúng định dạng.</span> }
+          }
+        </div>
+        @if (!isEditMode) {
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-password">Mật khẩu</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="lock"/>
+            <input id="modal-password" type="password" nz-input formControlName="password" maxlength="128"/>
+          </nz-input-wrapper>
+          @if (customerForm.get('password')?.dirty || customerForm.get('password')?.touched) {
+          @if (customerForm.get('password')?.hasError('required')) { <span class="form-error">Mật khẩu không được để trống.</span> }
+          @if (customerForm.get('password')?.hasError('minlength')) { <span class="form-error">Mật khẩu phải có ít nhất 8 ký tự.</span> }
+          }
+        </div>
+        }
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-dateOfBirth">Ngày sinh</label>
+          <nz-date-picker id="modal-dateOfBirth" formControlName="dateOfBirth" style="width: 100%" nzFormat="dd/MM/yyyy"></nz-date-picker>
+        </div>
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-gender">Giới tính</label>
+          <nz-select id="modal-gender" formControlName="gender" nzPlaceHolder="Chọn giới tính" style="width: 100%">
+            @for (g of genderOptions; track g.value) { <nz-option [nzLabel]="g.label" [nzValue]="g.value"></nz-option> }
+          </nz-select>
+        </div>
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label">Email đã xác thực</label>
+          <nz-switch formControlName="emailVerified" nzCheckedChildren="Đã xác thực" nzUnCheckedChildren="Chưa xác thực"></nz-switch>
+        </div>
+        <div nz-col [nzSpan]="24">
+          <label class="form-label required">Trạng thái hoạt động</label>
+          <div class="status-radio-options">
+            <label class="rb" for="rb-modal-active">
+              <input id="rb-modal-active" type="radio" [value]="CustomerStatus.ACTIVE" formControlName="status"/>
+              <span class="rb__box"></span><span class="tbl-badge tbl-badge--success">Hoạt động</span>
+            </label>
+            <label class="rb" for="rb-modal-inactive">
+              <input id="rb-modal-inactive" type="radio" [value]="CustomerStatus.INACTIVE" formControlName="status"/>
+              <span class="rb__box"></span><span class="tbl-badge tbl-badge--danger">Ngừng hoạt động</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </form>
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">Hủy bỏ</app-button>
+        <app-button *erpUTTHasSomeAuthority="[isEditMode ? ROLE.KHACH_HANG.EDIT : ROLE.KHACH_HANG.ADD]"
+                    variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
+          {{ isEditMode ? 'Lưu thay đổi' : 'Thêm khách hàng' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 6. Reset Password Modal ───────────────────────────── -->
+  <app-modal [visible]="isResetModalVisible()" (visibleChange)="isResetModalVisible.set($event)" title="Đặt lại mật khẩu khách hàng"
+             size="sm" [footer]="resetModalFooter" (cancelEmit)="closeResetModal()">
+    @if (selectedCustomerForReset) {
+    <p class="reset-hint">Đặt lại mật khẩu cho khách hàng <strong>{{ selectedCustomerForReset.fullName }}</strong>
+      ({{ selectedCustomerForReset.username }}).</p>
+    <form [formGroup]="resetForm" enterAsTabContainer (ngSubmit)="onSubmitReset()">
+      <label class="form-label required" for="reset-password">Mật khẩu mới</label>
+      <nz-input-wrapper>
+        <nz-icon nzInputPrefix nzType="lock"/>
+        <input id="reset-password" type="password" nz-input formControlName="password" maxlength="128"/>
+      </nz-input-wrapper>
+      @if (resetForm.get('password')?.dirty || resetForm.get('password')?.touched) {
+      @if (resetForm.get('password')?.hasError('required')) { <span class="form-error">Mật khẩu không được để trống.</span> }
+      @if (resetForm.get('password')?.hasError('minlength')) { <span class="form-error">Mật khẩu phải có ít nhất 8 ký tự.</span> }
+      }
+    </form>
+    }
+    <ng-template #resetModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeResetModal()">Hủy bỏ</app-button>
+        <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="primary" leftIcon="key"
+                    [loading]="isSaving()" (click)="onSubmitReset()">Đặt lại mật khẩu</app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 7. Detail Modal ──────────────────────────────────── -->
+  <app-modal [visible]="isDetailModalVisible()" (visibleChange)="isDetailModalVisible.set($event)"
+             title="Thông tin chi tiết khách hàng" size="md" [footer]="detailModalFooter" (cancelEmit)="closeDetailModal()">
+    @if (selectedCustomerForDetail) {
+    <div class="customer-detail-header">
+      <nz-avatar [nzText]="selectedCustomerForDetail.fullName.charAt(0).toUpperCase()" [nzSize]="56" class="customer-detail-avatar"/>
+      <div class="customer-detail-main">
+        <div class="customer-detail-name">
+          {{ selectedCustomerForDetail.fullName }}
+          <span class="customer-detail-id font-mono">({{ selectedCustomerForDetail.customerCode }})</span>
+        </div>
+        <div class="customer-detail-meta">
+          <span [class]="getStatusMeta(selectedCustomerForDetail.status).badgeClass">{{ getStatusMeta(selectedCustomerForDetail.status).label }}</span>
+          <span class="customer-detail-username"><nz-icon nzType="idcard"/> {{ selectedCustomerForDetail.username }}</span>
+        </div>
+      </div>
+    </div>
+    <nz-divider style="margin: 16px 0"></nz-divider>
+    <nz-descriptions [nzColumn]="{ xxl: 2, xl: 2, lg: 2, md: 2, sm: 1, xs: 1 }" nzBordered nzSize="small">
+      <nz-descriptions-item nzTitle="Mã khách hàng"><span class="code-text font-mono">{{ selectedCustomerForDetail.customerCode }}</span></nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Tên đăng nhập"><span class="role-code">{{ selectedCustomerForDetail.username }}</span></nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Email liên hệ">
+        <a [href]="'mailto:' + selectedCustomerForDetail.email" class="email-text"><nz-icon nzType="mail" class="email-icon"/> {{ selectedCustomerForDetail.email }}</a>
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Số điện thoại"><span class="font-mono">{{ selectedCustomerForDetail.phone || '—' }}</span></nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Giới tính">{{ getGenderLabel(selectedCustomerForDetail.gender) }}</nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ngày sinh"><span class="font-mono text-muted">{{ toLocalDate(selectedCustomerForDetail.dateOfBirth) || '—' }}</span></nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Xác thực email">
+        @if (selectedCustomerForDetail.emailVerified) { <span class="tbl-badge tbl-badge--success">Đã xác thực</span> }
+        @else { <span class="tbl-badge tbl-badge--warning">Chưa xác thực</span> }
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Trạng thái tài khoản">
+        <span [class]="getStatusMeta(selectedCustomerForDetail.status).badgeClass">{{ getStatusMeta(selectedCustomerForDetail.status).label }}</span>
+      </nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Ngày tạo tài khoản"><span class="font-mono text-muted">{{ selectedCustomerForDetail.createdAt }}</span></nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Cập nhật lần cuối"><span class="font-mono text-muted">{{ selectedCustomerForDetail.updatedAt || selectedCustomerForDetail.createdAt }}</span></nz-descriptions-item>
+      <nz-descriptions-item nzTitle="Đăng nhập gần nhất" [nzSpan]="2"><span class="font-mono text-muted">{{ selectedCustomerForDetail.lastLoginAt || '—' }}</span></nz-descriptions-item>
+    </nz-descriptions>
+    }
+    <ng-template #detailModalFooter>
+      <div class="modal-footer-actions">
+        <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="secondary" leftIcon="edit" (click)="switchToEditFromDetail()">Chỉnh sửa</app-button>
+        <app-button variant="primary" leftIcon="check" (click)="closeDetailModal()">Đóng</app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

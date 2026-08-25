@@ -75,9 +75,25 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
             kind: 'child',
             id: 'manage-accounts',
             title: 'Quản lý tài khoản',
-            route: '/admin/system/accounts/list',
-            activePrefix: '/admin/system/accounts',
-            authorities: [ROLE.QUAN_LY_NGUOI_DUNG.VIEW],
+            icon: 'team',
+            children: [
+              {
+                kind: 'child',
+                id: 'manage-customers',
+                title: 'Quản lý khách hàng',
+                route: '/admin/system/customers/list',
+                activePrefix: '/admin/system/customers',
+                authorities: [ROLE.KHACH_HANG.VIEW],
+              },
+              {
+                kind: 'child',
+                id: 'manage-internal-accounts',
+                title: 'Quản lý người dùng nội bộ',
+                route: '/admin/system/accounts/list',
+                activePrefix: '/admin/system/accounts',
+                authorities: [ROLE.QUAN_LY_NGUOI_DUNG.VIEW],
+              },
+            ],
           },
           {
             kind: 'child',
