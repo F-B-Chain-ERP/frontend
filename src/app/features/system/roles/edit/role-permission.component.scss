@@ -2,6 +2,24 @@
   display: block;
 }
 
+.role-readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  color: #874d00;
+  font-size: 13px;
+
+  nz-icon {
+    color: #fa8c16;
+    font-size: 16px;
+  }
+}
+
 // Host flex chỉ khi ma trận (có class hoặc :has) để bảng lấp đầy; thẻ thì block để scale tự nhiên
 :host:has(.matrix-table-card),
 :host:has(.permission-page--matrix) {
@@ -424,7 +442,32 @@
   will-change: transform, opacity, height;
 
   &:hover { background-color: var(--surface-hover) !important; }
-  &--root { background-color: var(--surface-sunken); font-weight: var(--fw-semibold); }
+  &--root {
+    background-color: var(--surface-sunken);
+    font-weight: var(--fw-semibold);
+    box-shadow: inset 3px 0 0 var(--brand);
+    td { border-bottom: 1px solid var(--border-subtle); }
+    .tree-node-name { font-size: 13px; }
+    .module-row-count {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: var(--fw-regular);
+      white-space: nowrap;
+    }
+  }
+  &--level1 {
+    .tree-node-name { position: relative; padding-left: 14px; }
+    .tree-node-name::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 8px;
+      height: 1px;
+      background: var(--border-strong);
+    }
+  }
   &--active .tree-node-name { color: var(--text-primary); }
 }
 

@@ -69,24 +69,31 @@
     <div class="role-presets-bar">
       <div class="presets-label"><nz-icon nzType="thunderbolt" /><span>Mẫu phân quyền nhanh:</span></div>
       <div class="presets-actions">
-        <button type="button" class="preset-btn preset-btn--primary" (click)="applyPreset('fullAdmin')">
+        <button type="button" class="preset-btn preset-btn--primary" [disabled]="isAdminRole" (click)="applyPreset('fullAdmin')">
           <nz-icon nzType="check-circle" /><span>Toàn quyền</span>
         </button>
-        <button type="button" class="preset-btn" (click)="applyPreset('readOnly')">
+        <button type="button" class="preset-btn" [disabled]="isAdminRole" (click)="applyPreset('readOnly')">
           <nz-icon nzType="eye" /><span>Chỉ xem</span>
         </button>
-        <button type="button" class="preset-btn" (click)="applyPreset('warehousePreset')">
+        <button type="button" class="preset-btn" [disabled]="isAdminRole" (click)="applyPreset('warehousePreset')">
           <nz-icon nzType="inbox" /><span>Nghiệp vụ Kho</span>
         </button>
-        <button type="button" class="preset-btn" (click)="applyPreset('accountantPreset')">
+        <button type="button" class="preset-btn" [disabled]="isAdminRole" (click)="applyPreset('accountantPreset')">
           <nz-icon nzType="dollar" /><span>Nghiệp vụ Kế toán</span>
         </button>
-        <button type="button" class="preset-btn preset-btn--danger" (click)="applyPreset('clearAll')">
+        <button type="button" class="preset-btn preset-btn--danger" [disabled]="isAdminRole" (click)="applyPreset('clearAll')">
           <nz-icon nzType="clear" /><span>Bỏ chọn tất cả</span>
         </button>
       </div>
     </div>
   </div>
+
+  @if (isAdminRole) {
+    <div class="role-readonly-banner">
+      <nz-icon nzType="lock" />
+      <span>Vai trò Quản trị hệ thống (<strong>{{ role?.code }}</strong>) chỉ được phép <strong>xem</strong> quyền, không được phép sửa đổi.</span>
+    </div>
+  }
 
   <!-- Toolbar -->
   <nz-card class="permission-toolbar-card" [nzBordered]="false">
@@ -150,26 +157,26 @@
           <tr class="matrix-select-all-row">
             <th nzAlign="center">
               <label class="cb" for="select-all-col-access" nz-tooltip nzTooltipTitle="Chọn tất cả quyền truy cập">
-                <input id="select-all-col-access" type="checkbox" [checked]="isColumnChecked('access')" [indeterminate]="isColumnIndeterminate('access')" (change)="toggleColumnAll('access', $any($event.target).checked)" />
+                 <input id="select-all-col-access" type="checkbox" [checked]="isColumnChecked('access')" [indeterminate]="isColumnIndeterminate('access')" [disabled]="isAdminRole" (change)="toggleColumnAll('access', $any($event.target).checked)" />
                 <span class="cb__box"></span>
               </label>
             </th>
             <th class="matrix-select-all-label"><span class="select-all-note">Chọn tất cả theo cột:</span></th>
             <th nzAlign="center">
               <label class="cb" for="select-all-col-add" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Thêm">
-                <input id="select-all-col-add" type="checkbox" [checked]="isColumnChecked('add')" [indeterminate]="isColumnIndeterminate('add')" (change)="toggleColumnAll('add', $any($event.target).checked)" />
+                 <input id="select-all-col-add" type="checkbox" [checked]="isColumnChecked('add')" [indeterminate]="isColumnIndeterminate('add')" [disabled]="isAdminRole" (change)="toggleColumnAll('add', $any($event.target).checked)" />
                 <span class="cb__box"></span>
               </label>
             </th>
             <th nzAlign="center">
               <label class="cb" for="select-all-col-edit" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Sửa">
-                <input id="select-all-col-edit" type="checkbox" [checked]="isColumnChecked('edit')" [indeterminate]="isColumnIndeterminate('edit')" (change)="toggleColumnAll('edit', $any($event.target).checked)" />
+                 <input id="select-all-col-edit" type="checkbox" [checked]="isColumnChecked('edit')" [indeterminate]="isColumnIndeterminate('edit')" [disabled]="isAdminRole" (change)="toggleColumnAll('edit', $any($event.target).checked)" />
                 <span class="cb__box"></span>
               </label>
             </th>
             <th nzAlign="center">
               <label class="cb" for="select-all-col-delete" nz-tooltip nzTooltipTitle="Chọn tất cả quyền Xóa">
-                <input id="select-all-col-delete" type="checkbox" [checked]="isColumnChecked('delete')" [indeterminate]="isColumnIndeterminate('delete')" (change)="toggleColumnAll('delete', $any($event.target).checked)" />
+                 <input id="select-all-col-delete" type="checkbox" [checked]="isColumnChecked('delete')" [indeterminate]="isColumnIndeterminate('delete')" [disabled]="isAdminRole" (change)="toggleColumnAll('delete', $any($event.target).checked)" />
                 <span class="cb__box"></span>
               </label>
             </th>
@@ -180,45 +187,48 @@
           @for (data of permissionTable.data; track data.key) {
             @for (item of mapOfExpandedData[data.key]; track item.key) {
               @if (isNodeVisible(item)) {
-                <tr @rowSlide class="matrix-row" [class.matrix-row--root]="!item.parent" [class.matrix-row--level1]="item.level === 1" [class.matrix-row--active]="item.access">
-                  <td nzAlign="center">
-                    <label class="cb" [for]="'access-' + item.key">
-                      <input type="checkbox" [id]="'access-' + item.key" [ngModel]="item.access" [indeterminate]="item.accessIndeterminate" (ngModelChange)="onPermissionChange('access', item, data.key, $event)" />
-                      <span class="cb__box"></span>
-                    </label>
-                  </td>
-                  <td [nzIndentSize]="(item.level || 0) * 22" [nzShowExpand]="!!item.children?.length" [(nzExpand)]="item.expand" (nzExpandChange)="collapse(mapOfExpandedData[data.key], item, $event)">
-                    <div class="tree-cell-content">
-                      <div class="tree-node-info">
-                        <span class="tree-node-name" [class.font-bold]="!item.parent">{{ item.name }}</span>
-                        @if (item.path) { <span class="tree-node-path">{{ item.path }}</span> }
-                      </div>
-                    </div>
-                  </td>
-                  <td nzAlign="center">
-                    <label class="cb" [class.is-disabled]="!item.access" [for]="'add-' + item.key" nz-tooltip [nzTooltipTitle]="!item.access ? 'Cần cấp quyền Truy cập trước' : ''">
-                      <input type="checkbox" [id]="'add-' + item.key" [ngModel]="item.add" [indeterminate]="item.addIndeterminate" [disabled]="!item.access" (ngModelChange)="onPermissionChange('add', item, data.key, $event)" />
-                      <span class="cb__box"></span>
-                    </label>
-                  </td>
-                  <td nzAlign="center">
-                    <label class="cb" [class.is-disabled]="!item.access" [for]="'edit-' + item.key" nz-tooltip [nzTooltipTitle]="!item.access ? 'Cần cấp quyền Truy cập trước' : ''">
-                      <input type="checkbox" [id]="'edit-' + item.key" [ngModel]="item.edit" [indeterminate]="item.editIndeterminate" [disabled]="!item.access" (ngModelChange)="onPermissionChange('edit', item, data.key, $event)" />
-                      <span class="cb__box"></span>
-                    </label>
-                  </td>
-                  <td nzAlign="center">
-                    <label class="cb" [class.is-disabled]="!item.access" [for]="'delete-' + item.key" nz-tooltip [nzTooltipTitle]="!item.access ? 'Cần cấp quyền Truy cập trước' : ''">
-                      <input type="checkbox" [id]="'delete-' + item.key" [ngModel]="item.delete" [indeterminate]="item.deleteIndeterminate" [disabled]="!item.access" (ngModelChange)="onPermissionChange('delete', item, data.key, $event)" />
-                      <span class="cb__box"></span>
-                    </label>
-                  </td>
-                  <td nzAlign="center">
-                    <label class="cb cb--row-all" [for]="'all-' + item.key" nz-tooltip nzTooltipTitle="Bật/tắt tất cả quyền của dòng này">
-                      <input type="checkbox" [id]="'all-' + item.key" [checked]="isRowAllChecked(item)" [indeterminate]="isRowIndeterminate(item)" (change)="toggleRowAll(item, data.key, $any($event.target).checked)" />
-                      <span class="cb__box"></span>
-                    </label>
-                  </td>
+                 <tr @rowSlide class="matrix-row" [class.matrix-row--root]="!item.parent" [class.matrix-row--level1]="item.level === 1" [class.matrix-row--active]="item.access">
+                   <td nzAlign="center">
+                     <label class="cb" [for]="'access-' + item.key">
+                       <input type="checkbox" [id]="'access-' + item.key" [ngModel]="item.access" [indeterminate]="item.accessIndeterminate" [disabled]="isAdminRole || !item.canView" (ngModelChange)="onPermissionChange('access', item, data.key, $event)" />
+                       <span class="cb__box"></span>
+                     </label>
+                   </td>
+                   <td [nzIndentSize]="(item.level || 0) * 34" [nzShowExpand]="!!item.children?.length" [(nzExpand)]="item.expand" (nzExpandChange)="collapse(mapOfExpandedData[data.key], item, $event)">
+                     <div class="tree-cell-content">
+                       <div class="tree-node-info">
+                         <span class="tree-node-name" [class.font-bold]="!item.parent">{{ item.name }}</span>
+                         @if (item.path) { <span class="tree-node-path">{{ item.path }}</span> }
+                       </div>
+                       @if (!item.parent) {
+                         <span class="module-row-count">{{ moduleStat(item.key)?.activeFunctions }}/{{ moduleStat(item.key)?.totalFunctions }} chức năng</span>
+                       }
+                     </div>
+                   </td>
+                   <td nzAlign="center">
+                     <label class="cb" [class.is-disabled]="!item.access || !item.canAdd" [for]="'add-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canAdd ? 'Hệ thống không có quyền thêm này' : (!item.access ? 'Cần cấp quyền Truy cập trước' : '')">
+                        <input type="checkbox" [id]="'add-' + item.key" [ngModel]="item.access && item.add" [indeterminate]="item.addIndeterminate" [disabled]="isAdminRole || !item.access || !item.canAdd" (ngModelChange)="onPermissionChange('add', item, data.key, $event)" />
+                       <span class="cb__box"></span>
+                     </label>
+                   </td>
+                   <td nzAlign="center">
+                     <label class="cb" [class.is-disabled]="!item.access || !item.canEdit" [for]="'edit-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canEdit ? 'Hệ thống không có quyền sửa này' : (!item.access ? 'Cần cấp quyền Truy cập trước' : '')">
+                        <input type="checkbox" [id]="'edit-' + item.key" [ngModel]="item.access && item.edit" [indeterminate]="item.editIndeterminate" [disabled]="isAdminRole || !item.access || !item.canEdit" (ngModelChange)="onPermissionChange('edit', item, data.key, $event)" />
+                       <span class="cb__box"></span>
+                     </label>
+                   </td>
+                   <td nzAlign="center">
+                     <label class="cb" [class.is-disabled]="!item.access || !item.canDelete" [for]="'delete-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canDelete ? 'Hệ thống không có quyền xóa này' : (!item.access ? 'Cần cấp quyền Truy cập trước' : '')">
+                        <input type="checkbox" [id]="'delete-' + item.key" [ngModel]="item.access && item.delete" [indeterminate]="item.deleteIndeterminate" [disabled]="isAdminRole || !item.access || !item.canDelete" (ngModelChange)="onPermissionChange('delete', item, data.key, $event)" />
+                       <span class="cb__box"></span>
+                     </label>
+                   </td>
+                   <td nzAlign="center">
+                      <label class="cb cb--row-all" [for]="'all-' + item.key" nz-tooltip [nzTooltipTitle]="isAdminRole ? 'Vai trò quản trị hệ thống chỉ được xem' : 'Bật/tắt tất cả quyền có sẵn của dòng này'">
+                        <input type="checkbox" [id]="'all-' + item.key" [checked]="isRowAllChecked(item)" [indeterminate]="isRowIndeterminate(item)" [disabled]="isRowAllDisabled(item)" (change)="toggleRowAll(item, data.key, $any($event.target).checked)" />
+                       <span class="cb__box"></span>
+                     </label>
+                   </td>
                 </tr>
               }
             }
@@ -242,7 +252,7 @@
               </div>
             </div>
             <div class="module-card__actions" (click)="$event.stopPropagation()">
-              <button class="module-toggle-btn" [class.module-toggle-btn--active]="isRowAllChecked(module)" (click)="toggleRowAll(module, module.key, !isRowAllChecked(module))">
+               <button class="module-toggle-btn" [class.module-toggle-btn--active]="isRowAllChecked(module)" [disabled]="isAdminRole" nz-tooltip [nzTooltipTitle]="isAdminRole ? 'Vai trò quản trị hệ thống chỉ được xem' : 'Cấp tất cả quyền có sẵn của phân hệ này' " (click)="toggleRowAll(module, module.key, !isRowAllChecked(module))">
                 <span>{{ isRowAllChecked(module) ? 'Đã cấp toàn bộ phân hệ' : 'Cấp nhanh phân hệ' }}</span>
               </button>
             </div>
@@ -260,10 +270,10 @@
                       </div>
                     </div>
                     <div class="tree-node-item__pills">
-                      <button class="perm-pill perm-pill--access" [class.perm-pill--active]="item.access" (click)="onPermissionChange('access', item, module.key, !item.access)"><span>Truy cập</span></button>
-                      <button class="perm-pill perm-pill--add" [class.perm-pill--active]="item.add" [class.perm-pill--disabled]="!item.access" [disabled]="!item.access" (click)="onPermissionChange('add', item, module.key, !item.add)"><span>Thêm</span></button>
-                      <button class="perm-pill perm-pill--edit" [class.perm-pill--active]="item.edit" [class.perm-pill--disabled]="!item.access" [disabled]="!item.access" (click)="onPermissionChange('edit', item, module.key, !item.edit)"><span>Sửa</span></button>
-                      <button class="perm-pill perm-pill--del" [class.perm-pill--active]="item.delete" [class.perm-pill--disabled]="!item.access" [disabled]="!item.access" (click)="onPermissionChange('delete', item, module.key, !item.delete)"><span>Xóa</span></button>
+                       <button class="perm-pill perm-pill--access" [class.perm-pill--active]="item.access" [class.perm-pill--disabled]="isAdminRole || !item.canView" [disabled]="isAdminRole || !item.canView" (click)="onPermissionChange('access', item, module.key, !item.access)"><span>Truy cập</span></button>
+                       <button class="perm-pill perm-pill--add" [class.perm-pill--active]="item.access && item.add" [class.perm-pill--disabled]="isAdminRole || !item.access || !item.canAdd" [disabled]="isAdminRole || !item.access || !item.canAdd" (click)="onPermissionChange('add', item, module.key, !item.add)"><span>Thêm</span></button>
+                       <button class="perm-pill perm-pill--edit" [class.perm-pill--active]="item.access && item.edit" [class.perm-pill--disabled]="isAdminRole || !item.access || !item.canEdit" [disabled]="isAdminRole || !item.access || !item.canEdit" (click)="onPermissionChange('edit', item, module.key, !item.edit)"><span>Sửa</span></button>
+                       <button class="perm-pill perm-pill--del" [class.perm-pill--active]="item.access && item.delete" [class.perm-pill--disabled]="isAdminRole || !item.access || !item.canDelete" [disabled]="isAdminRole || !item.access || !item.canDelete" (click)="onPermissionChange('delete', item, module.key, !item.delete)"><span>Xóa</span></button>
                     </div>
                   </div>
                 }
@@ -287,6 +297,6 @@
   </div>
   <div class="page__footer__actions">
     <app-button variant="secondary" (click)="backToList()">Hủy bỏ</app-button>
-    <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_QUYEN_VAI_TRO.EDIT, ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="primary" leftIcon="save" [loading]="saving()" (click)="onSavePermissions()">Lưu thay đổi phân quyền</app-button>
+    <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_QUYEN_VAI_TRO.EDIT, ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="primary" leftIcon="save" [loading]="saving()" [disabled]="isAdminRole" (click)="onSavePermissions()">Lưu thay đổi phân quyền</app-button>
   </div>
 </div>

@@ -87,7 +87,8 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
   protected readonly sidebarCollapsed = this.layoutService.sidebarCollapsed;
 
   role: Partial<Role> = {};
-  groupId = 0;
+  groupId: string | number = '';
+  isAdminRole = false;
   loading = signal(false);
   saving = signal(false);
   isDirty = signal(false);
@@ -97,16 +98,7 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
   selectedModuleFilter = 'all';
   permissionStatusFilter: 'all' | 'granted' | 'ungranted' = 'all';
 
-  readonly moduleOptions = [
-    { value: 'all', label: 'Tất cả phân hệ' },
-    { value: '1000', label: '1. Tổng quan & Dashboard' },
-    { value: '2000', label: '2. Quản lý Kho & Vật tư' },
-    { value: '3000', label: '3. Quản lý Mua hàng & NCC' },
-    { value: '4000', label: '4. Quản lý Bán hàng & CRM' },
-    { value: '5000', label: '5. Kế toán & Tài chính' },
-    { value: '6000', label: '6. Quản lý Nhân sự & Tiền lương' },
-    { value: '7000', label: '7. Quản trị Hệ thống' },
-  ];
+  moduleOptions: { value: string; label: string }[] = [{ value: 'all', label: 'Tất cả phân hệ' }];
 
   originalPermissions: FunctionPermission[] = [];
   listOfMapData: PermissionTreeNode[] = [];
@@ -128,15 +120,19 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
     const stateRole = history.state?.role as Role | undefined;
     if (stateRole) {
       this.role = stateRole;
-      this.groupId = Number(this.role.id) || 0;
+      this.groupId = this.role.id ?? '';
+      this.isAdminRole = this.role.code === 'ADMIN';
     } else {
-      this.groupId = Number(this.route.snapshot.queryParams['id']) || 0;
+      this.groupId = this.route.snapshot.queryParams['id'] ?? '';
       if (this.groupId) {
         this.roleService
           .getRoleById(String(this.groupId))
           .pipe(takeUntil(this.destroy$))
           .subscribe(r => {
-            if (r) this.role = r;
+            if (r) {
+              this.role = r;
+              this.isAdminRole = r.code === 'ADMIN';
+            }
           });
       }
     }
@@ -172,7 +168,16 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
     this.listOfMapData.forEach(item => {
       this.mapOfExpandedData[item.key] = this.convertTreeToList(item);
     });
+    this.recomputeTreeFlags();
+    this.buildModuleOptions();
     this.cdr.detectChanges();
+  }
+
+  private buildModuleOptions(): void {
+    this.moduleOptions = [
+      { value: 'all', label: 'Tất cả phân hệ' },
+      ...this.listOfMapData.map((r, i) => ({ value: r.key, label: `${i + 1}. ${r.name}` })),
+    ];
   }
 
   private buildPermissionTree(permissions: FunctionPermission[]): PermissionTreeNode[] {
@@ -189,6 +194,10 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
         add: p.Adds === 1,
         edit: p.Edit === 1,
         delete: p.Del === 1,
+        canView: p.CanView !== false,
+        canAdd: p.CanAdd !== false,
+        canEdit: p.CanEdit !== false,
+        canDelete: p.CanDelete !== false,
         expand: true,
         children: [],
       });
@@ -207,35 +216,18 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
       }
     });
 
-    roots.forEach(root => this.updateParentCheckState(root));
     return roots;
   }
 
   private convertTreeToList(root: PermissionTreeNode): PermissionTreeNode[] {
-    const stack: PermissionTreeNode[] = [{ ...root, level: 0, expand: true }];
     const array: PermissionTreeNode[] = [];
-    const seen: Record<string, boolean> = {};
-
-    while (stack.length) {
-      const node = stack.pop()!;
-      if (!seen[node.key]) {
-        seen[node.key] = true;
-        array.push(node);
-      }
-      if (node.children?.length) {
-        for (let i = node.children.length - 1; i >= 0; i--) {
-          stack.push({ ...node.children[i], level: (node.level ?? 0) + 1, expand: true, parent: node });
-        }
-      }
-    }
-    return array;
-  }
-
-  private visitNode(node: PermissionTreeNode, hashMap: Record<string, boolean>, array: PermissionTreeNode[]): void {
-    if (!hashMap[node.key]) {
-      hashMap[node.key] = true;
+    const walk = (node: PermissionTreeNode, level: number): void => {
+      node.level = level;
       array.push(node);
-    }
+      node.children?.forEach(child => walk(child, level + 1));
+    };
+    walk(root, 0);
+    return array;
   }
 
   isNodeVisible(item: PermissionTreeNode): boolean {
@@ -330,105 +322,109 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
     this.renderTree(filtered);
   }
 
-  // ── Permission cascade ──────────────────────────────────────────────
-  onPermissionChange(field: PermField, node: PermissionTreeNode, moduleKey: string, value: boolean): void {
-    this.isDirty.set(true);
-    const orig = this.originalPermissions.find(p => p.FunctionsId.toString() === node.key);
+  // ── Permission cascade (single source of truth = originalPermissions) ─
+  /** Quyền có tồn tại trên hệ thống với một FunctionPermission hay không. */
+  private can(fp: FunctionPermission, field: PermField): boolean {
+    if (field === 'access') return fp.CanView !== false;
+    if (field === 'add') return fp.CanAdd !== false;
+    if (field === 'edit') return fp.CanEdit !== false;
+    return fp.CanDelete !== false;
+  }
 
-    if (field === 'access') {
-      node.access = value;
-      if (orig) {
-        orig.Flag = value ? 1 : 0;
-        orig.Res = value ? 1 : 0;
+  /** Thu thập các FunctionPermission lá (thực sự mang quyền) của một node. */
+  private collectLeaves(node: PermissionTreeNode): FunctionPermission[] {
+    const out: FunctionPermission[] = [];
+    const walk = (n: PermissionTreeNode): void => {
+      if (n.children?.length) {
+        n.children.forEach(walk);
+      } else {
+        const fp = this.originalPermissions.find(p => p.FunctionsId.toString() === n.key);
+        if (fp) out.push(fp);
       }
-      if (!value) {
-        node.add = node.edit = node.delete = false;
-        if (orig) orig.Adds = orig.Edit = orig.Del = 0;
-      }
-      this.propagatePermissionDown(node, 'access', value);
-      if (!value) {
-        this.propagatePermissionDown(node, 'add', false);
-        this.propagatePermissionDown(node, 'edit', false);
-        this.propagatePermissionDown(node, 'delete', false);
-      }
-    } else {
-      node[field] = value;
-      if (orig) {
-        if (field === 'add') orig.Adds = value ? 1 : 0;
-        if (field === 'edit') orig.Edit = value ? 1 : 0;
-        if (field === 'delete') orig.Del = value ? 1 : 0;
-      }
-      if (value && !node.access) {
-        node.access = true;
-        if (orig) {
-          orig.Flag = 1;
-          orig.Res = 1;
+    };
+    walk(node);
+    return out;
+  }
+
+  /** Áp dụng một trường cho tập hợp lá, tôn trọng can* và luật phụ thuộc. */
+  private applyToLeaves(leaves: FunctionPermission[], field: PermField, value: boolean): void {
+    for (const fp of leaves) {
+      if (!this.can(fp, field)) continue;
+      if (field === 'access') {
+        fp.Flag = value ? 1 : 0;
+        fp.Res = value ? 1 : 0;
+        if (!value) fp.Adds = fp.Edit = fp.Del = 0;
+      } else {
+        if (field === 'add') fp.Adds = value ? 1 : 0;
+        if (field === 'edit') fp.Edit = value ? 1 : 0;
+        if (field === 'delete') fp.Del = value ? 1 : 0;
+        if (value && this.can(fp, 'access')) {
+          fp.Flag = 1;
+          fp.Res = 1;
         }
-        this.propagateAccessUp(node);
       }
-      this.propagatePermissionDown(node, field, value);
     }
+  }
 
-    const root = this.listOfMapData.find(r => r.key === moduleKey);
-    if (root) this.updateParentCheckState(root);
-
+  onPermissionChange(field: PermField, node: PermissionTreeNode, _moduleKey: string, value: boolean): void {
+    if (this.isAdminRole) return;
+    this.isDirty.set(true);
+    this.applyToLeaves(this.collectLeaves(node), field, value);
+    this.recomputeTreeFlags();
     this.recalculateStats();
     this.cdr.markForCheck();
   }
 
-  private propagatePermissionDown(node: PermissionTreeNode, field: PermField, value: boolean): void {
-    node.children?.forEach(child => {
-      child[field] = value;
-      const orig = this.originalPermissions.find(p => p.FunctionsId.toString() === child.key);
-      if (orig) {
-        if (field === 'access') {
-          orig.Flag = value ? 1 : 0;
-          orig.Res = value ? 1 : 0;
+  /** Tính lại checked/indeterminate của mọi node từ originalPermissions (duy nhất). */
+  private recomputeTreeFlags(): void {
+    const leafFlags = new Map<number, FunctionPermission>();
+    this.originalPermissions.forEach(p => leafFlags.set(p.FunctionsId, p));
+    const walk = (n: PermissionTreeNode): void => {
+      if (!n.children?.length) {
+        const fp = leafFlags.get(Number(n.key));
+        if (fp) {
+          n.access = fp.Flag === 1;
+          n.add = fp.Adds === 1;
+          n.edit = fp.Edit === 1;
+          n.delete = fp.Del === 1;
         }
-        if (field === 'add') orig.Adds = value ? 1 : 0;
-        if (field === 'edit') orig.Edit = value ? 1 : 0;
-        if (field === 'delete') orig.Del = value ? 1 : 0;
+        n.accessIndeterminate = n.addIndeterminate = n.editIndeterminate = n.deleteIndeterminate = false;
+        return;
       }
-      this.propagatePermissionDown(child, field, value);
+      n.children.forEach(walk);
+      const total = n.children.length;
+      const ac = n.children.filter(c => c.access).length;
+      const ad = n.children.filter(c => c.add).length;
+      const ed = n.children.filter(c => c.edit).length;
+      const de = n.children.filter(c => c.delete).length;
+      n.access = ac === total;
+      n.accessIndeterminate = ac > 0 && ac < total;
+      n.add = ad === total;
+      n.addIndeterminate = ad > 0 && ad < total;
+      n.edit = ed === total;
+      n.editIndeterminate = ed > 0 && ed < total;
+      n.delete = de === total;
+      n.deleteIndeterminate = de > 0 && de < total;
+    };
+    this.listOfMapData.forEach(walk);
+  }
+
+  /** Các lá thuộc module có tên chứa từ khóa (dùng cho preset). */
+  private moduleLeavesByKeyword(kw: string): FunctionPermission[] {
+    const out: FunctionPermission[] = [];
+    this.listOfMapData.forEach(root => {
+      if (root.name.toLowerCase().includes(kw.toLowerCase())) {
+        out.push(...this.collectLeaves(root));
+      }
     });
-  }
-
-  private propagateAccessUp(node: PermissionTreeNode): void {
-    let cur = node.parent;
-    while (cur) {
-      cur.access = true;
-      const orig = this.originalPermissions.find(p => p.FunctionsId.toString() === cur!.key);
-      if (orig) {
-        orig.Flag = 1;
-        orig.Res = 1;
-      }
-      cur = cur.parent;
-    }
-  }
-
-  private updateParentCheckState(node: PermissionTreeNode): void {
-    if (!node.children?.length) {
-      node.accessIndeterminate = node.addIndeterminate = node.editIndeterminate = node.deleteIndeterminate = false;
-      return;
-    }
-    node.children.forEach(c => this.updateParentCheckState(c));
-    const total = node.children.length;
-    const ac = node.children.filter(c => c.access).length;
-    const ad = node.children.filter(c => c.add).length;
-    const ed = node.children.filter(c => c.edit).length;
-    const de = node.children.filter(c => c.delete).length;
-
-    node.access = ac === total;
-    node.accessIndeterminate = ac > 0 && ac < total;
-    node.add = ad === total;
-    node.addIndeterminate = ad > 0 && ad < total;
-    node.edit = ed === total;
-    node.editIndeterminate = ed > 0 && ed < total;
-    node.delete = de === total;
-    node.deleteIndeterminate = de > 0 && de < total;
+    return out;
   }
 
   // ── Row / Column helpers ────────────────────────────────────────────
+  moduleStat(id: string | number): { activeFunctions: number; totalFunctions: number } | undefined {
+    return this.moduleStats.find(m => m.moduleId === Number(id));
+  }
+
   isRowAllChecked(node: PermissionTreeNode): boolean {
     return node.access && node.add && node.edit && node.delete;
   }
@@ -438,6 +434,12 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
     return sum > 0 && sum < 4;
   }
 
+  /** Nút "Toàn quyền" chỉ bị khóa với vai trò quản trị hệ thống.
+   *  Với các phân hệ thiếu một vài quyền CRUD, nút vẫn dùng được nhưng chỉ cấp những quyền có sẵn. */
+  isRowAllDisabled(node: PermissionTreeNode): boolean {
+    return this.isAdminRole;
+  }
+
   toggleRowAll(node: PermissionTreeNode, moduleKey: string, checked: boolean): void {
     this.onPermissionChange('access', node, moduleKey, checked);
     this.onPermissionChange('add', node, moduleKey, checked);
@@ -445,77 +447,73 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
     this.onPermissionChange('delete', node, moduleKey, checked);
   }
 
+  private flagOf(fp: FunctionPermission, field: PermField): number {
+    if (field === 'access') return fp.Flag;
+    if (field === 'add') return fp.Adds;
+    if (field === 'edit') return fp.Edit;
+    return fp.Del;
+  }
+
+  /** Chỉ các chức năng lá (FunctionsId >= 1000), loại trừ hàng module. */
+  private leafPermissions(): FunctionPermission[] {
+    return this.originalPermissions.filter(p => p.FunctionsId >= 1000);
+  }
+
   isColumnChecked(field: PermField): boolean {
-    if (!this.originalPermissions.length) return false;
-    return this.originalPermissions.every(p => {
-      if (field === 'access') return p.Flag === 1;
-      if (field === 'add') return p.Adds === 1;
-      if (field === 'edit') return p.Edit === 1;
-      return p.Del === 1;
-    });
+    const leaves = this.leafPermissions();
+    if (!leaves.length) return false;
+    return leaves.every(p => this.flagOf(p, field) === 1);
   }
 
   isColumnIndeterminate(field: PermField): boolean {
-    if (!this.originalPermissions.length) return false;
-    const count = this.originalPermissions.filter(p => {
-      if (field === 'access') return p.Flag === 1;
-      if (field === 'add') return p.Adds === 1;
-      if (field === 'edit') return p.Edit === 1;
-      return p.Del === 1;
-    }).length;
-    return count > 0 && count < this.originalPermissions.length;
+    const leaves = this.leafPermissions();
+    if (!leaves.length) return false;
+    const count = leaves.filter(p => this.flagOf(p, field) === 1).length;
+    return count > 0 && count < leaves.length;
   }
 
   toggleColumnAll(field: PermField, checked: boolean): void {
+    if (this.isAdminRole) return;
     this.isDirty.set(true);
-    const val = checked ? 1 : 0;
-
-    this.originalPermissions.forEach(p => {
-      if (field === 'access') {
-        p.Flag = val;
-        p.Res = val;
-        if (!checked) p.Adds = p.Edit = p.Del = 0;
-      }
-      if (field === 'add') {
-        p.Adds = val;
-        if (checked) {
-          p.Flag = 1;
-          p.Res = 1;
-        }
-      }
-      if (field === 'edit') {
-        p.Edit = val;
-        if (checked) {
-          p.Flag = 1;
-          p.Res = 1;
-        }
-      }
-      if (field === 'delete') {
-        p.Del = val;
-        if (checked) {
-          p.Flag = 1;
-          p.Res = 1;
-        }
-      }
-    });
-
-    this.renderTree(this.originalPermissions);
+    this.applyToLeaves(this.leafPermissions(), field, checked);
+    this.recomputeTreeFlags();
     this.recalculateStats();
   }
 
   // ── Presets ─────────────────────────────────────────────────────────
   applyPreset(preset: 'fullAdmin' | 'readOnly' | 'warehousePreset' | 'accountantPreset' | 'clearAll'): void {
+    if (this.isAdminRole) return;
     this.isDirty.set(true);
 
     const setAll = (flag: number, adds: number, edit: number, del: number, res: number): void => {
-      this.originalPermissions.forEach(p => {
-        p.Flag = flag;
-        p.Adds = adds;
-        p.Edit = edit;
-        p.Del = del;
-        p.Res = res;
+      this.leafPermissions().forEach(p => {
+        if (p.CanView !== false) {
+          p.Flag = flag;
+          p.Res = res;
+        } else {
+          p.Flag = 0;
+          p.Res = 0;
+        }
+        if (p.CanAdd !== false) p.Adds = adds;
+        else p.Adds = 0;
+        if (p.CanEdit !== false) p.Edit = edit;
+        else p.Edit = 0;
+        if (p.CanDelete !== false) p.Del = del;
+        else p.Del = 0;
       });
     };
+
+    const grantView = (leaves: FunctionPermission[]): void => {
+      leaves.forEach(p => {
+        if (p.CanView !== false) {
+          p.Flag = 1;
+          p.Res = 1;
+        }
+        p.Adds = p.Edit = p.Del = 0;
+      });
+    };
+
+    const clearAll = (): void => setAll(0, 0, 0, 0, 0);
 
     switch (preset) {
       case 'fullAdmin':
@@ -527,76 +525,67 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
         this.toastService.success('Đã áp dụng mẫu: Chỉ xem.');
         break;
       case 'warehousePreset':
-        this.originalPermissions.forEach(p => {
-          if ([1000, 1002, 2000].includes(p.FunctionsId) || p.ParentId === 2000) {
-            p.Flag = p.Adds = p.Edit = p.Del = p.Res = 1;
-          } else if (p.FunctionsId === 3000 || p.ParentId === 3000) {
-            p.Flag = p.Res = 1;
-            p.Adds = p.Edit = p.Del = 0;
-          } else {
-            p.Flag = p.Adds = p.Edit = p.Del = p.Res = 0;
-          }
-        });
+        clearAll();
+        this.applyToLeaves(this.moduleLeavesByKeyword('kho'), 'access', true);
+        this.applyToLeaves(this.moduleLeavesByKeyword('kho'), 'add', true);
+        this.applyToLeaves(this.moduleLeavesByKeyword('kho'), 'edit', true);
+        this.applyToLeaves(this.moduleLeavesByKeyword('kho'), 'delete', true);
+        grantView(this.moduleLeavesByKeyword('mua hàng'));
         this.toastService.success('Đã áp dụng mẫu: Nghiệp vụ Quản lý Kho.');
         break;
       case 'accountantPreset':
-        this.originalPermissions.forEach(p => {
-          if ([5000, 4004, 1003].includes(p.FunctionsId) || p.ParentId === 5000) {
-            p.Flag = p.Adds = p.Edit = p.Del = p.Res = 1;
-          } else if ([1000, 2000, 2007, 3000, 3005, 4000].includes(p.FunctionsId)) {
-            p.Flag = p.Res = 1;
-            p.Adds = p.Edit = p.Del = 0;
-          } else {
-            p.Flag = p.Adds = p.Edit = p.Del = p.Res = 0;
-          }
-        });
+        clearAll();
+        this.applyToLeaves(this.moduleLeavesByKeyword('kế toán'), 'access', true);
+        this.applyToLeaves(this.moduleLeavesByKeyword('kế toán'), 'add', true);
+        this.applyToLeaves(this.moduleLeavesByKeyword('kế toán'), 'edit', true);
+        this.applyToLeaves(this.moduleLeavesByKeyword('kế toán'), 'delete', true);
+        ['hệ thống', 'kho', 'mua hàng', 'bán hàng'].forEach(kw => grantView(this.moduleLeavesByKeyword(kw)));
         this.toastService.success('Đã áp dụng mẫu: Nghiệp vụ Kế toán - Tài chính.');
         break;
       case 'clearAll':
-        setAll(0, 0, 0, 0, 0);
+        clearAll();
         this.toastService.info('Đã bỏ chọn toàn bộ quyền.');
         break;
     }
 
-    this.renderTree(this.originalPermissions);
+    this.recomputeTreeFlags();
     this.recalculateStats();
   }
 
-  // ── Stats ───────────────────────────────────────────────────────────
-  private recalculateStats(): void {
-    const total = this.originalPermissions.length;
-    this.totalRights = total * 4;
-
+  // ── Stats (chỉ đếm chức năng lá, không đếm hàng module) ────────────
+  /** Đếm số quyền (tối đa 4: xem/thêm/sửa/xóa) và số quyền đang bật của tập lá. */
+  private sumRights(leaves: FunctionPermission[]): { total: number; active: number } {
+    let total = 0;
     let active = 0;
-    this.originalPermissions.forEach(p => {
-      if (p.Flag === 1) active++;
-      if (p.Adds === 1) active++;
-      if (p.Edit === 1) active++;
-      if (p.Del === 1) active++;
-    });
-    this.activeRights = active;
-    this.overallPercent = this.totalRights ? Math.round((active / this.totalRights) * 100) : 0;
+    for (const p of leaves) {
+      if (p.CanView !== false) { total++; if (p.Flag === 1) active++; }
+      if (p.CanAdd !== false) { total++; if (p.Adds === 1) active++; }
+      if (p.CanEdit !== false) { total++; if (p.Edit === 1) active++; }
+      if (p.CanDelete !== false) { total++; if (p.Del === 1) active++; }
+    }
+    return { total, active };
+  }
+
+  private recalculateStats(): void {
+    const leaves = this.leafPermissions();
+    const overall = this.sumRights(leaves);
+    this.totalRights = overall.total;
+    this.activeRights = overall.active;
+    this.overallPercent = overall.total ? Math.round((overall.active / overall.total) * 100) : 0;
 
     const roots = this.originalPermissions.filter(p => p.ParentId === -1 || p.ParentId === 0);
     this.moduleStats = roots.map(root => {
-      const nodes = this.originalPermissions.filter(p => p.FunctionsId === root.FunctionsId || p.ParentId === root.FunctionsId);
-      const totalR = nodes.length * 4;
-      let activeR = 0;
-      nodes.forEach(m => {
-        if (m.Flag === 1) activeR++;
-        if (m.Adds === 1) activeR++;
-        if (m.Edit === 1) activeR++;
-        if (m.Del === 1) activeR++;
-      });
+      const childLeaves = this.originalPermissions.filter(p => p.ParentId === root.FunctionsId && p.FunctionsId >= 1000);
+      const stat = this.sumRights(childLeaves);
       return {
         moduleId: root.FunctionsId,
         moduleName: root.FunctionsName,
         icon: root.Icon || 'folder',
-        totalFunctions: nodes.length,
-        activeFunctions: nodes.filter(m => m.Flag === 1).length,
-        totalRights: totalR,
-        activeRights: activeR,
-        percent: totalR ? Math.round((activeR / totalR) * 100) : 0,
+        totalFunctions: childLeaves.length,
+        activeFunctions: childLeaves.filter(m => m.Flag === 1).length,
+        totalRights: stat.total,
+        activeRights: stat.active,
+        percent: stat.total ? Math.round((stat.active / stat.total) * 100) : 0,
       };
     });
   }
@@ -604,14 +593,16 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
   // ── Save ────────────────────────────────────────────────────────────
   onSavePermissions(): void {
     this.saving.set(true);
-    const payload: UpdatePermissionPayload[] = this.originalPermissions.map(p => ({
-      FunctionsId: p.FunctionsId,
-      Adds: p.Adds,
-      Del: p.Del,
-      Edit: p.Edit,
-      Flag: p.Flag,
-      Res: p.Res,
-    }));
+    const payload: UpdatePermissionPayload[] = this.originalPermissions
+      .filter(p => p.FunctionsId >= 1000)
+      .map(p => ({
+        FunctionsId: p.FunctionsId,
+        Adds: p.Adds,
+        Del: p.Del,
+        Edit: p.Edit,
+        Flag: p.Flag,
+        Res: p.Res,
+      }));
 
     this.roleService
       .updateFunctionPermissions(UPDATE_APP_ID, this.groupId, payload)

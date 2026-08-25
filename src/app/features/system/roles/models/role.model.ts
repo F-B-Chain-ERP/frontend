@@ -70,6 +70,10 @@ export interface FunctionPermission {
   Res: number;
   Level: number;
   ListFunc: null;
+  CanView?: boolean;   // action "truy cập" có tồn tại trên hệ thống
+  CanAdd?: boolean;    // action "thêm" có tồn tại trên hệ thống
+  CanEdit?: boolean;   // action "sửa" có tồn tại trên hệ thống
+  CanDelete?: boolean; // action "xóa" có tồn tại trên hệ thống
 }
 
 export interface PermissionApiResponse<T> {
@@ -89,6 +93,10 @@ export interface PermissionTreeNode {
   add: boolean;
   edit: boolean;
   delete: boolean;
+  canView?: boolean;
+  canAdd?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
   accessIndeterminate?: boolean;
   addIndeterminate?: boolean;
   editIndeterminate?: boolean;
@@ -242,4 +250,14 @@ export interface RoleAssignmentResponseBE {
   status: string;
   assignedAt: string | null;
   expiresAt: string | null;
+}
+
+// ── Thành viên của một vai trò (GET /api/v1/roles/{id}/users) ────────
+export interface RoleMemberResponseBE {
+  id: string;
+  username: string;
+  fullName: string | null;
+  email: string | null;
+  department: string | null;
+  assignedAt: string | null;
 }

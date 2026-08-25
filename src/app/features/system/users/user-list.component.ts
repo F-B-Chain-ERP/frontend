@@ -254,33 +254,15 @@ export class UserListComponent extends BaseComponent implements OnInit {
     }).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         const roles = res.data?.content || [];
-        if (roles.length > 0) {
-          const opts = roles.map(r => ({ label: `${r.name} (${r.code})`, value: r.id }));
-          this.roleOptions.set(opts);
-          this.roleMap.clear();
-          roles.forEach(r => this.roleMap.set(r.id, r.name));
-        } else {
-          this.setFallbackRoles();
-        }
+        const opts = roles.map(r => ({ label: `${r.name} (${r.code})`, value: r.id }));
+        this.roleOptions.set(opts);
+        this.roleMap.clear();
+        roles.forEach(r => this.roleMap.set(r.id, r.name));
       },
-      error: () => {
-        this.setFallbackRoles();
+      error: err => {
+        this.toastService.error('Lỗi', err?.message || 'Không thể tải danh sách vai trò.');
       }
     });
-  }
-
-  private setFallbackRoles(): void {
-    const fallback = [
-      { label: 'Quản trị hệ thống (ADMIN)', value: 'ADMIN' },
-      { label: 'Quản lý chi nhánh (BRANCH_MGR)', value: 'BRANCH_MGR' },
-      { label: 'Quản lý kho (WAREHOUSE_MGR)', value: 'WAREHOUSE_MGR' },
-      { label: 'Nhân viên bán hàng (POS_STAFF)', value: 'POS_STAFF' },
-      { label: 'Nhân viên kho (WAREHOUSE_STAFF)', value: 'WAREHOUSE_STAFF' },
-      { label: 'Nhân viên pha chế (BARISTA)', value: 'BARISTA' },
-      { label: 'Kế toán viên (ACCOUNTANT)', value: 'ACCOUNTANT' },
-    ];
-    this.roleOptions.set(fallback);
-    fallback.forEach(r => this.roleMap.set(r.value, r.label));
   }
 
   getBranchName(branchId: string | null | undefined): string {
