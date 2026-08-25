@@ -83,6 +83,15 @@ export const routes: Routes = [
         loadChildren: () => import('./features/system/users/users.routes'),
       },
       {
+        path: 'system/customers',
+        loadChildren: () => import('./features/system/customers/customer.routes'),
+      },
+      {
+        path: 'system/customers/list',
+        redirectTo: 'admin/system/customers/list',
+        pathMatch: 'full',
+      },
+      {
         path: 'system/roles',
         loadChildren: () => import('./features/system/roles/roles.routes'),
       },
