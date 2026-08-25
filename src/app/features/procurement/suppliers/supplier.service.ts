@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { forkJoin, Observable, throwError } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { ApiResponse } from '../../login/login.model';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
@@ -70,9 +70,7 @@ export class SupplierService {
   }
 
   getSuppliers(filter: SupplierFilter): Observable<SupplierListResponse> {
-    let params = new HttpParams()
-      .set('page', String(Math.max((filter.pageIndex ?? 1) - 1, 0)))
-      .set('size', String(filter.pageSize ?? 10));
+    let params = new HttpParams().set('page', String(Math.max((filter.pageIndex ?? 1) - 1, 0))).set('size', String(filter.pageSize ?? 10));
 
     if (filter.query?.trim()) {
       params = params.set('search', filter.query.trim());
@@ -146,6 +144,15 @@ export class SupplierService {
     );
   }
 
+  batchUpdateStatus(ids: (string | number)[], active: boolean): Observable<number> {
+    const status = active ? SupplierStatus.ACTIVE : SupplierStatus.INACTIVE;
+    return forkJoin(ids.map(id => this.updateSupplier(id, { status }))).pipe(map(() => ids.length));
+  }
+
+  batchDelete(ids: (string | number)[]): Observable<number> {
+    return forkJoin(ids.map(id => this.deleteSupplier(id))).pipe(map(() => ids.length));
+  }
+
   // ── Mapping helpers ────────────────────────────────────────────────
 
   private toSupplier(s: BackendSupplier): Supplier {
@@ -188,7 +195,7 @@ export class SupplierService {
       phone: (dto.phoneNumber || '').trim() || null,
       email: (dto.email || '').trim() || null,
       address: (dto.address || '').trim() || null,
-      paymentTermDays: dto.paymentTermDays != null ? Number(dto.paymentTermDays) : null,
+      paymentTermDays: dto.paymentTermDays != null ? dto.paymentTermDays : null,
       status: STATUS_TO_BACKEND[dto.status] ?? 'ACTIVE',
     };
   }

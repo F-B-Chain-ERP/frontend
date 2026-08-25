@@ -6,7 +6,9 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.ADD]" variant="primary" leftIcon="plus" (click)="openCreateModal()"> Thêm mới nhà cung cấp </app-button>
+      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.ADD]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
+        Thêm mới nhà cung cấp
+      </app-button>
     </div>
   </div>
 
@@ -53,7 +55,27 @@
     </div>
   </nz-card>
 
-  <!-- ── 3. Main Data Table Card ────────────────────────────────────── -->
+  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+    <app-selection-bar
+      [selectedCount]="setOfCheckedKeys.size"
+      [totalCount]="total()"
+      itemLabel="nhà cung cấp"
+      (clearSelection)="clearSelection()"
+    >
+      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]" variant="secondary" leftIcon="check" (click)="onBatchStatus(true)">
+        Kích hoạt
+      </app-button>
+      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]" variant="secondary" leftIcon="stop" (click)="onBatchStatus(false)">
+        Ngừng hợp tác
+      </app-button>
+      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.DELETE]" variant="danger" leftIcon="delete" (click)="onBatchDelete()">
+        Xóa nhanh
+      </app-button>
+    </app-selection-bar>
+  }
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
   <nz-card class="page__list" [nzBordered]="false">
     <nz-table
       #supplierTable
@@ -62,18 +84,33 @@
       [nzShowPagination]="false"
       [nzFrontPagination]="false"
       nzSize="middle"
-      [nzScroll]="{ x: '1100px' }"
+      [nzScroll]="{ x: '1500px' }"
     >
       <thead>
         <tr>
+          <!-- Checkbox header -->
+          <th scope="col" nzWidth="48px" nzAlign="center">
+            <label class="cb" for="cb-check-all-suppliers">
+              <input
+                id="cb-check-all-suppliers"
+                #checkAllInput
+                type="checkbox"
+                [checked]="allChecked"
+                [indeterminate]="indeterminate"
+                (change)="onCheckAll(checkAllInput.checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
+
           <!-- STT -->
           <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
 
           <!-- Mã NCC -->
-          <th scope="col" nzWidth="110px" nzAlign="left">Mã NCC</th>
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCodeFn" nzWidth="110px" nzAlign="left">Mã NCC</th>
 
           <!-- Tên nhà cung cấp -->
-          <th scope="col" nzWidth="240px" nzAlign="left">Tên nhà cung cấp</th>
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortNameFn" nzWidth="240px" nzAlign="left">Tên nhà cung cấp</th>
 
           <!-- Người liên hệ -->
           <th scope="col" nzWidth="160px" nzAlign="left">Người liên hệ</th>
@@ -93,44 +130,137 @@
           <!-- Thao tác -->
           <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
         </tr>
+
+        <!-- Thead Search Subrow (Column-based Filter) -->
+        <tr class="thead-search">
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('code')"
+              (valueChange)="searchByField('code', $event)"
+              placeholder="Tìm mã NCC"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('name')"
+              (valueChange)="searchByField('name', $event)"
+              placeholder="Tìm tên"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('contactPerson')"
+              (valueChange)="searchByField('contactPerson', $event)"
+              placeholder="Tìm người liên hệ"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('phoneNumber')"
+              (valueChange)="searchByField('phoneNumber', $event)"
+              placeholder="Tìm SĐT"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('email')"
+              (valueChange)="searchByField('email', $event)"
+              placeholder="Tìm email"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('address')"
+              (valueChange)="searchByField('address', $event)"
+              placeholder="Tìm địa chỉ"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('status')"
+              (valueChange)="searchByField('status', $event)"
+              placeholder="Trạng thái"
+              type="option"
+              labelField="label"
+              valueField="value"
+              [options]="statusFilterOptions"
+            ></app-table-search-input>
+          </th>
+          <th nzAlign="center">
+            <app-button
+              iconOnly="reload"
+              nz-tooltip
+              nzTooltipTitle="Đặt lại bộ lọc cột"
+              (click)="resetAllFieldFilter()"
+              variant="ghost"
+            ></app-button>
+          </th>
+        </tr>
       </thead>
+
       <tbody>
-        @for (supplier of suppliers(); track supplier.id) {
+        @for (supplier of suppliers(); track supplier.id; let idx = $index) {
           <tr>
-            <td nzAlign="center">{{ pageIndex === 1 ? $index + 1 : (pageIndex - 1) * pageSize + $index + 1 }}</td>
-            <td>
+            <!-- Checkbox row -->
+            <td nzAlign="center">
+              <label class="cb" [for]="'cb-supplier-' + supplier.id">
+                <input
+                  [id]="'cb-supplier-' + supplier.id"
+                  #rowInput
+                  type="checkbox"
+                  [checked]="isChecked(supplier.id)"
+                  (change)="onCheckRow(supplier.id, rowInput.checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </td>
+
+            <!-- STT -->
+            <td nzAlign="center" class="font-mono text-muted">
+              {{ (pageIndex - 1) * pageSize + idx + 1 }}
+            </td>
+
+            <!-- Mã NCC -->
+            <td nzAlign="left">
               <span class="supplier-code">{{ supplier.code }}</span>
             </td>
-            <td>
+
+            <!-- Tên nhà cung cấp -->
+            <td nzAlign="left">
               <span class="supplier-name">{{ supplier.name }}</span>
             </td>
+
+            <!-- Người liên hệ -->
             <td>{{ supplier.contactPerson || '—' }}</td>
+
+            <!-- Số điện thoại -->
             <td>{{ supplier.phoneNumber || '—' }}</td>
+
+            <!-- Email -->
             <td>{{ supplier.email || '—' }}</td>
+
+            <!-- Địa chỉ -->
             <td>{{ supplier.address || '—' }}</td>
+
+            <!-- Trạng thái -->
             <td nzAlign="center">
-              <span [class]="getStatusMeta(supplier.status).badgeClass">
-                {{ getStatusMeta(supplier.status).label }}
+              <span [class]="getSupplierStatusMeta(supplier.status).badgeClass">
+                {{ getSupplierStatusMeta(supplier.status).label }}
               </span>
             </td>
+
+            <!-- Thao tác (icon only) -->
             <td nzAlign="center">
               <div class="tbl-actions">
                 <app-button
-                  *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]"
+                  *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.VIEW]"
                   variant="ghost"
-                  iconOnly="edit"
+                  iconOnly="eye"
                   nz-tooltip
-                  nzTooltipTitle="Chỉnh sửa nhà cung cấp"
-                  (click)="openEditModal(supplier)"
-                >
-                </app-button>
-                <app-button
-                  *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]"
-                  variant="ghost"
-                  iconOnly="swap"
-                  nz-tooltip
-                  nzTooltipTitle="Đổi trạng thái"
-                  (click)="onToggleStatus(supplier)"
+                  nzTooltipTitle="Xem chi tiết"
+                  (click)="openViewModal(supplier)"
                 >
                 </app-button>
                 <app-button
@@ -147,13 +277,19 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="9" class="tbl-empty">Không có dữ liệu nhà cung cấp</td>
+            <td colspan="10" class="text-center table-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-state__icon" />
+                <p class="empty-state__text">Không tìm thấy nhà cung cấp nào phù hợp</p>
+                <app-button variant="secondary" leftIcon="plus" (click)="openCreateModal()"> Thêm mới nhà cung cấp </app-button>
+              </div>
+            </td>
           </tr>
         }
       </tbody>
     </nz-table>
 
-    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <!-- ── 5. Standard Footer & Pagination ──────────────────────────── -->
     <div class="page__pagination">
       <app-pagination
         [total]="total()"
@@ -167,12 +303,13 @@
     </div>
   </nz-card>
 
-  <!-- ── 5. Form Modal (Thêm mới / Cập nhật) ───────────────────────── -->
+  <!-- ── 6. Form Modal (Thêm / Xem chi tiết / Cập nhật) ────────────── -->
   <app-modal
     [visible]="isFormModalVisible()"
     (visibleChange)="isFormModalVisible.set($event)"
     [title]="formModalTitle"
     size="lg"
+    [maskClosable]="false"
     [footer]="formModalFooter"
     (cancelEmit)="closeFormModal()"
   >
@@ -231,7 +368,14 @@
           <label class="form-label" for="modal-contactPerson">Người liên hệ</label>
           <nz-input-wrapper>
             <nz-icon nzInputPrefix nzType="user" />
-            <input id="modal-contactPerson" type="text" nz-input formControlName="contactPerson" placeholder="VD: Nguyễn Văn A" maxlength="150" />
+            <input
+              id="modal-contactPerson"
+              type="text"
+              nz-input
+              formControlName="contactPerson"
+              placeholder="VD: Nguyễn Văn A"
+              maxlength="150"
+            />
           </nz-input-wrapper>
         </div>
 
@@ -240,7 +384,14 @@
           <label class="form-label" for="modal-phoneNumber">Số điện thoại</label>
           <nz-input-wrapper>
             <nz-icon nzInputPrefix nzType="phone" />
-            <input id="modal-phoneNumber" type="text" nz-input formControlName="phoneNumber" placeholder="VD: 0912 345 678" maxlength="20" />
+            <input
+              id="modal-phoneNumber"
+              type="text"
+              nz-input
+              formControlName="phoneNumber"
+              placeholder="VD: 0912 345 678"
+              maxlength="20"
+            />
           </nz-input-wrapper>
         </div>
 
@@ -260,44 +411,80 @@
 
         <!-- Kỳ hạn thanh toán -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
-          <label class="form-label" for="modal-paymentTermDays">Kỳ hạn thanh toán (ngày)</label>
+          <label class="form-label required" for="modal-paymentTermDays">Kỳ hạn thanh toán (ngày)</label>
           <nz-input-wrapper>
             <nz-icon nzInputPrefix nzType="calendar" />
-            <input id="modal-paymentTermDays" type="number" min="0" nz-input formControlName="paymentTermDays" placeholder="VD: 30" />
+            <input
+              id="modal-paymentTermDays"
+              type="text"
+              inputmode="numeric"
+              nz-input
+              formControlName="paymentTermDays"
+              placeholder="VD: 30"
+            />
           </nz-input-wrapper>
+          @if (supplierForm.get('paymentTermDays')?.dirty || supplierForm.get('paymentTermDays')?.touched) {
+            @if (supplierForm.get('paymentTermDays')?.hasError('required')) {
+              <span class="form-error">Kỳ hạn thanh toán không được để trống.</span>
+            } @else if (supplierForm.get('paymentTermDays')?.hasError('pattern')) {
+              <span class="form-error">Chỉ được phép nhập số.</span>
+            } @else if (supplierForm.get('paymentTermDays')?.hasError('min')) {
+              <span class="form-error">Số phải lớn hơn 0.</span>
+            }
+          }
         </div>
 
         <!-- Địa chỉ -->
         <div nz-col [nzSpan]="24">
           <label class="form-label" for="modal-address">Địa chỉ</label>
-          <textarea id="modal-address" nz-input formControlName="address" rows="2" placeholder="VD: Số 1, đường A, quận B, TP.HCM" maxlength="255"></textarea>
+          <textarea
+            id="modal-address"
+            nz-input
+            formControlName="address"
+            rows="2"
+            placeholder="VD: Số 1, đường A, quận B, TP.HCM"
+            maxlength="255"
+          ></textarea>
         </div>
 
         <!-- Trạng thái -->
         <div nz-col [nzSpan]="24">
-          <label class="form-label required">Trạng thái</label>
-          <nz-radio-group formControlName="status">
-            <label nz-radio [nzValue]="SupplierStatus.ACTIVE">Đang hợp tác</label>
-            <label nz-radio [nzValue]="SupplierStatus.INACTIVE">Ngừng hợp tác</label>
-          </nz-radio-group>
+          <label class="form-label required" for="rb-modal-active">Trạng thái</label>
+          <div class="status-radio-options">
+            <label class="rb" for="rb-modal-active">
+              <input id="rb-modal-active" type="radio" [value]="SupplierStatus.ACTIVE" formControlName="status" />
+              <span class="rb__box"></span>
+              <span class="tbl-badge tbl-badge--success">Đang hợp tác</span>
+            </label>
+            <label class="rb" for="rb-modal-inactive">
+              <input id="rb-modal-inactive" type="radio" [value]="SupplierStatus.INACTIVE" formControlName="status" />
+              <span class="rb__box"></span>
+              <span class="tbl-badge tbl-badge--danger">Ngừng hợp tác</span>
+            </label>
+          </div>
         </div>
       </div>
     </form>
 
     <ng-template #formModalFooter>
       <div class="modal-footer-actions">
-        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">
-          Hủy bỏ
-        </app-button>
-        <app-button
-          *erpUTTHasSomeAuthority="[isEditMode ? ROLE.NHA_CUNG_CAP.EDIT : ROLE.NHA_CUNG_CAP.ADD]"
-          variant="primary"
-          leftIcon="check"
-          [loading]="isSaving()"
-          (click)="onSubmitForm()"
-        >
-          {{ isEditMode ? 'Lưu thay đổi' : 'Thêm nhà cung cấp' }}
-        </app-button>
+        @if (isViewMode) {
+          <app-button variant="ghost" leftIcon="close" (click)="closeFormModal()"> Đóng </app-button>
+          <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
+            Chỉnh sửa
+          </app-button>
+        } @else {
+          <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
+          <app-button
+            *erpUTTHasSomeAuthority="[isEditMode ? ROLE.NHA_CUNG_CAP.EDIT : ROLE.NHA_CUNG_CAP.ADD]"
+            variant="primary"
+            leftIcon="check"
+            [loading]="isSaving()"
+            (click)="onSubmitForm()"
+          >
+            {{ isEditMode ? 'Lưu thay đổi' : 'Thêm nhà cung cấp' }}
+          </app-button>
+        }
       </div>
     </ng-template>
   </app-modal>
