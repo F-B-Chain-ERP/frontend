@@ -1,5 +1,5 @@
-import {SidebarGroup} from './sidebar.model';
-import {ROLE} from '../../core/config/functions.constants';
+import { SidebarGroup } from './sidebar.model';
+import { ROLE } from '../../core/config/functions.constants';
 
 export const SIDEBAR_MENU: SidebarGroup[] = [
   {
@@ -60,6 +60,22 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
             route: '/admin/system/roles/list',
             activePrefix: '/admin/system/roles',
             authorities: [ROLE.QUAN_LY_VAI_TRO.VIEW],
+          },
+          {
+            kind: 'child',
+            id: 'manage-branches',
+            title: 'Quản lý chi nhánh',
+            route: '/admin/system/branches/list',
+            activePrefix: '/admin/system/branches',
+            authorities: [ROLE.QUAN_LY_CHI_NHANH.VIEW],
+          },
+          {
+            kind: 'child',
+            id: 'manage-scopes',
+            title: 'Quản lý phạm vi',
+            route: '/admin/system/scopes/list',
+            activePrefix: '/admin/system/scopes',
+            authorities: [ROLE.QUAN_LY_PHAM_VI.VIEW],
           },
         ],
       },

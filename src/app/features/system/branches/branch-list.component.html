@@ -1,0 +1,445 @@
+﻿<div class="branch-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý chi nhánh</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_CHI_NHANH.ADD]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
+        Thêm mới chi nhánh
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Search keyword -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="branch-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="branch-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập mã, tên, địa chỉ, số điện thoại chi nhánh..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Status dropdown -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label" for="branch-status-select">Trạng thái</label>
+        <nz-select
+          id="branch-status-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #branchTable
+      [nzData]="pagedBranches()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1200px' }"
+    >
+      <thead>
+        <tr>
+          <!-- STT -->
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+          <!-- Mã chi nhánh -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCodeFn" nzWidth="130px" nzAlign="left">Mã chi nhánh</th>
+
+          <!-- Tên chi nhánh -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortNameFn" nzWidth="240px" nzAlign="left">Tên chi nhánh</th>
+
+          <!-- Chi nhánh cha -->
+          <th scope="col" nzWidth="180px" nzAlign="left">Chi nhánh cha</th>
+
+          <!-- Địa chỉ -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortAddressFn" nzWidth="260px" nzAlign="left">Địa chỉ</th>
+
+          <!-- Số điện thoại -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortPhoneFn" nzWidth="140px" nzAlign="left">Số điện thoại</th>
+
+          <!-- Trạng thái -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortStatusFn" nzWidth="150px" nzAlign="center">Trạng thái</th>
+
+          <!-- Thao tác -->
+          <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+        </tr>
+        <tr class="thead-search">
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('code')"
+              (valueChange)="searchByField('code', $event)"
+              placeholder="Tìm mã"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('name')"
+              (valueChange)="searchByField('name', $event)"
+              placeholder="Tìm tên chi nhánh"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('parentName')"
+              (valueChange)="searchByField('parentName', $event)"
+              placeholder="Tìm chi nhánh cha"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('address')"
+              (valueChange)="searchByField('address', $event)"
+              placeholder="Tìm địa chỉ"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('phone')"
+              (valueChange)="searchByField('phone', $event)"
+              placeholder="Tìm SĐT"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('status')"
+              (valueChange)="searchByField('status', $event)"
+              placeholder="Trạng thái"
+              type="option"
+              labelField="label"
+              valueField="value"
+              [options]="statusFilterOptions"
+            ></app-table-search-input>
+          </th>
+          <th nzAlign="center">
+            <app-button iconOnly="reload" nz-tooltip="Đặt lại bộ lọc cột" (click)="resetAllFieldFilter()" variant="ghost"></app-button>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (data of branchTable.data; track data.id; let idx = $index) {
+          <tr>
+            <!-- STT -->
+            <td nzAlign="center" class="font-mono text-muted">
+              {{ (pageIndex - 1) * pageSize + idx + 1 }}
+            </td>
+
+            <!-- Mã chi nhánh -->
+            <td nzAlign="left">
+              <span class="branch-code font-mono">{{ data.code }}</span>
+            </td>
+
+            <!-- Tên chi nhánh -->
+            <td nzAlign="left">
+              <span class="branch-name">{{ data.name }}</span>
+            </td>
+
+            <!-- Chi nhánh cha -->
+            <td nzAlign="left">
+              <span>{{ data.parentName || '—' }}</span>
+            </td>
+
+            <!-- Địa chỉ -->
+            <td nzAlign="left">
+              <span class="text-muted">{{ data.address || '—' }}</span>
+            </td>
+
+            <!-- Số điện thoại -->
+            <td nzAlign="left">
+              @if (data.phone) {
+                <a [href]="'tel:' + data.phone" class="email-text" (click)="$event.stopPropagation()">
+                  <nz-icon nzType="phone" class="email-icon" />
+                  <span>{{ data.phone }}</span>
+                </a>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+
+            <!-- Trạng thái -->
+            <td nzAlign="center">
+              <span [class]="getStatusMeta(data.status).badgeClass">
+                {{ getStatusMeta(data.status).label }}
+              </span>
+            </td>
+
+            <!-- Thao tác -->
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_CHI_NHANH.EDIT]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa"
+                  (click)="openEditModal(data)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_CHI_NHANH.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa chi nhánh"
+                  (click)="onDeleteBranch(data)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="text-center table-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-state__icon" />
+                <p class="empty-state__text">Không có dữ liệu chi nhánh nào</p>
+                <app-button variant="secondary" leftIcon="plus" (click)="openCreateModal()"> Thêm chi nhánh mới </app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Form Modal (Thêm mới / Cập nhật) ───────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="formModalTitle"
+    size="md"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="branchForm" enterAsTabContainer (ngSubmit)="onSubmitForm()" class="branch-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Mã chi nhánh (Bắt buộc) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-branch-code">Mã chi nhánh</label>
+          <nz-input-wrapper>
+            <input
+              id="modal-branch-code"
+              type="text"
+              nz-input
+              formControlName="code"
+              placeholder="VD: CN-Q1, CN-HCM-01..."
+              (keypress)="blockSpace($event)"
+              maxlength="50"
+            />
+          </nz-input-wrapper>
+          @if (branchForm.get('code')?.dirty || branchForm.get('code')?.touched) {
+            @if (branchForm.get('code')?.hasError('required')) {
+              <span class="form-error">Mã chi nhánh không được để trống.</span>
+            }
+            @if (branchForm.get('code')?.hasError('invalidChars')) {
+              <span class="form-error">Mã chi nhánh chứa ký tự không hợp lệ.</span>
+            }
+          }
+        </div>
+
+        <!-- Tên chi nhánh (Bắt buộc) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-branch-name">Tên chi nhánh</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="shop" />
+            <input id="modal-branch-name" type="text" nz-input formControlName="name" placeholder="Nhập tên chi nhánh" maxlength="150" />
+          </nz-input-wrapper>
+          @if (branchForm.get('name')?.dirty || branchForm.get('name')?.touched) {
+            @if (branchForm.get('name')?.hasError('required')) {
+              <span class="form-error">Tên chi nhánh không được để trống.</span>
+            }
+            @if (branchForm.get('name')?.hasError('invalidChars')) {
+              <span class="form-error">Tên chi nhánh chứa ký tự không hợp lệ.</span>
+            }
+          }
+        </div>
+
+        <!-- Chi nhánh cha -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-branch-parent">Chi nhánh cha</label>
+          <nz-select
+            id="modal-branch-parent"
+            formControlName="parentId"
+            nzPlaceHolder="Không có (chi nhánh gốc)"
+            [nzAllowClear]="true"
+            style="width: 100%"
+          >
+            @for (b of parentOptions(); track b.id) {
+              <nz-option [nzLabel]="b.code + ' - ' + b.name" [nzValue]="b.id"></nz-option>
+            }
+          </nz-select>
+        </div>
+
+        <!-- Số điện thoại -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-branch-phone">Số điện thoại</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="phone" />
+            <input id="modal-branch-phone" type="text" nz-input formControlName="phone" placeholder="0912 345 678" maxlength="20" />
+          </nz-input-wrapper>
+          @if (branchForm.get('phone')?.dirty || branchForm.get('phone')?.touched) {
+            @if (branchForm.get('phone')?.hasError('pattern')) {
+              <span class="form-error">Số điện thoại không đúng định dạng.</span>
+            }
+          }
+        </div>
+
+        <!-- Email -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-branch-email">Email</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="mail" />
+            <input
+              id="modal-branch-email"
+              type="email"
+              nz-input
+              formControlName="email"
+              placeholder="branch@pinedrink.vn"
+              maxlength="150"
+            />
+          </nz-input-wrapper>
+          @if (branchForm.get('email')?.dirty || branchForm.get('email')?.touched) {
+            @if (branchForm.get('email')?.hasError('email')) {
+              <span class="form-error">Định dạng email không hợp lệ.</span>
+            }
+          }
+        </div>
+
+        <!-- Múi giờ -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-branch-timezone">Múi giờ</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="clock-circle" />
+            <input
+              id="modal-branch-timezone"
+              type="text"
+              nz-input
+              formControlName="timezone"
+              placeholder="Asia/Ho_Chi_Minh"
+              maxlength="50"
+            />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Địa chỉ -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="modal-branch-address">Địa chỉ</label>
+          <textarea
+            id="modal-branch-address"
+            nz-input
+            formControlName="address"
+            rows="2"
+            placeholder="Nhập địa chỉ chi nhánh"
+            maxlength="255"
+          ></textarea>
+        </div>
+
+        <!-- Thời gian chuẩn bị -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-branch-prep">Thời gian chế biến trung bình (phút)</label>
+          <nz-input-number
+            id="modal-branch-prep"
+            formControlName="averagePreparationMinutes"
+            [nzMin]="0"
+            [nzMax]="1440"
+            [nzStep]="5"
+            [nzPrecision]="0"
+            style="width: 100%"
+          >
+          </nz-input-number>
+          @if (branchForm.get('averagePreparationMinutes')?.hasError('min')) {
+            <span class="form-error">Thời gian chuẩn bị phải lớn hơn hoặc bằng 0.</span>
+          }
+        </div>
+
+        <!-- Trạng thái hoạt động (Bắt buộc) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <span class="form-label required">Trạng thái hoạt động</span>
+          <div class="status-radio-options">
+            <label class="rb" for="rb-modal-branch-active">
+              <input id="rb-modal-branch-active" type="radio" [value]="'ACTIVE'" formControlName="status" />
+              <span class="rb__box"></span>
+              <span class="tbl-badge tbl-badge--success">Hoạt động</span>
+            </label>
+            <label class="rb" for="rb-modal-branch-inactive">
+              <input id="rb-modal-branch-inactive" type="radio" [value]="'INACTIVE'" formControlName="status" />
+              <span class="rb__box"></span>
+              <span class="tbl-badge tbl-badge--danger">Ngừng hoạt động</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Cấu hình dịch vụ -->
+        <div nz-col [nzSpan]="24">
+          <div class="service-switch-row">
+            <div class="service-switch-item">
+              <label class="switch-label" for="modal-branch-pickup">Hỗ trợ mua tại cửa hàng</label>
+              <nz-switch id="modal-branch-pickup" formControlName="supportsPickup"></nz-switch>
+            </div>
+            <div class="service-switch-item">
+              <label class="switch-label" for="modal-branch-delivery">Hỗ trợ giao hàng</label>
+              <nz-switch id="modal-branch-delivery" formControlName="supportsDelivery"></nz-switch>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[isEditMode ? ROLE.QUAN_LY_CHI_NHANH.EDIT : ROLE.QUAN_LY_CHI_NHANH.ADD]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitForm()"
+        >
+          {{ isEditMode ? 'Lưu thay đổi' : 'Thêm chi nhánh' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

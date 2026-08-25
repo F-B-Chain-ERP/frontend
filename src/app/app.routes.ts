@@ -1,6 +1,6 @@
-import {Routes} from '@angular/router';
-import {AuthGuard} from './core/auth/auth.guard';
-import {errorRoute} from './layouts/error/error.route';
+import { Routes } from '@angular/router';
+import { AuthGuard } from './core/auth/auth.guard';
+import { errorRoute } from './layouts/error/error.route';
 import MainComponent from './layouts/main/main.component';
 import ClientLayoutComponent from './layouts/client/client-layout.component';
 
@@ -72,6 +72,14 @@ export const routes: Routes = [
       {
         path: 'system/roles',
         loadChildren: () => import('./features/system/roles/roles.routes'),
+      },
+      {
+        path: 'system/branches',
+        loadChildren: () => import('./features/system/branches/branches.routes'),
+      },
+      {
+        path: 'system/scopes',
+        loadChildren: () => import('./features/system/scopes/scopes.routes'),
       },
       {
         path: 'error-pages',
