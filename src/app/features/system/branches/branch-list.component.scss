@@ -1,4 +1,4 @@
-.po-list-page {
+.branch-list-page {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -50,25 +50,38 @@
 }
 
 // ── Table Cell Styling ─────────────────────────────────────────
-.po-code {
-  font-family: var(--font-mono, monospace);
+.branch-code {
   font-weight: var(--fw-semibold);
-  color: var(--color-primary, #1677ff);
+  color: var(--text-primary);
 }
 
-.supplier-name {
-  font-weight: var(--fw-semibold);
-}
-
-.warehouse-name {
-  display: inline-flex;
-  align-items: center;
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
+.branch-name {
   font-weight: var(--fw-medium);
 }
 
-.po-total {
-  font-family: var(--font-mono, monospace);
-  font-weight: var(--fw-semibold);
+// ── Form Modal ─────────────────────────────────────────────────
+.status-radio-options {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.service-switch-row {
+  display: flex;
+  gap: var(--space-8);
+
+  .service-switch-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+
+    .switch-label {
+      font-size: var(--fs-sm);
+      color: var(--text-secondary);
+    }
+  }
+
+  @media (max-width: 576px) {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
 }

@@ -1,0 +1,290 @@
+﻿<div class="scope-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý phạm vi truy cập</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_PHAM_VI.ADD]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
+        Thêm mới phạm vi
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Scope type dropdown -->
+      <div class="filter-item filter-item--type">
+        <label class="form-label" for="scope-type-select">Loại phạm vi</label>
+        <nz-select
+          id="scope-type-select"
+          [(ngModel)]="selectedType"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả loại phạm vi"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of typeFilterOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Status dropdown -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label" for="scope-status-select">Trạng thái</label>
+        <nz-select
+          id="scope-status-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #scopeTable
+      [nzData]="pagedScopes()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '900px' }"
+    >
+      <thead>
+        <tr>
+          <!-- STT -->
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+          <!-- Loại phạm vi -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortTypeFn" nzWidth="200px" nzAlign="left">Loại phạm vi</th>
+
+          <!-- Chi nhánh áp dụng -->
+          <th scope="col" nzWidth="280px" nzAlign="left">Chi nhánh áp dụng</th>
+
+          <!-- Trạng thái -->
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortStatusFn" nzWidth="160px" nzAlign="center">Trạng thái</th>
+
+          <!-- Thao tác -->
+          <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+        </tr>
+        <tr class="thead-search">
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('branchName')"
+              (valueChange)="searchByField('branchName', $event)"
+              placeholder="Tìm chi nhánh"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('status')"
+              (valueChange)="searchByField('status', $event)"
+              placeholder="Trạng thái"
+              type="option"
+              labelField="label"
+              valueField="value"
+              [options]="statusOptions"
+            ></app-table-search-input>
+          </th>
+          <th nzAlign="center">
+            <app-button iconOnly="reload" nz-tooltip="Đặt lại bộ lọc cột" (click)="resetAllFieldFilter()" variant="ghost"></app-button>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (data of scopeTable.data; track data.id; let idx = $index) {
+          <tr>
+            <!-- STT -->
+            <td nzAlign="center" class="font-mono text-muted">
+              {{ (pageIndex - 1) * pageSize + idx + 1 }}
+            </td>
+
+            <!-- Loại phạm vi -->
+            <td nzAlign="left">
+              <span [class]="getTypeMeta(data.scopeType).badgeClass">
+                {{ getTypeMeta(data.scopeType).label }}
+              </span>
+            </td>
+
+            <!-- Chi nhánh áp dụng -->
+            <td nzAlign="left">
+              @if (data.branchName) {
+                <span><nz-icon nzType="shop" class="branch-icon" /> {{ data.branchName }}</span>
+              } @else {
+                <span class="text-muted">— Áp dụng toàn hệ thống</span>
+              }
+            </td>
+
+            <!-- Trạng thái -->
+            <td nzAlign="center">
+              <span [class]="getStatusMeta(data.status).badgeClass">
+                {{ getStatusMeta(data.status).label }}
+              </span>
+            </td>
+
+            <!-- Thao tác -->
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_PHAM_VI.EDIT]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa"
+                  (click)="openEditModal(data)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_PHAM_VI.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa phạm vi"
+                  (click)="onDeleteScope(data)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="text-center table-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-state__icon" />
+                <p class="empty-state__text">Không có dữ liệu phạm vi nào</p>
+                <app-button variant="secondary" leftIcon="plus" (click)="openCreateModal()"> Thêm phạm vi mới </app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Form Modal (Thêm mới / Cập nhật) ───────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="formModalTitle"
+    size="sm"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="scopeForm" enterAsTabContainer (ngSubmit)="onSubmitForm()" class="scope-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Loại phạm vi (Bắt buộc) -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label required" for="modal-scope-type">Loại phạm vi</label>
+          <nz-select id="modal-scope-type" formControlName="scopeType" nzPlaceHolder="Chọn loại phạm vi" style="width: 100%">
+            @for (opt of scopeTypeOptions; track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          @if (scopeForm.get('scopeType')?.dirty || scopeForm.get('scopeType')?.touched) {
+            @if (scopeForm.get('scopeType')?.hasError('required')) {
+              <span class="form-error">Loại phạm vi không được để trống.</span>
+            }
+          }
+        </div>
+
+        <!-- Chi nhánh áp dụng (Bắt buộc với STORE / WAREHOUSE) -->
+        @if (isBranchRequired) {
+          <div nz-col [nzSpan]="24">
+            <label class="form-label required" for="modal-scope-branch">Chi nhánh áp dụng</label>
+            <nz-select
+              id="modal-scope-branch"
+              formControlName="branchId"
+              nzPlaceHolder="Chọn chi nhánh áp dụng phạm vi"
+              [nzShowSearch]="true"
+              style="width: 100%"
+            >
+              @for (b of branchOptions(); track b.value) {
+                <nz-option [nzLabel]="b.label" [nzValue]="b.value"></nz-option>
+              }
+            </nz-select>
+            @if (scopeForm.get('branchId')?.dirty || scopeForm.get('branchId')?.touched) {
+              @if (scopeForm.get('branchId')?.hasError('required')) {
+                <span class="form-error">Loại "Cửa hàng" / "Kho" bắt buộc chọn chi nhánh.</span>
+              }
+            }
+          </div>
+        }
+
+        <!-- Trạng thái hoạt động (Bắt buộc) -->
+        <div nz-col [nzSpan]="24">
+          <span class="form-label required">Trạng thái hoạt động</span>
+          <div class="status-radio-options">
+            <label class="rb" for="rb-modal-scope-active">
+              <input id="rb-modal-scope-active" type="radio" [value]="'ACTIVE'" formControlName="status" />
+              <span class="rb__box"></span>
+              <span class="tbl-badge tbl-badge--success">Hoạt động</span>
+            </label>
+            <label class="rb" for="rb-modal-scope-inactive">
+              <input id="rb-modal-scope-inactive" type="radio" [value]="'INACTIVE'" formControlName="status" />
+              <span class="rb__box"></span>
+              <span class="tbl-badge tbl-badge--danger">Ngừng hoạt động</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Ghi chú quy tắc -->
+        <div nz-col [nzSpan]="24">
+          <div class="scope-rule-note">
+            <nz-icon nzType="info-circle" />
+            <span>
+              Phạm vi "Toàn hệ thống" chỉ tồn tại duy nhất một bản ghi. Với "Cửa hàng" / "Kho", mỗi chi nhánh chỉ tạo được một phạm vi mỗi
+              loại.
+            </span>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[isEditMode ? ROLE.QUAN_LY_PHAM_VI.EDIT : ROLE.QUAN_LY_PHAM_VI.ADD]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitForm()"
+        >
+          {{ isEditMode ? 'Lưu thay đổi' : 'Thêm phạm vi' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

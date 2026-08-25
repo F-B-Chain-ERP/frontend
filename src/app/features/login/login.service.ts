@@ -10,6 +10,8 @@ import { StateStorageService } from '../../core/auth/state-storage.service';
 import { Account } from '../../core/auth/account.model';
 import { AuthResponse, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest, ResendOtpRequest, SelectBranchRequest } from './login.model';
 
+import { resolveAuthoritiesForUser, FULL_PERMISSION } from '../../core/config/functions.constants';
+
 @Injectable({ providedIn: 'root' })
 export class LoginService {
   private readonly authServerProvider = inject(AuthServerProvider);
@@ -121,14 +123,36 @@ export class LoginService {
     this.stateStorageService.storeRefreshToken(auth.refreshToken, rememberMe);
   }
 
+  private decodeTokenPayload(token: string | null | undefined): Record<string, any> | null {
+    if (!token) return null;
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+      return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    } catch {
+      return null;
+    }
+  }
+
   private toAccount(auth: AuthResponse, fallbackLogin = ''): Account {
     const isCustomer = auth.principalType === 'CUSTOMER';
     const customer = auth.customer;
-    const login = isCustomer ? (customer?.email ?? customer?.phone ?? fallbackLogin) : fallbackLogin;
-    const email = isCustomer ? (customer?.email ?? '') : '';
+    const decoded = this.decodeTokenPayload(auth.accessToken);
+    const tokenUsername = decoded?.['username'] || decoded?.['sub'] || '';
+    const defaultLogin = fallbackLogin || tokenUsername;
+    const login = isCustomer
+      ? (customer?.email ?? customer?.phone ?? defaultLogin)
+      : defaultLogin;
+    const email = isCustomer ? (customer?.email ?? '') : (decoded?.['email'] ?? '');
     const fullName = isCustomer ? (customer?.fullName ?? null) : null;
-    const isSuperAdmin = login === 'admin';
-    const authorities = isSuperAdmin ? ['FULL_PERMISSION'] : [];
+
+    const rawRoles: string[] = Array.isArray(decoded?.['roleCodes']) ? decoded?.['roleCodes'] : [];
+    const isSuperAdmin = login === 'admin' || rawRoles.includes('ADMIN') || rawRoles.includes('ROLE_ADMIN');
+
+    const authorities = isSuperAdmin
+      ? [FULL_PERMISSION, 'ROLE_ADMIN', 'ADMIN']
+      : resolveAuthoritiesForUser(rawRoles, login);
+
     const account = new Account(true, authorities, email, fullName, 'vi', null, login, null, [], null);
     this.accountService.authenticate(account);
     return account;

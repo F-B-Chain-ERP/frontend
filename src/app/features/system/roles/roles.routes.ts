@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+import { UserRouteAccessService } from '../../../core/auth/user-route-access.service';
+import { ROLE } from '../../../core/config/functions.constants';
 
 export const ROLE_ROUTES: Routes = [
   {
@@ -14,7 +16,9 @@ export const ROLE_ROUTES: Routes = [
     data: {
       breadcrumb: 'Quản lý vai trò',
       breadcrumbIcon: 'safety',
+      authorities: [ROLE.QUAN_LY_VAI_TRO.VIEW],
     },
+    canActivate: [UserRouteAccessService],
   },
   {
     path: 'edit',
@@ -24,7 +28,9 @@ export const ROLE_ROUTES: Routes = [
     data: {
       breadcrumb: 'Phân quyền vai trò',
       breadcrumbIcon: 'key',
+      authorities: [ROLE.PHAN_QUYEN_VAI_TRO.EDIT, ROLE.QUAN_LY_VAI_TRO.EDIT],
     },
+    canActivate: [UserRouteAccessService],
   },
 ];
 

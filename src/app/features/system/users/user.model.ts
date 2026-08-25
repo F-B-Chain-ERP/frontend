@@ -10,7 +10,10 @@ export interface User {
   email: string;
   phoneNumber?: string;
   status: UserStatus;
+  primaryBranchId: string | null;
+  primaryBranchName?: string;
   roles?: string[];
+  roleIds?: string[];
   department?: string;
   createdAt: string;
   updatedAt?: string;
@@ -21,6 +24,7 @@ export interface User {
 export interface UserFilter {
   query?: string;
   status?: UserStatus | null;
+  branchId?: string | null;
   pageIndex: number;
   pageSize: number;
   sortField?: string;
@@ -34,6 +38,8 @@ export interface UserFormDTO {
   phoneNumber?: string;
   password?: string;
   status: UserStatus;
+  primaryBranchId: string | null;
+  roleIds?: string[];
   department?: string;
   roles?: string[];
   note?: string;
@@ -51,9 +57,12 @@ export interface AccountResponseBE {
   hasLocalPassword: boolean;
   status: string;
   primaryBranchId: string | null;
+  primaryBranchName?: string | null;
   lastLoginAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  roleIds?: string[];
+  roles?: string[];
 }
 
 export interface PageResponseBE<T> {

@@ -28,6 +28,12 @@ export class SidebarComponent implements OnInit {
     return SIDEBAR_MENU.map(group => ({
       ...group,
       items: group.items
+        .filter(parent => {
+          if (parent.authorities?.length && !this.accountService.hasAnyAuthority(parent.authorities)) {
+            return false;
+          }
+          return true;
+        })
         .map(parent => {
           const originalChildCount = parent.children?.length ?? 0;
           const visibleChildren = this.filterChildrenRecursive(parent.children ?? []);
@@ -41,7 +47,7 @@ export class SidebarComponent implements OnInit {
           if (!parent._hadChildren) return true;
           return parent.children.length > 0;
         }),
-    }));
+    })).filter(group => group.items.length > 0);
   });
 
   private readonly openParents = signal<Set<string>>(new Set());

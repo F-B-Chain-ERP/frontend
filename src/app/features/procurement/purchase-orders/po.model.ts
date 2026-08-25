@@ -1,8 +1,10 @@
 export enum PurchaseOrderStatus {
-  DRAFT = 0,
-  PENDING = 1,
-  APPROVED = 2,
-  CANCELLED = 3,
+  DRAFT = 'DRAFT',
+  SUBMITTED = 'SUBMITTED',
+  APPROVED = 'APPROVED',
+  PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
+  RECEIVED = 'RECEIVED',
+  CANCELLED = 'CANCELLED',
 }
 
 export interface PurchaseOrderItem {
@@ -18,9 +20,13 @@ export interface PurchaseOrder {
   code: string;
   supplierId: string | number;
   supplierName: string;
+  warehouseId?: string | number;
+  warehouseName?: string;
+  branchId?: string | number;
+  branchName?: string;
   orderDate: string;
   expectedDate?: string;
-  status: PurchaseOrderStatus;
+  status: PurchaseOrderStatus | string;
   items: PurchaseOrderItem[];
   totalAmount: number;
   note?: string;
@@ -30,7 +36,9 @@ export interface PurchaseOrder {
 
 export interface PurchaseOrderFilter {
   query?: string;
-  status?: PurchaseOrderStatus | null;
+  status?: PurchaseOrderStatus | string | null;
+  warehouseId?: string | number | null;
+  branchId?: string | number | null;
   pageIndex: number;
   pageSize: number;
   sortField?: string;
@@ -41,9 +49,13 @@ export interface PurchaseOrderFormDTO {
   code: string;
   supplierId: string | number;
   supplierName: string;
+  warehouseId: string | number;
+  warehouseName?: string;
+  branchId?: string | number;
+  branchName?: string;
   orderDate: string;
   expectedDate?: string;
-  status: PurchaseOrderStatus;
+  status: PurchaseOrderStatus | string;
   items: PurchaseOrderItem[];
   note?: string;
 }
@@ -58,21 +70,32 @@ export interface PurchaseOrderListResponse {
 export const PURCHASE_ORDER_STATUS_OPTIONS = [
   { value: null, label: 'Tất cả trạng thái' },
   { value: PurchaseOrderStatus.DRAFT, label: 'Nháp', badgeClass: 'tbl-badge--neutral' },
-  { value: PurchaseOrderStatus.PENDING, label: 'Chờ duyệt', badgeClass: 'tbl-badge--warning' },
-  { value: PurchaseOrderStatus.APPROVED, label: 'Đã duyệt', badgeClass: 'tbl-badge--success' },
+  { value: PurchaseOrderStatus.SUBMITTED, label: 'Chờ duyệt', badgeClass: 'tbl-badge--warning' },
+  { value: PurchaseOrderStatus.APPROVED, label: 'Đã duyệt', badgeClass: 'tbl-badge--primary' },
+  { value: PurchaseOrderStatus.PARTIALLY_RECEIVED, label: 'Đang nhận', badgeClass: 'tbl-badge--info' },
+  { value: PurchaseOrderStatus.RECEIVED, label: 'Đã nhận hàng', badgeClass: 'tbl-badge--success' },
   { value: PurchaseOrderStatus.CANCELLED, label: 'Đã hủy', badgeClass: 'tbl-badge--danger' },
 ];
 
-export function getPurchaseOrderStatusMeta(status: PurchaseOrderStatus): {
+export function getPurchaseOrderStatusMeta(status: PurchaseOrderStatus | string | number): {
   label: string;
   badgeClass: string;
 } {
-  switch (status) {
-    case PurchaseOrderStatus.APPROVED:
-      return { label: 'Đã duyệt', badgeClass: 'tbl-badge tbl-badge--success' };
-    case PurchaseOrderStatus.PENDING:
+  const str = String(status).toUpperCase();
+  switch (str) {
+    case 'APPROVED':
+    case '2':
+      return { label: 'Đã duyệt', badgeClass: 'tbl-badge tbl-badge--primary' };
+    case 'SUBMITTED':
+    case 'PENDING':
+    case '1':
       return { label: 'Chờ duyệt', badgeClass: 'tbl-badge tbl-badge--warning' };
-    case PurchaseOrderStatus.CANCELLED:
+    case 'PARTIALLY_RECEIVED':
+      return { label: 'Đang nhận hàng', badgeClass: 'tbl-badge tbl-badge--info' };
+    case 'RECEIVED':
+      return { label: 'Đã nhận đủ', badgeClass: 'tbl-badge tbl-badge--success' };
+    case 'CANCELLED':
+    case '3':
       return { label: 'Đã hủy', badgeClass: 'tbl-badge tbl-badge--danger' };
     default:
       return { label: 'Nháp', badgeClass: 'tbl-badge tbl-badge--neutral' };

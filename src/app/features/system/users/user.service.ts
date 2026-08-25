@@ -40,7 +40,10 @@ export class UserService {
       email: a.email,
       phoneNumber: a.phone ?? '',
       status: backendStatusToUserStatus(a.status),
-      roles: [],
+      primaryBranchId: a.primaryBranchId ?? null,
+      primaryBranchName: a.primaryBranchName ?? undefined,
+      roles: a.roles ?? [],
+      roleIds: a.roleIds ?? [],
       department: '',
       createdAt: formatInstant(a.createdAt),
       updatedAt: formatInstant(a.updatedAt),
@@ -80,12 +83,17 @@ export class UserService {
           (u.email && u.email.toLowerCase().includes(q)) ||
           (u.username && u.username.toLowerCase().includes(q)) ||
           (u.phoneNumber && u.phoneNumber.includes(q)) ||
+          (u.primaryBranchName && u.primaryBranchName.toLowerCase().includes(q)) ||
           (u.department && u.department.toLowerCase().includes(q)),
       );
     }
 
     if (filter.status !== null && filter.status !== undefined) {
       result = result.filter(u => u.status === Number(filter.status));
+    }
+
+    if (filter.branchId) {
+      result = result.filter(u => u.primaryBranchId === filter.branchId);
     }
 
     if (filter.sortField) {
@@ -119,32 +127,34 @@ export class UserService {
   }
 
   /**
-   * Thêm mới người dùng (BE bắt buộc password + authProvider)
+   * Thêm mới người dùng (BE bắt buộc password + primaryBranchId + authProvider)
    */
   createUser(dto: UserFormDTO): Observable<User> {
-    const body = {
+    const body: Record<string, any> = {
       username: (dto.username || '').trim(),
       password: dto.password || '',
       fullName: (dto.fullName || '').trim(),
       email: (dto.email || '').trim().toLowerCase(),
       phone: dto.phoneNumber ? dto.phoneNumber.trim() : null,
-      primaryBranchId: null,
+      primaryBranchId: dto.primaryBranchId || null,
       authProvider: 'LOCAL',
     };
+    if (dto.roleIds && dto.roleIds.length) {
+      body['roleIds'] = dto.roleIds;
+    }
     return this.http
       .post<ApiResponseBE<AccountResponseBE>>(this.accountApi, body)
       .pipe(map(res => this.toUser(res.data)));
   }
 
   /**
-   * Cập nhật thông tin người dùng (chỉ các trường BE hỗ trợ)
+   * Cập nhật thông tin người dùng
    */
   updateUser(id: string | number, dto: Partial<UserFormDTO>): Observable<User> {
-    const body = {
+    const body: Record<string, any> = {
       fullName: dto.fullName?.trim(),
       email: dto.email?.trim().toLowerCase(),
       phone: dto.phoneNumber ? dto.phoneNumber.trim() : null,
-      primaryBranchId: null,
       status:
         dto.status !== undefined
           ? Number(dto.status) === UserStatus.ACTIVE
@@ -152,6 +162,12 @@ export class UserService {
             : 'INACTIVE'
           : null,
     };
+    if (dto.primaryBranchId !== undefined) {
+      body['primaryBranchId'] = dto.primaryBranchId;
+    }
+    if (dto.roleIds !== undefined) {
+      body['roleIds'] = dto.roleIds;
+    }
     return this.http
       .put<ApiResponseBE<AccountResponseBE>>(`${this.accountApi}/${id}`, body)
       .pipe(map(res => this.toUser(res.data)));
