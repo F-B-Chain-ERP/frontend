@@ -12,6 +12,11 @@ export const FUNCTION_ID = {
   // TODO(S2-12): thay bằng FUNCTION_ID thật lấy từ DB backend trước khi merge
   QUAN_LY_CHI_NHANH: 8010,
   QUAN_LY_PHAM_VI: 8011,
+
+  // ── Level ?: Mua hàng (PROC) ──────────────────────────────────────────────
+  // TODO(S2-11): thay bằng FUNCTION_ID thật lấy từ DB backend trước khi merge
+  DON_MUA_HANG: 8002,
+  NHA_CUNG_CAP: 8001
 } as const;
 
 type RoleSet = { BASE: string; VIEW: string; ADD: string; EDIT: string; DELETE: string };
@@ -32,6 +37,8 @@ export const ROLE = {
   PHAN_QUYEN_VAI_TRO: buildRole(FUNCTION_ID.PHAN_QUYEN_VAI_TRO),
   QUAN_LY_CHI_NHANH: buildRole(FUNCTION_ID.QUAN_LY_CHI_NHANH),
   QUAN_LY_PHAM_VI: buildRole(FUNCTION_ID.QUAN_LY_PHAM_VI),
+  DON_MUA_HANG: buildRole(FUNCTION_ID.DON_MUA_HANG),
+  NHA_CUNG_CAP: buildRole(FUNCTION_ID.NHA_CUNG_CAP),
 } as const;
 
 export const FULL_PERMISSION = 'FULL_PERMISSION';

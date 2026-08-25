@@ -199,3 +199,47 @@ export function getRoleStatusMeta(role: { active: boolean; deleted?: boolean; is
     tagColor: 'error',
   };
 }
+
+// ── Backend DTO types ──────────────────────────────────────────────────
+export interface RoleResponseBE {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  roleType: string;
+  status: string;
+}
+
+export interface PageResponseBE<T> {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  content: T[];
+}
+
+export interface AccountSummaryBE {
+  id: string;
+  username: string;
+  email: string | null;
+  fullName: string | null;
+  phone: string | null;
+  avatarUrl: string | null;
+  authProvider: string;
+  hasLocalPassword: boolean;
+  status: string;
+  primaryBranchId: string | null;
+  lastLoginAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface RoleAssignmentResponseBE {
+  id: string;
+  accountId: string;
+  roleId: string;
+  scope: { id: string; scopeType: string; branchId: string | null } | null;
+  status: string;
+  assignedAt: string | null;
+  expiresAt: string | null;
+}
