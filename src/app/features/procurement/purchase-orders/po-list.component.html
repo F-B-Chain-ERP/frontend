@@ -6,7 +6,7 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button variant="primary" leftIcon="plus" (click)="openFormPlaceholder('create')"> Tạo đơn mua hàng </app-button>
+      <app-button variant="primary" leftIcon="plus" (click)="openCreateModal()"> Tạo đơn mua hàng </app-button>
     </div>
   </div>
 
@@ -118,33 +118,20 @@
             <td nzAlign="center">
               <div class="tbl-actions">
                 @if (po.status === PurchaseOrderStatus.PENDING) {
-                  <app-button
-                    variant="ghost"
-                    iconOnly="check"
-                    nz-tooltip
-                    nzTooltipTitle="Duyệt đơn"
-                    (click)="changeStatusPlaceholder(PurchaseOrderStatus.APPROVED)"
-                  >
+                  <app-button variant="ghost" iconOnly="check" nz-tooltip nzTooltipTitle="Duyệt đơn" (click)="onApprovePo(po)">
                   </app-button>
-                  <app-button
-                    variant="ghost"
-                    iconOnly="stop"
-                    nz-tooltip
-                    nzTooltipTitle="Hủy đơn"
-                    (click)="changeStatusPlaceholder(PurchaseOrderStatus.CANCELLED)"
-                  >
-                  </app-button>
-                } @else {
-                  <app-button
-                    variant="ghost"
-                    iconOnly="edit"
-                    nz-tooltip
-                    nzTooltipTitle="Cập nhật đơn"
-                    [disabled]="po.status === PurchaseOrderStatus.APPROVED || po.status === PurchaseOrderStatus.CANCELLED"
-                    (click)="openFormPlaceholder('edit')"
-                  >
-                  </app-button>
+                  <app-button variant="ghost" iconOnly="stop" nz-tooltip nzTooltipTitle="Hủy đơn" (click)="onCancelPo(po)"> </app-button>
                 }
+                <app-button
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Cập nhật đơn"
+                  [disabled]="po.status === PurchaseOrderStatus.APPROVED || po.status === PurchaseOrderStatus.CANCELLED"
+                  (click)="openEditModal(po)"
+                >
+                </app-button>
+                <app-button variant="ghost" iconOnly="delete" nz-tooltip nzTooltipTitle="Xóa đơn" (click)="onDeletePo(po)"> </app-button>
               </div>
             </td>
           </tr>
@@ -169,4 +156,151 @@
       </app-pagination>
     </div>
   </nz-card>
+
+  <!-- ── 5. Form Modal (Tạo mới / Cập nhật) ───────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="formModalTitle"
+    size="lg"
+    [footer]="poFormModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="poForm" enterAsTabContainer (ngSubmit)="onSubmitForm()" class="po-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Số PO -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="po-code">Số PO</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="file-text" />
+            <input id="po-code" type="text" nz-input formControlName="code" placeholder="Tự động sinh nếu để trống" />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Nhà cung cấp -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="po-supplier">Nhà cung cấp</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="shop" />
+            <input id="po-supplier" type="text" nz-input formControlName="supplierName" placeholder="Tên nhà cung cấp" maxlength="120" />
+          </nz-input-wrapper>
+          @if (poForm.get('supplierName')?.dirty || poForm.get('supplierName')?.touched) {
+            @if (poForm.get('supplierName')?.hasError('required')) {
+              <span class="form-error">Nhà cung cấp không được để trống.</span>
+            }
+            @if (poForm.get('supplierName')?.hasError('invalidChars')) {
+              <span class="form-error">Tên nhà cung cấp chứa ký tự không hợp lệ.</span>
+            }
+          }
+        </div>
+
+        <!-- Ngày đặt -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="po-order-date">Ngày đặt</label>
+          <nz-date-picker id="po-order-date" formControlName="orderDate" style="width: 100%" nzPlaceHolder="Chọn ngày đặt"></nz-date-picker>
+          @if (poForm.get('orderDate')?.dirty || poForm.get('orderDate')?.touched) {
+            @if (poForm.get('orderDate')?.hasError('required')) {
+              <span class="form-error">Ngày đặt không được để trống.</span>
+            }
+          }
+        </div>
+
+        <!-- Ngày dự kiến nhận -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="po-expected-date">Dự kiến nhận</label>
+          <nz-date-picker
+            id="po-expected-date"
+            formControlName="expectedDate"
+            style="width: 100%"
+            nzPlaceHolder="Chọn ngày nhận"
+          ></nz-date-picker>
+        </div>
+
+        <!-- Trạng thái -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="po-status">Trạng thái</label>
+          <nz-select id="po-status" formControlName="status" nzPlaceHolder="Chọn trạng thái" style="width: 100%">
+            @for (opt of formStatusOptions; track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+        </div>
+
+        <!-- Ghi chú -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="po-note">Ghi chú</label>
+          <textarea id="po-note" nz-input formControlName="note" rows="1" placeholder="Ghi chú (nếu có)" maxlength="500"></textarea>
+        </div>
+      </div>
+
+      <!-- Bảng dòng hàng -->
+      <div class="po-items">
+        <div class="po-items__header">
+          <span class="po-items__title">Danh sách mặt hàng</span>
+          <app-button variant="secondary" leftIcon="plus" (click)="addItemRow()">Thêm mặt hàng</app-button>
+        </div>
+
+        <nz-table #itemTable [nzData]="itemsFormArray.controls" [nzShowPagination]="false" [nzFrontPagination]="false" nzSize="small">
+          <thead>
+            <tr>
+              <th nzWidth="34px" nzAlign="center">#</th>
+              <th nzWidth="220px">Tên nguyên liệu</th>
+              <th nzWidth="90px">Đơn vị</th>
+              <th nzWidth="120px" nzAlign="right">Số lượng</th>
+              <th nzWidth="150px" nzAlign="right">Đơn giá</th>
+              <th nzWidth="150px" nzAlign="right">Thành tiền</th>
+              <th nzWidth="50px" nzAlign="center"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (itemGroup of itemsFormArray.controls; track $index; let i = $index) {
+              <tr [formGroup]="itemGroup">
+                <td nzAlign="center">{{ i + 1 }}</td>
+                <td>
+                  <input type="text" nz-input formControlName="materialName" placeholder="Tên nguyên liệu" maxlength="120" />
+                </td>
+                <td>
+                  <input type="text" nz-input formControlName="unit" placeholder="Đơn vị" maxlength="20" />
+                </td>
+                <td nzAlign="right">
+                  <nz-input-number formControlName="quantity" [nzMin]="1" [nzStep]="1" style="width: 100%"></nz-input-number>
+                </td>
+                <td nzAlign="right">
+                  <nz-input-number formControlName="unitPrice" [nzMin]="0" [nzStep]="1000" style="width: 100%"></nz-input-number>
+                </td>
+                <td nzAlign="right">
+                  <span class="po-line-total">{{ lineTotal(i) | number: '1.0-0' }} ₫</span>
+                </td>
+                <td nzAlign="center">
+                  <app-button
+                    variant="ghost"
+                    iconOnly="delete"
+                    nz-tooltip
+                    nzTooltipTitle="Xóa dòng"
+                    [disabled]="itemsFormArray.length <= 1"
+                    (click)="removeItemRow(i)"
+                  >
+                  </app-button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+
+        <div class="po-items__total">
+          <span>Tổng cộng:</span>
+          <strong class="po-grand-total">{{ grandTotal | number: '1.0-0' }} ₫</strong>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #poFormModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">Hủy bỏ</app-button>
+        <app-button variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
+          {{ isEditMode ? 'Lưu thay đổi' : 'Tạo đơn' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
 </div>
