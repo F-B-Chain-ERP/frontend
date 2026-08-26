@@ -88,6 +88,14 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'procurement/supplier-materials',
+        loadChildren: () => import('./features/procurement/supplier-materials/supplier-materials.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.BANG_GIA_NCC.VIEW],
+        },
+      },
+      {
         path: 'procurement/supplier',
         redirectTo: 'procurement/suppliers',
         pathMatch: 'prefix',
@@ -169,6 +177,11 @@ export const routes: Routes = [
   {
     path: 'procurement/suppliers/list',
     redirectTo: 'admin/procurement/suppliers/list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'procurement/supplier-materials/list',
+    redirectTo: 'admin/procurement/supplier-materials/list',
     pathMatch: 'full',
   },
   {

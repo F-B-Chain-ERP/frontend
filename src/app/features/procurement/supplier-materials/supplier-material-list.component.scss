@@ -1,0 +1,121 @@
+.supplier-material-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+// ── Filter Box Styling ──────────────────────────────────────────
+.page__filter-box {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+
+    &--grow {
+      flex: 1;
+      min-width: 260px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page__filter-box__row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filter-item--status {
+      width: 100%;
+    }
+
+    .page__filter-box__actions {
+      justify-content: flex-end;
+      margin-top: var(--space-2);
+    }
+  }
+}
+
+// ── Table Card ──────────────────────────────────────────────────
+.page__list {
+  .ant-card-body {
+    padding: 0;
+  }
+}
+
+// ── Table Cell Styling ─────────────────────────────────────────
+.supplier-code {
+  font-family: var(--font-mono, monospace);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary, #1677ff);
+}
+
+.supplier-name {
+  font-weight: var(--fw-semibold);
+}
+
+// ── Form Modal Error ──────────────────────────────────────────────
+.form-error {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--color-danger, #ff4d4f);
+}
+
+.modal-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.preferred-switch {
+  margin-top: var(--space-2);
+}
+
+// ── Empty State ────────────────────────────────────────────────
+.table-empty {
+  padding: var(--space-12) 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+
+  &__icon {
+    font-size: 48px;
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+
+  &__text {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+  }
+}
+::ng-deep nz-switch.preferred-switch-control > button.ant-switch {
+  width: 80px !important;
+  min-width: 80px !important;
+  max-width: 80px !important;
+}
+
+::ng-deep nz-switch.preferred-switch-control .ant-switch-inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+
+::ng-deep nz-switch.preferred-switch-control .ant-switch-inner-checked,
+::ng-deep nz-switch.preferred-switch-control .ant-switch-inner-unchecked {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+}
