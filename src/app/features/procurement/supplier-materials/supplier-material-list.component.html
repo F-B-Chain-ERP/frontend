@@ -53,95 +53,97 @@
       </div>
 
       <div class="page__filter-box__actions">
-        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
+        <app-button variant="primary" leftIcon="search" [disabled]="!selectedSupplierId" (click)="onSearch()">
+          Tìm kiếm
+        </app-button>
         <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
       </div>
     </div>
   </nz-card>
 
-  <!-- ── 3. Empty state (chưa chọn NCC) ────────────────────────────── -->
-  @if (!selectedSupplierId) {
-    <nz-card class="page__list" [nzBordered]="false">
-      <div class="empty-state">
-        <nz-icon nzType="inbox" class="empty-state__icon" />
-        <p class="empty-state__text">Vui lòng chọn nhà cung cấp để xem bảng giá nguyên vật liệu.</p>
-      </div>
-    </nz-card>
-  } @else {
-    <!-- ── 4. Main Data Table Card ──────────────────────────────────── -->
-    <nz-card class="page__list" [nzBordered]="false">
-      <nz-table
-        #smTable
-        [nzData]="supplierMaterials()"
-        [nzLoading]="loading()"
-        [nzShowPagination]="false"
-        [nzFrontPagination]="false"
-        nzSize="middle"
-        [nzScroll]="{ x: '1200px' }"
-      >
-        <thead>
+  <!-- ── 3. Main Data Table Card (luôn render, kể cả khi chưa chọn NCC) ─ -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #smTable
+      [nzData]="supplierMaterials()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1300px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="140px" nzAlign="left">Mã NVL</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Tên nguyên vật liệu</th>
+          <th scope="col" nzWidth="100px" nzAlign="left">Đơn vị</th>
+          <th scope="col" nzWidth="160px" nzAlign="left">Mã hàng NCC</th>
+          <th scope="col" nzWidth="150px" nzAlign="right">Giá mua</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Thời gian giao</th>
+          <th scope="col" nzWidth="110px" nzAlign="center">Ưu tiên</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of supplierMaterials(); track item.id; let idx = $index) {
           <tr>
-            <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
-            <th scope="col" nzWidth="140px" nzAlign="left">Mã nguyên liệu</th>
-            <th scope="col" nzWidth="220px" nzAlign="left">Tên nguyên liệu</th>
-            <th scope="col" nzWidth="160px" nzAlign="left">Mã hàng NCC</th>
-            <th scope="col" nzWidth="150px" nzAlign="right">Giá mua</th>
-            <th scope="col" nzWidth="130px" nzAlign="center">Thời gian giao</th>
-            <th scope="col" nzWidth="110px" nzAlign="center">Ưu tiên</th>
-            <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
-            <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+            <td nzAlign="left"><span class="supplier-code">{{ materialCode(item.materialId) }}</span></td>
+            <td nzAlign="left">{{ materialName(item.materialId, item.materialName) }}</td>
+            <td nzAlign="left">{{ item.unitName || '—' }}</td>
+            <td nzAlign="left">{{ item.supplierSku || '—' }}</td>
+            <td nzAlign="right">{{ item.purchasePrice | number }}</td>
+            <td nzAlign="center">{{ item.leadTimeDays != null ? (item.leadTimeDays + ' ngày') : '—' }}</td>
+            <td nzAlign="center">
+              @if (item.isPreferred) {
+                <span class="tbl-badge tbl-badge--warning">Ưu tiên</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td nzAlign="center">
+              <span [class]="getSupplierMaterialStatusMeta(item.status).badgeClass">
+                {{ getSupplierMaterialStatusMeta(item.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.EDIT]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Sửa"
+                  (click)="openEditModal(item)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Gỡ khỏi nhà cung cấp"
+                  (click)="onDelete(item)"
+                >
+                </app-button>
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          @for (item of supplierMaterials(); track item.id; let idx = $index) {
-            <tr>
-              <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
-              <td nzAlign="left"><span class="supplier-code">{{ materialCode(item.materialId) }}</span></td>
-              <td nzAlign="left">{{ materialName(item.materialId, item.materialName) }}</td>
-              <td nzAlign="left">{{ item.supplierSku || '—' }}</td>
-              <td nzAlign="right">{{ item.purchasePrice | number }}</td>
-              <td nzAlign="center">{{ item.leadTimeDays != null ? (item.leadTimeDays + ' ngày') : '—' }}</td>
-              <td nzAlign="center">
-                @if (item.isPreferred) {
-                  <span class="tbl-badge tbl-badge--warning">Ưu tiên</span>
-                } @else {
-                  <span class="text-muted">—</span>
-                }
-              </td>
-              <td nzAlign="center">
-                <span [class]="getSupplierMaterialStatusMeta(item.status).badgeClass">
-                  {{ getSupplierMaterialStatusMeta(item.status).label }}
-                </span>
-              </td>
-              <td nzAlign="center">
-                <div class="tbl-actions">
-                  <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.EDIT]"
-                    variant="ghost"
-                    iconOnly="edit"
-                    nz-tooltip
-                    nzTooltipTitle="Sửa"
-                    (click)="openEditModal(item)"
-                  >
-                  </app-button>
-                  <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.DELETE]"
-                    variant="ghost"
-                    iconOnly="delete"
-                    nz-tooltip
-                    nzTooltipTitle="Gỡ khỏi nhà cung cấp"
-                    (click)="onDelete(item)"
-                  >
-                  </app-button>
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="9" class="text-center table-empty">
-                <div class="empty-state">
-                  <nz-icon nzType="inbox" class="empty-state__icon" />
-                  <p class="empty-state__text">Nhà cung cấp chưa được gán nguyên vật liệu nào.</p>
+        } @empty {
+          <tr>
+            <td colspan="10" class="text-center table-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-state__icon" />
+                <p class="empty-state__text">
+                  @if (!selectedSupplierId) {
+                    Vui lòng chọn nhà cung cấp để xem bảng giá nguyên vật liệu.
+                  } @else {
+                    Nhà cung cấp chưa được gán nguyên vật liệu nào.
+                  }
+                </p>
+                @if (selectedSupplierId) {
                   <app-button
                     *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.ADD]"
                     variant="secondary"
@@ -151,28 +153,28 @@
                   >
                     Gán nguyên vật liệu
                   </app-button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </nz-table>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
 
-      <div class="page__pagination">
-        <app-pagination
-          [total]="total()"
-          [pageIndex]="pageIndex"
-          [pageSize]="pageSize"
-          [pageSizeOptions]="pageSizeOptions"
-          (pageIndexChange)="onPageIndexChange($event)"
-          (pageSizeChange)="onPageSizeChange($event)"
-        >
-        </app-pagination>
-      </div>
-    </nz-card>
-  }
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
 
-  <!-- ── 5. Form Modal (Gán / Sửa nguyên vật liệu) ─────────────────── -->
+  <!-- ── 4. Form Modal (Gán / Sửa nguyên vật liệu) ─────────────────── -->
   <app-modal
     [visible]="isFormModalVisible()"
     (visibleChange)="isFormModalVisible.set($event)"
@@ -276,14 +278,8 @@
         <!-- Nhà cung cấp ưu tiên -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label">Nhà cung cấp ưu tiên</label>
-
           <div class="preferred-switch">
-            <nz-switch
-              class="preferred-switch-control"
-              formControlName="isPreferred"
-              nzCheckedChildren="Có"
-              nzUnCheckedChildren="Không">
-            </nz-switch>
+            <nz-switch formControlName="isPreferred" nzCheckedChildren="Có" nzUnCheckedChildren="Không"></nz-switch>
           </div>
         </div>
       </div>

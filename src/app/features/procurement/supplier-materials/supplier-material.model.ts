@@ -6,6 +6,7 @@ export interface SupplierMaterial {
   supplierName?: string;
   materialId: string;
   materialName?: string;
+  unitName?: string | null;
   supplierSku?: string | null;
   purchasePrice: number;
   leadTimeDays?: number | null;
