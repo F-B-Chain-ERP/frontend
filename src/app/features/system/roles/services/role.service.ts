@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, forkJoin } from 'rxjs';
+import { Observable, of, forkJoin, throwError } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { ApplicationConfigService } from '../../../../core/config/application-config.service';
 import {
@@ -25,10 +25,10 @@ interface PermissionCatalogItem {
 }
 
 interface FunctionMeta {
-  viewId?: string;
-  createId?: string;
-  updateId?: string;
-  deleteId?: string;
+  viewCode?: string;
+  createCode?: string;
+  updateCode?: string;
+  deleteCode?: string;
 }
 
 const MODULE_LABELS: Record<string, string> = {
@@ -290,19 +290,19 @@ export class RoleService {
         let label = '';
         for (const it of resItems) {
           const action = (it.code.split(':')[2] ?? '').toLowerCase();
-          if (action === 'view') { meta.viewId = it.id; label = it.name; }
-          else if (action === 'create') meta.createId = it.id;
-          else if (action === 'update') meta.updateId = it.id;
-          else if (action === 'delete') meta.deleteId = it.id;
+          if (action === 'view') { meta.viewCode = it.code; label = it.name; }
+          else if (action === 'create') meta.createCode = it.code;
+          else if (action === 'update') meta.updateCode = it.code;
+          else if (action === 'delete') meta.deleteCode = it.code;
         }
-        const has = (id?: string) => !!id && assigned.has(id);
+        const has = (code?: string) => !!code && assigned.has(code);
         children.push({
           FunctionsId: fid, ApplicationId: 17, ParentId: mid, FunctionsName: label || resource,
           Path: '', FunctionUrl: '', Icon: 'folder',
-          Flag: has(meta.viewId) ? 1 : 0, OrderId: 0, OnMenu: 0, IsSystem: 0, Help: null,
-          Adds: has(meta.createId) ? 1 : 0, Del: has(meta.deleteId) ? 1 : 0,
-          Edit: has(meta.updateId) ? 1 : 0, Res: has(meta.viewId) ? 1 : 0, Level: 2, ListFunc: null,
-          CanView: !!meta.viewId, CanAdd: !!meta.createId, CanEdit: !!meta.updateId, CanDelete: !!meta.deleteId,
+          Flag: has(meta.viewCode) ? 1 : 0, OrderId: 0, OnMenu: 0, IsSystem: 0, Help: null,
+          Adds: has(meta.createCode) ? 1 : 0, Del: has(meta.deleteCode) ? 1 : 0,
+          Edit: has(meta.updateCode) ? 1 : 0, Res: has(meta.viewCode) ? 1 : 0, Level: 2, ListFunc: null,
+          CanView: !!meta.viewCode, CanAdd: !!meta.createCode, CanEdit: !!meta.updateCode, CanDelete: !!meta.deleteCode,
         });
         this.functionMeta.set(fid, meta);
       }
@@ -323,19 +323,28 @@ export class RoleService {
 
   /**
    * Lưu phân quyền: chuyển cờ (Flag/Adds/Edit/Del) của từng chức năng thành
-   * danh sách permission id thật, gửi PUT /roles/{id}/permissions (thay thế toàn bộ).
+   * danh sách permission code thật (ví dụ: sys:role:view), gửi PUT /roles/{id}/permissions
+   * (thay thế toàn bộ).
    */
   updateFunctionPermissions(_donViSuDungId?: number, roleId?: string | number, permissions?: UpdatePermissionPayload[]): Observable<any> {
     const role = roleId != null ? String(roleId) : '';
     const payload = permissions ?? [];
+    // Guard: functionMeta chỉ được build sau khi GET cây quyền thành công.
+    // Nếu rỗng mà vẫn gửi, BE sẽ nhận mảng rỗng và xoá SẠCH quyền của role.
+    // Trường hợp này (reload trang / navigate thẳng đến save) phải chặn để tránh mất dữ liệu.
+    if (this.functionMeta.size === 0) {
+      return throwError(
+        () => new Error('Chưa tải được danh mục quyền. Vui lòng mở lại trang phân quyền và thử lại.'),
+      );
+    }
     const selected: string[] = [];
     for (const p of payload) {
       const meta = this.functionMeta.get(p.FunctionsId);
       if (!meta) continue;
-      if (p.Flag === 1 && meta.viewId) selected.push(meta.viewId);
-      if (p.Adds === 1 && meta.createId) selected.push(meta.createId);
-      if (p.Edit === 1 && meta.updateId) selected.push(meta.updateId);
-      if (p.Del === 1 && meta.deleteId) selected.push(meta.deleteId);
+      if (p.Flag === 1 && meta.viewCode) selected.push(meta.viewCode);
+      if (p.Adds === 1 && meta.createCode) selected.push(meta.createCode);
+      if (p.Edit === 1 && meta.updateCode) selected.push(meta.updateCode);
+      if (p.Del === 1 && meta.deleteCode) selected.push(meta.deleteCode);
     }
     const unique = Array.from(new Set(selected));
     return this.http.put<void>(`${this.roleApi}/${role}/permissions`, unique);

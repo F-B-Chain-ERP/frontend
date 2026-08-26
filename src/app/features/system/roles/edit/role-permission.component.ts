@@ -613,9 +613,10 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
           this.isDirty.set(false);
           this.toastService.success('Thành công', `Đã lưu cấu hình phân quyền cho vai trò "${this.role.name || 'Vai trò'}".`);
         },
-        error: () => {
+        error: (err) => {
           this.saving.set(false);
-          this.toastService.error('Lỗi', 'Không thể lưu cấu hình phân quyền.');
+          const msg = err?.message || 'Không thể lưu cấu hình phân quyền.';
+          this.toastService.error('Lỗi', msg);
         },
       });
   }
