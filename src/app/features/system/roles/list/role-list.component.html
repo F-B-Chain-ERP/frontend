@@ -133,7 +133,7 @@
 
         <!-- Số tài khoản -->
         <th scope="col" [nzShowSort]="true" [nzSortFn]="sortAccountCountFn" nzWidth="130px" nzAlign="center">
-          Tài khoản
+          Số tài khoản
         </th>
 
         <!-- Trạng thái -->
@@ -284,11 +284,11 @@
             <!-- Thao tác (Standard Table Actions with Icon Only) -->
             <td nzAlign="center">
               <div class="tbl-actions">
-                <!-- Icon Phân quyền (KEY ICON) -->
+                <!-- Icon Phân quyền (SHIELD ICON - dùng 'safety' vì bộ icon không có 'shield') -->
                 <app-button
                   *erpUTTHasSomeAuthority="[ROLE.PHAN_QUYEN_VAI_TRO.BASE, ROLE.QUAN_LY_VAI_TRO.VIEW]"
                   variant="ghost"
-                  iconOnly="key"
+                  iconOnly="safety"
                   nz-tooltip
                   nzTooltipTitle="Phân quyền chức năng"
                   (click)="navigateToPermission(data)"
@@ -553,6 +553,6 @@
 <app-role-user-modal
   [(visible)]="isUserModalVisible"
   [role]="selectedRoleForAction"
-  [users]="selectedRoleUsers"
-  [loading]="userModalLoading"
+  [users]="selectedRoleUsers()"
+  [loading]="userModalLoading()"
 ></app-role-user-modal>

@@ -1,23 +1,24 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, from, map, of, switchMap, tap, throwError } from 'rxjs';
 
 import { AuthServerProvider } from '../../core/auth/auth-jwt.service';
 import { AccountService } from '../../core/auth/account.service';
-import { PermissionService } from '../../core/auth/permission.service';
 import { StateStorageService } from '../../core/auth/state-storage.service';
+import { ApplicationConfigService } from '../../core/config/application-config.service';
 import { Account } from '../../core/auth/account.model';
 import { AuthResponse, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest, ResendOtpRequest, SelectBranchRequest } from './login.model';
 
-import { resolveAuthoritiesForUser, FULL_PERMISSION } from '../../core/config/functions.constants';
+import { FULL_PERMISSION } from '../../core/config/functions.constants';
 
 @Injectable({ providedIn: 'root' })
 export class LoginService {
   private readonly authServerProvider = inject(AuthServerProvider);
   private readonly accountService = inject(AccountService);
-  private readonly permissionService = inject(PermissionService);
   private readonly stateStorageService = inject(StateStorageService);
+  private readonly applicationConfigService = inject(ApplicationConfigService);
+  private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
 
   /** Đăng nhập tài khoản nội bộ (admin/nhân viên). Mặc định type = ACCOUNT. */
@@ -109,7 +110,6 @@ export class LoginService {
       catchError(() => of(null)),
       tap(() => {
         this.accountService.authenticate(null);
-        this.permissionService.clear();
         this.stateStorageService.clearSelectedBranch();
         this.stateStorageService.clearPendingScopeAssignment();
       }),
@@ -149,13 +149,35 @@ export class LoginService {
     const rawRoles: string[] = Array.isArray(decoded?.['roleCodes']) ? decoded?.['roleCodes'] : [];
     const isSuperAdmin = login === 'admin' || rawRoles.includes('ADMIN') || rawRoles.includes('ROLE_ADMIN');
 
-    const authorities = isSuperAdmin
-      ? [FULL_PERMISSION, 'ROLE_ADMIN', 'ADMIN']
-      : resolveAuthoritiesForUser(rawRoles, login);
+    const authorities: string[] = [];
+    if (isSuperAdmin) {
+      authorities.push(FULL_PERMISSION, 'ROLE_ADMIN', 'ADMIN');
+    }
+    // Giữ mã vai trò (để guard khớp ROLE_*) – quyền chi tiết lấy từ backend
+    rawRoles.forEach(r => authorities.push(r.startsWith('ROLE_') ? r : 'ROLE_' + r));
 
     const account = new Account(true, authorities, email, fullName, 'vi', null, login, null, [], null);
     this.accountService.authenticate(account);
+    // Lấy quyền thực (permission code) từ backend thay vì map hardcode
+    this.loadMyPermissions(account);
     return account;
+  }
+
+  /** Gọi BE lấy permission code thật của user login, gộp vào authorities. */
+  private loadMyPermissions(account: Account): void {
+    this.http
+      .get<{ data: { roles: string[]; permissions: string[]; scopes: unknown[] } }>(
+        this.applicationConfigService.getEndpointFor('api/v1/auth/my-permission'),
+      )
+      .pipe(catchError(() => of(null)))
+      .subscribe(res => {
+        if (!res?.data?.permissions?.length) {
+          return;
+        }
+        const merged = new Set<string>([...account.authorities, ...res.data.permissions]);
+        account.authorities = Array.from(merged);
+        this.accountService.authenticate(account);
+      });
   }
 
   private toLoginException(err: HttpErrorResponse): LoginException {

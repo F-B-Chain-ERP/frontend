@@ -40,7 +40,7 @@ import { AppBreadcrumbsComponent } from '../../../../shared/app-breadcrumbs/app-
 import { HasSomeAuthorityDirective } from '../../../../core/auth/has-some-authority.directive';
 import { ROLE } from '../../../../core/config/functions.constants';
 import { RoleUserModalComponent } from '../components/role-user-modal.component';
-import { takeUntil } from 'rxjs';
+import { forkJoin, map, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-role-list',
@@ -125,8 +125,8 @@ export class RoleListComponent extends BaseComponent implements OnInit {
   isUserModalVisible = false;
 
   selectedRoleForAction: Role | null = null;
-  selectedRoleUsers: RoleAssignedUser[] = [];
-  userModalLoading = false;
+  readonly selectedRoleUsers = signal<RoleAssignedUser[]>([]);
+  readonly userModalLoading = signal(false);
 
   // ── Forms ───────────────────────────────────────────────────────────
   addRoleForm = this.fb.group({
@@ -201,11 +201,31 @@ export class RoleListComponent extends BaseComponent implements OnInit {
           this.total.set(res.total);
           this.loading.set(false);
           this.refreshCheckState();
+          this.enrichAccountCounts(res.items);
         },
         error: () => {
           this.loading.set(false);
           this.toastService.error('Lỗi', 'Không thể tải danh sách vai trò.');
         },
+      });
+  }
+
+  // ── Enrich số lượng tài khoản thực tế từ API users-by-role ───────────
+  private enrichAccountCounts(roles: Role[]): void {
+    if (!roles.length) {
+      return;
+    }
+    forkJoin(
+      roles.map(r =>
+        this.roleService.getAssignedUsers(r.id).pipe(map(users => ({ id: r.id, count: users.length })))
+      )
+    )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(updates => {
+        const counts = new Map(updates.map(u => [u.id, u.count]));
+        const enriched = this.allLoadedRoles().map(r => ({ ...r, accountCount: counts.get(r.id) ?? 0 }));
+        this.allLoadedRoles.set(enriched);
+        this.roles.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : enriched);
       });
   }
 
@@ -404,17 +424,17 @@ export class RoleListComponent extends BaseComponent implements OnInit {
 
   openUserModal(role: Role): void {
     this.selectedRoleForAction = role;
-    this.userModalLoading = true;
+    this.userModalLoading.set(true);
     this.isUserModalVisible = true;
 
     this.roleService.getAssignedUsers(role.id).subscribe({
       next: users => {
-        this.selectedRoleUsers = users;
-        this.userModalLoading = false;
+        this.selectedRoleUsers.set(users);
+        this.userModalLoading.set(false);
       },
       error: () => {
-        this.selectedRoleUsers = [];
-        this.userModalLoading = false;
+        this.selectedRoleUsers.set([]);
+        this.userModalLoading.set(false);
       },
     });
   }

@@ -73,7 +73,7 @@
               <span class="department-text">{{ user.department || '—' }}</span>
             </td>
             <td>
-              <span class="assigned-date">{{ user.assignedAt || '—' }}</span>
+              <span class="assigned-date">{{ user.assignedAt ? (user.assignedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</span>
             </td>
           </tr>
         }
