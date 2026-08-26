@@ -64,3 +64,69 @@
   font-family: var(--font-mono, monospace);
   font-weight: var(--fw-semibold);
 }
+
+// ── Form Modal ───────────────────────────────────────────────────
+.po-modal-form {
+  display: block;
+}
+
+.po-items {
+  margin-top: var(--space-4);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+  }
+
+  &__title {
+    font-weight: var(--fw-semibold);
+    font-size: 15px;
+  }
+
+  &__total {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding-top: var(--space-2);
+    border-top: 1px dashed var(--border-color, #e5e7eb);
+  }
+}
+
+.po-line-total {
+  font-family: var(--font-mono, monospace);
+  font-weight: var(--fw-semibold);
+}
+
+.po-grand-total {
+  font-family: var(--font-mono, monospace);
+  font-size: 16px;
+  color: var(--color-primary, #1677ff);
+}
+
+.modal-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+// ── Detail Modal ────────────────────────────────────────────────
+.po-detail-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.po-detail-code {
+  font-size: 18px;
+  font-weight: var(--fw-bold);
+  color: var(--color-primary, #1677ff);
+}
+
+.po-detail-items-title {
+  margin: var(--space-4) 0 var(--space-2);
+  font-weight: var(--fw-semibold);
+}

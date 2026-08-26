@@ -195,6 +195,12 @@ export class PurchaseOrderService {
     return of(this.mockOrders.length < initialLen).pipe(delay(250));
   }
 
+  deleteBatch(ids: (string | number)[]): Observable<boolean> {
+    const idSet = new Set(ids.map(String));
+    this.mockOrders = this.mockOrders.filter(po => !idSet.has(String(po.id)));
+    return of(true).pipe(delay(300));
+  }
+
   /**
    * Sinh mã PO kế tiếp theo năm hiện tại (dùng cho form tạo mới)
    */
