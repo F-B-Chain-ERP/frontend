@@ -1,31 +1,54 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { ApplicationRef, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormArray, FormBuilder, Validators, AbstractControl, FormGroup } from '@angular/forms';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, forkJoin, of } from 'rxjs';
+import { catchError, tap, takeUntil } from 'rxjs/operators';
+
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzAutocompleteModule } from 'ng-zorro-antd/auto-complete';
+import type { NzSelectItemInterface } from 'ng-zorro-antd/select';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
+import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzModalModule } from 'ng-zorro-antd/modal';
 
 import { BaseComponent } from '../../../shared/base-component/base.component';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
+import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { AppTableSearchInputComponent } from '../../../shared/app-table-search-input/app-table-search-input.component';
+import { AppSelectionBarComponent } from '../../../shared/app-selection-bar/app-selection-bar.component';
+import { ColumnTextFilter } from '../../../shared/utils/column-text-filter';
 import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
 import { ROLE } from '../../../core/config/functions.constants';
-import { AccountService } from '../../../core/auth/account.service';
+import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import { PurchaseOrderService } from './po.service';
 import {
+  PoOption,
   PurchaseOrder,
+  PurchaseOrderDetail,
   PurchaseOrderFilter,
+  PurchaseOrderItemForm,
   PurchaseOrderStatus,
   PURCHASE_ORDER_STATUS_OPTIONS,
   getPurchaseOrderStatusMeta,
 } from './po.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
-import { takeUntil } from 'rxjs/operators';
+
+interface NameCodeBE {
+  id: string;
+  code?: string;
+  name?: string;
+  status?: string;
+}
 
 @Component({
   selector: 'app-purchase-order-list',
@@ -33,16 +56,25 @@ import { takeUntil } from 'rxjs/operators';
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     NzTableModule,
     NzCardModule,
     NzInputModule,
     NzSelectModule,
+    NzAutocompleteModule,
     NzIconModule,
     NzTooltipModule,
-    NzPopconfirmModule,
+    NzDatePickerModule,
+    NzInputNumberModule,
+    NzGridModule,
+    NzDividerModule,
+    NzModalModule,
     AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
+    AppModalComponent,
+    AppTableSearchInputComponent,
+    AppSelectionBarComponent,
     HasSomeAuthorityDirective,
   ],
   templateUrl: './po-list.component.html',
@@ -56,6 +88,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   // State signals
   readonly purchaseOrders = signal<PurchaseOrder[]>([]);
+  readonly allLoadedPos = signal<PurchaseOrder[]>([]);
   readonly total = signal(0);
   readonly loading = signal(false);
 
@@ -66,12 +99,99 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   pageIndex = DEFAULT_PAGE_INDEX;
   pageSize = DEFAULT_PAGE_SIZE;
 
-  private readonly purchaseOrderService = inject(PurchaseOrderService);
-  readonly accountService = inject(AccountService);
+  // ── Modal state (tạo / xem / sửa chung 1 modal) ─────────────────────
+  readonly isModalVisible = signal(false);
+  readonly modalMode = signal<'create' | 'view' | 'edit'>('create');
+  readonly isSaving = signal(false);
+  readonly supplierOptions = signal<PoOption[]>([]);
+  readonly materialOptions = signal<PoOption[]>([]);
+  readonly warehouseOptions = signal<PoOption[]>([]);
+  readonly unitOptions = signal<PoOption[]>([]);
 
-  get isGlobalAdmin(): boolean {
-    return this.accountService.hasAnyAuthority(['FULL_PERMISSION', 'ROLE_ADMIN', 'ALL_SYSTEM']);
+  selectedPoId: string | number | null = null;
+
+  readonly poForm = this.fb.group({
+    poCode: [''],
+    supplierId: [null as string | null, [Validators.required]],
+    warehouseId: [null as string | null, [Validators.required]],
+    orderDate: [null as Date | string | null, [Validators.required]],
+    expectedDate: [null as Date | string | null],
+    note: [''],
+    items: this.fb.array([], [Validators.required, this.atLeastOneItem]),
+  });
+
+  // ── Column filter (hàng lọc theo cột, client-side trên trang hiện tại) ─
+  readonly columnFilter = new ColumnTextFilter<PurchaseOrder>(() => this.allLoadedPos(), {
+    code: 'contains',
+    supplierName: 'contains',
+    warehouseName: 'contains',
+    status: 'equals',
+  });
+
+  readonly statusFilterOptions = [
+    { label: 'Tất cả', value: '' },
+    ...PURCHASE_ORDER_STATUS_OPTIONS.filter(o => o.value !== null).map(o => ({ label: o.label, value: o.value })),
+  ];
+
+  // ── Selection (checkbox chọn nhiều / chọn tất cả) ────────────────────
+  readonly setOfCheckedKeys = new Set<string | number>();
+  allChecked = false;
+  indeterminate = false;
+
+  private readonly purchaseOrderService = inject(PurchaseOrderService);
+  private readonly http = inject(HttpClient);
+  private readonly appConfig = inject(ApplicationConfigService);
+  private readonly appRef = inject(ApplicationRef);
+
+  /**
+   * Dữ liệu Kho & Đơn vị tính: BE chưa có API (chỉ có entity + repository).
+   * Dùng danh sách tĩnh ở FE; giá trị `value` PHẢI là UUID kho/đơn vị thật trong DB
+   * (lấy từ bảng `warehouse` / `unit`) để ràng buộc FK khi lưu PO không bị lỗi.
+   * Khi thêm/xoá kho hoặc đơn vị ở DB, cập nhật 2 mảng dưới cho khớp.
+   */
+  private readonly mockWarehouses: PoOption[] = [
+    { value: '0229aaa0-ee51-4f70-bf2f-cc44ae13d5db', label: 'WH001 - Kho tổng Hà Nội' },
+  ];
+
+  private readonly mockUnits: PoOption[] = [
+    { value: '11111111-1111-1111-1111-111111111111', label: 'KG - Kilogram' },
+    { value: '4512fda1-f6e8-40b0-8c4b-2da519f01f01', label: 'LIT - Lít' },
+    { value: '539936d1-a992-429b-99d7-a77518f14caf', label: 'GOI - Gói' },
+    { value: 'cebce8d8-f9a2-44eb-95d0-76f091a68431', label: 'THUNG - Thùng' },
+    { value: '88005c04-99dd-470f-9b78-5981e657cb3e', label: 'HOP - Hộp' },
+    { value: '37834718-706b-48d9-beab-2d0bd7ec93fb', label: 'TUI - Túi' },
+    { value: 'c17c929a-e09a-4c9a-8743-06a28048c6f2', label: 'CAI - Cái' },
+  ];
+
+  get itemsArray(): FormArray {
+    return this.poForm.get('items') as FormArray;
   }
+
+  readonly lineTotals = signal<number[]>([]);
+
+  readonly grandTotal = computed(() => this.lineTotals().reduce((sum, v) => sum + v, 0));
+
+  private recalcTotals(): void {
+    const arr = this.itemsArray.controls.map(ctrl => {
+      const g = ctrl as FormGroup;
+      const q = Number(g.get('quantity')?.value) || 0;
+      const p = Number(g.get('unitPrice')?.value) || 0;
+      return q * p;
+    });
+    this.lineTotals.set(arr);
+    this.appRef.tick();
+  }
+
+  get modalTitle(): string {
+    const mode = this.modalMode();
+    if (mode === 'create') return 'Tạo đơn mua hàng';
+    if (mode === 'view') return 'Chi tiết đơn mua hàng';
+    return 'Cập nhật đơn mua hàng';
+  }
+
+  filterByLabel = (input: string, option: NzSelectItemInterface): boolean => {
+    return String(option.nzLabel ?? '').toLowerCase().includes(input.toLowerCase());
+  };
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
@@ -80,9 +200,11 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       { label: 'Đơn mua hàng', url: '/admin/procurement/purchase-orders/list' },
     ]);
 
+    this.poForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcTotals());
     this.loadData();
   }
 
+  // ── Data loading ───────────────────────────────────────────────────
   loadData(): void {
     this.loading.set(true);
     const filter: PurchaseOrderFilter = {
@@ -98,9 +220,11 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-          this.purchaseOrders.set(res.items);
+          this.allLoadedPos.set(res.items);
+          this.purchaseOrders.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : res.items);
           this.total.set(res.total);
           this.loading.set(false);
+          this.refreshCheckState();
         },
         error: err => {
           this.loading.set(false);
@@ -118,6 +242,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.searchQuery = '';
     this.selectedStatus = null;
     this.selectedWarehouseId = null;
+    this.columnFilter.reset();
     this.pageIndex = DEFAULT_PAGE_INDEX;
     this.loadData();
     this.toastService.info('Đã đặt lại bộ lọc');
@@ -134,52 +259,400 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.loadData();
   }
 
-  onSubmitPO(po: PurchaseOrder): void {
-    this.purchaseOrderService.submit(po.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.toastService.success('Thành công', `Đã trình duyệt đơn mua hàng ${po.code}`);
-        this.loadData();
-      },
-      error: err => this.toastService.error('Lỗi', err.message || 'Không thể trình duyệt đơn.'),
+  // ── Column filter (hàng lọc theo cột) ───────────────────────────────
+  searchByField(field: keyof PurchaseOrder, value: unknown): void {
+    this.purchaseOrders.set(this.columnFilter.setField(field, value));
+    this.refreshCheckState();
+  }
+
+  resetAllFieldFilter(): void {
+    this.purchaseOrders.set(this.columnFilter.reset());
+    this.refreshCheckState();
+    this.toastService.info('Đã đặt lại bộ lọc theo cột');
+  }
+
+  // ── Selection ─────────────────────────────────────────────────────
+  onCheckAll(checked: boolean): void {
+    this.purchaseOrders().forEach(row => {
+      if (checked) {
+        this.setOfCheckedKeys.add(String(row.id));
+      } else {
+        this.setOfCheckedKeys.delete(String(row.id));
+      }
     });
+    this.refreshCheckState();
+  }
+
+  onCheckRow(id: string | number, checked: boolean): void {
+    if (checked) {
+      this.setOfCheckedKeys.add(String(id));
+    } else {
+      this.setOfCheckedKeys.delete(String(id));
+    }
+    this.refreshCheckState();
+  }
+
+  isChecked(id: string | number): boolean {
+    return this.setOfCheckedKeys.has(String(id));
+  }
+
+  clearSelection(): void {
+    this.setOfCheckedKeys.clear();
+    this.refreshCheckState();
+  }
+
+  refreshCheckState(): void {
+    const rows = this.purchaseOrders();
+    const count = rows.length;
+    const checkedCount = rows.filter(r => this.setOfCheckedKeys.has(String(r.id))).length;
+
+    this.allChecked = count > 0 && checkedCount === count;
+    this.indeterminate = checkedCount > 0 && checkedCount < count;
+  }
+
+  onBatchDelete(): void {
+    const ids = Array.from(this.setOfCheckedKeys);
+    if (!ids.length) return;
+
+    this.modalService.confirm({
+      nzTitle: 'Xác nhận xóa hàng loạt',
+      nzContent: `Bạn có chắc chắn muốn xóa <strong>${ids.length}</strong> đơn mua hàng đã chọn?`,
+      nzOkText: 'Xóa tất cả',
+      nzOkDanger: true,
+      nzCancelText: 'Hủy',
+      nzOnOk: () => {
+        this.isSaving.set(true);
+        forkJoin(ids.map(id => this.purchaseOrderService.deletePurchaseOrder(id)))
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.isSaving.set(false);
+              this.toastService.success('Thành công', `Đã xóa ${ids.length} đơn mua hàng.`);
+              this.clearSelection();
+              this.loadData();
+            },
+            error: err => {
+              this.isSaving.set(false);
+              this.toastService.error('Lỗi', err?.message || 'Xóa hàng loạt thất bại.');
+            },
+          });
+      },
+    });
+  }
+
+  // ── Status actions ────────────────────────────────────────────────
+  onSubmitPO(po: PurchaseOrder): void {
+    this.purchaseOrderService
+      .submit(po.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.toastService.success('Thành công', `Đã trình duyệt đơn mua hàng ${po.code}`);
+          this.loadData();
+        },
+        error: err => this.toastService.error('Lỗi', err.message || 'Không thể trình duyệt đơn.'),
+      });
   }
 
   onApprovePO(po: PurchaseOrder): void {
-    this.purchaseOrderService.approve(po.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.toastService.success('Thành công', `Đã phê duyệt đơn mua hàng ${po.code}`);
-        this.loadData();
-      },
-      error: err => this.toastService.error('Lỗi', err.message || 'Không thể phê duyệt đơn.'),
-    });
+    this.purchaseOrderService
+      .approve(po.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.toastService.success('Thành công', `Đã phê duyệt đơn mua hàng ${po.code}`);
+          this.loadData();
+        },
+        error: err => this.toastService.error('Lỗi', err.message || 'Không thể phê duyệt đơn.'),
+      });
   }
 
   onReceivePO(po: PurchaseOrder): void {
-    this.purchaseOrderService.receive(po.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.toastService.success('Thành công', `Đã ghi nhận nhập kho cho đơn ${po.code}`);
-        this.loadData();
+    this.purchaseOrderService
+      .receive(po.id, [])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.toastService.success('Thành công', `Đã ghi nhận nhập kho cho đơn ${po.code}`);
+          this.loadData();
+        },
+        error: err => this.toastService.error('Lỗi', err.message || 'Không thể ghi nhận nhập kho.'),
+      });
+  }
+
+  readonly cancelTarget = signal<PurchaseOrder | null>(null);
+  readonly cancelReason = signal('');
+
+  openCancelModal(po: PurchaseOrder): void {
+    this.cancelTarget.set(po);
+    this.cancelReason.set('');
+  }
+
+  closeCancelModal(): void {
+    this.cancelTarget.set(null);
+    this.cancelReason.set('');
+  }
+
+  confirmCancel(): void {
+    const po = this.cancelTarget();
+    const reason = this.cancelReason().trim();
+    if (!po || !reason) {
+      return;
+    }
+    this.isSaving.set(true);
+    this.purchaseOrderService
+      .cancel(po.id, reason)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.toastService.success('Thành công', `Đã hủy đơn mua hàng ${po.code}`);
+          this.closeCancelModal();
+          this.loadData();
+        },
+        error: err => {
+          this.isSaving.set(false);
+          this.toastService.error('Lỗi', err?.message || 'Không thể hủy đơn.');
+        },
+      });
+  }
+
+  onDeletePO(po: PurchaseOrder): void {
+    this.modalService.confirm({
+      nzTitle: 'Xác nhận xóa đơn mua hàng',
+      nzContent: `Hành động này sẽ xóa đơn <strong>${po.code}</strong>. Chỉ áp dụng cho đơn nháp.`,
+      nzOkText: 'Xóa',
+      nzOkDanger: true,
+      nzCancelText: 'Hủy',
+      nzOnOk: () => {
+        this.purchaseOrderService
+          .deletePurchaseOrder(po.id)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.toastService.success('Thành công', `Đã xóa đơn mua hàng ${po.code}`);
+              this.loadData();
+            },
+            error: err => this.toastService.error('Lỗi', err.message || 'Không thể xóa đơn.'),
+          });
       },
-      error: err => this.toastService.error('Lỗi', err.message || 'Không thể ghi nhận nhập kho.'),
     });
   }
 
-  onCancelPO(po: PurchaseOrder): void {
-    this.purchaseOrderService.cancel(po.id).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
-        this.toastService.success('Thành công', `Đã hủy đơn mua hàng ${po.code}`);
-        this.loadData();
-      },
-      error: err => this.toastService.error('Lỗi', err.message || 'Không thể hủy đơn.'),
-    });
+  // ── Modal (tạo / xem / sửa trong cùng 1 modal) ─────────────────────
+  openCreateModal(): void {
+    this.modalMode.set('create');
+    this.selectedPoId = null;
+    this.resetForm();
+    this.warehouseOptions.set(this.mockWarehouses);
+    this.unitOptions.set(this.mockUnits);
+    this.loadLookupOptions();
+    this.isModalVisible.set(true);
   }
 
-  openFormPlaceholder(mode: 'create' | 'edit' | 'view'): void {
-    const action = mode === 'create' ? 'Tạo mới' : mode === 'edit' ? 'Cập nhật' : 'Xem chi tiết';
-    this.toastService.info('Thông báo', `Biểu mẫu ${action.toLowerCase()} đơn mua hàng với chọn Kho chi nhánh.`);
+  openDetailModal(po: PurchaseOrder): void {
+    this.modalMode.set('view');
+    this.loadPoIntoModal(po);
+  }
+
+  private loadPoIntoModal(po: PurchaseOrder): void {
+    this.selectedPoId = po.id;
+    this.warehouseOptions.set(this.mockWarehouses);
+    this.unitOptions.set(this.mockUnits);
+    forkJoin([this.loadSuppliers(), this.loadMaterials()])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.purchaseOrderService
+          .getPurchaseOrderById(po.id)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(detail => {
+            if (detail) {
+              this.patchForm(detail);
+              if (this.modalMode() === 'view') {
+                this.poForm.disable();
+              } else {
+                this.poForm.enable();
+              }
+            }
+          });
+      });
+    this.isModalVisible.set(true);
+  }
+
+  enterEditMode(): void {
+    this.modalMode.set('edit');
+    this.poForm.enable();
+  }
+
+  closeModal(): void {
+    this.isModalVisible.set(false);
+  }
+
+  addItem(): void {
+    this.itemsArray.push(this.newItem());
+    this.recalcTotals();
+  }
+
+  removeItem(index: number): void {
+    this.itemsArray.removeAt(index);
+    this.itemsArray.markAsDirty();
+    this.recalcTotals();
+  }
+
+  onMaterialTextInput(index: number): void {
+    this.itemsArray.at(index).get('materialId')?.setValue(null);
+  }
+
+  onMatSelect(index: number, option: { nzValue?: string } | null): void {
+    this.itemsArray.at(index).get('materialId')?.setValue(option?.nzValue ?? null);
+  }
+
+  submitForm(): void {
+    if (!this.validateAndFocusFirstInvalid(this.poForm)) {
+      return;
+    }
+
+    const raw = this.poForm.getRawValue();
+    const payload = {
+      poCode: raw.poCode?.trim() || undefined,
+      supplierId: raw.supplierId as string,
+      warehouseId: raw.warehouseId as string,
+      orderDate: this.toDateStr(raw.orderDate) as string,
+      expectedDate: this.toDateStr(raw.expectedDate) || undefined,
+      note: raw.note?.trim() || undefined,
+      items: (raw.items as PurchaseOrderItemForm[]).map(it => ({
+        materialId: it.materialId as string,
+        unitId: it.unitId as string,
+        quantity: Number(it.quantity),
+        unitPrice: Number(it.unitPrice),
+      })),
+    };
+
+    this.isSaving.set(true);
+    const req$ =
+      this.modalMode() === 'edit' && this.selectedPoId != null
+        ? this.purchaseOrderService.updatePurchaseOrder(this.selectedPoId, payload)
+        : this.purchaseOrderService.createPurchaseOrder(payload);
+
+    req$.pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.toastService.success('Thành công', this.modalMode() === 'edit' ? 'Đã cập nhật đơn mua hàng' : 'Đã tạo đơn mua hàng');
+        this.closeModal();
+        this.loadData();
+      },
+      error: err => {
+        this.isSaving.set(false);
+        this.toastService.error('Lỗi', err?.message || 'Không thể lưu đơn mua hàng.');
+      },
+    });
   }
 
   getStatusMeta(status: PurchaseOrderStatus | string | number): ReturnType<typeof getPurchaseOrderStatusMeta> {
     return getPurchaseOrderStatusMeta(status);
+  }
+
+  // ── Private helpers ────────────────────────────────────────────────
+  private loadLookupOptions(): void {
+    forkJoin([this.loadSuppliers(), this.loadMaterials()])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({ error: () => this.toastService.error('Lỗi', 'Không thể tải dữ liệu chọn (NCC/NVL).') });
+  }
+
+  private resetForm(): void {
+    this.poForm.enable();
+    this.poForm.reset({
+      poCode: '',
+      supplierId: null,
+      warehouseId: null,
+      orderDate: null,
+      expectedDate: null,
+      note: '',
+    });
+    this.itemsArray.clear();
+    this.itemsArray.push(this.newItem());
+    this.recalcTotals();
+  }
+
+  private patchForm(detail: PurchaseOrderDetail): void {
+    this.poForm.patchValue({
+      poCode: detail.poCode,
+      supplierId: detail.supplierId,
+      warehouseId: detail.warehouseId,
+      orderDate: detail.orderDate ? new Date(detail.orderDate) : null,
+      expectedDate: detail.expectedDate ? new Date(detail.expectedDate) : null,
+      note: detail.note ?? '',
+    });
+    this.itemsArray.clear();
+    (detail.items || []).forEach(it => {
+      const matLabel = this.materialOptions().find(o => o.value === it.materialId)?.label ?? '';
+      this.itemsArray.push(
+        this.fb.group({
+          materialId: [it.materialId, [Validators.required]],
+          materialText: [matLabel, [Validators.required]],
+          unitId: [it.unitId, [Validators.required]],
+          quantity: [it.quantity, [Validators.required, Validators.min(0.001)]],
+          unitPrice: [it.unitPrice, [Validators.required, Validators.min(0)]],
+        }),
+      );
+    });
+    if (this.itemsArray.length === 0) {
+      this.itemsArray.push(this.newItem());
+    }
+    this.recalcTotals();
+  }
+
+  private newItem(): AbstractControl {
+    return this.fb.group({
+      materialId: [null as string | null, [Validators.required]],
+      materialText: ['', [Validators.required]],
+      unitId: [null as string | null, [Validators.required]],
+      quantity: [null as number | null, [Validators.required, Validators.min(0.001)]],
+      unitPrice: [null as number | null, [Validators.required, Validators.min(0)]],
+    });
+  }
+
+  private atLeastOneItem(control: AbstractControl): Record<string, boolean> | null {
+    const arr = control as FormArray;
+    return arr.length > 0 ? null : { atLeastOne: true };
+  }
+
+  private loadSuppliers(): Observable<unknown> {
+    const url = this.appConfig.getEndpointFor('api/v1/proc/suppliers');
+    const params = new HttpParams().set('page', '0').set('size', '1000');
+    return this.http.get<{ data: { content: NameCodeBE[] } }>(url, { params }).pipe(
+      tap(res => {
+        const list: NameCodeBE[] = res?.data?.content ?? [];
+        const active = list.filter(s => s.status === 'ACTIVE');
+        this.supplierOptions.set(active.map(s => ({ label: `${s.code || ''} ${s.name || ''}`.trim(), value: s.id })));
+      }),
+      catchError(() => {
+        this.supplierOptions.set([]);
+        return of(null);
+      }),
+    );
+  }
+
+  private loadMaterials(): Observable<unknown> {
+    const url = this.appConfig.getEndpointFor('api/v1/inv/materials');
+    const params = new HttpParams().set('page', '0').set('size', '1000');
+    return this.http.get<{ data: { content: NameCodeBE[] } }>(url, { params }).pipe(
+      tap(res => {
+        const list: NameCodeBE[] = res?.data?.content ?? [];
+        this.materialOptions.set(list.map(m => ({ label: `${m.code || ''} ${m.name || ''}`.trim(), value: m.id })));
+      }),
+      catchError(() => {
+        this.materialOptions.set([]);
+        return of(null);
+      }),
+    );
+  }
+
+  private toDateStr(value: string | Date | null): string | null {
+    if (!value) return null;
+    const d = value instanceof Date ? value : new Date(value);
+    if (isNaN(d.getTime())) return null;
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 }

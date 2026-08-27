@@ -45,21 +45,6 @@ export interface PurchaseOrderFilter {
   sortOrder?: 'ascend' | 'descend' | null;
 }
 
-export interface PurchaseOrderFormDTO {
-  code: string;
-  supplierId: string | number;
-  supplierName: string;
-  warehouseId: string | number;
-  warehouseName?: string;
-  branchId?: string | number;
-  branchName?: string;
-  orderDate: string;
-  expectedDate?: string;
-  status: PurchaseOrderStatus | string;
-  items: PurchaseOrderItem[];
-  note?: string;
-}
-
 export interface PurchaseOrderListResponse {
   items: PurchaseOrder[];
   total: number;
@@ -102,10 +87,61 @@ export function getPurchaseOrderStatusMeta(status: PurchaseOrderStatus | string 
   }
 }
 
-export function calcLineTotal(item: Pick<PurchaseOrderItem, 'quantity' | 'unitPrice'>): number {
-  return (item.quantity || 0) * (item.unitPrice || 0);
+/** Tuỳ chọn hiển thị trong các dropdown (NCC, NVL, kho, đơn vị). */
+export interface PoOption {
+  label: string;
+  value: string;
 }
 
-export function calcGrandTotal(items: Pick<PurchaseOrderItem, 'quantity' | 'unitPrice'>[]): number {
-  return items.reduce((sum, item) => sum + calcLineTotal(item), 0);
+/** Dòng chi tiết trong biểu mẫu tạo/cập nhật. */
+export interface PurchaseOrderItemForm {
+  materialId: string | null;
+  unitId: string | null;
+  quantity: number | null;
+  unitPrice: number | null;
+}
+
+/** Chi tiết đơn mua hàng (khớp response BE, chứa id của NVL/đơn vị). */
+export interface PurchaseOrderItemDetail {
+  id?: string;
+  materialId: string;
+  materialName?: string;
+  unitId: string;
+  unitName?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice?: number;
+  receivedQuantity?: number;
+}
+
+export interface PurchaseOrderDetail {
+  id: string;
+  poCode: string;
+  status: string;
+  orderDate: string;
+  expectedDate?: string | null;
+  supplierId: string;
+  supplierName: string;
+  warehouseId: string;
+  warehouseName: string;
+  subtotalAmount?: number;
+  totalAmount: number;
+  note?: string;
+  items: PurchaseOrderItemDetail[];
+}
+
+/** Payload gửi BE khi tạo/cập nhật (khớp Create/UpdatePurchaseOrderRequest). */
+export interface PurchaseOrderPayload {
+  poCode?: string;
+  supplierId: string;
+  warehouseId: string;
+  orderDate: string;
+  expectedDate?: string;
+  note?: string;
+  items: {
+    materialId: string;
+    unitId: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
 }

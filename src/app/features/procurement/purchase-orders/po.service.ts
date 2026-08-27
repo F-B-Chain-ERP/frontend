@@ -1,257 +1,187 @@
-import { Injectable } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
-import { delay, map } from 'rxjs/operators';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, catchError, map, throwError } from 'rxjs';
+import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import {
   PurchaseOrder,
+  PurchaseOrderDetail,
   PurchaseOrderFilter,
-  PurchaseOrderFormDTO,
   PurchaseOrderListResponse,
-  PurchaseOrderStatus,
-  calcGrandTotal,
+  PurchaseOrderPayload,
 } from './po.model';
 
-/**
- * TODO(S2-11): Hiện dùng mock data in-memory theo chuẩn màn mẫu users.
- * Khi backend có API, thay thân các method bằng HttpClient gọi /api/v1/...
- */
+/** Envelope chung của API backend (đồng nhất với user.service). */
+interface ApiEnvelope<T> {
+  status: number;
+  errorCode: string | null;
+  message: string;
+  data: T;
+  timestamp: string;
+}
+
+/** Cấu trúc phân trang của BE. */
+interface PageEnvelope<T> {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  content: T[];
+}
+
+/** Response BE của một đơn mua hàng. */
+interface PoResponseBE {
+  id: string;
+  poCode: string;
+  status: string;
+  orderDate: string | null;
+  expectedDate: string | null;
+  supplier?: { id: string; code?: string; name: string } | null;
+  warehouse?: { id: string; code?: string; name: string } | null;
+  subtotalAmount?: number | null;
+  totalAmount?: number | null;
+  note?: string | null;
+  items?: PoItemResponseBE[];
+  createdAt?: string | null;
+}
+
+interface PoItemResponseBE {
+  id?: string;
+  materialId?: string;
+  materialName?: string;
+  unitId?: string;
+  unitName?: string;
+  quantity?: number;
+  unitPrice?: number;
+  totalPrice?: number;
+  receivedQuantity?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class PurchaseOrderService {
-  private mockOrders: PurchaseOrder[] = [
-    {
-      id: 'PO001',
-      code: 'PO-2026-0001',
-      supplierId: 'SUP001',
-      supplierName: 'Công ty TNHH Nguyên liệu Phúc An',
-      warehouseId: 'WH001',
-      warehouseName: 'Kho Tổng Trung Tâm',
-      branchId: 'BR001',
-      branchName: 'Chi nhánh Hà Nội - Cầu Giấy',
-      orderDate: '2026-08-01',
-      expectedDate: '2026-08-05',
-      status: PurchaseOrderStatus.APPROVED,
-      items: [
-        { id: 1, materialName: 'Cà phê nhân Robusta', unit: 'kg', quantity: 120, unitPrice: 85000 },
-        { id: 2, materialName: 'Syrup caramel', unit: 'chai', quantity: 24, unitPrice: 145000 },
-      ],
-      totalAmount: 13680000,
-      note: 'Đơn bổ sung NVL quý 3',
-      createdAt: '2026-08-01 09:10:00',
-      updatedAt: '2026-08-02 08:45:00',
-    },
-    {
-      id: 'PO002',
-      code: 'PO-2026-0002',
-      supplierId: 'SUP002',
-      supplierName: 'Nhà phân phối Sữa Sao Băng',
-      warehouseId: 'WH002',
-      warehouseName: 'Kho Chi Nhánh Cầu Giấy',
-      branchId: 'BR001',
-      branchName: 'Chi nhánh Hà Nội - Cầu Giấy',
-      orderDate: '2026-08-10',
-      expectedDate: '2026-08-14',
-      status: PurchaseOrderStatus.SUBMITTED,
-      items: [
-        { id: 1, materialName: 'Sữa tươi thanh trùng', unit: 'thùng', quantity: 60, unitPrice: 320000 },
-        { id: 2, materialName: 'Kem tươi', unit: 'hộp', quantity: 30, unitPrice: 275000 },
-      ],
-      totalAmount: 27450000,
-      createdAt: '2026-08-10 10:30:00',
-    },
-    {
-      id: 'PO003',
-      code: 'PO-2026-0003',
-      supplierId: 'SUP003',
-      supplierName: 'Hợp tác xã Trà Thái Nguyên',
-      warehouseId: 'WH003',
-      warehouseName: 'Kho Chi Nhánh Đống Đa',
-      branchId: 'BR002',
-      branchName: 'Chi nhánh Hà Nội - Đống Đa',
-      orderDate: '2026-08-18',
-      status: PurchaseOrderStatus.DRAFT,
-      items: [{ id: 1, materialName: 'Trà xanh búp', unit: 'kg', quantity: 40, unitPrice: 210000 }],
-      totalAmount: 8400000,
-      note: 'Chờ xác nhận giá từ NCC',
-      createdAt: '2026-08-18 15:20:00',
-    },
-    {
-      id: 'PO004',
-      code: 'PO-2026-0004',
-      supplierId: 'SUP001',
-      supplierName: 'Công ty TNHH Nguyên liệu Phúc An',
-      warehouseId: 'WH001',
-      warehouseName: 'Kho Tổng Trung Tâm',
-      branchId: 'BR001',
-      branchName: 'Chi nhánh Hà Nội - Cầu Giấy',
-      orderDate: '2026-07-02',
-      expectedDate: '2026-07-06',
-      status: PurchaseOrderStatus.CANCELLED,
-      items: [{ id: 1, materialName: 'Bột cacao', unit: 'kg', quantity: 25, unitPrice: 260000 }],
-      totalAmount: 6500000,
-      note: 'Hủy do NCC hết hàng',
-      createdAt: '2026-07-02 11:00:00',
-      updatedAt: '2026-07-03 09:15:00',
-    },
-  ];
+  private readonly http = inject(HttpClient);
+  private readonly applicationConfigService = inject(ApplicationConfigService);
 
-  getPurchaseOrders(filter: PurchaseOrderFilter): Observable<PurchaseOrderListResponse> {
-    let result = [...this.mockOrders];
-
-    if (filter.query?.trim()) {
-      const q = filter.query.trim().toLowerCase();
-      result = result.filter(
-        po =>
-          po.code?.toLowerCase().includes(q) ||
-          po.supplierName?.toLowerCase().includes(q) ||
-          po.warehouseName?.toLowerCase().includes(q) ||
-          po.branchName?.toLowerCase().includes(q) ||
-          (po.items ?? []).some(i => i.materialName?.toLowerCase().includes(q)),
-      );
-    }
-
-    if (filter.status !== null && filter.status !== undefined) {
-      const statusFilter = String(filter.status);
-      result = result.filter(po => String(po.status) === statusFilter);
-    }
-
-    if (filter.warehouseId) {
-      result = result.filter(po => String(po.warehouseId) === String(filter.warehouseId));
-    }
-
-    if (filter.branchId) {
-      result = result.filter(po => String(po.branchId) === String(filter.branchId));
-    }
-
-    if (filter.sortField) {
-      const key = filter.sortField as keyof PurchaseOrder;
-      const isAsc = filter.sortOrder === 'ascend';
-      const valOf = (po: PurchaseOrder): string => {
-        const value = po[key];
-        return typeof value === 'number' || typeof value === 'string' ? String(value) : '';
-      };
-      result.sort((a, b) => (isAsc ? valOf(a).localeCompare(valOf(b)) : valOf(b).localeCompare(valOf(a))));
-    } else {
-      result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    }
-
-    const total = result.length;
-    const pageIndex = filter.pageIndex && filter.pageIndex > 0 ? filter.pageIndex : 1;
-    const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 10;
-    const startIndex = (pageIndex - 1) * pageSize;
-    const items = result.slice(startIndex, startIndex + pageSize);
-
-    return of({ items, total, pageIndex, pageSize }).pipe(delay(200));
-  }
-
-  getPurchaseOrderById(id: string | number): Observable<PurchaseOrder | null> {
-    const order = this.mockOrders.find(po => String(po.id) === String(id));
-    return of(order ? { ...order, items: [...order.items] } : null).pipe(delay(150));
-  }
-
-  createPurchaseOrder(dto: PurchaseOrderFormDTO): Observable<PurchaseOrder> {
-    const now = this.formatDate(new Date());
-    const nextSeq = this.mockOrders.length + 1;
-    const newId = `PO${String(nextSeq).padStart(3, '0')}`;
-
-    const newOrder: PurchaseOrder = {
-      id: newId,
-      code: dto.code || `PO-2026-${String(nextSeq).padStart(4, '0')}`,
-      supplierId: dto.supplierId,
-      supplierName: dto.supplierName,
-      warehouseId: dto.warehouseId,
-      warehouseName: dto.warehouseName || 'Kho Tổng',
-      branchId: dto.branchId,
-      branchName: dto.branchName,
-      orderDate: dto.orderDate,
-      expectedDate: dto.expectedDate || '',
-      status: dto.status ?? PurchaseOrderStatus.DRAFT,
-      items: [...dto.items],
-      totalAmount: calcGrandTotal(dto.items),
-      note: (dto.note || '').trim(),
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    this.mockOrders.unshift(newOrder);
-    return of(newOrder).pipe(delay(300));
-  }
-
-  updatePurchaseOrder(id: string | number, dto: Partial<PurchaseOrderFormDTO>): Observable<PurchaseOrder> {
-    const index = this.mockOrders.findIndex(po => String(po.id) === String(id));
-    if (index === -1) {
-      return throwError(() => new Error('Đơn mua hàng không tồn tại'));
-    }
-
-    const current = this.mockOrders[index];
-    const items = dto.items !== undefined ? [...dto.items] : current.items;
-    const updatedOrder: PurchaseOrder = {
-      ...current,
-      code: dto.code !== undefined ? dto.code : current.code,
-      supplierId: dto.supplierId !== undefined ? dto.supplierId : current.supplierId,
-      supplierName: dto.supplierName !== undefined ? dto.supplierName : current.supplierName,
-      warehouseId: dto.warehouseId !== undefined ? dto.warehouseId : current.warehouseId,
-      warehouseName: dto.warehouseName !== undefined ? dto.warehouseName : current.warehouseName,
-      branchId: dto.branchId !== undefined ? dto.branchId : current.branchId,
-      branchName: dto.branchName !== undefined ? dto.branchName : current.branchName,
-      orderDate: dto.orderDate !== undefined ? dto.orderDate : current.orderDate,
-      expectedDate: dto.expectedDate !== undefined ? dto.expectedDate : current.expectedDate,
-      status: dto.status !== undefined ? dto.status : current.status,
-      items,
-      totalAmount: calcGrandTotal(items),
-      note: dto.note !== undefined ? dto.note.trim() : current.note,
-      updatedAt: this.formatDate(new Date()),
-    };
-
-    this.mockOrders[index] = updatedOrder;
-    return of(updatedOrder).pipe(delay(300));
-  }
-
-  changeStatus(id: string | number, status: PurchaseOrderStatus): Observable<PurchaseOrder> {
-    const order = this.mockOrders.find(po => String(po.id) === String(id));
-    if (!order) {
-      return throwError(() => new Error('Đơn mua hàng không tồn tại'));
-    }
-    return this.updatePurchaseOrder(id, { status });
-  }
-
-  submit(id: string | number): Observable<PurchaseOrder> {
-    return this.changeStatus(id, PurchaseOrderStatus.SUBMITTED);
-  }
-
-  approve(id: string | number): Observable<PurchaseOrder> {
-    return this.changeStatus(id, PurchaseOrderStatus.APPROVED);
-  }
-
-  receive(id: string | number): Observable<PurchaseOrder> {
-    return this.changeStatus(id, PurchaseOrderStatus.RECEIVED);
-  }
-
-  cancel(id: string | number): Observable<PurchaseOrder> {
-    return this.changeStatus(id, PurchaseOrderStatus.CANCELLED);
-  }
-
-  deletePurchaseOrder(id: string | number): Observable<boolean> {
-    const initialLen = this.mockOrders.length;
-    this.mockOrders = this.mockOrders.filter(po => String(po.id) !== String(id));
-    return of(this.mockOrders.length < initialLen).pipe(delay(250));
+  private get poApi(): string {
+    return this.applicationConfigService.getEndpointFor('api/v1/proc/purchase-orders');
   }
 
   /**
-   * Sinh mã PO kế tiếp theo năm hiện tại (dùng cho form tạo mới)
+   * Danh sách đơn mua hàng phân trang (gọi BE, map sang shape hiển thị bảng).
    */
-  generateNextCode(): Observable<string> {
-    return of(this.mockOrders.length + 1).pipe(map(seq => `PO-${new Date().getFullYear()}-${String(seq).padStart(4, '0')}`));
+  getPurchaseOrders(filter: PurchaseOrderFilter): Observable<PurchaseOrderListResponse> {
+    let params = new HttpParams().set('page', String((filter.pageIndex || 1) - 1)).set('size', String(filter.pageSize || 10));
+
+    if (filter.query?.trim()) {
+      params = params.set('search', filter.query.trim());
+    }
+    if (filter.status !== null && filter.status !== undefined) {
+      params = params.set('status', filter.status);
+    }
+    if (filter.warehouseId) {
+      params = params.set('warehouseId', String(filter.warehouseId));
+    }
+
+    return this.http.get<ApiEnvelope<PageEnvelope<PoResponseBE>>>(this.poApi, { params }).pipe(
+      map(res => {
+        const page = res.data;
+        const items = (page?.content ?? []).map(r => this.toListPo(r));
+        return {
+          items,
+          total: page?.totalElements ?? items.length,
+          pageIndex: filter.pageIndex,
+          pageSize: filter.pageSize,
+        };
+      }),
+      catchError((err: unknown) => throwError(() => err)),
+    );
   }
 
-  private formatDate(date: Date): string {
-    const pad = (n: number): string => String(n).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    const MM = pad(date.getMonth() + 1);
-    const dd = pad(date.getDate());
-    const hh = pad(date.getHours());
-    const mm = pad(date.getMinutes());
-    const ss = pad(date.getSeconds());
-    return `${yyyy}-${MM}-${dd} ${hh}:${mm}:${ss}`;
+  getPurchaseOrderById(id: string | number): Observable<PurchaseOrderDetail | null> {
+    return this.http.get<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}`).pipe(map(res => (res.data ? this.toDetail(res.data) : null)));
+  }
+
+  createPurchaseOrder(payload: PurchaseOrderPayload): Observable<PurchaseOrderDetail> {
+    return this.http.post<ApiEnvelope<PoResponseBE>>(this.poApi, payload).pipe(map(res => this.toDetail(res.data)));
+  }
+
+  updatePurchaseOrder(id: string | number, payload: PurchaseOrderPayload): Observable<PurchaseOrderDetail> {
+    return this.http.put<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}`, payload).pipe(map(res => this.toDetail(res.data)));
+  }
+
+  deletePurchaseOrder(id: string | number): Observable<boolean> {
+    return this.http.delete<ApiEnvelope<void>>(`${this.poApi}/${id}`).pipe(map(() => true));
+  }
+
+  submit(id: string | number): Observable<PurchaseOrderDetail> {
+    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/submit`, {}).pipe(map(res => this.toDetail(res.data)));
+  }
+
+  approve(id: string | number): Observable<PurchaseOrderDetail> {
+    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/approve`, {}).pipe(map(res => this.toDetail(res.data)));
+  }
+
+  cancel(id: string | number, reason?: string): Observable<PurchaseOrderDetail> {
+    const params = reason ? new HttpParams().set('reason', reason) : undefined;
+    return this.http
+      .post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/cancel`, {}, { params })
+      .pipe(map(res => this.toDetail(res.data)));
+  }
+
+  receive(id: string | number, items: { purchaseOrderItemId: string; receivedQuantity: number }[]): Observable<PurchaseOrderDetail> {
+    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/receive`, { items }).pipe(map(res => this.toDetail(res.data)));
+  }
+
+  private toListPo(r: PoResponseBE): PurchaseOrder {
+    return {
+      id: r.id,
+      code: r.poCode,
+      supplierId: r.supplier?.id ?? '',
+      supplierName: r.supplier?.name ?? '',
+      warehouseId: r.warehouse?.id ?? '',
+      warehouseName: r.warehouse?.name ?? '',
+      orderDate: r.orderDate ?? '',
+      expectedDate: r.expectedDate ?? '',
+      status: r.status,
+      items: (r.items ?? []).map(i => ({
+        id: i.id ?? '',
+        materialName: i.materialName ?? '',
+        unit: i.unitName ?? '',
+        quantity: i.quantity ?? 0,
+        unitPrice: i.unitPrice ?? 0,
+      })),
+      totalAmount: r.totalAmount ?? 0,
+      note: r.note ?? '',
+      createdAt: r.createdAt ?? '',
+    };
+  }
+
+  private toDetail(r: PoResponseBE): PurchaseOrderDetail {
+    return {
+      id: r.id,
+      poCode: r.poCode,
+      status: r.status,
+      orderDate: r.orderDate ?? '',
+      expectedDate: r.expectedDate ?? '',
+      supplierId: r.supplier?.id ?? '',
+      supplierName: r.supplier?.name ?? '',
+      warehouseId: r.warehouse?.id ?? '',
+      warehouseName: r.warehouse?.name ?? '',
+      subtotalAmount: r.subtotalAmount ?? 0,
+      totalAmount: r.totalAmount ?? 0,
+      note: r.note ?? '',
+      items: (r.items ?? []).map(i => ({
+        id: i.id,
+        materialId: i.materialId ?? '',
+        materialName: i.materialName,
+        unitId: i.unitId ?? '',
+        unitName: i.unitName,
+        quantity: i.quantity ?? 0,
+        unitPrice: i.unitPrice ?? 0,
+        totalPrice: i.totalPrice ?? 0,
+        receivedQuantity: i.receivedQuantity ?? 0,
+      })),
+    };
   }
 }

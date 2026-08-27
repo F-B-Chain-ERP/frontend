@@ -72,3 +72,121 @@
   font-family: var(--font-mono, monospace);
   font-weight: var(--fw-semibold);
 }
+
+// ── Material list (framed box, scrollable after 6 rows) ──────────
+.po-items {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-sunken);
+  padding: var(--space-4);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+  }
+
+  &__title {
+    font-weight: var(--fw-semibold);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+  }
+
+  &__scroll {
+    border-radius: var(--radius-md);
+    overflow: hidden;
+
+    &.is-scroll {
+      max-height: 340px; // ~6 dòng, cuộn khi vượt quá
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--gray-300) transparent;
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: var(--gray-300);
+        border-radius: var(--radius-pill);
+      }
+    }
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface-card);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+
+    th,
+    td {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: var(--text-sm);
+      vertical-align: middle;
+    }
+
+    thead th {
+      background: var(--surface-sunken);
+      color: var(--text-secondary);
+      font-weight: var(--fw-semibold);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .col-stt {
+      width: 44px;
+      text-align: center;
+    }
+    .col-material {
+      min-width: 220px;
+    }
+    .col-unit {
+      width: 160px;
+    }
+    .col-qty {
+      width: 130px;
+    }
+    .col-price {
+      width: 150px;
+    }
+    .col-total {
+      width: 150px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .col-action {
+      width: 48px;
+      text-align: center;
+    }
+  }
+
+  &__empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: var(--space-6);
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-3);
+  }
+
+  &__grand-total {
+    font-size: var(--text-base);
+    color: var(--brand);
+  }
+}
+
+// ── Selection bar spacing ────────────────────────────────────────
+:host ::ng-deep .selection-bar {
+  margin-bottom: var(--space-4);
+}
