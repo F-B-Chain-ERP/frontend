@@ -32,7 +32,7 @@ export class MaterialService {
   }
 
   getMaterials(search?: string): Observable<Material[]> {
-    let params = new HttpParams().set('page', '0').set('size', '200');
+    let params = new HttpParams().set('page', '0').set('size', '10');
     if (search?.trim()) {
       params = params.set('search', search.trim());
     }

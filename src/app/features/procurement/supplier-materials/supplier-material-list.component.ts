@@ -139,7 +139,7 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
   // ── Data loading ────────────────────────────────────────────────────
   private loadSuppliers(): void {
     this.supplierService
-      .getSuppliers({ query: '', status: null, pageIndex: 1, pageSize: 200 })
+      .getSuppliers({ query: '', status: null, pageIndex: 1, pageSize: 10 })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
@@ -222,6 +222,10 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
 
   // ── Modal actions ───────────────────────────────────────────────────
   openCreateModal(): void {
+    if (!this.selectedSupplierId) {
+      this.toastService.warning('Thông báo', 'Vui lòng chọn nhà cung cấp trước khi gán nguyên vật liệu.');
+      return;
+    }
     this.modalMode.set('add');
     this.selectedRecord = null;
     this.form.get('materialId')?.enable();
