@@ -1,0 +1,303 @@
+<div class="supplier-material-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Bảng giá nguyên vật liệu theo nhà cung cấp</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.ADD]"
+        [disabled]="!selectedSupplierId"
+        variant="primary"
+        leftIcon="plus"
+        (click)="openCreateModal()"
+      >
+        Gán nguyên vật liệu
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box (Nhà cung cấp + Tìm kiếm) ────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Nhà cung cấp</label>
+        <nz-select
+          id="supplier-select"
+          [ngModel]="selectedSupplierId"
+          (ngModelChange)="onSupplierChange($event)"
+          nzPlaceHolder="Chọn nhà cung cấp"
+          nzShowSearch
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (s of suppliers; track s.id) {
+            <nz-option [nzValue]="s.id" [nzLabel]="s.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="sm-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="sm-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập mã hàng NCC..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" [disabled]="!selectedSupplierId" (click)="onSearch()">
+          Tìm kiếm
+        </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table Card (luôn render, kể cả khi chưa chọn NCC) ─ -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #smTable
+      [nzData]="supplierMaterials()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1300px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="140px" nzAlign="left">Mã NVL</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Tên nguyên vật liệu</th>
+          <th scope="col" nzWidth="100px" nzAlign="left">Đơn vị</th>
+          <th scope="col" nzWidth="160px" nzAlign="left">Mã hàng NCC</th>
+          <th scope="col" nzWidth="150px" nzAlign="right">Giá mua</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Thời gian giao</th>
+          <th scope="col" nzWidth="110px" nzAlign="center">Ưu tiên</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of supplierMaterials(); track item.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+            <td nzAlign="left"><span class="supplier-code">{{ materialCode(item.materialId) }}</span></td>
+            <td nzAlign="left">{{ materialName(item.materialId, item.materialName) }}</td>
+            <td nzAlign="left">{{ item.unitName || '—' }}</td>
+            <td nzAlign="left">{{ item.supplierSku || '—' }}</td>
+            <td nzAlign="right">{{ item.purchasePrice | number }}</td>
+            <td nzAlign="center">{{ item.leadTimeDays != null ? (item.leadTimeDays + ' ngày') : '—' }}</td>
+            <td nzAlign="center">
+              @if (item.isPreferred) {
+                <span class="tbl-badge tbl-badge--warning">Ưu tiên</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td nzAlign="center">
+              <span [class]="getSupplierMaterialStatusMeta(item.status).badgeClass">
+                {{ getSupplierMaterialStatusMeta(item.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.EDIT]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Sửa"
+                  (click)="openEditModal(item)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Gỡ khỏi nhà cung cấp"
+                  (click)="onDelete(item)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="10" class="text-center table-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-state__icon" />
+                <p class="empty-state__text">
+                  @if (!selectedSupplierId) {
+                    Vui lòng chọn nhà cung cấp để xem bảng giá nguyên vật liệu.
+                  } @else {
+                    Nhà cung cấp chưa được gán nguyên vật liệu nào.
+                  }
+                </p>
+                @if (selectedSupplierId) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.ADD]"
+                    variant="secondary"
+                    leftIcon="plus"
+                    [disabled]="!selectedSupplierId"
+                    (click)="openCreateModal()"
+                  >
+                    Gán nguyên vật liệu
+                  </app-button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Form Modal (Gán / Sửa nguyên vật liệu) ─────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="modalMode() === 'edit' ? 'Sửa bảng giá nguyên vật liệu' : 'Gán nguyên vật liệu'"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="form" class="supplier-material-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Nguyên vật liệu -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label required" for="modal-materialId">Nguyên vật liệu</label>
+          @if (modalMode() === 'add') {
+            <nz-select
+              id="modal-materialId"
+              formControlName="materialId"
+              nzPlaceHolder="Chọn nguyên vật liệu"
+              nzShowSearch
+              style="width: 100%"
+            >
+              @for (m of materials; track m.id) {
+                <nz-option [nzValue]="m.id" [nzLabel]="m.code + ' - ' + m.name"></nz-option>
+              }
+            </nz-select>
+            @if (form.get('materialId')?.dirty || form.get('materialId')?.touched) {
+              @if (form.get('materialId')?.hasError('required')) {
+                <span class="form-error">Vui lòng chọn nguyên vật liệu.</span>
+              }
+            }
+          } @else {
+            <nz-input-wrapper>
+              <input id="modal-materialId" type="text" nz-input [value]="selectedMaterialDisplay" disabled />
+            </nz-input-wrapper>
+          }
+        </div>
+
+        <!-- Mã hàng NCC -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-supplierSku">Mã hàng NCC</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="tag" />
+            <input
+              id="modal-supplierSku"
+              type="text"
+              nz-input
+              formControlName="supplierSku"
+              placeholder="VD: ARA-1KG"
+              maxlength="100"
+            />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Giá mua -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-purchasePrice">Giá mua</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="dollar" />
+            <input
+              id="modal-purchasePrice"
+              type="text"
+              inputmode="decimal"
+              nz-input
+              formControlName="purchasePrice"
+              placeholder="VD: 199000"
+            />
+          </nz-input-wrapper>
+          @if (form.get('purchasePrice')?.dirty || form.get('purchasePrice')?.touched) {
+            @if (form.get('purchasePrice')?.hasError('required')) {
+              <span class="form-error">Giá mua không được để trống.</span>
+            } @else if (form.get('purchasePrice')?.hasError('positive')) {
+              <span class="form-error">Giá mua phải lớn hơn 0.</span>
+            }
+          }
+        </div>
+
+        <!-- Thời gian giao -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-leadTimeDays">Thời gian giao (ngày)</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="clock" />
+            <input
+              id="modal-leadTimeDays"
+              type="text"
+              inputmode="numeric"
+              nz-input
+              formControlName="leadTimeDays"
+              placeholder="VD: 2"
+            />
+          </nz-input-wrapper>
+          @if (form.get('leadTimeDays')?.dirty || form.get('leadTimeDays')?.touched) {
+            @if (form.get('leadTimeDays')?.hasError('required')) {
+              <span class="form-error">Thời gian giao không được để trống.</span>
+            } @else if (form.get('leadTimeDays')?.hasError('minInteger')) {
+              <span class="form-error">Thời gian giao phải là số nguyên ≥ 1.</span>
+            }
+          }
+        </div>
+
+        <!-- Nhà cung cấp ưu tiên -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label">Nhà cung cấp ưu tiên</label>
+          <div class="preferred-switch">
+            <nz-switch formControlName="isPreferred" nzCheckedChildren="Có" nzUnCheckedChildren="Không"></nz-switch>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[modalMode() === 'edit' ? ROLE.BANG_GIA_NCC.EDIT : ROLE.BANG_GIA_NCC.ADD]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitForm()"
+        >
+          {{ modalMode() === 'edit' ? 'Lưu thay đổi' : 'Gán nguyên vật liệu' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

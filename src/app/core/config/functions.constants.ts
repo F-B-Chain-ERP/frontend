@@ -34,5 +34,6 @@ export const ROLE = {
   QUAN_LY_PHAM_VI: grp('sys:scope:view', 'sys:scope:create', 'sys:scope:update', 'sys:scope:delete'),
   DON_MUA_HANG: grp('proc:purchase_order:view', 'proc:purchase_order:create', 'proc:purchase_order:update', 'proc:purchase_order:delete'),
   NHA_CUNG_CAP: grp('proc:supplier:view', 'proc:supplier:create', 'proc:supplier:update', 'proc:supplier:delete'),
+  BANG_GIA_NCC: grp('proc:supplier_material:view', 'proc:supplier_material:create', 'proc:supplier_material:update', 'proc:supplier_material:delete'),
   KHACH_HANG: grp('customer:view', 'customer:create', 'customer:update', 'customer:delete'),
 };
