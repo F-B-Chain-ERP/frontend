@@ -7,7 +7,7 @@
     </div>
     <div class="page__header__right">
       <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.ADD]" variant="primary" leftIcon="plus"
-                  (click)="openFormPlaceholder('create')">
+                  (click)="openCreateModal()">
         Tạo đơn mua hàng
       </app-button>
     </div>
@@ -56,7 +56,26 @@
     </div>
   </nz-card>
 
-  <!-- ── 3. Main Data Table Card ────────────────────────────────────── -->
+  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+    <app-selection-bar
+      [selectedCount]="setOfCheckedKeys.size"
+      [totalCount]="total()"
+      itemLabel="đơn mua hàng"
+      (clearSelection)="clearSelection()"
+    >
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE]"
+        variant="danger"
+        leftIcon="delete"
+        (click)="onBatchDelete()"
+      >
+        Xóa đã chọn
+      </app-button>
+    </app-selection-bar>
+  }
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
   <nz-card class="page__list" [nzBordered]="false">
     <nz-table
       #poTable
@@ -65,51 +84,128 @@
       [nzShowPagination]="false"
       [nzFrontPagination]="false"
       nzSize="middle"
-      [nzScroll]="{ x: '1250px' }"
+      [nzScroll]="{ x: '1480px' }"
     >
       <thead>
-      <tr>
-        <!-- STT -->
-        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+        <tr>
+          <!-- Checkbox chọn tất cả -->
+          <th scope="col" nzWidth="48px" nzAlign="center">
+            <label class="cb" for="cb-check-all-po">
+              <input
+                id="cb-check-all-po"
+                #checkAllInput
+                type="checkbox"
+                [checked]="allChecked"
+                [indeterminate]="indeterminate"
+                (change)="onCheckAll(checkAllInput.checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
 
-        <!-- Số PO -->
-        <th scope="col" nzWidth="140px" nzAlign="left">Số PO</th>
+          <!-- STT -->
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
 
-        <!-- Nhà cung cấp -->
-        <th scope="col" nzWidth="220px" nzAlign="left">Nhà cung cấp</th>
+          <!-- Số PO -->
+          <th scope="col" nzWidth="150px" nzAlign="left">Số PO</th>
 
-        <!-- Kho nhận -->
-        <th scope="col" nzWidth="180px" nzAlign="left">Kho nhận</th>
+          <!-- Nhà cung cấp -->
+          <th scope="col" nzWidth="220px" nzAlign="left">Nhà cung cấp</th>
 
-        <!-- Ngày đặt -->
-        <th scope="col" nzWidth="110px" nzAlign="center">Ngày đặt</th>
+          <!-- Kho nhận -->
+          <th scope="col" nzWidth="180px" nzAlign="left">Kho nhận</th>
 
-        <!-- Ngày dự kiến nhận -->
-        <th scope="col" nzWidth="130px" nzAlign="center">Dự kiến nhận</th>
+          <!-- Ngày đặt -->
+          <th scope="col" nzWidth="110px" nzAlign="center">Ngày đặt</th>
 
-        <!-- Số mặt hàng -->
-        <th scope="col" nzWidth="100px" nzAlign="center">Số mặt hàng</th>
+          <!-- Ngày dự kiến nhận -->
+          <th scope="col" nzWidth="130px" nzAlign="center">Dự kiến nhận</th>
 
-        <!-- Tổng tiền -->
-        <th scope="col" nzWidth="140px" nzAlign="right">Tổng tiền</th>
+          <!-- Số mặt hàng -->
+          <th scope="col" nzWidth="100px" nzAlign="center">Số mặt hàng</th>
 
-        <!-- Trạng thái -->
-        <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+          <!-- Tổng tiền -->
+          <th scope="col" nzWidth="150px" nzAlign="right">Tổng tiền</th>
 
-        <!-- Thao tác -->
-        <th scope="col" nzWidth="180px" nzAlign="center">Thao tác</th>
-      </tr>
+          <!-- Trạng thái -->
+          <th scope="col" nzWidth="150px" nzAlign="center">Trạng thái</th>
+
+          <!-- Thao tác -->
+          <th scope="col" nzWidth="190px" nzAlign="center">Thao tác</th>
+        </tr>
+
+        <!-- Hàng lọc theo cột -->
+        <tr class="thead-search">
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('code')"
+              (valueChange)="searchByField('code', $event)"
+              placeholder="Tìm số PO"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('supplierName')"
+              (valueChange)="searchByField('supplierName', $event)"
+              placeholder="Tìm NCC"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('warehouseName')"
+              (valueChange)="searchByField('warehouseName', $event)"
+              placeholder="Tìm kho"
+            ></app-table-search-input>
+          </th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              type="option"
+              [options]="statusFilterOptions"
+              labelField="label"
+              valueField="value"
+              [value]="columnFilter.getValue('status')"
+              (valueChange)="searchByField('status', $event)"
+              placeholder="Trạng thái"
+            ></app-table-search-input>
+          </th>
+          <th nzAlign="center">
+            <app-button
+              iconOnly="reload"
+              nz-tooltip
+              nzTooltipTitle="Đặt lại bộ lọc cột"
+              (click)="resetAllFieldFilter()"
+              variant="ghost"
+            ></app-button>
+          </th>
+        </tr>
       </thead>
+
       <tbody>
-        @for (po of purchaseOrders(); track po.id) {
+        @for (po of purchaseOrders(); track po.id; let i = $index) {
           <tr>
-            <td nzAlign="center">{{ pageIndex === 1 ? $index + 1 : (pageIndex - 1) * pageSize + $index + 1 }}</td>
-            <td>
-              <span class="po-code">{{ po.code }}</span>
+            <!-- Checkbox dòng -->
+            <td nzAlign="center">
+              <label class="cb" [for]="'cb-po-' + po.id">
+                <input
+                  [id]="'cb-po-' + po.id"
+                  #rowInput
+                  type="checkbox"
+                  [checked]="isChecked(po.id)"
+                  (change)="onCheckRow(po.id, rowInput.checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
             </td>
-            <td>
-              <span class="supplier-name">{{ po.supplierName }}</span>
-            </td>
+
+            <td nzAlign="center">{{ pageIndex === 1 ? i + 1 : (pageIndex - 1) * pageSize + i + 1 }}</td>
+            <td><span class="po-code">{{ po.code }}</span></td>
+            <td><span class="supplier-name">{{ po.supplierName }}</span></td>
             <td>
               <span class="warehouse-name">
                 <nz-icon nzType="home" style="margin-right: 4px; color: var(--brand);"/>
@@ -129,17 +225,17 @@
             </td>
             <td nzAlign="center">
               <div class="tbl-actions">
-                <!-- Xem chi tiết (Quyền VIEW - luôn khả dụng) -->
+                <!-- Xem chi tiết (luôn khả dụng) -->
                 <app-button
                   variant="ghost"
                   iconOnly="eye"
                   nz-tooltip
                   nzTooltipTitle="Xem chi tiết"
-                  (click)="openFormPlaceholder('view')"
+                  (click)="openDetailModal(po)"
                 >
                 </app-button>
 
-                <!-- DRAFT: Submit for Approval / Edit / Cancel -->
+                <!-- DRAFT: Submit for Approval / Cancel / Delete -->
                 @if (po.status === PurchaseOrderStatus.DRAFT || po.status === '0') {
                   <app-button
                     *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
@@ -151,26 +247,17 @@
                   >
                   </app-button>
                   <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE]"
                     variant="ghost"
-                    iconOnly="edit"
+                    iconOnly="delete"
                     nz-tooltip
-                    nzTooltipTitle="Chỉnh sửa"
-                    (click)="openFormPlaceholder('edit')"
-                  >
-                  </app-button>
-                  <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE, ROLE.DON_MUA_HANG.EDIT]"
-                    variant="ghost"
-                    iconOnly="close"
-                    nz-tooltip
-                    nzTooltipTitle="Hủy đơn"
-                    (click)="onCancelPO(po)"
+                    nzTooltipTitle="Xóa đơn"
+                    (click)="onDeletePO(po)"
                   >
                   </app-button>
                 }
 
-                <!-- SUBMITTED: Approve (Admin only) or Reject/Cancel -->
+                <!-- SUBMITTED: Approve / Reject -->
                 @if (po.status === PurchaseOrderStatus.SUBMITTED || po.status === 'PENDING' || po.status === '1') {
                   <app-button
                     *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT, 'ALL_SYSTEM']"
@@ -187,7 +274,7 @@
                     iconOnly="close"
                     nz-tooltip
                     nzTooltipTitle="Từ chối / Hủy"
-                    (click)="onCancelPO(po)"
+                    (click)="openCancelModal(po)"
                   >
                   </app-button>
                 }
@@ -209,13 +296,13 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="10" class="tbl-empty">Không có dữ liệu đơn mua hàng</td>
+            <td colspan="11" class="tbl-empty">Không có dữ liệu đơn mua hàng</td>
           </tr>
         }
       </tbody>
     </nz-table>
 
-    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <!-- ── 5. Standard Footer & Pagination ──────────────────────────── -->
     <div class="page__pagination">
       <app-pagination
         [total]="total()"
@@ -228,4 +315,239 @@
       </app-pagination>
     </div>
   </nz-card>
+
+  <!-- ── 6. Modal (Tạo / Xem chi tiết / Cập nhật) ──────────────────── -->
+  <app-modal
+    [visible]="isModalVisible()"
+    (visibleChange)="isModalVisible.set($event)"
+    [title]="modalTitle"
+    size="xl"
+    [maskClosable]="false"
+    [footer]="modalFooter"
+    (cancelEmit)="closeModal()"
+  >
+    <form [formGroup]="poForm" class="po-form" (ngSubmit)="submitForm()">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Mã PO -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label" for="po-poCode">Mã PO</label>
+          <nz-input-wrapper>
+            <input id="po-poCode" type="text" nz-input formControlName="poCode" placeholder="Để trống để tự sinh" />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Nhà cung cấp -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label required" for="po-supplier">Nhà cung cấp</label>
+          <nz-select
+            id="po-supplier"
+            formControlName="supplierId"
+            nzPlaceHolder="Chọn nhà cung cấp"
+            nzShowSearch
+            [nzFilterOption]="filterByLabel"
+          >
+            @for (opt of supplierOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          @if (poForm.get('supplierId')?.touched || poForm.get('supplierId')?.dirty) {
+            @if (poForm.get('supplierId')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn nhà cung cấp.</span>
+            }
+          }
+        </div>
+
+        <!-- Kho nhận -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label required" for="po-warehouse">Kho nhận</label>
+          <nz-select
+            id="po-warehouse"
+            formControlName="warehouseId"
+            nzPlaceHolder="Chọn kho nhận"
+            nzShowSearch
+            [nzFilterOption]="filterByLabel"
+          >
+            @for (opt of warehouseOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          @if (poForm.get('warehouseId')?.touched || poForm.get('warehouseId')?.dirty) {
+            @if (poForm.get('warehouseId')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn kho nhận.</span>
+            }
+          }
+        </div>
+
+        <!-- Ngày đặt -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label required" for="po-orderDate">Ngày đặt</label>
+          <nz-date-picker
+            id="po-orderDate"
+            formControlName="orderDate"
+            nzFormat="yyyy-MM-dd"
+            style="width: 100%"
+          ></nz-date-picker>
+          @if (poForm.get('orderDate')?.touched || poForm.get('orderDate')?.dirty) {
+            @if (poForm.get('orderDate')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn ngày đặt.</span>
+            }
+          }
+        </div>
+
+        <!-- Ngày dự kiến nhận -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label" for="po-expectedDate">Dự kiến nhận</label>
+          <nz-date-picker
+            id="po-expectedDate"
+            formControlName="expectedDate"
+            nzFormat="yyyy-MM-dd"
+            style="width: 100%"
+          ></nz-date-picker>
+        </div>
+
+        <!-- Ghi chú -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label" for="po-note">Ghi chú</label>
+          <nz-input-wrapper>
+            <textarea id="po-note" nz-input formControlName="note" rows="1" placeholder="Ghi chú (tùy chọn)"></textarea>
+          </nz-input-wrapper>
+        </div>
+      </div>
+
+      <nz-divider style="margin: 12px 0 8px">Danh sách nguyên vật liệu</nz-divider>
+
+      <!-- Khung danh sách NVL (scroll khi nhiều dòng) -->
+      <div class="po-items">
+        <div class="po-items__head">
+          <span class="po-items__title">Nguyên vật liệu ({{ itemsArray.length }})</span>
+          @if (modalMode() !== 'view') {
+            <app-button variant="secondary" leftIcon="plus" (click)="addItem()">Thêm dòng</app-button>
+          }
+        </div>
+
+        <div class="po-items__scroll" [class.is-scroll]="itemsArray.length > 6">
+          <table class="po-items__table">
+            <thead>
+              <tr>
+                <th class="col-stt">#</th>
+                <th class="col-material">Nguyên vật liệu</th>
+                <th class="col-unit">Đơn vị</th>
+                <th class="col-qty">Số lượng</th>
+                <th class="col-price">Đơn giá</th>
+                <th class="col-total">Thành tiền</th>
+                @if (modalMode() !== 'view') {
+                  <th class="col-action"></th>
+                }
+              </tr>
+            </thead>
+            <tbody formArrayName="items">
+              @for (item of itemsArray.controls; track $index; let i = $index) {
+                <tr [formGroupName]="i">
+                  <td class="col-stt">{{ i + 1 }}</td>
+                  <td class="col-material">
+                    <input
+                      nz-input
+                      formControlName="materialText"
+                      [nzAutocomplete]="matAuto"
+                      (input)="onMaterialTextInput(i)"
+                      placeholder="Gõ / chọn NVL"
+                    />
+                    <nz-autocomplete #matAuto (selectionChange)="onMatSelect(i, $event)">
+                      @for (opt of materialOptions(); track opt.value) {
+                        <nz-auto-option [nzValue]="opt.value" [nzLabel]="opt.label">{{ opt.label }}</nz-auto-option>
+                      }
+                    </nz-autocomplete>
+                  </td>
+                  <td class="col-unit">
+                    <nz-select
+                      formControlName="unitId"
+                      nzPlaceHolder="Đơn vị"
+                      nzShowSearch
+                      [nzFilterOption]="filterByLabel"
+                    >
+                      @for (opt of unitOptions(); track opt.value) {
+                        <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                      }
+                    </nz-select>
+                  </td>
+                  <td class="col-qty">
+                    <nz-input-number
+                      formControlName="quantity"
+                      [nzMin]="0.001"
+                      [nzStep]="1"
+                      style="width: 100%"
+                    ></nz-input-number>
+                  </td>
+                  <td class="col-price">
+                    <nz-input-number
+                      formControlName="unitPrice"
+                      [nzMin]="0"
+                      [nzStep]="1000"
+                      style="width: 100%"
+                    ></nz-input-number>
+                  </td>
+                  <td class="col-total font-mono">
+                    {{ lineTotals()[i] | number: '1.0-0' }} ₫
+                  </td>
+                  @if (modalMode() !== 'view') {
+                    <td class="col-action">
+                      <app-button variant="ghost" iconOnly="delete" nz-tooltip nzTooltipTitle="Xóa dòng" (click)="removeItem(i)"></app-button>
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr>
+                  <td [attr.colspan]="modalMode() !== 'view' ? 7 : 6" class="po-items__empty">Chưa có dòng chi tiết nào.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="po-items__footer">
+          <span class="po-items__grand-total font-mono font-semibold">
+            Tổng cộng: {{ grandTotal() | number: '1.0-0' }} ₫
+          </span>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #modalFooter>
+      @if (modalMode() === 'view') {
+        <app-button variant="ghost" (click)="closeModal()">Đóng</app-button>
+        <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
+          Chỉnh sửa
+        </app-button>
+      } @else {
+        <app-button variant="ghost" (click)="closeModal()" [disabled]="isSaving()">Hủy</app-button>
+        <app-button variant="primary" leftIcon="save" [loading]="isSaving()" (click)="submitForm()">Lưu đơn mua hàng</app-button>
+      }
+    </ng-template>
+  </app-modal>
+
+  <nz-modal
+    [nzVisible]="!!cancelTarget()"
+    nzTitle="Lý do hủy / từ chối đơn"
+    [nzOkText]="'Xác nhận hủy'"
+    [nzOkDisabled]="!cancelReason().trim()"
+    [nzOkLoading]="isSaving()"
+    [nzCancelText]="'Đóng'"
+    (nzOnOk)="confirmCancel()"
+    (nzOnCancel)="closeCancelModal()"
+  >
+    <ng-container *nzModalContent>
+      <nz-input-wrapper>
+        <textarea
+          nz-input
+          rows="3"
+          [ngModel]="cancelReason()"
+          (ngModelChange)="cancelReason.set($event)"
+          placeholder="Nhập lý do hủy / từ chối đơn hàng..."
+        ></textarea>
+      </nz-input-wrapper>
+      @if (!cancelReason().trim()) {
+        <span class="form-error">Vui lòng nhập lý do trước khi hủy đơn.</span>
+      }
+    </ng-container>
+  </nz-modal>
 </div>
