@@ -6,7 +6,7 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.ADD]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.CREATE]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
         Thêm mới nhà cung cấp
       </app-button>
     </div>
@@ -63,10 +63,10 @@
       itemLabel="nhà cung cấp"
       (clearSelection)="clearSelection()"
     >
-      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]" variant="secondary" leftIcon="check" (click)="onBatchStatus(true)">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.UPDATE]" variant="secondary" leftIcon="check" (click)="onBatchStatus(true)">
         Kích hoạt
       </app-button>
-      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]" variant="secondary" leftIcon="stop" (click)="onBatchStatus(false)">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.UPDATE]" variant="secondary" leftIcon="stop" (click)="onBatchStatus(false)">
         Ngừng hợp tác
       </app-button>
       <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.DELETE]" variant="danger" leftIcon="delete" (click)="onBatchDelete()">
@@ -470,13 +470,13 @@
       <div class="modal-footer-actions">
         @if (isViewMode) {
           <app-button variant="ghost" leftIcon="close" (click)="closeFormModal()"> Đóng </app-button>
-          <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.EDIT]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
+          <app-button *erpUTTHasSomeAuthority="[ROLE.NHA_CUNG_CAP.UPDATE]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
             Chỉnh sửa
           </app-button>
         } @else {
           <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
           <app-button
-            *erpUTTHasSomeAuthority="[isEditMode ? ROLE.NHA_CUNG_CAP.EDIT : ROLE.NHA_CUNG_CAP.ADD]"
+            *erpUTTHasSomeAuthority="[isEditMode ? ROLE.NHA_CUNG_CAP.UPDATE : ROLE.NHA_CUNG_CAP.CREATE]"
             variant="primary"
             leftIcon="check"
             [loading]="isSaving()"

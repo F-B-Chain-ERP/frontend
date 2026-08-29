@@ -63,6 +63,17 @@ export const routes: Routes = [
         title: 'Trang chủ Quản trị',
       },
       {
+        // Đổi mật khẩu tài khoản quản trị: BẮT BUỘC nhập mật khẩu hiện tại.
+        path: 'account/change-password',
+        loadComponent: () => import('./features/account/change-password/change-password.component'),
+        title: 'Đổi mật khẩu',
+      },
+      {
+        path: 'account/settings',
+        loadComponent: () => import('./features/account/settings/settings.component'),
+        title: 'Cài đặt tài khoản',
+      },
+      {
         path: 'ui-kit',
         loadComponent: () => import('./features/ui-kit/ui-kit.component'),
         title: 'UI Design System Showcase',
@@ -111,6 +122,10 @@ export const routes: Routes = [
       {
         path: 'system/customers',
         loadChildren: () => import('./features/system/customers/customer.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.KHACH_HANG.VIEW],
+        },
       },
       {
         path: 'system/customers/list',
@@ -202,6 +217,16 @@ export const routes: Routes = [
   {
     path: 'system/roles/edit',
     redirectTo: 'admin/system/roles/edit',
+    pathMatch: 'full',
+  },
+  {
+    path: 'account/change-password',
+    redirectTo: 'admin/account/change-password',
+    pathMatch: 'full',
+  },
+  {
+    path: 'account/settings',
+    redirectTo: 'admin/account/settings',
     pathMatch: 'full',
   },
   {

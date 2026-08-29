@@ -13,7 +13,7 @@
 
       <div class="login__hero">
         <h2 class="login__hero-title">
-          Chào bạn,<br/>
+          Chào bạn,<br />
           ly <span class="grad">cà phê</span> đang chờ
         </h2>
         <p class="login__hero-sub">Đặt 30s • Giao 20' • Tích điểm đổi ly miễn phí</p>
@@ -26,10 +26,7 @@
 
         <!-- Main 3D coffee -->
         <div class="scene__coffee">
-          <img
-            src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=520&q=80"
-            alt="Latte art"
-          />
+          <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=520&q=80" alt="Latte art" />
           <div class="scene__steam"><span></span><span></span><span></span></div>
         </div>
         <div class="scene__beans" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
@@ -38,10 +35,10 @@
         <div class="float-card float-card--ship">
           <div class="float-card__icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M1 3h15v13H1z"/>
-              <path d="M16 8h4l3 6v3h-7"/>
-              <circle cx="5.5" cy="18.5" r="2.5"/>
-              <circle cx="18.5" cy="18.5" r="2.5"/>
+              <path d="M1 3h15v13H1z" />
+              <path d="M16 8h4l3 6v3h-7" />
+              <circle cx="5.5" cy="18.5" r="2.5" />
+              <circle cx="18.5" cy="18.5" r="2.5" />
             </svg>
           </div>
           <div class="float-card__text">
@@ -54,7 +51,7 @@
         <div class="float-card float-card--point">
           <div class="float-card__icon float-card__icon--amber">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/>
+              <path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z" />
             </svg>
           </div>
           <div class="float-card__text">
@@ -72,8 +69,10 @@
 
       <div class="login__left-footer">
         <div class="login__avatars">
-          <img src="https://i.pravatar.cc/100?img=11" alt=""/><img src="https://i.pravatar.cc/100?img=14" alt=""/><img
-          src="https://i.pravatar.cc/100?img=32" alt=""/>
+          <img src="https://i.pravatar.cc/100?img=11" alt="" /><img src="https://i.pravatar.cc/100?img=14" alt="" /><img
+            src="https://i.pravatar.cc/100?img=32"
+            alt=""
+          />
           <span>30.000+ khách hàng tin dùng • 4.9/5</span>
         </div>
       </div>
@@ -95,28 +94,45 @@
         </div>
       </div>
 
+      @if (mode() === 'login') {
       <h1 class="login__form-title">Chào mừng trở lại</h1>
       <p class="login__form-sub">Đăng nhập để đặt món, tích điểm & theo dõi đơn hàng</p>
 
       <!-- Social login — 80% customer -->
       <div class="login__social">
-        <button type="button" class="login__social-btn login__social-btn--google" (click)="onGoogleLogin()"
-                [disabled]="googleLoading()">
-          <svg viewBox="0 0 24 24" width="16" height="16">
-            <path fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-            <path fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-          Tiếp tục với Google
+        <button
+          type="button"
+          class="login__social-btn login__social-btn--google"
+          [class.is-loading]="googleLoading()"
+          (click)="onGoogleLogin()"
+          [disabled]="googleLoading()"
+        >
+          @if (googleLoading()) {
+            <nz-icon nzType="loading" nzSpin class="login__social-spinner" />
+            <span>Đang đăng nhập...</span>
+          } @else {
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Tiếp tục với Google
+          }
         </button>
-        <button type="button" class="login__social-btn login__social-btn--zalo">
-          <span class="zalo-badge">Z</span> Tiếp tục với Zalo
-        </button>
+        <button type="button" class="login__social-btn login__social-btn--zalo"><span class="zalo-badge">Z</span> Tiếp tục với Zalo</button>
       </div>
 
       <div class="login__divider-or"><span>hoặc</span></div>
@@ -125,8 +141,7 @@
         @if (loginError() === 'INVALID_CREDENTIALS') {
           <div class="login__alert login__alert--error">
             <div class="login__alert-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                   stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
@@ -143,8 +158,7 @@
           <div class="login__alert login__alert--locked">
             <div class="login__alert-top">
               <div class="login__alert-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                     stroke-linejoin="round">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
@@ -165,14 +179,14 @@
         <div
           class="login__field"
           [class.login__field--error]="
-              loginError() === 'INVALID_CREDENTIALS' ||
-              loginError() === 'ACCOUNT_DELETED' ||
-              (loginForm.get('username')?.invalid && loginForm.get('username')?.touched)
-            "
+            loginError() === 'INVALID_CREDENTIALS' ||
+            loginError() === 'ACCOUNT_DELETED' ||
+            (loginForm.get('username')?.invalid && loginForm.get('username')?.touched)
+          "
         >
           <label for="username">Tên đăng nhập <span style="color: red">*</span></label>
           <nz-input-wrapper>
-            <nz-icon nzInputPrefix nzType="user"/>
+            <nz-icon nzInputPrefix nzType="user" />
             <input
               nz-input
               id="username"
@@ -193,14 +207,14 @@
         <div
           class="login__field"
           [class.login__field--error]="
-              loginError() === 'INVALID_CREDENTIALS' ||
-              loginError() === 'ACCOUNT_DELETED' ||
-              (loginForm.get('password')?.invalid && loginForm.get('password')?.touched)
-            "
+            loginError() === 'INVALID_CREDENTIALS' ||
+            loginError() === 'ACCOUNT_DELETED' ||
+            (loginForm.get('password')?.invalid && loginForm.get('password')?.touched)
+          "
         >
           <label for="password">Mật khẩu <span style="color: red">*</span></label>
           <nz-input-wrapper>
-            <nz-icon nzInputPrefix nzType="lock"/>
+            <nz-icon nzInputPrefix nzType="lock" />
             <input
               nz-input
               id="password"
@@ -227,24 +241,23 @@
 
         <div class="login__form-options">
           <label class="cb login__remember-me">
-            <input type="checkbox" formControlName="rememberMe"/>
+            <input type="checkbox" formControlName="rememberMe" />
             <span class="cb__box"></span>
             <span>Ghi nhớ đăng nhập</span>
           </label>
 
-          <a href="javascript:void(0)" class="login__forgot-link"
-             style="opacity: 0.5; cursor: not-allowed; pointer-events: none">
+          <a class="login__forgot-link" (click)="switchToForgot()">
             Quên mật khẩu?
           </a>
         </div>
-        <app-button class="submit-button" type="submit" variant="primary" [fullWidth]="true" [loading]="loading()"
-                    [disabled]="loading()">
+        <app-button class="submit-button" type="submit" variant="primary" [fullWidth]="true" [loading]="loading()" [disabled]="loading()">
           Đăng nhập
         </app-button>
       </form>
 
-      <p class="login__register">Chưa có tài khoản? <a routerLink="/register" class="login__register-link">Đăng ký ngay
-        — nhận ưu đãi 20%</a></p>
+      <p class="login__register">
+        Chưa có tài khoản? <a routerLink="/register" class="login__register-link">Đăng ký ngay — nhận ưu đãi 20%</a>
+      </p>
 
       <div class="login__divider"></div>
 
@@ -258,8 +271,8 @@
           stroke-linecap="round"
           stroke-linejoin="round"
         >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <polyline points="9 11 11 13 15 9"/>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <polyline points="9 11 11 13 15 9" />
         </svg>
         <div class="login__security-text">
           <p class="login__security-line">Bảo mật thông tin theo tiêu chuẩn</p>
@@ -268,6 +281,113 @@
       </div>
 
       <div class="login__footer">Copyright © {{ currentYear }} ERP UTT. All rights reserved.</div>
+      } @else if (mode() === 'forgot-email') {
+      <h1 class="login__form-title">Quên mật khẩu</h1>
+      <p class="login__form-sub">Nhập email đã đăng ký, chúng tôi sẽ gửi mã OTP 6 số để đặt lại mật khẩu.</p>
+
+      <form [formGroup]="emailForm" (ngSubmit)="submitForgotEmail()">
+        <div class="login__field" [class.login__field--error]="emailForm.controls.email.invalid && emailForm.controls.email.touched">
+          <label for="forgot-email">Email <span style="color: var(--danger)">*</span></label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="mail" />
+            <input nz-input id="forgot-email" type="email" formControlName="email" placeholder="Nhập email của bạn" autocomplete="email" nzSize="large" />
+          </nz-input-wrapper>
+          @if (emailForm.controls.email.hasError('required') && emailForm.controls.email.touched) {
+            <div class="login__field-error">Email không được để trống.</div>
+          }
+          @if (emailForm.controls.email.hasError('email') && emailForm.controls.email.touched) {
+            <div class="login__field-error">Email không hợp lệ.</div>
+          }
+        </div>
+
+        <app-button class="submit-button" type="submit" variant="primary" [fullWidth]="true" [loading]="loading()" [disabled]="loading()">
+          Gửi mã OTP
+        </app-button>
+      </form>
+
+      <div class="login__back">
+        <a (click)="backToLogin()">Quay lại đăng nhập</a>
+      </div>
+      } @else {
+      <h1 class="login__form-title">Đặt lại mật khẩu</h1>
+      <p class="login__form-sub">Mã OTP đã gửi đến <strong>{{ emailSentTo() }}</strong>. Nhập mã và mật khẩu mới bên dưới.</p>
+
+      <form [formGroup]="resetForm" (ngSubmit)="submitReset()">
+        <div class="login__field" [class.login__field--error]="resetForm.controls.otp.invalid && resetForm.controls.otp.touched">
+          <label for="forgot-otp">Mã OTP <span style="color: var(--danger)">*</span></label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="safety" />
+            <input nz-input id="forgot-otp" formControlName="otp" maxlength="6" inputmode="numeric" placeholder="Nhập mã OTP 6 số" class="login__otp" autocomplete="one-time-code" nzSize="large" style="letter-spacing: normal;" />          </nz-input-wrapper>
+          @if (resetForm.controls.otp.hasError('required') && resetForm.controls.otp.touched) {
+            <div class="login__field-error">Vui lòng nhập mã OTP.</div>
+          }
+          @if (resetForm.controls.otp.hasError('pattern') && resetForm.controls.otp.touched) {
+            <div class="login__field-error">Mã OTP phải gồm 6 chữ số.</div>
+          }
+        </div>
+
+        <div class="login__field" [class.login__field--error]="resetForm.controls.newPassword.invalid && resetForm.controls.newPassword.touched">
+          <label for="forgot-newPassword">Mật khẩu mới <span style="color: var(--danger)">*</span></label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="lock" />
+            <input nz-input id="forgot-newPassword" [type]="showPassword() ? 'text' : 'password'" formControlName="newPassword" placeholder="Mật khẩu mới (tối thiểu 8 ký tự)" autocomplete="new-password" nzSize="large" />
+            <div nzInputSuffix class="login__field-suffix">
+              <nz-icon class="login__field-toggle" [nzType]="showPassword() ? 'eye-invisible' : 'eye'" nzTheme="outline" (click)="togglePassword()" />
+            </div>
+          </nz-input-wrapper>
+          @if (resetForm.controls.newPassword.hasError('required') && resetForm.controls.newPassword.touched) {
+            <div class="login__field-error">Mật khẩu không được để trống.</div>
+          }
+          @if (resetForm.controls.newPassword.hasError('minlength') && resetForm.controls.newPassword.touched) {
+            <div class="login__field-error">Mật khẩu tối thiểu 8 ký tự.</div>
+          }
+          @if (resetForm.controls.newPassword.hasError('whitespace') && resetForm.controls.newPassword.touched) {
+            <div class="login__field-error">Mật khẩu không được chứa khoảng trắng.</div>
+          }
+          @if (resetForm.controls.newPassword.hasError('pattern') && resetForm.controls.newPassword.touched) {
+            <div class="login__field-error">Mật khẩu chứa ký tự không hợp lệ.</div>
+          }
+        </div>
+
+        <div
+          class="login__field"
+          [class.login__field--error]="
+            (resetForm.controls.confirmPassword.invalid && resetForm.controls.confirmPassword.touched) ||
+            (resetForm.hasError('mismatch') && resetForm.controls.confirmPassword.touched)
+          "
+        >
+          <label for="forgot-confirmPassword">Xác nhận mật khẩu <span style="color: var(--danger)">*</span></label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="lock" />
+            <input nz-input id="forgot-confirmPassword" [type]="showConfirm() ? 'text' : 'password'" formControlName="confirmPassword" placeholder="Xác nhận mật khẩu" autocomplete="new-password" nzSize="large" />
+            <div nzInputSuffix class="login__field-suffix">
+              <nz-icon class="login__field-toggle" [nzType]="showConfirm() ? 'eye-invisible' : 'eye'" nzTheme="outline" (click)="toggleConfirm()" />
+            </div>
+          </nz-input-wrapper>
+          @if (resetForm.hasError('mismatch') && resetForm.controls.confirmPassword.touched) {
+            <div class="login__field-error">Mật khẩu xác nhận không khớp.</div>
+          }
+          @if (resetForm.controls.confirmPassword.hasError('required') && resetForm.controls.confirmPassword.touched) {
+            <div class="login__field-error">Vui lòng xác nhận mật khẩu.</div>
+          }
+        </div>
+
+        <app-button class="submit-button" type="submit" variant="primary" [fullWidth]="true" [loading]="loading()" [disabled]="loading()">
+          Đặt lại mật khẩu
+        </app-button>
+      </form>
+
+      <div class="login__footer-actions">
+        <span>Không nhận được mã?</span>
+        <a class="login__resend" (click)="resendOtp()" [class.is-loading]="resending()">{{ resending() ? 'Đang gửi...' : 'Gửi lại' }}</a>
+      </div>
+
+      <div class="login__back">
+        <a (click)="backToLogin()">Đổi email</a>
+        <span class="login__back-dot">·</span>
+        <a (click)="backToLogin()">Quay lại đăng nhập</a>
+      </div>
+      }
     </div>
   </div>
 </div>

@@ -5,7 +5,6 @@ import { Subscription } from 'rxjs';
 
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconDirective } from 'ng-zorro-antd/icon';
-import { NzButtonModule } from 'ng-zorro-antd/button';
 
 import { AppButtonComponent } from '../../shared/app-button/app-button.component';
 import { StateStorageService } from '../../core/auth/state-storage.service';
@@ -29,7 +28,7 @@ function noWhitespaceValidator(control: AbstractControl): ValidationErrors | nul
 @Component({
   selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, NzInputModule, NzIconDirective, NzButtonModule, AppButtonComponent],
+  imports: [ReactiveFormsModule, RouterLink, NzInputModule, NzIconDirective, AppButtonComponent],
   templateUrl: './login.component.html',
   styleUrls: ['./login.scss', './login-select-unit.scss'],
   standalone: true,
@@ -50,6 +49,13 @@ export class LoginComponent implements OnInit, OnDestroy {
   readonly showPassword = signal(false);
   readonly currentYear = new Date().getFullYear();
 
+  // ── Forgot password (in-page) ──────────────────────
+  readonly mode = signal<'login' | 'forgot-email' | 'forgot-reset'>('login');
+  readonly emailSentTo = signal('');
+  readonly resetToken = signal('');
+  readonly resending = signal(false);
+  readonly showConfirm = signal(false);
+
   loginForm = new FormGroup({
     username: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     password: new FormControl('', {
@@ -58,6 +64,28 @@ export class LoginComponent implements OnInit, OnDestroy {
     }),
     rememberMe: new FormControl({ value: true, disabled: false }, { nonNullable: true }),
   });
+
+  emailForm = new FormGroup({
+    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
+  });
+
+  resetForm = new FormGroup(
+    {
+      otp: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.pattern(/^\d{6}$/)] }),
+      newPassword: new FormControl('', {
+        nonNullable: true,
+        validators: [
+          Validators.required,
+          Validators.minLength(8),
+          Validators.maxLength(128),
+          noWhitespaceValidator,
+          Validators.pattern(PASSWORD_REGEX),
+        ],
+      }),
+      confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    },
+    { validators: this.passwordMatchValidator },
+  );
 
   ngOnInit(): void {
     this.theme.applyModeVisualOnly('light');
@@ -79,33 +107,144 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.theme.restoreSavedMode();
     this.googleSub?.unsubscribe();
+    this.clearGoogleTimeout();
   }
 
   togglePassword(): void {
     this.showPassword.update(v => !v);
   }
 
-  onGoogleLogin(): void {
-    this.googleLoading.set(true);
+  // ── Forgot password flow ───────────────────────────
+  switchToForgot(): void {
     this.loginError.set(null);
+    this.mode.set('forgot-email');
+  }
+
+  backToLogin(): void {
+    this.mode.set('login');
+    this.emailForm.reset({ email: '' });
+    this.resetForm.reset({ otp: '', newPassword: '', confirmPassword: '' });
+    this.resetToken.set('');
+    this.emailSentTo.set('');
+  }
+
+  toggleConfirm(): void {
+    this.showConfirm.update(v => !v);
+  }
+
+  submitForgotEmail(): void {
+    if (this.emailForm.invalid) {
+      this.emailForm.markAllAsTouched();
+      return;
+    }
+    const email = this.emailForm.controls.email.value.trim();
+    this.loading.set(true);
+    this.loginService.forgotPassword(email, 'CUSTOMER').subscribe({
+      next: auth => {
+        this.loading.set(false);
+        const token = auth.verifyToken ?? auth.resetToken ?? '';
+        if (!token) {
+          this.toast.error('Không nhận được phiên đặt lại mật khẩu, vui lòng thử lại.');
+          return;
+        }
+        this.resetToken.set(token);
+        this.emailSentTo.set(email);
+        this.mode.set('forgot-reset');
+        this.toast.success('Mã OTP đã được gửi đến email của bạn.');
+      },
+      error: err => {
+        this.loading.set(false);
+        const msg = err instanceof LoginException ? err.message : 'Gửi mã thất bại, vui lòng thử lại.';
+        this.toast.error(msg);
+      },
+    });
+  }
+
+  submitReset(): void {
+    if (this.resetForm.invalid || !this.resetToken()) {
+      this.resetForm.markAllAsTouched();
+      return;
+    }
+    const { otp, newPassword } = this.resetForm.getRawValue();
+    this.loading.set(true);
+    this.loginService.resetPassword(this.resetToken(), otp, newPassword).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.toast.success('Đặt lại mật khẩu thành công! Vui lòng đăng nhập.');
+        this.backToLogin();
+      },
+      error: err => {
+        this.loading.set(false);
+        const msg = err instanceof LoginException ? err.message : 'Đặt lại mật khẩu thất bại, vui lòng thử lại.';
+        this.toast.error(msg);
+      },
+    });
+  }
+
+  resendOtp(): void {
+    if (this.resending()) return;
+    const email = this.emailSentTo();
+    if (!email) return;
+    this.resending.set(true);
+    this.loginService.forgotPassword(email, 'CUSTOMER').subscribe({
+      next: auth => {
+        this.resending.set(false);
+        const token = auth.verifyToken ?? auth.resetToken ?? '';
+        if (token) this.resetToken.set(token);
+        this.toast.success('Mã OTP mới đã được gửi đến email của bạn.');
+      },
+      error: err => {
+        this.resending.set(false);
+        const msg = err instanceof LoginException ? err.message : 'Gửi lại mã thất bại, vui lòng thử lại.';
+        this.toast.error(msg);
+      },
+    });
+  }
+
+  private passwordMatchValidator(group: AbstractControl): ValidationErrors | null {
+    const pwd = (group.get('newPassword')?.value as string) ?? '';
+    const confirm = (group.get('confirmPassword')?.value as string) ?? '';
+    if (!confirm) return null;
+    return pwd === confirm ? null : { mismatch: true };
+  }
+
+  /** Safety-net timeout để tránh loading vô hạn nếu user đóng popup Google mà không có callback. */
+  private googleTimeout?: ReturnType<typeof setTimeout>;
+
+  onGoogleLogin(): void {
+    this.loginError.set(null);
+    this.googleLoading.set(true);
+    this.clearGoogleTimeout();
+    // Google One Tap (renderButton) không bắn callback khi user huỷ popup,
+    // nên dùng timeout làm cơ chế FALLBACK, không dùng để giả lập thời gian.
+    this.googleTimeout = setTimeout(() => this.googleLoading.set(false), 60000);
     this.googleIdentity.signIn();
+  }
+
+  private clearGoogleTimeout(): void {
+    if (this.googleTimeout) {
+      clearTimeout(this.googleTimeout);
+      this.googleTimeout = undefined;
+    }
   }
 
   private onGoogleCredential(idToken: string): void {
     this.loginService.loginWithGoogle(idToken).subscribe({
       next: auth => {
-        this.googleLoading.set(false);
+        this.clearGoogleTimeout();
         this.theme.restorePreLogoutMode();
         this.theme.restorePreLogoutBrand();
-        if (auth.requiresScopeAssignment) {
-          this.router.navigate(['/select-branch']);
-        } else if (auth.principalType === 'CUSTOMER') {
-          this.router.navigate(['/store']);
-        } else {
-          this.router.navigate(['/admin/home']);
-        }
+        const target =
+          auth.requiresScopeAssignment
+            ? '/select-branch'
+            : auth.principalType === 'CUSTOMER'
+              ? '/store'
+              : '/admin/home';
+        // Giữ loading cho đến khi điều hướng thực sự hoàn tất.
+        this.router.navigate([target]).finally(() => this.googleLoading.set(false));
       },
       error: err => {
+        this.clearGoogleTimeout();
         this.googleLoading.set(false);
         this.handleLoginError(err);
       },

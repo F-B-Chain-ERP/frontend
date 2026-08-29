@@ -346,14 +346,18 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
     return out;
   }
 
-  /** Áp dụng một trường cho tập hợp lá, tôn trọng can* và luật phụ thuộc. */
+  /** Áp dụng một trường cho tập hợp lá, tôn trọng can* và luật phụ thuộc.
+   *  Đặc biệt: voucher_branch và role_permission chỉ có create/delete không có view
+   *  nên không yêu cầu access để bật add/delete (đã đọc DB can*).
+   *  Chỉ clear Adds/Edit/Del khi tắt access nếu resource thực sự có view.
+   */
   private applyToLeaves(leaves: FunctionPermission[], field: PermField, value: boolean): void {
     for (const fp of leaves) {
       if (!this.can(fp, field)) continue;
       if (field === 'access') {
         fp.Flag = value ? 1 : 0;
         fp.Res = value ? 1 : 0;
-        if (!value) fp.Adds = fp.Edit = fp.Del = 0;
+        if (!value && fp.CanView !== false) fp.Adds = fp.Edit = fp.Del = 0;
       } else {
         if (field === 'add') fp.Adds = value ? 1 : 0;
         if (field === 'edit') fp.Edit = value ? 1 : 0;
@@ -592,6 +596,10 @@ export class RolePermissionComponent extends BaseComponent implements OnInit {
 
   // ── Save ────────────────────────────────────────────────────────────
   onSavePermissions(): void {
+    if (this.isAdminRole) {
+      this.toastService.error('Lỗi', 'Vai trò ADMIN là vai trò hệ thống, không được phép chỉnh sửa phân quyền.');
+      return;
+    }
     this.saving.set(true);
     const payload: UpdatePermissionPayload[] = this.originalPermissions
       .filter(p => p.FunctionsId >= 1000)

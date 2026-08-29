@@ -1,0 +1,39 @@
+<div class="account-settings-page">
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Cài đặt tài khoản</h1>
+      <span class="page__header__description">Quản lý thông tin và bảo mật tài khoản của bạn</span>
+    </div>
+  </div>
+
+  <div class="settings-list">
+    @for (item of items; track item.title) {
+      @if (item.route) {
+        <a class="settings-item" [routerLink]="item.route">
+          <span class="settings-item__icon">
+            <nz-icon [nzType]="item.icon" nzTheme="outline" />
+          </span>
+          <span class="settings-item__body">
+            <span class="settings-item__title">{{ item.title }}</span>
+            <span class="settings-item__desc">{{ item.desc }}</span>
+          </span>
+          <nz-icon class="settings-item__chevron" nzType="right" nzTheme="outline" />
+        </a>
+      } @else {
+        <div class="settings-item settings-item--disabled">
+          <span class="settings-item__icon">
+            <nz-icon [nzType]="item.icon" nzTheme="outline" />
+          </span>
+          <span class="settings-item__body">
+            <span class="settings-item__title">
+              {{ item.title }}
+              <span class="settings-item__soon">Sớm ra mắt</span>
+            </span>
+            <span class="settings-item__desc">{{ item.desc }}</span>
+          </span>
+          <nz-icon class="settings-item__chevron" nzType="right" nzTheme="outline" />
+        </div>
+      }
+    }
+  </div>
+</div>

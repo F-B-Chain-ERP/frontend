@@ -8,7 +8,7 @@
     <div class="page__header__right">
       <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.VIEW]" variant="secondary" leftIcon="download"
                   (click)="onExportExcel()">Xuất Excel</app-button>
-      <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.ADD]" variant="primary" leftIcon="plus"
+      <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.CREATE]" variant="primary" leftIcon="plus"
                   (click)="openCreateModal()">Thêm mới khách hàng</app-button>
     </div>
   </div>
@@ -44,9 +44,9 @@
   @if (setOfCheckedKeys.size > 0) {
   <app-selection-bar [selectedCount]="setOfCheckedKeys.size" [totalCount]="total()" itemLabel="khách hàng"
                      (clearSelection)="clearSelection()">
-    <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="secondary" leftIcon="redo"
+    <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.UPDATE]" variant="secondary" leftIcon="redo"
                 (click)="onChangeStatusSelected(CustomerStatus.ACTIVE)">Khôi phục nhanh</app-button>
-    <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="secondary" leftIcon="lock"
+    <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.UPDATE]" variant="secondary" leftIcon="lock"
                 (click)="onChangeStatusSelected(CustomerStatus.INACTIVE)">Khóa tài khoản</app-button>
     <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.DELETE]" variant="danger" leftIcon="delete"
                 (click)="onDeleteSelected()">Xóa nhanh</app-button>
@@ -149,9 +149,9 @@
         <td nzAlign="center">
           <div class="tbl-actions">
             <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết" (click)="openDetailModal(data)"></app-button>
-            <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="ghost" iconOnly="edit"
+            <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.UPDATE]" variant="ghost" iconOnly="edit"
                         nz-tooltip nzTooltipTitle="Chỉnh sửa" (click)="openEditModal(data)"></app-button>
-            <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="ghost" iconOnly="key"
+            <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.UPDATE]" variant="ghost" iconOnly="key"
                         nz-tooltip nzTooltipTitle="Đặt lại mật khẩu" (click)="openResetModal(data)"></app-button>
             <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.DELETE]" variant="ghost" iconOnly="delete"
                         nz-tooltip nzTooltipTitle="Xóa khách hàng" (click)="onDeleteCustomer(data)"></app-button>
@@ -272,7 +272,7 @@
     <ng-template #formModalFooter>
       <div class="modal-footer-actions">
         <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">Hủy bỏ</app-button>
-        <app-button *erpUTTHasSomeAuthority="[isEditMode ? ROLE.KHACH_HANG.EDIT : ROLE.KHACH_HANG.ADD]"
+        <app-button *erpUTTHasSomeAuthority="[isEditMode ? ROLE.KHACH_HANG.UPDATE : ROLE.KHACH_HANG.CREATE]"
                     variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
           {{ isEditMode ? 'Lưu thay đổi' : 'Thêm khách hàng' }}
         </app-button>
@@ -301,7 +301,7 @@
     <ng-template #resetModalFooter>
       <div class="modal-footer-actions">
         <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeResetModal()">Hủy bỏ</app-button>
-        <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="primary" leftIcon="key"
+        <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.UPDATE]" variant="primary" leftIcon="key"
                     [loading]="isSaving()" (click)="onSubmitReset()">Đặt lại mật khẩu</app-button>
       </div>
     </ng-template>
@@ -348,7 +348,7 @@
     }
     <ng-template #detailModalFooter>
       <div class="modal-footer-actions">
-        <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.EDIT]" variant="secondary" leftIcon="edit" (click)="switchToEditFromDetail()">Chỉnh sửa</app-button>
+        <app-button *erpUTTHasSomeAuthority="[ROLE.KHACH_HANG.UPDATE]" variant="secondary" leftIcon="edit" (click)="switchToEditFromDetail()">Chỉnh sửa</app-button>
         <app-button variant="primary" leftIcon="check" (click)="closeDetailModal()">Đóng</app-button>
       </div>
     </ng-template>

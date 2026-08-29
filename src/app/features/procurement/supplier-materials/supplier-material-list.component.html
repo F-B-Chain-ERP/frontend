@@ -7,7 +7,7 @@
     </div>
     <div class="page__header__right">
       <app-button
-        *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.ADD]"
+        *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.CREATE]"
         [disabled]="!selectedSupplierId"
         variant="primary"
         leftIcon="plus"
@@ -69,7 +69,6 @@
       [nzLoading]="loading()"
       [nzShowPagination]="false"
       [nzFrontPagination]="false"
-      [nzNoResult]="emptyTemplate"
       nzSize="middle"
       [nzScroll]="{ x: '1300px' }"
     >
@@ -112,7 +111,7 @@
             <td nzAlign="center">
               <div class="tbl-actions">
                 <app-button
-                  *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.EDIT]"
+                  *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.UPDATE]"
                   variant="ghost"
                   iconOnly="edit"
                   nz-tooltip
@@ -289,7 +288,7 @@
       <div class="modal-footer-actions">
         <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
         <app-button
-          *erpUTTHasSomeAuthority="[modalMode() === 'edit' ? ROLE.BANG_GIA_NCC.EDIT : ROLE.BANG_GIA_NCC.ADD]"
+          *erpUTTHasSomeAuthority="[modalMode() === 'edit' ? ROLE.BANG_GIA_NCC.UPDATE : ROLE.BANG_GIA_NCC.CREATE]"
           variant="primary"
           leftIcon="check"
           [loading]="isSaving()"
