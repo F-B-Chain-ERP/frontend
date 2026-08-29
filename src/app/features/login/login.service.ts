@@ -8,7 +8,7 @@ import { AccountService } from '../../core/auth/account.service';
 import { StateStorageService } from '../../core/auth/state-storage.service';
 import { ApplicationConfigService } from '../../core/config/application-config.service';
 import { Account } from '../../core/auth/account.model';
-import { AuthResponse, ForgotPasswordRequest, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest, ResendOtpRequest, ResetPasswordOtpRequest, SelectBranchRequest } from './login.model';
+import { AuthResponse, ChangePasswordRequest, ForgotPasswordRequest, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest, ResendOtpRequest, ResetPasswordOtpRequest, SelectBranchRequest } from './login.model';
 
 import { FULL_PERMISSION } from '../../core/config/functions.constants';
 
@@ -101,6 +101,15 @@ export class LoginService {
     );
   }
 
+  /** Đổi mật khẩu của người dùng đang đăng nhập (cần mật khẩu hiện tại). */
+  changePassword(oldPassword: string, newPassword: string): Observable<void> {
+    const request: ChangePasswordRequest = { oldPassword, newPassword };
+    return this.authServerProvider.changePassword(request).pipe(
+      map(() => void 0),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toChangePasswordException(err))),
+    );
+  }
+
   /** Xác thực OTP email sau khi đăng ký / đăng nhập, trả về tài khoản đã xác thực. */
   verifyEmail(verifyToken: string, otp: string, rememberMe = true): Observable<Account> {
     return this.authServerProvider.verifyEmail({ verifyToken, otp }).pipe(
@@ -180,7 +189,21 @@ export class LoginService {
     // Giữ mã vai trò (để guard khớp ROLE_*) – quyền chi tiết lấy từ backend
     rawRoles.forEach(r => authorities.push(r.startsWith('ROLE_') ? r : 'ROLE_' + r));
 
-    const account = new Account(true, authorities, email, fullName, 'vi', null, login, null, [], null);
+    const account = new Account(
+      true,
+      authorities,
+      email,
+      fullName,
+      'vi',
+      null,
+      login,
+      null,
+      [],
+      null,
+      undefined,
+      undefined,
+      isCustomer ? (customer?.hasLocalPassword ?? false) : true,
+    );
     this.accountService.authenticate(account);
     // Lấy quyền thực (permission code) từ backend thay vì map hardcode
     this.loadMyPermissions(account);
@@ -239,5 +262,14 @@ export class LoginService {
       return new LoginException('UNKNOWN', 'Phiên đặt lại mật khẩu đã hết hạn, vui lòng gửi lại mã.');
     }
     return new LoginException('UNKNOWN', msg || 'Đã có lỗi xảy ra, vui lòng thử lại.');
+  }
+
+  private toChangePasswordException(err: HttpErrorResponse): LoginException {
+    const msg = err.error?.message as string | undefined;
+    const errorCode = err.error?.errorCode as string | undefined;
+    if (err.status === 400 && (errorCode === 'INVALID_OLD_PASSWORD' || msg?.toLowerCase().includes('old password'))) {
+      return new LoginException('INVALID_CREDENTIALS', 'Mật khẩu hiện tại không đúng.');
+    }
+    return new LoginException('UNKNOWN', msg || 'Đổi mật khẩu thất bại, vui lòng thử lại.');
   }
 }

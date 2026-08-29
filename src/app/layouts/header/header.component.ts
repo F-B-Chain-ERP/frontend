@@ -1,4 +1,5 @@
 import {Component, inject, signal} from '@angular/core';
+import {RouterLink} from '@angular/router';
 import {NzIconDirective} from 'ng-zorro-antd/icon';
 import {LayoutService} from '../service/layout.service';
 import {ThemeService} from '../../core/theme/theme.service';
@@ -14,6 +15,7 @@ import MenuSearchComponent from '../../shared/app-menu-search/app-menu-search.co
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
   imports: [
+    RouterLink,
     NzIconDirective,
     NzAvatarComponent,
     NzDropdownDirective,

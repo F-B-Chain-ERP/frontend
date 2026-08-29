@@ -6,6 +6,7 @@ import { StateStorageService } from './state-storage.service';
 import {
   ApiResponse,
   AuthResponse,
+  ChangePasswordRequest,
   ForgotPasswordRequest,
   GoogleOAuth2Request,
   LoginCredentials,
@@ -61,6 +62,13 @@ export class AuthServerProvider {
   resetPassword(request: ResetPasswordOtpRequest): Observable<ApiResponse<AuthResponse>> {
     return this.http.post<ApiResponse<AuthResponse>>(
       this.applicationConfigService.getEndpointFor('api/v1/auth/reset-password'),
+      request,
+    );
+  }
+
+  changePassword(request: ChangePasswordRequest): Observable<ApiResponse<AuthResponse>> {
+    return this.http.post<ApiResponse<AuthResponse>>(
+      this.applicationConfigService.getEndpointFor('api/v1/auth/change-password'),
       request,
     );
   }

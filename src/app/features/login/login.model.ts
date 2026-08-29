@@ -46,6 +46,11 @@ export interface ResetPasswordOtpRequest {
   newPassword: string;
 }
 
+export interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
 export interface ApiResponse<T> {
   status: number;
   errorCode: string | null;
