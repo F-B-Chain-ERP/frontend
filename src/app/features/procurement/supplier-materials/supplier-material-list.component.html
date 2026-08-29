@@ -131,35 +131,34 @@
               </div>
             </td>
           </tr>
-        } @empty {
-          <tr>
-            <td colspan="10" class="text-center table-empty">
-              <div class="empty-state">
-                <nz-icon nzType="inbox" class="empty-state__icon" />
-                <p class="empty-state__text">
-                  @if (!selectedSupplierId) {
-                    Vui lòng chọn nhà cung cấp để xem bảng giá nguyên vật liệu.
-                  } @else {
-                    Nhà cung cấp chưa được gán nguyên vật liệu nào.
-                  }
-                </p>
-                @if (selectedSupplierId) {
-                  <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.CREATE]"
-                    variant="secondary"
-                    leftIcon="plus"
-                    [disabled]="!selectedSupplierId"
-                    (click)="openCreateModal()"
-                  >
-                    Gán nguyên vật liệu
-                  </app-button>
-                }
-              </div>
-            </td>
-          </tr>
         }
       </tbody>
     </nz-table>
+
+    <ng-template #emptyTemplate>
+      <div class="empty-state">
+        <nz-icon nzType="inbox" class="empty-state__icon" />
+
+        <p class="empty-state__text">
+          @if (!selectedSupplierId) {
+          Vui lòng chọn nhà cung cấp để xem bảng giá nguyên vật liệu.
+          } @else {
+          Nhà cung cấp chưa được gán nguyên vật liệu nào.
+          }
+        </p>
+
+        @if (selectedSupplierId) {
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.BANG_GIA_NCC.CREATE]"
+          variant="secondary"
+          leftIcon="plus"
+          (click)="openCreateModal()"
+        >
+          Gán nguyên vật liệu
+        </app-button>
+        }
+      </div>
+    </ng-template>
 
     <div class="page__pagination">
       <app-pagination
