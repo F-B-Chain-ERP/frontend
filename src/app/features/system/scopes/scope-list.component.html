@@ -6,7 +6,7 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_PHAM_VI.ADD]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_PHAM_VI.CREATE]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
         Thêm mới phạm vi
       </app-button>
     </div>
@@ -145,7 +145,7 @@
             <td nzAlign="center">
               <div class="tbl-actions">
                 <app-button
-                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_PHAM_VI.EDIT]"
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_PHAM_VI.UPDATE]"
                   variant="ghost"
                   iconOnly="edit"
                   nz-tooltip
@@ -276,7 +276,7 @@
       <div class="modal-footer-actions">
         <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
         <app-button
-          *erpUTTHasSomeAuthority="[isEditMode ? ROLE.QUAN_LY_PHAM_VI.EDIT : ROLE.QUAN_LY_PHAM_VI.ADD]"
+          *erpUTTHasSomeAuthority="[isEditMode ? ROLE.QUAN_LY_PHAM_VI.UPDATE : ROLE.QUAN_LY_PHAM_VI.CREATE]"
           variant="primary"
           leftIcon="check"
           [loading]="isSaving()"

@@ -28,7 +28,7 @@ export const ROLE_ROUTES: Routes = [
     data: {
       breadcrumb: 'Phân quyền vai trò',
       breadcrumbIcon: 'key',
-      authorities: [ROLE.PHAN_QUYEN_VAI_TRO.EDIT, ROLE.QUAN_LY_VAI_TRO.EDIT],
+      authorities: [ROLE.PHAN_QUYEN_VAI_TRO.UPDATE, ROLE.QUAN_LY_VAI_TRO.UPDATE],
     },
     canActivate: [UserRouteAccessService],
   },

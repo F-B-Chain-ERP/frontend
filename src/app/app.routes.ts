@@ -111,6 +111,10 @@ export const routes: Routes = [
       {
         path: 'system/customers',
         loadChildren: () => import('./features/system/customers/customer.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.KHACH_HANG.VIEW],
+        },
       },
       {
         path: 'system/customers/list',

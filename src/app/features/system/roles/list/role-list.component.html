@@ -10,7 +10,7 @@
                   (click)="onExportExcel()">
         Xuất Excel
       </app-button>
-      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.ADD]" variant="primary" leftIcon="plus"
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.CREATE]" variant="primary" leftIcon="plus"
                   (click)="openAddModal()">
         Thêm mới vai trò
       </app-button>
@@ -72,11 +72,11 @@
       itemLabel="vai trò"
       (clearSelection)="clearSelection()"
     >
-      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="secondary" leftIcon="check"
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.UPDATE]" variant="secondary" leftIcon="check"
                   (click)="onBatchStatus(true)">
         Kích hoạt
       </app-button>
-      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="secondary" leftIcon="lock"
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.UPDATE]" variant="secondary" leftIcon="lock"
                   (click)="onBatchStatus(false)">
         Khóa vai trò
       </app-button>
@@ -306,7 +306,7 @@
                 @if (!data.isDefault) {
                   <!-- Icon Chỉnh sửa vai trò (EDIT ICON) -->
                   <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.EDIT]"
+                    *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.UPDATE]"
                     variant="ghost"
                     iconOnly="edit"
                     nz-tooltip
@@ -450,7 +450,7 @@
 <ng-template #addModalFooter>
   <div class="modal-footer-actions">
     <app-button variant="secondary" (click)="isAddModalVisible = false">Hủy bỏ</app-button>
-    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.ADD]" variant="primary" leftIcon="save"
+    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.CREATE]" variant="primary" leftIcon="save"
                 [loading]="isSaving()" (click)="submitAddRole()">
       Tạo mới vai trò
     </app-button>
@@ -507,7 +507,7 @@
 <ng-template #editModalFooter>
   <div class="modal-footer-actions">
     <app-button variant="secondary" (click)="isEditModalVisible = false">Hủy bỏ</app-button>
-    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="primary" leftIcon="save"
+    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.UPDATE]" variant="primary" leftIcon="save"
                 [loading]="isSaving()" (click)="submitEditRole()">
       Lưu thay đổi
     </app-button>
@@ -542,7 +542,7 @@
 <ng-template #cloneModalFooter>
   <div class="modal-footer-actions">
     <app-button variant="secondary" (click)="isCloneModalVisible = false">Hủy bỏ</app-button>
-    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.ADD]" variant="primary" leftIcon="copy"
+    <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_VAI_TRO.CREATE]" variant="primary" leftIcon="copy"
                 [loading]="isSaving()" (click)="submitCloneRole()">
       Tạo bản sao
     </app-button>
