@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, input, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, OnDestroy, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Location } from '@angular/common';
+import { Router } from '@angular/router';
+import { merge, Subscription } from 'rxjs';
 
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconDirective } from 'ng-zorro-antd/icon';
@@ -12,19 +14,34 @@ import { LoginService } from '../../login/login.service';
 import { LoginException } from '../../login/login.model';
 
 const PASSWORD_REGEX = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/;
+const SPECIAL_CHAR_REGEX = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
 
 function noWhitespaceValidator(control: AbstractControl): ValidationErrors | null {
   const value = control.value as string;
   if (!value) {
     return null;
   }
-  return /\s/.test(value) ? { whitespace: true } : null;
+  if (/\s/.test(value)) {
+    return { whitespace: true };
+  }
+  return null;
+}
+
+function specialCharValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value as string;
+  if (!value) {
+    return null;
+  }
+  if (SPECIAL_CHAR_REGEX.test(value)) {
+    return null;
+  }
+  return { special: true };
 }
 
 @Component({
   selector: 'app-change-password',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, NzInputModule, NzIconDirective, NzCardModule, AppButtonComponent],
+  imports: [ReactiveFormsModule, NzInputModule, NzIconDirective, NzCardModule, AppButtonComponent],
   templateUrl: './change-password.component.html',
   styleUrl: './change-password.component.scss',
   standalone: true,
@@ -41,8 +58,19 @@ export class ChangePasswordComponent implements OnInit {
   readonly showNew = signal(false);
   readonly showConfirm = signal(false);
 
+  readonly passwordChecks = signal<{ minLength: boolean; noWhitespace: boolean; hasSpecial: boolean }>({
+    minLength: false,
+    noWhitespace: false,
+    hasSpecial: false,
+  });
+  readonly confirmMatch = signal<null | boolean>(null);
+
+  private pwdSub: Subscription | undefined = undefined;
+
   private readonly loginService = inject(LoginService);
   private readonly toast = inject(AppNotificationService);
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   readonly form = new FormGroup(
     {
@@ -55,6 +83,7 @@ export class ChangePasswordComponent implements OnInit {
           Validators.maxLength(128),
           noWhitespaceValidator,
           Validators.pattern(PASSWORD_REGEX),
+          specialCharValidator,
         ],
       }),
       confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
@@ -67,6 +96,37 @@ export class ChangePasswordComponent implements OnInit {
       this.form.controls.currentPassword.clearValidators();
       this.form.controls.currentPassword.setValue('');
       this.form.controls.currentPassword.updateValueAndValidity();
+    }
+
+    const pwd = this.form.controls.newPassword;
+    const confirm = this.form.controls.confirmPassword;
+    this.pwdSub = merge(pwd.valueChanges, confirm.valueChanges).subscribe(() => {
+      const v = pwd.value || '';
+      this.passwordChecks.set({
+        minLength: v.length >= 8,
+        noWhitespace: v.length > 0 && !/\s/.test(v),
+        hasSpecial: SPECIAL_CHAR_REGEX.test(v),
+      });
+      const c = confirm.value || '';
+      if (c) {
+        this.confirmMatch.set(c === v);
+      } else {
+        this.confirmMatch.set(null);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.pwdSub) {
+      this.pwdSub.unsubscribe();
+    }
+  }
+
+  goBack(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      this.router.navigateByUrl(this.backLink());
     }
   }
 
@@ -85,7 +145,10 @@ export class ChangePasswordComponent implements OnInit {
       },
       error: err => {
         this.loading.set(false);
-        const msg = err instanceof LoginException ? err.message : 'Đổi mật khẩu thất bại, vui lòng thử lại.';
+        let msg = 'Đổi mật khẩu thất bại, vui lòng thử lại.';
+        if (err instanceof LoginException) {
+          msg = err.message;
+        }
         this.toast.error(msg);
       },
     });
@@ -104,12 +167,23 @@ export class ChangePasswordComponent implements OnInit {
   }
 
   private passwordMatchValidator(group: AbstractControl): ValidationErrors | null {
-    const pwd = (group.get('newPassword')?.value as string) ?? '';
-    const confirm = (group.get('confirmPassword')?.value as string) ?? '';
+    const newCtrl = group.get('newPassword');
+    const confirmCtrl = group.get('confirmPassword');
+    let pwd = '';
+    if (newCtrl) {
+      pwd = newCtrl.value as string;
+    }
+    let confirm = '';
+    if (confirmCtrl) {
+      confirm = confirmCtrl.value as string;
+    }
     if (!confirm) {
       return null;
     }
-    return pwd === confirm ? null : { mismatch: true };
+    if (pwd === confirm) {
+      return null;
+    }
+    return { mismatch: true };
   }
 }
 

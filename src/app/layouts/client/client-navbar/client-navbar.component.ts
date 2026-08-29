@@ -46,18 +46,10 @@ export class ClientNavbarComponent {
 
   readonly account = this.accountService.account;
 
-  /** Chỉ hiển thị liên kết quay lại trang quản trị khi người dùng là admin. */
+  /** Chỉ hiển thị liên kết quay lại trang quản trị khi người dùng là tài khoản nội bộ (admin/nhân viên). */
   readonly isAdmin = computed(() => {
     const user = this.account();
-    if (!user) {
-      return false;
-    }
-    if (user.login === 'admin') {
-      return true;
-    }
-    return user.authorities.some(
-      auth => auth === 'FULL_PERMISSION' || auth === 'ROLE_ADMIN' || auth === 'ADMIN',
-    );
+    return user && user.principalType === 'ACCOUNT';
   });
 
   formatPrice(amount: number): string {
@@ -99,13 +91,15 @@ export class ClientNavbarComponent {
   }
 
   goToChangePassword(): void {
-    // Admin: đổi mật khẩu trong trang quản trị (BẮT BUỘC mật khẩu hiện tại).
-    // Customer: trang store, chỉ bắt mật khẩu cũ khi đã có mật khẩu cục bộ
+    // Tài khoản nội bộ (admin/nhân viên): đổi mật khẩu trong trang quản trị (BẮT BUỘC mật khẩu hiện tại),
+    // nút "Quay lại" sẽ về /admin/account/settings.
+    // Khách hàng: trang store, chỉ bắt mật khẩu cũ khi đã có mật khẩu cục bộ
     // (tài khoản OAuth2 lần đầu đăng nhập được đặt mới luôn, không cần mật khẩu cũ).
-    if (this.isAdmin()) {
-      this.router.navigate(['/admin/account/change-password']);
-    } else {
+    const account = this.account();
+    if (account && account.principalType === 'CUSTOMER') {
       this.router.navigate(['/store/change-password']);
+    } else {
+      this.router.navigate(['/admin/account/change-password']);
     }
   }
 

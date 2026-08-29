@@ -608,6 +608,14 @@
 
     &--google {
       color: var(--text-primary);
+
+      &.is-loading {
+        cursor: default;
+      }
+
+      .login__social-spinner {
+        font-size: 16px;
+      }
     }
 
     &--zalo {

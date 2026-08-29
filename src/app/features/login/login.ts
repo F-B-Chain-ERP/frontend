@@ -107,6 +107,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.theme.restoreSavedMode();
     this.googleSub?.unsubscribe();
+    this.clearGoogleTimeout();
   }
 
   togglePassword(): void {
@@ -207,27 +208,43 @@ export class LoginComponent implements OnInit, OnDestroy {
     return pwd === confirm ? null : { mismatch: true };
   }
 
+  /** Safety-net timeout để tránh loading vô hạn nếu user đóng popup Google mà không có callback. */
+  private googleTimeout?: ReturnType<typeof setTimeout>;
+
   onGoogleLogin(): void {
-    this.googleLoading.set(true);
     this.loginError.set(null);
+    this.googleLoading.set(true);
+    this.clearGoogleTimeout();
+    // Google One Tap (renderButton) không bắn callback khi user huỷ popup,
+    // nên dùng timeout làm cơ chế FALLBACK, không dùng để giả lập thời gian.
+    this.googleTimeout = setTimeout(() => this.googleLoading.set(false), 60000);
     this.googleIdentity.signIn();
+  }
+
+  private clearGoogleTimeout(): void {
+    if (this.googleTimeout) {
+      clearTimeout(this.googleTimeout);
+      this.googleTimeout = undefined;
+    }
   }
 
   private onGoogleCredential(idToken: string): void {
     this.loginService.loginWithGoogle(idToken).subscribe({
       next: auth => {
-        this.googleLoading.set(false);
+        this.clearGoogleTimeout();
         this.theme.restorePreLogoutMode();
         this.theme.restorePreLogoutBrand();
-        if (auth.requiresScopeAssignment) {
-          this.router.navigate(['/select-branch']);
-        } else if (auth.principalType === 'CUSTOMER') {
-          this.router.navigate(['/store']);
-        } else {
-          this.router.navigate(['/admin/home']);
-        }
+        const target =
+          auth.requiresScopeAssignment
+            ? '/select-branch'
+            : auth.principalType === 'CUSTOMER'
+              ? '/store'
+              : '/admin/home';
+        // Giữ loading cho đến khi điều hướng thực sự hoàn tất.
+        this.router.navigate([target]).finally(() => this.googleLoading.set(false));
       },
       error: err => {
+        this.clearGoogleTimeout();
         this.googleLoading.set(false);
         this.handleLoginError(err);
       },

@@ -203,6 +203,7 @@ export class LoginService {
       undefined,
       undefined,
       isCustomer ? (customer?.hasLocalPassword ?? false) : true,
+      auth.principalType,
     );
     this.accountService.authenticate(account);
     // Lấy quyền thực (permission code) từ backend thay vì map hardcode

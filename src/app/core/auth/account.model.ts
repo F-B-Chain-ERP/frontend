@@ -19,6 +19,7 @@ export class Account {
     public donViSuDungId?: number,
     public donViSuDungName?: string,
     public hasLocalPassword?: boolean,
+    public principalType?: 'ACCOUNT' | 'CUSTOMER',
   ) {
   }
 }
