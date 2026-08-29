@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {Router, RouterLink} from '@angular/router';
@@ -46,6 +46,12 @@ export class ClientNavbarComponent {
 
   readonly account = this.accountService.account;
 
+  /** Chỉ hiển thị liên kết quay lại trang quản trị khi người dùng là tài khoản nội bộ (admin/nhân viên). */
+  readonly isAdmin = computed(() => {
+    const user = this.account();
+    return user && user.principalType === 'ACCOUNT';
+  });
+
   formatPrice(amount: number): string {
     return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
   }
@@ -84,7 +90,20 @@ export class ClientNavbarComponent {
     this.router.navigate(['/login']);
   }
 
-  goToAdmin(): void {
+  goToChangePassword(): void {
+    // Tài khoản nội bộ (admin/nhân viên): đổi mật khẩu trong trang quản trị (BẮT BUỘC mật khẩu hiện tại),
+    // nút "Quay lại" sẽ về /admin/account/settings.
+    // Khách hàng: trang store, chỉ bắt mật khẩu cũ khi đã có mật khẩu cục bộ
+    // (tài khoản OAuth2 lần đầu đăng nhập được đặt mới luôn, không cần mật khẩu cũ).
+    const account = this.account();
+    if (account && account.principalType === 'CUSTOMER') {
+      this.router.navigate(['/store/change-password']);
+    } else {
+      this.router.navigate(['/admin/account/change-password']);
+    }
+  }
+
+  goToAdminHome(): void {
     this.router.navigate(['/admin/home']);
   }
 

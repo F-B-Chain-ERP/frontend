@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { merge, Subscription } from 'rxjs';
 
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconDirective } from 'ng-zorro-antd/icon';
@@ -15,11 +15,18 @@ import { AuthResponse, LoginException, RegisterCustomerRequest } from '../login/
 import { LoginService } from '../login/login.service';
 
 const PASSWORD_REGEX = /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/;
+const SPECIAL_CHAR_REGEX = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/;
 
 function noWhitespaceValidator(control: AbstractControl): ValidationErrors | null {
   const value = control.value as string;
   if (!value) return null;
   return /\s/.test(value) ? { whitespace: true } : null;
+}
+
+function specialCharValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value as string;
+  if (!value) return null;
+  return SPECIAL_CHAR_REGEX.test(value) ? null : { special: true };
 }
 
 @Component({
@@ -37,12 +44,15 @@ export class RegisterComponent implements OnInit, OnDestroy {
   private readonly loginService = inject(LoginService);
   private readonly googleIdentity = inject(GoogleIdentityService);
   private googleSub?: Subscription;
+  private pwdSub?: Subscription;
 
   readonly loading = signal(false);
   readonly googleLoading = signal(false);
   readonly showPassword = signal(false);
   readonly showConfirm = signal(false);
   readonly currentYear = new Date().getFullYear();
+
+  readonly confirmMatch = signal<null | boolean>(null);
 
   registerForm = new FormGroup(
     {
@@ -58,7 +68,13 @@ export class RegisterComponent implements OnInit, OnDestroy {
       }),
       password: new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.minLength(6), noWhitespaceValidator, Validators.pattern(PASSWORD_REGEX)],
+        validators: [
+          Validators.required,
+          Validators.minLength(6),
+          noWhitespaceValidator,
+          Validators.pattern(PASSWORD_REGEX),
+          specialCharValidator,
+        ],
       }),
       confirmPassword: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
       agree: new FormControl(false, { nonNullable: true, validators: [Validators.requiredTrue] }),
@@ -77,11 +93,20 @@ export class RegisterComponent implements OnInit, OnDestroy {
     this.theme.applyModeVisualOnly('light');
     this.googleIdentity.load();
     this.googleSub = this.googleIdentity.onCredential().subscribe(idToken => this.onGoogleCredential(idToken));
+
+    const pwd = this.registerForm.get('password')!;
+    const confirm = this.registerForm.get('confirmPassword')!;
+    this.pwdSub = merge(pwd.valueChanges, confirm.valueChanges).subscribe(() => {
+      const v = pwd.value || '';
+      const c = confirm.value || '';
+      this.confirmMatch.set(c ? c === v : null);
+    });
   }
 
   ngOnDestroy(): void {
     this.theme.restoreSavedMode();
     this.googleSub?.unsubscribe();
+    this.pwdSub?.unsubscribe();
   }
 
   togglePassword(): void {

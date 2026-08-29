@@ -6,12 +6,15 @@ import { StateStorageService } from './state-storage.service';
 import {
   ApiResponse,
   AuthResponse,
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
   GoogleOAuth2Request,
   LoginCredentials,
   LoginRequest,
   PrincipalType,
   RegisterCustomerRequest,
   ResendOtpRequest,
+  ResetPasswordOtpRequest,
   SelectBranchRequest,
   VerifyOtpRequest,
 } from '../../features/login/login.model';
@@ -47,6 +50,27 @@ export class AuthServerProvider {
 
   resendOtp(request: ResendOtpRequest): Observable<ApiResponse<AuthResponse>> {
     return this.http.post<ApiResponse<AuthResponse>>(this.applicationConfigService.getEndpointFor('api/v1/auth/resend-otp'), request);
+  }
+
+  forgotPassword(request: ForgotPasswordRequest): Observable<ApiResponse<AuthResponse>> {
+    return this.http.post<ApiResponse<AuthResponse>>(
+      this.applicationConfigService.getEndpointFor('api/v1/auth/forgot-password'),
+      request,
+    );
+  }
+
+  resetPassword(request: ResetPasswordOtpRequest): Observable<ApiResponse<AuthResponse>> {
+    return this.http.post<ApiResponse<AuthResponse>>(
+      this.applicationConfigService.getEndpointFor('api/v1/auth/reset-password'),
+      request,
+    );
+  }
+
+  changePassword(request: ChangePasswordRequest): Observable<ApiResponse<AuthResponse>> {
+    return this.http.post<ApiResponse<AuthResponse>>(
+      this.applicationConfigService.getEndpointFor('api/v1/auth/change-password'),
+      request,
+    );
   }
 
   refreshToken(refreshToken: string): Observable<ApiResponse<AuthResponse>> {

@@ -114,10 +114,16 @@
               <span class="name">{{ user.firstName || user.login }}</span>
               <span class="role">{{ user.login }}</span>
             </li>
-            <li nz-menu-divider></li>
-            <li nz-menu-item (click)="goToAdmin()">
-              <nz-icon nzType="appstore"/>
-              <span>Khu vực Quản trị Admin</span>
+            @if (isAdmin()) {
+              <li nz-menu-item (click)="goToAdminHome()">
+                <nz-icon nzType="dashboard"/>
+                <span>Quay lại trang quản trị</span>
+              </li>
+              <li nz-menu-divider></li>
+            }
+            <li nz-menu-item (click)="goToChangePassword()">
+              <nz-icon nzType="lock"/>
+              <span>Đặt lại mật khẩu</span>
             </li>
             <li nz-menu-item (click)="toggleTheme(); isUserMenuOpen.set(true)">
               <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'"/>

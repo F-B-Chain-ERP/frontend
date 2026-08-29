@@ -181,6 +181,14 @@
             </nz-input-wrapper>
             @if (registerForm.get('password')?.hasError('required') && registerForm.get('password')?.touched) {
               <div class="register__field-error">Mật khẩu không được để trống.</div>
+            } @else if (registerForm.get('password')?.hasError('minlength') && registerForm.get('password')?.touched) {
+              <div class="register__field-error">Mật khẩu tối thiểu 6 ký tự.</div>
+            } @else if (registerForm.get('password')?.hasError('whitespace') && registerForm.get('password')?.touched) {
+              <div class="register__field-error">Mật khẩu không được chứa khoảng trắng.</div>
+            } @else if (registerForm.get('password')?.hasError('pattern') && registerForm.get('password')?.touched) {
+              <div class="register__field-error">Mật khẩu chứa ký tự không hợp lệ.</div>
+            } @else if (registerForm.get('password')?.hasError('special') && registerForm.get('password')?.touched) {
+              <div class="register__field-error">Mật khẩu phải có ít nhất 1 ký tự đặc biệt.</div>
             }
           </div>
 
@@ -196,8 +204,12 @@
                          nzTheme="outline" (click)="toggleConfirm()"/>
               </div>
             </nz-input-wrapper>
-            @if (registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched) {
-              <div class="register__field-error">Mật khẩu xác nhận không khớp.</div>
+            @if (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched) {
+              @if (confirmMatch() === false) {
+                <div class="register__field-error">Mật khẩu xác nhận không khớp.</div>
+              } @else if (confirmMatch() === true) {
+                <div class="register__field-success">Mật khẩu xác nhận khớp.</div>
+              }
             }
           </div>
         </div>

@@ -16,6 +16,11 @@ export const routes: Routes = [
     loadComponent: () => import('./store.component'),
     title: 'Cửa hàng & Bán hàng trực tuyến',
   },
+  {
+    path: 'change-password',
+    loadComponent: () => import('../client/change-password/client-change-password.component'),
+    title: 'Đặt lại mật khẩu',
+  },
 ];
 
 export default routes;
