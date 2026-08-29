@@ -815,6 +815,59 @@
     font-size: 14px;
     color: var(--brand);
     text-decoration: none;
+    cursor: pointer;
+  }
+
+  &__back {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 13px;
+
+    a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--brand);
+      }
+    }
+  }
+
+  &__back-dot {
+    margin: 0 8px;
+    color: var(--border-subtle);
+  }
+
+  &__footer-actions {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+
+    .login__resend {
+      margin-left: 6px;
+      color: var(--brand);
+      cursor: pointer;
+      font-weight: 600;
+
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &.is-loading {
+        opacity: 0.6;
+        cursor: default;
+        text-decoration: none;
+      }
+    }
+  }
+
+  &__otp {
+    text-align: center;
+    letter-spacing: 6px;
+    font-size: 18px;
+    font-weight: 600;
   }
 
   &__alert {

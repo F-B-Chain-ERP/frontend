@@ -8,7 +8,7 @@ import { AccountService } from '../../core/auth/account.service';
 import { StateStorageService } from '../../core/auth/state-storage.service';
 import { ApplicationConfigService } from '../../core/config/application-config.service';
 import { Account } from '../../core/auth/account.model';
-import { AuthResponse, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest, ResendOtpRequest, SelectBranchRequest } from './login.model';
+import { AuthResponse, ForgotPasswordRequest, LoginCredentials, LoginException, PrincipalType, RegisterCustomerRequest, ResendOtpRequest, ResetPasswordOtpRequest, SelectBranchRequest } from './login.model';
 
 import { FULL_PERMISSION } from '../../core/config/functions.constants';
 
@@ -74,6 +74,30 @@ export class LoginService {
     return this.authServerProvider.resendOtp(request).pipe(
       map(res => res.data),
       catchError((err: HttpErrorResponse) => throwError(() => this.toRegisterException(err))),
+    );
+  }
+
+  forgotPassword(email: string, type?: PrincipalType): Observable<AuthResponse> {
+    const request: ForgotPasswordRequest = { email: email.trim(), type };
+    return this.authServerProvider.forgotPassword(request).pipe(
+      map(res => res.data),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toForgotPasswordException(err))),
+    );
+  }
+
+  resetPassword(resetToken: string, otp: string, newPassword: string): Observable<AuthResponse> {
+    const request: ResetPasswordOtpRequest = { resetToken, otp, newPassword };
+    return this.authServerProvider.resetPassword(request).pipe(
+      map(res => {
+        const auth = res.data;
+        if (auth.accessToken && auth.refreshToken) {
+          this.applyAuthResult(auth, true);
+          this.toAccount(auth);
+          this.stateStorageService.setPendingScopeAssignment(auth.requiresScopeAssignment);
+        }
+        return auth;
+      }),
+      catchError((err: HttpErrorResponse) => throwError(() => this.toForgotPasswordException(err))),
     );
   }
 
@@ -200,5 +224,20 @@ export class LoginService {
       return new LoginException('INVALID_CREDENTIALS', 'Email hoặc số điện thoại đã được đăng ký.');
     }
     return new LoginException('UNKNOWN', err.error?.message || 'Đăng ký thất bại, vui lòng thử lại.');
+  }
+
+  private toForgotPasswordException(err: HttpErrorResponse): LoginException {
+    const msg = err.error?.message as string | undefined;
+    const errorCode = err.error?.errorCode as string | undefined;
+    if (errorCode === 'USER_NOT_EXISTED') {
+      return new LoginException('INVALID_CREDENTIALS', 'Email không tồn tại trong hệ thống.');
+    }
+    if (msg?.includes('OTP') || errorCode?.includes('OTP')) {
+      return new LoginException('INVALID_CREDENTIALS', msg || 'Mã OTP không đúng hoặc đã hết hạn.');
+    }
+    if (errorCode === 'INVALID_TOKEN' || msg?.includes('token')) {
+      return new LoginException('UNKNOWN', 'Phiên đặt lại mật khẩu đã hết hạn, vui lòng gửi lại mã.');
+    }
+    return new LoginException('UNKNOWN', msg || 'Đã có lỗi xảy ra, vui lòng thử lại.');
   }
 }

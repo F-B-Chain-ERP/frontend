@@ -35,6 +35,17 @@ export interface ResendOtpRequest {
   verifyToken: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+  type?: PrincipalType;
+}
+
+export interface ResetPasswordOtpRequest {
+  resetToken: string;
+  otp: string;
+  newPassword: string;
+}
+
 export interface ApiResponse<T> {
   status: number;
   errorCode: string | null;
@@ -81,6 +92,7 @@ export interface AuthResponse {
   requiresScopeAssignment: boolean;
   requiresEmailVerification: boolean;
   verifyToken?: string | null;
+  resetToken?: string | null;
 }
 
 export interface SelectBranchRequest {
