@@ -205,24 +205,24 @@
                        }
                      </div>
                    </td>
-                   <td nzAlign="center">
-                     <label class="cb" [class.is-disabled]="!item.access || !item.canAdd" [for]="'add-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canAdd ? 'Hệ thống không có quyền thêm này' : (!item.access ? 'Cần cấp quyền Truy cập trước' : '')">
-                        <input type="checkbox" [id]="'add-' + item.key" [ngModel]="item.access && item.add" [indeterminate]="item.addIndeterminate" [disabled]="isAdminRole || !item.access || !item.canAdd" (ngModelChange)="onPermissionChange('add', item, data.key, $event)" />
-                       <span class="cb__box"></span>
-                     </label>
-                   </td>
-                   <td nzAlign="center">
-                     <label class="cb" [class.is-disabled]="!item.access || !item.canEdit" [for]="'edit-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canEdit ? 'Hệ thống không có quyền sửa này' : (!item.access ? 'Cần cấp quyền Truy cập trước' : '')">
-                        <input type="checkbox" [id]="'edit-' + item.key" [ngModel]="item.access && item.edit" [indeterminate]="item.editIndeterminate" [disabled]="isAdminRole || !item.access || !item.canEdit" (ngModelChange)="onPermissionChange('edit', item, data.key, $event)" />
-                       <span class="cb__box"></span>
-                     </label>
-                   </td>
-                   <td nzAlign="center">
-                     <label class="cb" [class.is-disabled]="!item.access || !item.canDelete" [for]="'delete-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canDelete ? 'Hệ thống không có quyền xóa này' : (!item.access ? 'Cần cấp quyền Truy cập trước' : '')">
-                        <input type="checkbox" [id]="'delete-' + item.key" [ngModel]="item.access && item.delete" [indeterminate]="item.deleteIndeterminate" [disabled]="isAdminRole || !item.access || !item.canDelete" (ngModelChange)="onPermissionChange('delete', item, data.key, $event)" />
-                       <span class="cb__box"></span>
-                     </label>
-                   </td>
+                    <td nzAlign="center">
+                      <label class="cb" [class.is-disabled]="(!!item.canView && !item.access) || !item.canAdd" [for]="'add-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canAdd ? 'Hệ thống không có quyền thêm này' : (item.canView && !item.access ? 'Cần cấp quyền Truy cập trước' : '')">
+                         <input type="checkbox" [id]="'add-' + item.key" [ngModel]="item.canView ? (item.access && item.add) : item.add" [indeterminate]="item.addIndeterminate" [disabled]="isAdminRole || !item.canAdd || (!!item.canView && !item.access)" (ngModelChange)="onPermissionChange('add', item, data.key, $event)" />
+                        <span class="cb__box"></span>
+                      </label>
+                    </td>
+                    <td nzAlign="center">
+                      <label class="cb" [class.is-disabled]="(!!item.canView && !item.access) || !item.canEdit" [for]="'edit-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canEdit ? 'Hệ thống không có quyền sửa này' : (item.canView && !item.access ? 'Cần cấp quyền Truy cập trước' : '')">
+                         <input type="checkbox" [id]="'edit-' + item.key" [ngModel]="item.canView ? (item.access && item.edit) : item.edit" [indeterminate]="item.editIndeterminate" [disabled]="isAdminRole || !item.canEdit || (!!item.canView && !item.access)" (ngModelChange)="onPermissionChange('edit', item, data.key, $event)" />
+                        <span class="cb__box"></span>
+                      </label>
+                    </td>
+                    <td nzAlign="center">
+                      <label class="cb" [class.is-disabled]="(!!item.canView && !item.access) || !item.canDelete" [for]="'delete-' + item.key" nz-tooltip [nzTooltipTitle]="!item.canDelete ? 'Hệ thống không có quyền xóa này' : (item.canView && !item.access ? 'Cần cấp quyền Truy cập trước' : '')">
+                         <input type="checkbox" [id]="'delete-' + item.key" [ngModel]="item.canView ? (item.access && item.delete) : item.delete" [indeterminate]="item.deleteIndeterminate" [disabled]="isAdminRole || !item.canDelete || (!!item.canView && !item.access)" (ngModelChange)="onPermissionChange('delete', item, data.key, $event)" />
+                        <span class="cb__box"></span>
+                      </label>
+                    </td>
                    <td nzAlign="center">
                       <label class="cb cb--row-all" [for]="'all-' + item.key" nz-tooltip [nzTooltipTitle]="isAdminRole ? 'Vai trò quản trị hệ thống chỉ được xem' : 'Bật/tắt tất cả quyền có sẵn của dòng này'">
                         <input type="checkbox" [id]="'all-' + item.key" [checked]="isRowAllChecked(item)" [indeterminate]="isRowIndeterminate(item)" [disabled]="isRowAllDisabled(item)" (change)="toggleRowAll(item, data.key, $any($event.target).checked)" />
@@ -270,10 +270,10 @@
                       </div>
                     </div>
                     <div class="tree-node-item__pills">
-                       <button class="perm-pill perm-pill--access" [class.perm-pill--active]="item.access" [class.perm-pill--disabled]="isAdminRole || !item.canView" [disabled]="isAdminRole || !item.canView" (click)="onPermissionChange('access', item, module.key, !item.access)"><span>Truy cập</span></button>
-                       <button class="perm-pill perm-pill--add" [class.perm-pill--active]="item.access && item.add" [class.perm-pill--disabled]="isAdminRole || !item.access || !item.canAdd" [disabled]="isAdminRole || !item.access || !item.canAdd" (click)="onPermissionChange('add', item, module.key, !item.add)"><span>Thêm</span></button>
-                       <button class="perm-pill perm-pill--edit" [class.perm-pill--active]="item.access && item.edit" [class.perm-pill--disabled]="isAdminRole || !item.access || !item.canEdit" [disabled]="isAdminRole || !item.access || !item.canEdit" (click)="onPermissionChange('edit', item, module.key, !item.edit)"><span>Sửa</span></button>
-                       <button class="perm-pill perm-pill--del" [class.perm-pill--active]="item.access && item.delete" [class.perm-pill--disabled]="isAdminRole || !item.access || !item.canDelete" [disabled]="isAdminRole || !item.access || !item.canDelete" (click)="onPermissionChange('delete', item, module.key, !item.delete)"><span>Xóa</span></button>
+                        <button class="perm-pill perm-pill--access" [class.perm-pill--active]="item.access" [class.perm-pill--disabled]="isAdminRole || !item.canView" [disabled]="isAdminRole || !item.canView" (click)="onPermissionChange('access', item, module.key, !item.access)"><span>Truy cập</span></button>
+                        <button class="perm-pill perm-pill--add" [class.perm-pill--active]="item.canView ? (item.access && item.add) : item.add" [class.perm-pill--disabled]="isAdminRole || !item.canAdd || (!!item.canView && !item.access)" [disabled]="isAdminRole || !item.canAdd || (!!item.canView && !item.access)" (click)="onPermissionChange('add', item, module.key, !item.add)"><span>Thêm</span></button>
+                        <button class="perm-pill perm-pill--edit" [class.perm-pill--active]="item.canView ? (item.access && item.edit) : item.edit" [class.perm-pill--disabled]="isAdminRole || !item.canEdit || (!!item.canView && !item.access)" [disabled]="isAdminRole || !item.canEdit || (!!item.canView && !item.access)" (click)="onPermissionChange('edit', item, module.key, !item.edit)"><span>Sửa</span></button>
+                        <button class="perm-pill perm-pill--del" [class.perm-pill--active]="item.canView ? (item.access && item.delete) : item.delete" [class.perm-pill--disabled]="isAdminRole || !item.canDelete || (!!item.canView && !item.access)" [disabled]="isAdminRole || !item.canDelete || (!!item.canView && !item.access)" (click)="onPermissionChange('delete', item, module.key, !item.delete)"><span>Xóa</span></button>
                     </div>
                   </div>
                 }
@@ -297,6 +297,6 @@
   </div>
   <div class="page__footer__actions">
     <app-button variant="secondary" (click)="backToList()">Hủy bỏ</app-button>
-    <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_QUYEN_VAI_TRO.EDIT, ROLE.QUAN_LY_VAI_TRO.EDIT]" variant="primary" leftIcon="save" [loading]="saving()" [disabled]="isAdminRole" (click)="onSavePermissions()">Lưu thay đổi phân quyền</app-button>
+    <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_QUYEN_VAI_TRO.UPDATE, ROLE.QUAN_LY_VAI_TRO.UPDATE]" variant="primary" leftIcon="save" [loading]="saving()" [disabled]="isAdminRole" (click)="onSavePermissions()">Lưu thay đổi phân quyền</app-button>
   </div>
 </div>

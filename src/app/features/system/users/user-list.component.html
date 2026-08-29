@@ -10,7 +10,7 @@
                   (click)="onExportExcel()">
         Xuất Excel
       </app-button>
-      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.ADD]" variant="primary" leftIcon="plus"
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.CREATE]" variant="primary" leftIcon="plus"
                   (click)="openCreateModal()">
         Thêm mới người dùng
       </app-button>
@@ -70,11 +70,11 @@
   @if (setOfCheckedKeys.size > 0) {
     <app-selection-bar [selectedCount]="setOfCheckedKeys.size" [totalCount]="total()" itemLabel="người dùng"
                        (clearSelection)="clearSelection()">
-      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.EDIT]" variant="secondary" leftIcon="redo"
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.UPDATE]" variant="secondary" leftIcon="redo"
                   (click)="onChangeStatusSelected(UserStatus.ACTIVE)">
         Khôi phục nhanh
       </app-button>
-      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.EDIT]" variant="secondary" leftIcon="lock"
+      <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.UPDATE]" variant="secondary" leftIcon="lock"
                   (click)="onChangeStatusSelected(UserStatus.INACTIVE)">
         Khóa tài khoản
       </app-button>
@@ -231,7 +231,7 @@
                 <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết"
                             (click)="openDetailModal(data)">
                 </app-button>
-                <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.EDIT]" variant="ghost" iconOnly="edit"
+                <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.UPDATE]" variant="ghost" iconOnly="edit"
                             nz-tooltip nzTooltipTitle="Chỉnh sửa"
                             (click)="openEditModal(data)">
                 </app-button>
@@ -422,7 +422,7 @@
         <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">
           Hủy bỏ
         </app-button>
-        <app-button *erpUTTHasSomeAuthority="[isEditMode ? ROLE.QUAN_LY_NGUOI_DUNG.EDIT : ROLE.QUAN_LY_NGUOI_DUNG.ADD]"
+        <app-button *erpUTTHasSomeAuthority="[isEditMode ? ROLE.QUAN_LY_NGUOI_DUNG.UPDATE : ROLE.QUAN_LY_NGUOI_DUNG.CREATE]"
                     variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitForm()">
           {{ isEditMode ? 'Lưu thay đổi' : 'Thêm người dùng' }}
         </app-button>
@@ -509,7 +509,7 @@
 
     <ng-template #detailModalFooter>
       <div class="modal-footer-actions">
-        <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.EDIT]" variant="secondary" leftIcon="edit"
+        <app-button *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_NGUOI_DUNG.UPDATE]" variant="secondary" leftIcon="edit"
                     (click)="switchToEditFromDetail()">
           Chỉnh sửa
         </app-button>

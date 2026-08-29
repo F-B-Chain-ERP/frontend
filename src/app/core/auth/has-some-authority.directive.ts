@@ -6,8 +6,8 @@ import {AccountService} from './account.service';
  * current user's authorities.
  *
  * Usage:
- *   <button *erpUTTHasSomeAuthority="[ROLE.DANH_MUC_TAI_KHOAN.ADD]">Thêm</button>
- *   <button *erpUTTHasSomeAuthority="[ROLE.DANH_MUC_TAI_KHOAN.EDIT, isAdmin]">Sửa</button>
+ *   <button *erpUTTHasSomeAuthority="[ROLE.DANH_MUC_TAI_KHOAN.CREATE]">Thêm</button>
+ *   <button *erpUTTHasSomeAuthority="[ROLE.DANH_MUC_TAI_KHOAN.UPDATE, isAdmin]">Sửa</button>
  *
  * Pass `true` in the array to force-show regardless of authorities (e.g. for
  * local boolean checks). Null/undefined values are ignored.

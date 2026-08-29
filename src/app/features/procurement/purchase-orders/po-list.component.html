@@ -6,7 +6,7 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.ADD]" variant="primary" leftIcon="plus"
+      <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.CREATE]" variant="primary" leftIcon="plus"
                   (click)="openCreateModal()">
         Tạo đơn mua hàng
       </app-button>
@@ -238,7 +238,7 @@
                 <!-- DRAFT: Submit for Approval / Cancel / Delete -->
                 @if (po.status === PurchaseOrderStatus.DRAFT || po.status === '0') {
                   <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.UPDATE]"
                     variant="ghost"
                     iconOnly="send"
                     nz-tooltip
@@ -260,7 +260,7 @@
                 <!-- SUBMITTED: Approve / Reject -->
                 @if (po.status === PurchaseOrderStatus.SUBMITTED || po.status === 'PENDING' || po.status === '1') {
                   <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT, 'ALL_SYSTEM']"
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.UPDATE, 'ALL_SYSTEM']"
                     variant="ghost"
                     iconOnly="check"
                     nz-tooltip
@@ -269,7 +269,7 @@
                   >
                   </app-button>
                   <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE, ROLE.DON_MUA_HANG.EDIT, 'ALL_SYSTEM']"
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.DELETE, ROLE.DON_MUA_HANG.UPDATE, 'ALL_SYSTEM']"
                     variant="ghost"
                     iconOnly="close"
                     nz-tooltip
@@ -282,7 +282,7 @@
                 <!-- APPROVED: Receive Stock into Warehouse -->
                 @if (po.status === PurchaseOrderStatus.APPROVED || po.status === '2') {
                   <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]"
+                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.UPDATE]"
                     variant="ghost"
                     iconOnly="inbox"
                     nz-tooltip
@@ -515,7 +515,7 @@
     <ng-template #modalFooter>
       @if (modalMode() === 'view') {
         <app-button variant="ghost" (click)="closeModal()">Đóng</app-button>
-        <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.EDIT]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
+        <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.UPDATE]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
           Chỉnh sửa
         </app-button>
       } @else {
