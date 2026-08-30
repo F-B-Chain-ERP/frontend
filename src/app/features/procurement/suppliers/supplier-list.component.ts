@@ -105,14 +105,14 @@ export class SupplierListComponent extends BaseComponent implements OnInit {
 
   // ── Forms ───────────────────────────────────────────────────────────
   readonly supplierForm = this.fb.group({
-    code: ['', [Validators.required, Validators.maxLength(50)]],
+    code: ['', [Validators.required, Validators.maxLength(20), Validators.pattern(/^[a-zA-Z0-9_-]*$/)]],
     name: ['', [Validators.required, Validators.maxLength(200)]],
-    taxCode: ['', [Validators.maxLength(30)]],
+    taxCode: ['', [Validators.required, Validators.maxLength(13), Validators.pattern(/^(\d{10}|\d{13})$/)]],
     contactPerson: ['', [Validators.maxLength(150)]],
-    phoneNumber: ['', [Validators.maxLength(20)]],
+    phoneNumber: ['', [Validators.required, Validators.maxLength(10), Validators.pattern(/^\d{10}$/)]],
     email: ['', [Validators.email, Validators.maxLength(150)]],
     address: ['', [Validators.maxLength(255)]],
-    paymentTermDays: this.fb.control<string | null>(null, [Validators.required, Validators.pattern(/^[0-9]+$/), Validators.min(1)]),
+    paymentTermDays: this.fb.control<string | null>(null, [Validators.required, Validators.min(1), Validators.pattern(/^[0-9]+$/)]),
     status: [SupplierStatus.ACTIVE, [Validators.required]],
   });
 
@@ -296,6 +296,10 @@ export class SupplierListComponent extends BaseComponent implements OnInit {
   enterEditMode(): void {
     this.modalMode.set('edit');
     this.setFormEnabled(true);
+    const codeControl = this.supplierForm.get('code');
+    if (codeControl) {
+      codeControl.disable();
+    }
   }
 
   closeFormModal(): void {

@@ -25,7 +25,7 @@
             nz-input
             [(ngModel)]="searchQuery"
             (keyup.enter)="onSearch()"
-            placeholder="Nhập mã NCC, tên, số điện thoại, email, địa chỉ..."
+            placeholder="Nhập mã NCC, tên NCC"
           />
         </nz-input-wrapper>
       </div>
@@ -320,14 +320,17 @@
           <label class="form-label required" for="modal-code">Mã nhà cung cấp</label>
           <nz-input-wrapper>
             <nz-icon nzInputPrefix nzType="tag" />
-            <input id="modal-code" type="text" nz-input formControlName="code" placeholder="VD: NCC001" maxlength="50" />
+            <input id="modal-code" type="text" nz-input formControlName="code" placeholder="VD: NCC001" maxlength="20" />
           </nz-input-wrapper>
           @if (supplierForm.get('code')?.dirty || supplierForm.get('code')?.touched) {
             @if (supplierForm.get('code')?.hasError('required')) {
               <span class="form-error">Mã nhà cung cấp không được để trống.</span>
             }
             @if (supplierForm.get('code')?.hasError('maxlength')) {
-              <span class="form-error">Mã nhà cung cấp tối đa 50 ký tự.</span>
+              <span class="form-error">Mã nhà cung cấp tối đa 20 ký tự.</span>
+            }
+            @if (supplierForm.get('code')?.hasError('pattern')) {
+              <span class="form-error">Mã NCC chỉ gồm chữ cái, số, dấu '-' và '_'.</span>
             }
           }
         </div>
@@ -354,11 +357,17 @@
           <label class="form-label" for="modal-taxCode">Mã số thuế</label>
           <nz-input-wrapper>
             <nz-icon nzInputPrefix nzType="file" />
-            <input id="modal-taxCode" type="text" nz-input formControlName="taxCode" placeholder="VD: 0101234567" maxlength="30" />
+            <input id="modal-taxCode" type="text" nz-input formControlName="taxCode" placeholder="VD: 0101234567" maxlength="13" />
           </nz-input-wrapper>
           @if (supplierForm.get('taxCode')?.dirty || supplierForm.get('taxCode')?.touched) {
+            @if (supplierForm.get('taxCode')?.hasError('required')) {
+            <span class="form-error">Mã số thuế không được để trống</span>
+            }
             @if (supplierForm.get('taxCode')?.hasError('maxlength')) {
-              <span class="form-error">Mã số thuế tối đa 30 ký tự.</span>
+            <span class="form-error">Mã số thuế tối đa 13 ký tự</span>
+            }
+            @if (supplierForm.get('taxCode')?.hasError('pattern')) {
+              <span class="form-error">Mã số thuế phải nhập 10 hoặc 13 ký tự.</span>
             }
           }
         </div>
@@ -390,9 +399,20 @@
               nz-input
               formControlName="phoneNumber"
               placeholder="VD: 0912 345 678"
-              maxlength="20"
+              maxlength="10"
             />
           </nz-input-wrapper>
+          @if (supplierForm.get('phoneNumber')?.dirty || supplierForm.get('phoneNumber')?.touched) {
+            @if (supplierForm.get('phoneNumber')?.hasError('required')) {
+            <span class="form-error">Số điện thoại không được để trống</span>
+            }
+            @else if (supplierForm.get('phoneNumber')?.hasError('maxlength')) {
+            <span class="form-error">Số điện thoại tối đa 10 ký tự</span>
+            }
+            @else if (supplierForm.get('phoneNumber')?.hasError('pattern')) {
+            <span class="form-error">Số điện thoại phải gồm đúng 10 ký tự.</span>
+            }
+          }
         </div>
 
         <!-- Email -->
@@ -426,11 +446,11 @@
           @if (supplierForm.get('paymentTermDays')?.dirty || supplierForm.get('paymentTermDays')?.touched) {
             @if (supplierForm.get('paymentTermDays')?.hasError('required')) {
               <span class="form-error">Kỳ hạn thanh toán không được để trống.</span>
+          } @else if (supplierForm.get('paymentTermDays')?.hasError('min')) {
+          <span class="form-error">Số phải lớn hơn 0.</span>
             } @else if (supplierForm.get('paymentTermDays')?.hasError('pattern')) {
               <span class="form-error">Chỉ được phép nhập số.</span>
-            } @else if (supplierForm.get('paymentTermDays')?.hasError('min')) {
-              <span class="form-error">Số phải lớn hơn 0.</span>
-            }
+          }
           }
         </div>
 
