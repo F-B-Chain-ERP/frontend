@@ -501,7 +501,7 @@
       color: var(--text-secondary);
 
       &--discount {
-        color: #16A34A;
+        color: var(--success);
         font-weight: 700;
       }
 
@@ -512,9 +512,9 @@
       }
 
       .ship.free {
-        color: #16A34A;
-        background: #E7F6EC;
-        border: 1px solid #C6E9CE;
+        color: var(--success);
+        background: var(--success-soft);
+        border: 1px solid color-mix\(in srgb, var\(--success\) 30%, transparent\);
         padding: 2px 8px;
         border-radius: var(--radius-pill);
         font-size: 11px;

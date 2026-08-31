@@ -6,14 +6,7 @@
     }
   </div>
 
-  <overlay-scrollbars [defer]="true" [options]="{
-    overflow: { x: 'hidden' },
-    scrollbars: {
-      autoHide: 'leave',
-      autoHideDelay: 200,
-      theme: 'os-theme-light',
-    }
-  }">
+  <div class="sidebar__scroll">
     <nav class="sidebar__nav">
       @for (item of filteredMenu(); track item.id) {
         <div class="sidebar__group">{{ item.title }}</div>
@@ -48,7 +41,7 @@
         }
       }
     </nav>
-  </overlay-scrollbars>
+  </div>
 
   <ng-template #childTpl let-nodes="nodes">
     @for (node of nodes; track node.id) {

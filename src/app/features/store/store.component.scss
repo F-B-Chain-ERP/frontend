@@ -42,7 +42,7 @@
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-sm);
 
     &-dot {
       width: 8px;
@@ -201,7 +201,7 @@
     height: 440px;
     border-radius: 32px;
     overflow: visible;
-    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--shadow-lg);
 
     @media (max-width: 576px) {
       height: 320px;
@@ -259,7 +259,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
     border: 1px solid var(--border-subtle);
     will-change: transform;
     animation: badge-float 3.2s ease-in-out infinite;
@@ -272,7 +272,7 @@
 
     .fire-icon {
       font-size: 24px;
-      color: #ff3333;
+      color: var(--danger);
     }
 
     .badge-info {
@@ -317,7 +317,7 @@
 // ── 2. Brand & Flavor Ribbon (Marquee) ────────────────────
 .brand-ribbon {
   background: var(--brand);
-  color: #ffffff;
+  color: var(--on-brand);
   padding: 22px 0;
   overflow: hidden;
   white-space: nowrap;
@@ -334,7 +334,7 @@
     animation: marquee-scroll 24s linear infinite;
 
     span.star {
-      color: #ffc633;
+      color: var(--warning);
       font-size: 16px;
     }
   }
@@ -399,9 +399,9 @@
   cursor: pointer;
   transition: all var(--dur-fast) var(--ease);
 
-  &:hover {
-    background: var(--brand);
-    color: #ffffff;
+    &:hover {
+      background: var(--brand);
+      color: var(--on-brand);
     border-color: var(--brand);
     transform: translateY(-2px);
   }
@@ -492,7 +492,7 @@
   justify-content: flex-start;
   padding: 28px;
   min-height: 100%;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
   // Isolate for smooth GPU hover
   transform: translateZ(0);
   transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1),
@@ -501,8 +501,7 @@
 
   &:hover {
     transform: translateY(-6px);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.16),
-    0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-lg);
     border-color: color-mix(in srgb, var(--brand) 18%, var(--border-strong));
 
     .style-item__bg {
@@ -581,7 +580,7 @@
   &__title {
     font-size: 26px;
     font-weight: 900;
-    color: #ffffff;
+    color: var(--text-inverse);
     margin: 0 0 4px 0;
     letter-spacing: -0.02em;
     line-height: 1.2;
@@ -591,7 +590,7 @@
 
   &__sub {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.88);
+    color: color-mix(in srgb, var(--text-inverse) 88%, transparent);
     font-weight: 600;
     line-height: 1.5;
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.25);
@@ -608,10 +607,10 @@
     background: transparent;
     border: none;
     padding: 0;
-    color: rgba(255, 255, 255, 0.92);
+    color: color-mix(in srgb, var(--text-inverse) 92%, transparent);
     font-size: 22px;
     line-height: 1;
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.35));
+    filter: drop-shadow(0 2px 6px var(--overlay));
     transition: color 400ms var(--ease),
     transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -682,7 +681,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: 18px;
   margin-bottom: 36px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-sm);
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -806,7 +805,7 @@
     color: var(--text-primary);
 
     .star-icon {
-      color: #ffc633;
+      color: var(--warning);
       font-size: 15px;
     }
   }
@@ -830,12 +829,12 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  box-shadow: var(--shadow-sm);
   transition: transform var(--dur-fast) var(--ease), box-shadow var(--dur-fast) var(--ease);
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-md);
     border-color: var(--border-strong);
   }
 
@@ -844,7 +843,7 @@
     gap: 4px;
 
     .star {
-      color: #ffc633;
+      color: var(--warning);
       font-size: 18px;
     }
   }
@@ -861,7 +860,7 @@
     }
 
     .verified {
-      color: #01ab31;
+      color: var(--success);
       font-size: 16px;
       display: inline-flex;
       align-items: center;
@@ -932,16 +931,16 @@
   }
 
   &__input-wrapper {
-    background: var(--gray-0);
+    background: var(--surface-card);
     border-radius: var(--radius-pill);
     padding: 12px 20px;
     display: flex;
     align-items: center;
     gap: 12px;
-    border: 1px solid transparent;
+    border: 1px solid var(--border-subtle);
 
     .mail-icon {
-      color: var(--gray-500);
+      color: var(--text-muted);
       font-size: 18px;
     }
   }
@@ -950,11 +949,11 @@
     border: none;
     background: transparent;
     font-size: 14px;
-    color: var(--gray-900);
+    color: var(--text-primary);
     width: 100%;
 
     &::placeholder {
-      color: var(--gray-500);
+      color: var(--text-muted);
     }
 
     &:focus {
@@ -963,7 +962,7 @@
   }
 
   &__btn {
-    background: var(--gray-0);
+    background: var(--surface-card);
     color: var(--brand);
     border: none;
     border-radius: var(--radius-pill);
@@ -974,7 +973,7 @@
     transition: all var(--dur-fast) var(--ease);
 
     &:hover {
-      background: color-mix(in srgb, var(--gray-0) 90%, transparent);
+      background: color-mix(in srgb, var(--surface-card) 90%, var(--surface-hover));
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
@@ -1093,7 +1092,7 @@
       width: 6px;
       height: 6px;
       border-radius: 2px;
-      background: #ffffff;
+      background: var(--on-brand);
       opacity: 0;
       transition: opacity var(--dur-fast) var(--ease);
     }

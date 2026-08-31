@@ -1,5 +1,5 @@
 ﻿<div class="scope-list-page">
-  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <!-- -- 1. Page Header ----------------------------------------------- -->
   <div class="page__header">
     <div class="page__header__left">
       <h1 class="page__header__title">Quản lý phạm vi truy cập</h1>
@@ -12,7 +12,7 @@
     </div>
   </div>
 
-  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <!-- -- 2. Filter Box ------------------------------------------------ -->
   <nz-card class="page__filter-box" [nzBordered]="false">
     <div class="page__filter-box__row">
       <!-- Scope type dropdown -->
@@ -56,7 +56,7 @@
     </div>
   </nz-card>
 
-  <!-- ── 3. Main Data Table Card ────────────────────────────────────── -->
+  <!-- -- 3. Main Data Table Card -------------------------------------- -->
   <nz-card class="page__list" [nzBordered]="false">
     <nz-table
       #scopeTable
@@ -179,7 +179,7 @@
       </tbody>
     </nz-table>
 
-    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <!-- -- 4. Standard Footer & Pagination ---------------------------- -->
     <div class="page__pagination">
       <app-pagination
         [total]="total()"
@@ -193,9 +193,9 @@
     </div>
   </nz-card>
 
-  <!-- ── 5. Form Modal (Thêm mới / Cập nhật) ───────────────────────── -->
+  <!-- -- 5. Form Modal (Thêm mới / Cập nhật) ------------------------- -->
   <app-modal
-    [visible]="isFormModalVisible()"
+    [visible]="isFormModalVisible()" [maskClosable]="false"
     (visibleChange)="isFormModalVisible.set($event)"
     [title]="formModalTitle"
     size="sm"

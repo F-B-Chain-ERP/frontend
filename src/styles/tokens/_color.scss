@@ -13,17 +13,6 @@ $brand-600: #CF5117 !default;
 $brand-700: #A94011 !default;
 $brand-800: #7E300C !default;
 
-// --- Brand scale (Orange) -----------------------------------
-$brand-orange-50: #FDF0E9 !default;
-$brand-orange-100: #FAD9C7 !default;
-$brand-orange-200: #F4B595 !default;
-$brand-orange-300: #EE8F62 !default;
-$brand-orange-400: #EB763F !default;
-$brand-orange-500: #E8632A !default; // primary — override via --brand-500 at runtime
-$brand-orange-600: #CF5117 !default;
-$brand-orange-700: #A94011 !default;
-$brand-orange-800: #7E300C !default;
-
 // --- Navy scale (sidebar / deep surfaces) -------------------
 $navy-950: #070F22 !default;
 $navy-900: #0A1730 !default;
@@ -90,17 +79,6 @@ $amber-600: #E06029 !default;
   --brand-600: #{$brand-600};
   --brand-700: #{$brand-700};
   --brand-800: #{$brand-800};
-
-  // Raw brand scale (Orange) — runtime-swappable
-  --brand-orange-50: #{$brand-orange-50};
-  --brand-orange-100: #{$brand-orange-100};
-  --brand-orange-200: #{$brand-orange-200};
-  --brand-orange-300: #{$brand-orange-300};
-  --brand-orange-400: #{$brand-orange-400};
-  --brand-orange-500: #{$brand-orange-500};
-  --brand-orange-600: #{$brand-orange-600};
-  --brand-orange-700: #{$brand-orange-700};
-  --brand-orange-800: #{$brand-orange-800};
 
   // Navy scale
   --navy-950: #{$navy-950};

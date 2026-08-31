@@ -268,7 +268,7 @@
   </nz-card>
 
   <!-- ── 6. Form Modal (Thêm mới / Cập nhật) ───────────────────────── -->
-  <app-modal [visible]="isFormModalVisible()" (visibleChange)="isFormModalVisible.set($event)" [title]="formModalTitle"
+  <app-modal [visible]="isFormModalVisible()" [maskClosable]="false" (visibleChange)="isFormModalVisible.set($event)" [title]="formModalTitle"
              size="md" [footer]="formModalFooter" (cancelEmit)="closeFormModal()">
 
     <form [formGroup]="userForm" enterAsTabContainer (ngSubmit)="onSubmitForm()" class="user-modal-form">
@@ -431,7 +431,7 @@
   </app-modal>
 
   <!-- ── 7. Detail Modal (Xem chi tiết) ─────────────────────────────── -->
-  <app-modal [visible]="isDetailModalVisible()" (visibleChange)="isDetailModalVisible.set($event)"
+  <app-modal [visible]="isDetailModalVisible()" [maskClosable]="false" (visibleChange)="isDetailModalVisible.set($event)"
              title="Thông tin chi tiết người dùng" size="md" [footer]="detailModalFooter"
              (cancelEmit)="closeDetailModal()">
 

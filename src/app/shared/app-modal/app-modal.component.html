@@ -1,6 +1,5 @@
 <nz-modal
   [nzVisible]="visible"
-  [visible]="visible"
   [nzTitle]="title"
   [nzFooter]="footer"
   [nzWidth]="width"
@@ -13,6 +12,7 @@
   (nzOnOk)="handleOk()"
   (nzOnCancel)="handleCancel()"
   appModalMaskClick
+  [visible]="visible"
   (maskClick)="overlayBlockCloseModal()">
   <ng-container *nzModalContent>
     <ng-content></ng-content>

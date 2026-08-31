@@ -6,34 +6,199 @@
     </div>
   </div>
 
-  <div class="settings-list">
-    @for (item of items; track item.title) {
-      @if (item.route) {
-        <a class="settings-item" [routerLink]="item.route">
-          <span class="settings-item__icon">
-            <nz-icon [nzType]="item.icon" nzTheme="outline" />
-          </span>
-          <span class="settings-item__body">
-            <span class="settings-item__title">{{ item.title }}</span>
-            <span class="settings-item__desc">{{ item.desc }}</span>
-          </span>
-          <nz-icon class="settings-item__chevron" nzType="right" nzTheme="outline" />
-        </a>
-      } @else {
-        <div class="settings-item settings-item--disabled">
-          <span class="settings-item__icon">
-            <nz-icon [nzType]="item.icon" nzTheme="outline" />
-          </span>
-          <span class="settings-item__body">
-            <span class="settings-item__title">
-              {{ item.title }}
-              <span class="settings-item__soon">Sớm ra mắt</span>
-            </span>
-            <span class="settings-item__desc">{{ item.desc }}</span>
-          </span>
-          <nz-icon class="settings-item__chevron" nzType="right" nzTheme="outline" />
+  <div class="settings-layout erp-layout">
+    <!-- LEFT 1/4 — avatar + name/email + 4 chức năng + trạng thái -->
+    <div class="col-left">
+      <nz-card class="erp-card erp-card--profile" [nzBordered]="false">
+        @if (account(); as acc) {
+          <div class="erp-profile">
+            <div class="erp-profile__pic">
+              <div class="erp-profile__pic-wrapper">
+                @if (avatarUrl()) {
+                  <img [src]="avatarUrl()" [alt]="displayName()" />
+                } @else {
+                  <nz-avatar [nzText]="avatarInitial()" [nzSize]="88" class="erp-profile__avatar"></nz-avatar>
+                }
+              </div>
+              <span class="erp-profile__status" [class.erp-profile__status--active]="acc.activated">
+                <nz-icon nzType="check-circle" nzTheme="fill" />
+              </span>
+            </div>
+            <div class="erp-profile__details">
+              <span class="erp-profile__name" [title]="displayName()">{{ displayName() }}</span>
+              @if (displayEmail()) {
+                <span class="erp-profile__email" [title]="displayEmail()" nz-tooltip [nzTooltipTitle]="displayEmail()">{{
+                  displayEmail()
+                }}</span>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="erp-profile">
+            <nz-skeleton-element nzType="avatar" [nzSize]="88" [nzActive]="true" class="erp-skeleton__avatar"></nz-skeleton-element>
+            <div class="erp-skeleton__lines">
+              <nz-skeleton-element nzType="input" [nzActive]="true" style="width: 140px"></nz-skeleton-element>
+              <nz-skeleton-element nzType="input" [nzActive]="true" style="width: 180px; height: 14px"></nz-skeleton-element>
+            </div>
+          </div>
+        }
+
+        <nz-divider class="erp-divider"></nz-divider>
+
+        <nav class="erp-nav" aria-label="Cài đặt tài khoản">
+          @for (item of navItems; track item.key) {
+            <button
+              type="button"
+              class="erp-nav__item"
+              [class.erp-nav__item--active]="activeTab() === item.key"
+              (click)="selectTab(item.key)"
+            >
+              <span class="erp-nav__icon">
+                <nz-icon [nzType]="item.icon" nzTheme="outline" />
+              </span>
+              <span class="erp-nav__body">
+                <span class="erp-nav__label">{{ item.label }}</span>
+                <span class="erp-nav__desc">{{ item.desc }}</span>
+              </span>
+              <nz-icon class="erp-nav__chevron" nzType="right" nzTheme="outline" />
+            </button>
+          }
+        </nav>
+
+        <nz-divider class="erp-divider"></nz-divider>
+
+        <!-- Cụm bên dưới chỉ hiển thị trạng thái -->
+        <div class="erp-summary erp-summary--single">
+          <div class="erp-summary__row">
+            <span class="erp-summary__k"><nz-icon nzType="safety" nzTheme="outline" /> Trạng thái</span>
+            <span class="tbl-badge" [class.tbl-badge--success]="account()?.activated" [class.tbl-badge--danger]="!account()?.activated">{{
+              accountStatus()
+            }}</span>
+          </div>
         </div>
-      }
-    }
+      </nz-card>
+    </div>
+
+    <!-- RIGHT 3/4 — nội dung theo left nav, bỏ cụm tabs trùng -->
+    <div class="col-right">
+      <nz-card class="erp-card erp-card--tabs" [nzBordered]="false">
+        <div class="erp-tab-content">
+          @if (activeTab() === 'profile') {
+            <div class="erp-pane">
+              <div class="erp-pane__head">
+                <span class="erp-pane__icon"><nz-icon nzType="user" nzTheme="outline" /></span>
+                <div>
+                  <h3 class="erp-pane__title">Thông tin cá nhân</h3>
+                  <p class="erp-pane__desc">Cập nhật họ tên, email và thông tin liên hệ</p>
+                </div>
+              </div>
+              <nz-divider style="margin: 0 0 20px 0"></nz-divider>
+              <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="erp-form erp-form--vertical">
+                <div class="erp-form__field">
+                  <label class="form-label" for="profile-username">Tên đăng nhập</label>
+                  <input nz-input nzSize="large" id="profile-username" formControlName="username" />
+                </div>
+                <div class="erp-form__field">
+                  <label class="form-label required" for="profile-fullName">Họ và tên</label>
+                  <input nz-input nzSize="large" id="profile-fullName" formControlName="fullName" placeholder="Nhập họ tên" />
+                  <div class="field-error-wrap">
+                    @if (profileForm.get('fullName')?.touched && profileForm.get('fullName')?.hasError('required')) {
+                      <span class="form-error">Họ tên không được để trống.</span>
+                    }
+                  </div>
+                </div>
+                <div class="erp-form__field">
+                  <label class="form-label required" for="profile-email">Email</label>
+                  <input nz-input nzSize="large" id="profile-email" formControlName="email" placeholder="name@company.com" />
+                  <div class="field-error-wrap">
+                    @if (profileForm.get('email')?.touched && profileForm.get('email')?.hasError('email')) {
+                      <span class="form-error">Email không đúng định dạng.</span>
+                    }
+                    @if (profileForm.get('email')?.touched && profileForm.get('email')?.hasError('required')) {
+                      <span class="form-error">Email không được để trống.</span>
+                    }
+                  </div>
+                </div>
+                <div class="erp-form__field">
+                  <label class="form-label" for="profile-phone">Số điện thoại</label>
+                  <input nz-input nzSize="large" id="profile-phone" formControlName="phone" placeholder="09xx xxx xxx" />
+                  <div class="field-error-wrap">
+                    @if (profileForm.get('phone')?.touched && profileForm.get('phone')?.hasError('pattern')) {
+                      <span class="form-error">Số điện thoại không hợp lệ.</span>
+                    }
+                  </div>
+                </div>
+                <div class="erp-form__field" nz-tooltip nzTooltipTitle="Liên hệ quản trị để đổi chi nhánh">
+                  <label class="form-label" for="profile-branch">Chi nhánh</label>
+                  <input nz-input nzSize="large" id="profile-branch" formControlName="branch" />
+                </div>
+                <div class="erp-form__actions">
+                  <app-button variant="primary" type="submit" leftIcon="check" [disabled]="profileForm.pristine || profileForm.invalid"
+                    >Lưu thay đổi</app-button
+                  >
+                  <app-button variant="ghost" type="button" leftIcon="reload" (click)="resetProfile()">Đặt lại</app-button>
+                </div>
+              </form>
+            </div>
+          }
+
+          @if (activeTab() === 'password') {
+            <div class="erp-pane erp-pane--password">
+              <div class="erp-pane__head">
+                <span class="erp-pane__icon"><nz-icon nzType="lock" nzTheme="outline" /></span>
+                <div>
+                  <h3 class="erp-pane__title">Đổi mật khẩu</h3>
+                  <p class="erp-pane__desc">Bảo vệ tài khoản bằng mật khẩu mới</p>
+                </div>
+              </div>
+              <nz-divider style="margin: 0 0 20px 0"></nz-divider>
+              <app-change-password
+                [heading]="'Đổi mật khẩu'"
+                [backLink]="'/admin/account/settings'"
+                [requireCurrentPassword]="true"
+              ></app-change-password>
+            </div>
+          }
+
+          @if (activeTab() === '2fa') {
+            <div class="erp-pane">
+              <div class="erp-pane__head">
+                <span class="erp-pane__icon"><nz-icon nzType="safety" nzTheme="outline" /></span>
+                <div>
+                  <h3 class="erp-pane__title">Bảo mật 2 lớp</h3>
+                  <p class="erp-pane__desc">Tăng cường bảo vệ đăng nhập</p>
+                </div>
+              </div>
+              <nz-divider style="margin: 0 0 20px 0"></nz-divider>
+              <div class="erp-empty">
+                <span class="erp-empty__icon"><nz-icon nzType="safety" nzTheme="outline" /></span>
+                <h3 class="erp-empty__title">Bảo mật 2 lớp</h3>
+                <p class="erp-empty__desc">Chức năng đang được phát triển. Nội dung sẽ hiển thị tại đây.</p>
+                <app-button variant="secondary" (click)="comingSoon()">Tìm hiểu thêm</app-button>
+              </div>
+            </div>
+          }
+
+          @if (activeTab() === 'notification') {
+            <div class="erp-pane">
+              <div class="erp-pane__head">
+                <span class="erp-pane__icon"><nz-icon nzType="bell" nzTheme="outline" /></span>
+                <div>
+                  <h3 class="erp-pane__title">Thông báo</h3>
+                  <p class="erp-pane__desc">Tùy chọn nhận thông báo hệ thống</p>
+                </div>
+              </div>
+              <nz-divider style="margin: 0 0 20px 0"></nz-divider>
+              <div class="erp-empty">
+                <span class="erp-empty__icon"><nz-icon nzType="bell" nzTheme="outline" /></span>
+                <h3 class="erp-empty__title">Thông báo</h3>
+                <p class="erp-empty__desc">Chức năng đang được phát triển. Nội dung sẽ hiển thị tại đây.</p>
+                <app-button variant="secondary" (click)="comingSoon()">Cài đặt thông báo</app-button>
+              </div>
+            </div>
+          }
+        </div>
+      </nz-card>
+    </div>
   </div>
 </div>

@@ -528,6 +528,8 @@
   <nz-modal
     [nzVisible]="!!cancelTarget()"
     nzTitle="Lý do hủy / từ chối đơn"
+    [nzMaskClosable]="false"
+    [nzKeyboard]="false"
     [nzOkText]="'Xác nhận hủy'"
     [nzOkDisabled]="!cancelReason().trim()"
     [nzOkLoading]="isSaving()"

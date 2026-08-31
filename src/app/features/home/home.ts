@@ -82,6 +82,7 @@ export class HomeComponent implements AfterViewInit {
   private barChart?: echarts.ECharts;
   private pieChart?: echarts.ECharts;
   private resizeObserver?: ResizeObserver;
+  private themeObserver?: MutationObserver;
 
   ngAfterViewInit(): void {
     this.initBarChart();
@@ -94,10 +95,31 @@ export class HomeComponent implements AfterViewInit {
     this.resizeObserver.observe(this.barChartEl().nativeElement);
     this.resizeObserver.observe(this.pieChartEl().nativeElement);
 
+    this.themeObserver = new MutationObserver(() => this.refreshChartsTheme());
+    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
     this.destroyRef.onDestroy(() => {
       this.resizeObserver?.disconnect();
+      this.themeObserver?.disconnect();
       this.barChart?.dispose();
       this.pieChart?.dispose();
+    });
+  }
+
+  private refreshChartsTheme(): void {
+    const style = getComputedStyle(document.documentElement);
+    const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#5A6478';
+    const textPrimary = style.getPropertyValue('--text-primary').trim() || '#141925';
+    const borderSubtle = style.getPropertyValue('--border-subtle').trim() || '#E5E8F0';
+    const surfaceCard = style.getPropertyValue('--surface-card').trim() || '#ffffff';
+    this.barChart?.setOption({
+      tooltip: { backgroundColor: surfaceCard, borderColor: borderSubtle, textStyle: { color: textPrimary } },
+      xAxis: { axisLabel: { color: textSecondary } },
+      yAxis: { splitLine: { lineStyle: { color: borderSubtle } } },
+    });
+    this.pieChart?.setOption({
+      tooltip: { backgroundColor: surfaceCard, borderColor: borderSubtle, textStyle: { color: textPrimary } },
+      series: [{ label: { rich: { title: { color: textSecondary }, value: { color: textPrimary } } } }],
     });
   }
 
@@ -106,13 +128,18 @@ export class HomeComponent implements AfterViewInit {
     const teal = style.getPropertyValue('--teal-500').trim() || '#0E9384';
     const brand = style.getPropertyValue('--brand-500').trim() || '#E8632A';
     const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#5A6478';
+    const textPrimary = style.getPropertyValue('--text-primary').trim() || '#141925';
     const borderSubtle = style.getPropertyValue('--border-subtle').trim() || '#E5E8F0';
+    const surfaceCard = style.getPropertyValue('--surface-card').trim() || '#ffffff';
 
     this.barChart = echarts.init(this.barChartEl().nativeElement);
     this.barChart.setOption({
       tooltip: {
         trigger: 'axis',
         axisPointer: {type: 'shadow'},
+        backgroundColor: surfaceCard,
+        borderColor: borderSubtle,
+        textStyle: { color: textPrimary },
       },
       legend: {show: false},
       grid: {
@@ -162,12 +189,17 @@ export class HomeComponent implements AfterViewInit {
     const amber = style.getPropertyValue('--amber-500').trim() || '#F5B70A';
     const textPrimary = style.getPropertyValue('--text-primary').trim() || '#141925';
     const textSecondary = style.getPropertyValue('--text-secondary').trim() || '#5A6478';
+    const borderSubtle = style.getPropertyValue('--border-subtle').trim() || '#E5E8F0';
+    const surfaceCard = style.getPropertyValue('--surface-card').trim() || '#ffffff';
 
     this.pieChart = echarts.init(this.pieChartEl().nativeElement);
     this.pieChart.setOption({
       tooltip: {
         trigger: 'item',
         formatter: '{b}: {d}%',
+        backgroundColor: surfaceCard,
+        borderColor: borderSubtle,
+        textStyle: { color: textPrimary },
       },
       legend: {show: false},
       series: [

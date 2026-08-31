@@ -17,9 +17,14 @@ export const routes: Routes = [
     title: 'Cửa hàng & Bán hàng trực tuyến',
   },
   {
+    path: 'settings',
+    loadComponent: () => import('../account/settings/settings.component'),
+    title: 'Cài đặt tài khoản',
+  },
+  {
     path: 'change-password',
-    loadComponent: () => import('../client/change-password/client-change-password.component'),
-    title: 'Đặt lại mật khẩu',
+    redirectTo: 'settings',
+    pathMatch: 'full',
   },
 ];
 

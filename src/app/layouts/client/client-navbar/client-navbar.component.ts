@@ -90,16 +90,12 @@ export class ClientNavbarComponent {
     this.router.navigate(['/login']);
   }
 
-  goToChangePassword(): void {
-    // Tài khoản nội bộ (admin/nhân viên): đổi mật khẩu trong trang quản trị (BẮT BUỘC mật khẩu hiện tại),
-    // nút "Quay lại" sẽ về /admin/account/settings.
-    // Khách hàng: trang store, chỉ bắt mật khẩu cũ khi đã có mật khẩu cục bộ
-    // (tài khoản OAuth2 lần đầu đăng nhập được đặt mới luôn, không cần mật khẩu cũ).
+  goToSettings(): void {
     const account = this.account();
     if (account && account.principalType === 'CUSTOMER') {
-      this.router.navigate(['/store/change-password']);
+      this.router.navigate(['/store/settings']);
     } else {
-      this.router.navigate(['/admin/account/change-password']);
+      this.router.navigate(['/admin/account/settings']);
     }
   }
 
