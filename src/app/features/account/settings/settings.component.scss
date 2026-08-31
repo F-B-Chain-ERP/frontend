@@ -1,4 +1,4 @@
-// ── Page: full-width ──────────────────────────────────
+// ── Page: cách mép 1 chút khi customer ẩn sidebar ──
 .account-settings-page {
   display: flex;
   flex-direction: column;
@@ -6,6 +6,8 @@
   width: 100%;
   min-width: 0;
   font-family: var(--font-sans);
+  // Chỉ thêm đệm nhẹ, không căn giữa max-width
+  padding: 0 12px;
 }
 
 // ── Layout 1/4 + 3/4 — full width ─────────────────────
@@ -119,6 +121,15 @@
     }
   }
 
+  &__details {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    width: 100%;
+  }
+
   &__name {
     font-size: 15px;
     font-weight: 700;
@@ -127,6 +138,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 100%;
+    text-align: center;
   }
 
   &__email {
@@ -135,6 +148,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 100%;
+    text-align: center;
+    display: block;
   }
 }
 

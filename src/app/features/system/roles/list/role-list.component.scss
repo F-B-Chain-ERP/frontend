@@ -47,10 +47,29 @@
   .ant-card-body {
     padding: 0;
   }
+
+  // Header trắng như các trang khác (light: var(--surface-card) #FFFFFF, dark: tự đổi qua token)
+  :host ::ng-deep .ant-table-thead > tr > th {
+    background: var(--surface-card) !important;
+  }
+
+  :host ::ng-deep .ant-table-thead > tr.thead-search > th {
+    background: var(--surface-card) !important;
+  }
+}
+
+// Dark: header đồng bộ với các bảng khác (var(--surface-sunken) #0E1626)
+:host-context([data-theme='dark']) .page__list ::ng-deep .ant-table-thead > tr > th,
+:host-context([data-theme='dark']) .page__list ::ng-deep .ant-table-thead > tr.thead-search > th {
+  background: var(--surface-sunken) !important;
 }
 
 .is-default-row {
-  background-color: var(--surface-hover);
+  background-color: var(--surface-card) !important;
+}
+
+:host-context([data-theme='dark']) .is-default-row {
+  background-color: var(--surface-card) !important;
 }
 
 .is-deleted-row {

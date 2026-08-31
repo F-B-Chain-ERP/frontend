@@ -414,13 +414,27 @@
   }
 
   :host ::ng-deep .ant-table-header { flex-shrink: 0; }
+  :host ::ng-deep .ant-table-thead > tr > th { background: var(--surface-card) !important; }
   :host ::ng-deep .ant-table-row-expand-icon { transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1) !important; }
   :host ::ng-deep .ant-table-row-expand-icon-collapsed { transform: rotate(-90deg); }
 }
 
-.matrix-select-all-row {
+:host-context([data-theme='dark']) .matrix-table-card ::ng-deep .ant-table-thead > tr > th {
   background: var(--surface-sunken) !important;
+}
+
+:host-context([data-theme='dark']) .matrix-row--root {
+  background-color: var(--surface-sunken) !important;
+}
+
+.matrix-select-all-row {
+  background: var(--surface-card) !important;
   th { padding: 8px !important; }
+  border-bottom: 1px solid var(--border-subtle) !important;
+}
+
+:host-context([data-theme='dark']) .matrix-select-all-row {
+  background: var(--surface-sunken) !important;
 }
 
 .matrix-select-all-label .select-all-note {
@@ -443,7 +457,7 @@
 
   &:hover { background-color: var(--surface-hover) !important; }
   &--root {
-    background-color: var(--surface-sunken);
+    background-color: var(--surface-card);
     font-weight: var(--fw-semibold);
     box-shadow: inset 3px 0 0 var(--brand);
     td { border-bottom: 1px solid var(--border-subtle); }
