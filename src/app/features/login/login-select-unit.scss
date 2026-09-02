@@ -44,21 +44,44 @@
 
   // ── Right Panel ──
   &__right {
-    width: 45%;
+    width: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     z-index: 1;
-    padding: 48px 40px;
+    padding: 48px 32px;
   }
 
   // ── Topbar ──
   &__topbar {
     position: absolute;
     top: 0; right: 0;
-    padding: 20px 32px;
+    padding: 24px 36px;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  &__back-btn {
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-card);
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: var(--surface-hover);
+      border-color: var(--brand-400);
+      color: var(--brand-active);
+    }
   }
 
   &__user-wrap {
@@ -128,11 +151,12 @@
   &__card {
     background: var(--surface-card);
     border-radius: 20px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.06);
-    padding: 48px 44px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+    padding: 44px 40px;
     width: 100%;
-    max-width: 480px;
+    max-width: 520px;
     animation: slideUpFade 0.5s ease;
+    border: 1px solid var(--border-subtle);
   }
 
   &__card-inner {
@@ -140,21 +164,22 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
+    width: 100%;
   }
 
   &__title {
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--text-primary);
-    margin: 0 0 8px;
+    margin: 0 0 6px;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.6px;
   }
 
   &__subtitle {
     font-size: 14px;
     color: var(--text-muted);
-    margin: 0 0 36px;
+    margin: 0 0 28px;
     line-height: 1.5;
   }
 
@@ -165,72 +190,50 @@
   }
 
   &__form-item {
-    margin-bottom: 24px;
-
-    label {
-      display: block;
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-bottom: 8px;
-      font-weight: 500;
-    }
+    margin-bottom: 20px;
   }
 
-  &__dropdown {
-    width: 100%;
-
-    ::ng-deep .ant-select-selector {
-      border-radius: 8px !important;
-      height: 48px !important;
-      align-items: center;
-      border: 1px solid var(--border-subtle) !important;
-      box-shadow: none !important;
-      background: var(--surface-card) !important;
-      transition: border-color 0.2s ease;
-      font-size: 14px;
-    }
-
-    ::ng-deep .ant-select-open .ant-select-selector,
-    ::ng-deep .ant-select-focused .ant-select-selector {
-      border-color: var(--brand-400) !important;
-      box-shadow: none !important;
-    }
-
-    ::ng-deep .ant-select-selector:hover {
-      border-color: var(--border-strong) !important;
-    }
-
-    ::ng-deep .ant-select-selection-item {
-      line-height: 46px !important;
-      font-weight: 500;
-      color: var(--text-primary);
-    }
-
-    ::ng-deep .ant-select-selection-placeholder {
-      line-height: 46px !important;
-      font-size: 14px;
-      color: var(--text-muted);
-    }
+  &__label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
   }
 
-  &__submit {
-    border-radius: 8px;
+  &__required {
+    color: var(--danger-500, #ef4444);
+  }
+
+  // ── Submit Button ──
+  &__submit-btn {
+    border-radius: 10px;
     height: 48px;
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
+    margin-top: 20px;
     background-color: var(--brand-500);
     border-color: var(--brand-500);
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(235, 94, 40, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 
     &:hover, &:focus {
       background-color: var(--brand-600);
       border-color: var(--brand-600);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(235, 94, 40, 0.35);
     }
 
     &[disabled] {
       background-color: var(--surface-hover);
       border-color: var(--border-subtle);
       color: var(--text-muted);
+      box-shadow: none;
+      transform: none;
     }
   }
 
@@ -249,39 +252,425 @@
   }
 }
 
-// ── Dropdown Panel (appended to body) ──
-::ng-deep .select-unit-dropdown-menu {
-  background: var(--surface-card) !important;
-  border: 1px solid var(--border-subtle) !important;
+// ── Unit Combobox Trigger ──
+.unit-combobox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 14px;
   border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
-  padding: 4px;
-  max-height: 300px !important;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
 
-  .ant-select-item {
-    color: var(--text-primary);
-    padding: 10px 14px;
-    border-radius: 6px;
+  &:hover {
+    border-color: var(--brand-400);
+    background: var(--surface-hover);
+  }
+
+  &--open {
+    border-color: var(--brand-500) !important;
+    box-shadow: 0 0 0 3px var(--brand-50, rgba(235, 94, 40, 0.12));
+    background: var(--surface-card) !important;
+  }
+
+  &--selected {
+    border-color: var(--brand-500);
+  }
+
+  &__prefix {
+    font-size: 17px;
+    color: var(--brand-500);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  &__placeholder {
     font-size: 14px;
-    transition: background 0.15s ease;
+    color: var(--text-muted);
+  }
 
-    &:hover, &.ant-select-item-option-active {
-      background: var(--brand-50) !important;
-      color: var(--brand-700);
-    }
+  &__value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
 
-    &.ant-select-item-option-selected {
-      background: var(--brand-500) !important;
-      color: var(--on-brand);
-      font-weight: 600;
+  &__code {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand-active);
+    background: var(--brand-soft);
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+    flex-shrink: 0;
+  }
+
+  &__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__suffix {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  &__clear {
+    font-size: 14px;
+    color: var(--text-muted);
+    transition: color 0.15s ease;
+    &:hover {
+      color: var(--text-primary);
     }
   }
 
-  .ant-select-item-empty {
+  &__caret {
+    font-size: 12px;
     color: var(--text-muted);
-    padding: 16px;
-    text-align: center;
+    transition: transform 0.2s ease;
+
+    &--open {
+      transform: rotate(180deg);
+    }
+  }
+}
+
+// ── Selected Detail Callout Card ──
+.selected-detail-card {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  border: 1px solid var(--border-subtle);
+  animation: slideUpFade 0.25s ease;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  &__title-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__check-icon {
+    color: #16a34a;
+    font-size: 14px;
+  }
+
+  &__name {
     font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  &__code {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--brand-active);
+    background: var(--surface-card);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+
+  &__badge {
+    font-size: 10px;
+    font-weight: 600;
+    background: #dcfce7;
+    color: #15803d;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  &__body {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    .anticon {
+      color: var(--brand-500);
+    }
+  }
+}
+
+// ── Floating Dropdown Table (In CDK Overlay) ──
+::ng-deep .unit-table-dropdown {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface-sunken);
+  }
+
+  &__search {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+
+    &-icon {
+      position: absolute;
+      left: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    &-input {
+      width: 100%;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--surface-card);
+      color: var(--text-primary);
+      font-size: 12px;
+      padding: 0 28px 0 32px;
+      outline: none;
+      transition: all 0.2s ease;
+
+      &:focus {
+        border-color: var(--brand-500);
+        box-shadow: 0 0 0 2px var(--brand-50, rgba(235, 94, 40, 0.1));
+      }
+
+      &::placeholder {
+        color: var(--text-muted);
+      }
+    }
+
+    &-clear {
+      position: absolute;
+      right: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  &__badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand-active);
+    background: var(--brand-soft);
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  &__body {
+    max-height: 280px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 3px;
+    }
+  }
+
+  // Table
+  .unit-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+
+    thead th {
+      background: var(--surface-sunken);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-strong);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    &__row {
+      cursor: pointer;
+      transition: background 0.15s ease;
+      border-bottom: 1px solid var(--border-subtle);
+
+      &:hover {
+        background: var(--surface-hover);
+      }
+
+      &--selected {
+        background: var(--brand-soft) !important;
+
+        .unit-table__name {
+          color: var(--brand-active);
+          font-weight: 700;
+        }
+
+        .unit-table__code-pill {
+          background: var(--brand-500);
+          color: #fff;
+          border-color: var(--brand-500);
+        }
+      }
+
+      td {
+        padding: 10px 14px;
+        vertical-align: middle;
+      }
+    }
+
+    &__code-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--surface-raised);
+      color: var(--brand-active);
+      border: 1px solid var(--border-subtle);
+      display: inline-block;
+    }
+
+    &__name-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    &__name {
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    &__parent {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    &__address {
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 230px;
+      display: block;
+    }
+
+    &__phone {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    &__status-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+      white-space: nowrap;
+
+      &--active {
+        background: #dcfce7;
+        color: #15803d;
+      }
+
+      &--inactive {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+    }
+
+    &__status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    &__empty-cell {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-muted);
+
+      p {
+        margin: 6px 0 0;
+        font-size: 12px;
+      }
+    }
+
+    &__empty-icon {
+      font-size: 32px;
+      opacity: 0.5;
+    }
+  }
+
+  &__footer {
+    padding: 8px 16px;
+    background: var(--surface-sunken);
+    border-top: 1px solid var(--border-subtle);
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
   }
 }
 
@@ -300,22 +689,26 @@
     flex-direction: column;
 
     &__left {
-      width: 100%;
-      min-height: 220px;
-      padding: 16px;
+      display: none; // Hide CSS showcase on mobile to focus completely on branch selection
     }
     &__right {
       width: 100%;
       flex: 1;
-      padding: 16px;
+      padding: 70px 16px 24px;
+    }
+    &__topbar {
+      padding: 14px 16px;
+      width: 100%;
+      justify-content: space-between;
     }
     &__card {
       max-width: 100%;
-      padding: 32px 24px;
+      padding: 28px 18px;
+      border-radius: 18px;
     }
-
-    .mockup-laptop { transform: scale(0.55); }
-    .mockup-mobile { transform: scale(0.45) translate(-80px, -10px); }
+    &__branch-list {
+      max-height: 50vh;
+    }
   }
 }
 

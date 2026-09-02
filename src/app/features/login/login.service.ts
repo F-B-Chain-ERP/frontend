@@ -123,12 +123,13 @@ export class LoginService {
   }
 
   /** Chọn đơn vị (chi nhánh) làm việc sau khi đăng nhập, trả về token chứa branchId. */
-  selectBranch(branchId: string, rememberMe = true): Observable<AuthResponse> {
+  selectBranch(branchId: string, rememberMe?: boolean): Observable<AuthResponse> {
+    const isRemember = rememberMe !== undefined ? rememberMe : this.stateStorageService.isRememberMe();
     const request: SelectBranchRequest = { branchId };
     return this.authServerProvider.selectBranch(request).pipe(
       map(res => {
         const auth = res.data;
-        this.applyAuthResult(auth, rememberMe);
+        this.applyAuthResult(auth, isRemember);
         this.toAccount(auth);
         this.stateStorageService.storeSelectedBranch(branchId);
         this.stateStorageService.setPendingScopeAssignment(false);

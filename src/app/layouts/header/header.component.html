@@ -6,11 +6,142 @@
     </div>
   </div>
   <div class="ant-flex ant-flex-align-center" style="gap: 12px">
+    <!-- Branch Switcher Pill -->
+    @if (currentBranch(); as branch) {
+      <div
+        class="topbar__branch"
+        nz-dropdown
+        [nzDropdownMenu]="branchMenu"
+        nzTrigger="click"
+        nzPlacement="bottomRight"
+        [nzOverlayStyle]="{ width: '360px' }"
+        [nzVisible]="isVisibleBranchMenu()"
+        (nzVisibleChange)="isVisibleBranchMenu.set($event)"
+        title="Đổi chi nhánh làm việc"
+      >
+        <div class="topbar__branch-icon" [class.topbar__branch-icon--spinning]="isSwitchingBranch()">
+          @if (isSwitchingBranch()) {
+            <nz-spin nzSimple nzSize="small"></nz-spin>
+          } @else {
+            <nz-icon nzType="shop"></nz-icon>
+          }
+        </div>
+        <div class="topbar__branch-content">
+          <div class="topbar__branch-top">
+            <span class="topbar__branch-badge">{{ branch.code || 'Chi nhánh' }}</span>
+          </div>
+          <span class="topbar__branch-name" [title]="branch.name">{{ branch.name }}</span>
+        </div>
+        <nz-icon
+          nzType="down"
+          class="topbar__branch-caret"
+          [class.topbar__branch-caret--open]="isVisibleBranchMenu()"
+        ></nz-icon>
+      </div>
+    } @else if (availableBranches().length > 0) {
+      <div
+        class="topbar__branch"
+        nz-dropdown
+        [nzDropdownMenu]="branchMenu"
+        nzTrigger="click"
+        nzPlacement="bottomRight"
+        [nzOverlayStyle]="{ width: '360px' }"
+        [nzVisible]="isVisibleBranchMenu()"
+        (nzVisibleChange)="isVisibleBranchMenu.set($event)"
+      >
+        <div class="topbar__branch-icon">
+          <nz-icon nzType="shop"></nz-icon>
+        </div>
+        <div class="topbar__branch-content">
+          <span class="topbar__branch-name">Chọn chi nhánh</span>
+        </div>
+        <nz-icon nzType="down" class="topbar__branch-caret"></nz-icon>
+      </div>
+    }
+
+    <!-- Branch Dropdown Menu -->
+    <nz-dropdown-menu #branchMenu="nzDropdownMenu">
+      <div class="branch-dropdown">
+        <div class="branch-dropdown__header">
+          <div class="branch-dropdown__title-row">
+            <span class="branch-dropdown__title">Đơn vị làm việc</span>
+            <span class="branch-dropdown__count">{{ availableBranches().length }} chi nhánh</span>
+          </div>
+          <p class="branch-dropdown__desc">Chọn chi nhánh để làm việc trên dữ liệu tương ứng</p>
+
+          @if (availableBranches().length > 3) {
+            <div class="branch-dropdown__search">
+              <nz-icon nzType="search" class="branch-dropdown__search-icon"></nz-icon>
+              <input
+                type="text"
+                class="branch-dropdown__search-input"
+                placeholder="Tìm theo tên, mã hoặc địa chỉ..."
+                [ngModel]="branchSearchText()"
+                (ngModelChange)="branchSearchText.set($event)"
+                (click)="$event.stopPropagation()"
+              />
+              @if (branchSearchText()) {
+                <nz-icon
+                  nzType="close-circle"
+                  class="branch-dropdown__search-clear"
+                  (click)="branchSearchText.set(''); $event.stopPropagation()"
+                ></nz-icon>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="branch-dropdown__list">
+          @for (item of filteredBranches(); track item.id) {
+            <div
+              class="branch-dropdown__item"
+              [class.branch-dropdown__item--active]="item.id === currentBranch()?.id"
+              (click)="onSwitchBranch(item)"
+            >
+              <div class="branch-dropdown__item-icon">
+                <nz-icon nzType="shop"></nz-icon>
+              </div>
+              <div class="branch-dropdown__item-body">
+                <div class="branch-dropdown__item-top">
+                  <span class="branch-dropdown__item-name">{{ item.name }}</span>
+                  <span class="branch-dropdown__item-code">{{ item.code }}</span>
+                </div>
+                @if (item.address) {
+                  <span class="branch-dropdown__item-address" [title]="item.address">
+                    {{ item.address }}
+                  </span>
+                }
+              </div>
+              @if (item.id === currentBranch()?.id) {
+                <div class="branch-dropdown__item-check">
+                  <nz-icon nzType="check"></nz-icon>
+                </div>
+              }
+            </div>
+          } @empty {
+            <div class="branch-dropdown__empty">
+              Không tìm thấy chi nhánh phù hợp
+            </div>
+          }
+        </div>
+
+        <div class="branch-dropdown__footer">
+          <a routerLink="/select-branch" (click)="isVisibleBranchMenu.set(false)" class="branch-dropdown__footer-link">
+            <nz-icon nzType="appstore"></nz-icon>
+            Xem chi tiết &amp; đổi đơn vị
+          </a>
+        </div>
+      </div>
+    </nz-dropdown-menu>
+
+    <!-- Color pick -->
     <label class="topbar__color-pick" for="color-pick" title="Màu thương hiệu">
       <span class="topbar__color-dot" [style.background]="theme.brand500"></span>
       <input id="color-pick" type="color" class="topbar__color-input" [value]="theme.brand500"
              (input)="onBrandColorChange($event)"/>
     </label>
+
+    <!-- User profile -->
     <div
       class="topbar__user"
       nz-dropdown
@@ -45,6 +176,10 @@
         <li nz-menu-item routerLink="/admin/account/settings">
           <nz-icon nzType="setting"/>
           Cài đặt tài khoản
+        </li>
+        <li nz-menu-item routerLink="/select-branch" (click)="isVisibleUserMenu.set(false)">
+          <nz-icon nzType="swap"/>
+          Đổi chi nhánh
         </li>
         <li nz-menu-item (click)="theme.toggleMode(); isVisibleUserMenu.set(true)">
           <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'"/>
