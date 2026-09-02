@@ -47,7 +47,7 @@
       padding: 4px 10px;
       border-radius: var(--radius-pill);
       background: var(--brand);
-      color: #ffffff;
+      color: var(--text-inverse);
       font-size: 10px;
       font-weight: 800;
       letter-spacing: 0.06em;
@@ -188,7 +188,7 @@
     height: 210px;
     border-radius: 50%;
     overflow: hidden;
-    border: 6px solid #ffffff;
+    border: 6px solid var(--surface-card);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.14),
     0 4px 12px rgba(0, 0, 0, 0.08),
     inset 0 2px 8px rgba(255, 255, 255, 0.6);
@@ -332,7 +332,7 @@
     gap: 10px;
     padding: 10px 12px;
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.96);
+    background: var(--surface-card);
     border: 1px solid rgba(255, 255, 255, 0.95);
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12),
     0 2px 8px rgba(0, 0, 0, 0.06);
@@ -358,8 +358,8 @@
       transform: translateX(-50%);
       padding: 8px 14px;
       gap: 8px;
-      background: var(--gray-900);
-      color: #ffffff;
+      background: var(--surface-inverse);
+      color: var(--text-inverse);
       border-color: var(--gray-900);
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
       animation: float-card 3.6s ease-in-out infinite;
@@ -421,7 +421,7 @@
       height: 20px;
       border-radius: 50%;
       background: #16A34A;
-      color: #ffffff;
+      color: var(--text-inverse);
       font-size: 11px;
       font-weight: 800;
       display: flex;
@@ -616,12 +616,12 @@
     &--zalo {
       background: #0068FF;
       border-color: #0068FF;
-      color: #ffffff;
+      color: var(--text-inverse);
 
       &:hover {
         background: #0056D6;
         border-color: #0056D6;
-        color: #ffffff;
+        color: var(--text-inverse);
       }
     }
 
@@ -1018,5 +1018,16 @@
         }
       }
     }
+  }
+}
+
+[data-theme="dark"] .register {
+  &__left {
+    background: var(--surface-app);
+    &::before, &::after { opacity: 0.12; }
+  }
+  &__left-inner {
+    background: color-mix(in srgb, var(--surface-card) 72%, transparent);
+    border-color: var(--border-subtle);
   }
 }

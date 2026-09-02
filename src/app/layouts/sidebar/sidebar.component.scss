@@ -63,14 +63,22 @@
   white-space: nowrap;
 }
 
+.sidebar__scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; }
+}
+
 .sidebar__nav {
   flex: 1;
   padding: var(--space-5) var(--space-5) var(--space-8);
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  overflow-y: auto;
-  overflow-x: hidden;
 
   & > .sidebar__submenu {
     margin-left: var(--space-5);
@@ -80,7 +88,7 @@
 
 .sidebar__group {
   font-size: var(--text-3xs);
-  color: var(--gray-600);
+  color: var(--text-muted);
   font-weight: var(--fw-bold);
   letter-spacing: var(--ls-caps);
   padding: var(--space-7) var(--space-5) var(--space-3);
@@ -118,7 +126,7 @@
 .sidebar__item__icon {
   font-size: var(--text-3xs);
   margin-left: auto;
-  color: var(--gray-500);
+  color: var(--text-muted);
   transition: transform var(--dur-fast) var(--ease);
 
   &--open {

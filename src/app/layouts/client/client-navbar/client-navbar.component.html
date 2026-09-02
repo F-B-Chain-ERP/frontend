@@ -121,9 +121,9 @@
               </li>
               <li nz-menu-divider></li>
             }
-            <li nz-menu-item (click)="goToChangePassword()">
-              <nz-icon nzType="lock"/>
-              <span>Đặt lại mật khẩu</span>
+            <li nz-menu-item (click)="goToSettings()">
+              <nz-icon nzType="setting"/>
+              <span>Cài đặt tài khoản</span>
             </li>
             <li nz-menu-item (click)="toggleTheme(); isUserMenuOpen.set(true)">
               <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'"/>

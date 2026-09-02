@@ -365,7 +365,7 @@
       color: var(--text-secondary);
 
       &--discount {
-        color: #16A34A;
+        color: var(--success);
         font-weight: 700;
       }
 
@@ -381,9 +381,9 @@
       font-weight: 700;
 
       &.free {
-        color: #16A34A;
-        background: #E7F6EC;
-        border: 1px solid #C6E9CE;
+        color: var(--success);
+        background: var(--success-soft);
+        border: 1px solid color-mix\(in srgb, var\(--success\) 30%, transparent\);
         padding: 2px 8px;
         border-radius: var(--radius-pill);
         font-size: 11px;
@@ -415,12 +415,12 @@
       }
 
       &--success {
-        background: #E7F6EC;
-        border-color: #C6E9CE;
-        color: #16A34A;
+        background: var(--success-soft);
+        border-color: color-mix(in srgb, var(--success) 30%, transparent);
+        color: var(--success);
 
         [nz-icon] {
-          color: #16A34A;
+          color: var(--success);
         }
       }
     }

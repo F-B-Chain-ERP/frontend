@@ -47,10 +47,29 @@
   .ant-card-body {
     padding: 0;
   }
+
+  // Header trắng như các trang khác (light: var(--surface-card) #FFFFFF, dark: tự đổi qua token)
+  :host ::ng-deep .ant-table-thead > tr > th {
+    background: var(--surface-card) !important;
+  }
+
+  :host ::ng-deep .ant-table-thead > tr.thead-search > th {
+    background: var(--surface-card) !important;
+  }
+}
+
+// Dark: header đồng bộ với các bảng khác (var(--surface-sunken) #0E1626)
+:host-context([data-theme='dark']) .page__list ::ng-deep .ant-table-thead > tr > th,
+:host-context([data-theme='dark']) .page__list ::ng-deep .ant-table-thead > tr.thead-search > th {
+  background: var(--surface-sunken) !important;
 }
 
 .is-default-row {
-  background-color: rgba(139, 92, 246, 0.02);
+  background-color: var(--surface-card) !important;
+}
+
+:host-context([data-theme='dark']) .is-default-row {
+  background-color: var(--surface-card) !important;
 }
 
 .is-deleted-row {
@@ -68,8 +87,8 @@
   &__info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    line-height: 1.2;
+    gap: var(--space-1);
+    line-height: var(--lh-tight);
   }
 
   &__name-row {
@@ -96,7 +115,7 @@
   background: var(--surface-sunken);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  font-size: 11.5px;
+  font-size: var(--text-xs);
   color: var(--text-secondary);
   font-family: var(--font-mono, monospace);
   font-weight: var(--fw-medium);
@@ -110,7 +129,7 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.4;
+  line-height: var(--lh-snug);
 }
 
 // ── Account Count Chip (Interactive) ────────────────────────────
@@ -182,13 +201,13 @@
   }
 
   .form-error {
-    font-size: 11px;
+    font-size: var(--text-xs);
     color: var(--danger);
     margin-top: 2px;
   }
 
   .form-help-text {
-    font-size: 11px;
+    font-size: var(--text-xs);
     color: var(--text-muted);
     margin-top: 2px;
   }

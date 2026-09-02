@@ -7,13 +7,16 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  min-width: calc(100% - var(--sidebar-w));
+  flex: 1;
+  min-width: 0;
   background-color: var(--surface-app);
   transition: min-width var(--dur-fast) var(--ease);
+}
 
-  &.sidebar-collapsed {
-    min-width: calc(100% - var(--sidebar-w-collapsed));
-  }
+// Khi customer ẩn sidebar (filteredMenu rỗng) thì main chiếm trọn
+:host:has(app-sidebar:empty) .app-main-wrapper,
+:host:not(:has(app-sidebar aside)) .app-main-wrapper {
+  min-width: 100%;
 }
 
 .app-main-content {

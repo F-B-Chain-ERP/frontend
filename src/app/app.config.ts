@@ -15,7 +15,6 @@ import {
 import { authExpiredInterceptor } from './core/interceptor/auth-expired.interceptor';
 import { authInterceptor } from './core/interceptor/auth.interceptor';
 import { errorHandlerInterceptor } from './core/interceptor/error-handler.interceptor';
-import { notificationInterceptor } from './core/interceptor/notification.interceptor';
 
 import { AppPageTitleStrategy } from './app-page-title-strategy';
 import { routes } from './app.routes';
@@ -48,7 +47,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       inject(ApplicationConfigService).setEndpointPrefix(SERVER_API_URL);
     }),
-    provideHttpClient(withInterceptors([authInterceptor, authExpiredInterceptor, errorHandlerInterceptor, notificationInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, authExpiredInterceptor, errorHandlerInterceptor])),
     Title,
     provideNzI18n(vi_VN),
     importProvidersFrom(NzModalModule),

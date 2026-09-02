@@ -5,7 +5,6 @@ import {filter} from 'rxjs/operators';
 import {SIDEBAR_MENU} from './sidebar.constant';
 import {SidebarChild, SidebarGroup, SidebarParent} from './sidebar.model';
 import {NzIconDirective} from 'ng-zorro-antd/icon';
-import {OverlayscrollbarsModule} from 'overlayscrollbars-ngx';
 import {LayoutService} from '../service/layout.service';
 import {AccountService} from '../../core/auth/account.service';
 import {NzTooltipDirective} from 'ng-zorro-antd/tooltip';
@@ -14,7 +13,7 @@ import {NzTooltipDirective} from 'ng-zorro-antd/tooltip';
   selector: 'app-sidebar',
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.scss'],
-  imports: [NgTemplateOutlet, NzIconDirective, OverlayscrollbarsModule, NzTooltipDirective],
+  imports: [NgTemplateOutlet, NzIconDirective, NzTooltipDirective],
   standalone: true,
 })
 export class SidebarComponent implements OnInit {

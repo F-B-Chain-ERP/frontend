@@ -1,5 +1,5 @@
 ﻿<div class="branch-list-page">
-  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <!-- -- 1. Page Header ----------------------------------------------- -->
   <div class="page__header">
     <div class="page__header__left">
       <h1 class="page__header__title">Quản lý chi nhánh</h1>
@@ -12,7 +12,7 @@
     </div>
   </div>
 
-  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <!-- -- 2. Filter Box ------------------------------------------------ -->
   <nz-card class="page__filter-box" [nzBordered]="false">
     <div class="page__filter-box__row">
       <!-- Search keyword -->
@@ -55,7 +55,7 @@
     </div>
   </nz-card>
 
-  <!-- ── 3. Main Data Table Card ────────────────────────────────────── -->
+  <!-- -- 3. Main Data Table Card -------------------------------------- -->
   <nz-card class="page__list" [nzBordered]="false">
     <nz-table
       #branchTable
@@ -230,7 +230,7 @@
       </tbody>
     </nz-table>
 
-    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <!-- -- 4. Standard Footer & Pagination ---------------------------- -->
     <div class="page__pagination">
       <app-pagination
         [total]="total()"
@@ -244,9 +244,9 @@
     </div>
   </nz-card>
 
-  <!-- ── 5. Form Modal (Thêm mới / Cập nhật) ───────────────────────── -->
+  <!-- -- 5. Form Modal (Thêm mới / Cập nhật) ------------------------- -->
   <app-modal
-    [visible]="isFormModalVisible()"
+    [visible]="isFormModalVisible()" [maskClosable]="false"
     (visibleChange)="isFormModalVisible.set($event)"
     [title]="formModalTitle"
     size="md"
@@ -378,7 +378,7 @@
 
         <!-- Thời gian chuẩn bị -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
-          <label class="form-label" for="modal-branch-prep">Thời gian chế biến trung bình (phút)</label>
+          <label class="form-label" for="modal-branch-prep">Thời gian chuẩn bị trung bình (phút)</label>
           <nz-input-number
             id="modal-branch-prep"
             formControlName="averagePreparationMinutes"

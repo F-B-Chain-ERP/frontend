@@ -3,7 +3,7 @@
 // Webfonts: Inter (UI) + JetBrains Mono (numeric/code).
 // ============================================================
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+// Webfonts loaded via <link> in index.html (preconnect + display=swap) to avoid duplicate @import
 
 // --- Font family stacks (SCSS vars for interpolation) -------
 $font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !default;
@@ -87,7 +87,9 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: "cv05" 1, "ss01" 1;
+  /* Inter cv05/ss01 break Vietnamese diacritics (ư, ơ, ộ) — keep liga/calt only */
+  font-feature-settings: "liga" 1, "calt" 1;
+  font-variant-ligatures: common-ligatures;
 }
 
 p {
