@@ -42,14 +42,20 @@
     </div>
   </div>
 
-  <!-- Right Side: Form Card -->
+  <!-- Right Side: Selection Card -->
   <div class="select-unit__right">
-    <!-- Topbar for User Profile -->
+    <!-- Topbar for User Profile & Actions -->
     <div class="select-unit__topbar">
+      @if (hasActiveSession()) {
+        <button nz-button nzType="default" class="select-unit__back-btn" (click)="goBack()">
+          <nz-icon nzType="arrow-left"></nz-icon>
+          Quay lại hệ thống
+        </button>
+      }
       <div class="select-unit__user-wrap" (click)="logout()" title="Đăng xuất">
         <div class="select-unit__user">
           <div class="select-unit__user-avatar">{{ initials }}</div>
-          <div class="select-unit__user-name">{{ currentAccount()?.login }}</div>
+          <div class="select-unit__user-name">{{ currentAccount()?.firstName || currentAccount()?.login }}</div>
         </div>
         <div class="select-unit__user-dropdown">
           <div class="select-unit__dropdown-item select-unit__dropdown-item--logout">Đăng xuất</div>
@@ -61,7 +67,9 @@
     <div class="select-unit__card">
       <div class="select-unit__card-inner">
         <h1 class="select-unit__title">CHỌN ĐƠN VỊ LÀM VIỆC</h1>
-        <p class="select-unit__subtitle">Vui lòng chọn đơn vị/chi nhánh để tiếp tục</p>
+        <p class="select-unit__subtitle">
+          Vui lòng chọn đơn vị/chi nhánh để tiếp tục
+        </p>
 
         @if (loading()) {
           <div class="select-unit__loading">
@@ -71,34 +79,210 @@
           <nz-empty nzDescription="Tài khoản chưa được gán phạm vi chi nhánh nào. Vui lòng liên hệ quản trị viên."></nz-empty>
         } @else {
           <div class="select-unit__form">
+            <!-- Form Item: Dropdown dạng Bảng (Table Dropdown) -->
             <div class="select-unit__form-item">
-              <label>Đơn vị / Chi nhánh</label>
-              <nz-select
-                [ngModel]="selectedId()"
-                (ngModelChange)="selectedId.set($event)"
-                nzPlaceHolder="Chọn đơn vị làm việc"
-                nzSize="large"
-                nzShowSearch
-                class="select-unit__dropdown"
-                nzDropdownClassName="select-unit-dropdown-menu"
+              <label class="select-unit__label">
+                Đơn vị / Chi nhánh <span class="select-unit__required">*</span>
+              </label>
+
+              <!-- Trigger Box -->
+              <div
+                class="unit-combobox"
+                [class.unit-combobox--open]="isDropdownOpen()"
+                [class.unit-combobox--selected]="!!selectedBranch()"
+                nz-dropdown
+                [nzDropdownMenu]="unitTableMenu"
+                nzTrigger="click"
+                [nzClickHide]="false"
+                [nzVisible]="isDropdownOpen()"
+                (nzVisibleChange)="isDropdownOpen.set($event)"
+                nzPlacement="bottomLeft"
+                [nzOverlayStyle]="{ width: '700px', maxWidth: '92vw' }"
               >
-                @for (branch of branches(); track branch.id) {
-                  <nz-option [nzValue]="branch.id" [nzLabel]="branch.name"></nz-option>
-                }
-              </nz-select>
+                <div class="unit-combobox__prefix">
+                  <nz-icon nzType="shop"></nz-icon>
+                </div>
+
+                <div class="unit-combobox__content">
+                  @if (selectedBranch(); as b) {
+                    <div class="unit-combobox__value">
+                      <span class="unit-combobox__code">{{ b.code }}</span>
+                      <span class="unit-combobox__name">{{ b.name }}</span>
+                      @if (b.address) {
+                        <span class="unit-combobox__sub">— {{ b.address }}</span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="unit-combobox__placeholder">Chọn đơn vị / chi nhánh làm việc...</span>
+                  }
+                </div>
+
+                <div class="unit-combobox__suffix">
+                  @if (selectedBranch()) {
+                    <nz-icon
+                      nzType="close-circle"
+                      class="unit-combobox__clear"
+                      (click)="clearSelection($event)"
+                      title="Xóa lựa chọn"
+                    ></nz-icon>
+                  }
+                  <nz-icon
+                    nzType="down"
+                    class="unit-combobox__caret"
+                    [class.unit-combobox__caret--open]="isDropdownOpen()"
+                  ></nz-icon>
+                </div>
+              </div>
+
+              <!-- Floating Dropdown Table Menu -->
+              <nz-dropdown-menu #unitTableMenu="nzDropdownMenu">
+                <div class="unit-table-dropdown">
+                  <!-- Header with Search Input -->
+                  <div class="unit-table-dropdown__header">
+                    <div class="unit-table-dropdown__search">
+                      <nz-icon nzType="search" class="unit-table-dropdown__search-icon"></nz-icon>
+                      <input
+                        type="text"
+                        class="unit-table-dropdown__search-input"
+                        placeholder="Tìm kiếm theo mã, tên, địa chỉ hoặc số điện thoại..."
+                        [ngModel]="searchTerm()"
+                        (ngModelChange)="searchTerm.set($event)"
+                        (click)="$event.stopPropagation()"
+                        autofocus
+                      />
+                      @if (searchTerm()) {
+                        <nz-icon
+                          nzType="close-circle"
+                          class="unit-table-dropdown__search-clear"
+                          (click)="searchTerm.set(''); $event.stopPropagation()"
+                        ></nz-icon>
+                      }
+                    </div>
+                    <span class="unit-table-dropdown__badge">
+                      {{ filteredBranches().length }} / {{ branches().length }} đơn vị
+                    </span>
+                  </div>
+
+                  <!-- Table Content -->
+                  <div class="unit-table-dropdown__body">
+                    <table class="unit-table">
+                      <thead>
+                        <tr>
+                          <th style="width: 100px;">Mã đơn vị</th>
+                          <th style="width: 190px;">Tên đơn vị / Chi nhánh</th>
+                          <th style="width: 230px;">Địa chỉ</th>
+                          <th style="width: 110px;">Hotline</th>
+                          <th style="width: 100px; text-align: center;">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (branch of filteredBranches(); track branch.id) {
+                          <tr
+                            class="unit-table__row"
+                            [class.unit-table__row--selected]="branch.id === selectedId()"
+                            (click)="onSelectRow(branch)"
+                            (dblclick)="onDoubleClickRow(branch)"
+                          >
+                            <td>
+                              <span class="unit-table__code-pill">{{ branch.code }}</span>
+                            </td>
+                            <td>
+                              <div class="unit-table__name-cell">
+                                <span class="unit-table__name">{{ branch.name }}</span>
+                                @if (branch.parentName) {
+                                  <span class="unit-table__parent">Trực thuộc: {{ branch.parentName }}</span>
+                                }
+                              </div>
+                            </td>
+                            <td>
+                              <span class="unit-table__address" [title]="branch.address || ''">
+                                {{ branch.address || '—' }}
+                              </span>
+                            </td>
+                            <td>
+                              <span class="unit-table__phone">{{ branch.phone || '—' }}</span>
+                            </td>
+                            <td style="text-align: center;">
+                              @if (branch.status === 'ACTIVE' || !branch.status) {
+                                <span class="unit-table__status-tag unit-table__status-tag--active">
+                                  <span class="unit-table__status-dot"></span> Hoạt động
+                                </span>
+                              } @else {
+                                <span class="unit-table__status-tag unit-table__status-tag--inactive">
+                                  <span class="unit-table__status-dot"></span> Tạm ngưng
+                                </span>
+                              }
+                            </td>
+                          </tr>
+                        } @empty {
+                          <tr>
+                            <td colspan="5" class="unit-table__empty-cell">
+                              <nz-icon nzType="inbox" class="unit-table__empty-icon"></nz-icon>
+                              <p>Không tìm thấy chi nhánh nào khớp với "{{ searchTerm() }}"</p>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Footer tip -->
+                  <div class="unit-table-dropdown__footer">
+                    <span>💡 Nhấp để chọn đơn vị &bull; Nhấp đúp để chọn và đăng nhập ngay</span>
+                  </div>
+                </div>
+              </nz-dropdown-menu>
             </div>
-            
+
+            <!-- Selected Branch Detail Card (if selected) -->
+            @if (selectedBranch(); as sel) {
+              <div class="selected-detail-card">
+                <div class="selected-detail-card__header">
+                  <div class="selected-detail-card__title-group">
+                    <nz-icon nzType="check-circle" class="selected-detail-card__check-icon"></nz-icon>
+                    <span class="selected-detail-card__name">{{ sel.name }}</span>
+                    <span class="selected-detail-card__code">{{ sel.code }}</span>
+                  </div>
+                  <span class="selected-detail-card__badge">Đã chọn</span>
+                </div>
+                <div class="selected-detail-card__body">
+                  <div class="selected-detail-card__item">
+                    <nz-icon nzType="environment"></nz-icon>
+                    <span>{{ sel.address || 'Chưa cập nhật địa chỉ' }}</span>
+                  </div>
+                  @if (sel.phone) {
+                    <div class="selected-detail-card__item">
+                      <nz-icon nzType="phone"></nz-icon>
+                      <span>{{ sel.phone }}</span>
+                    </div>
+                  }
+                  @if (sel.parentName) {
+                    <div class="selected-detail-card__item">
+                      <nz-icon nzType="branches"></nz-icon>
+                      <span>Trực thuộc: {{ sel.parentName }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
+            <!-- Submit Button -->
             <button
               nz-button
               nzType="primary"
               nzSize="large"
               nzBlock
-              class="select-unit__submit"
+              class="select-unit__submit-btn"
               [disabled]="!selectedId()"
               [nzLoading]="selecting()"
               (click)="submit()"
             >
-              Đăng nhập
+              @if (selectedBranch(); as sel) {
+                <span>Vào làm việc với: {{ sel.name }}</span>
+              } @else {
+                <span>Đăng nhập</span>
+              }
+              <nz-icon nzType="arrow-right"></nz-icon>
             </button>
           </div>
         }

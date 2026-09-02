@@ -131,10 +131,20 @@ export class StateStorageService {
     this.clearLegacyKeys();
   }
 
-  storeSelectedBranch(branchId: string): void {
+  isRememberMe(): boolean {
+    return !!localStorage.getItem(this.authenticationKey);
+  }
+
+  private readonly selectedBranchNameKey = 'app_selected_branch_name';
+
+  storeSelectedBranch(branchId: string, branchName?: string | null): void {
     try {
       sessionStorage.setItem(this.selectedBranchKey, branchId);
       localStorage.setItem(this.selectedBranchKey, branchId);
+      if (branchName) {
+        sessionStorage.setItem(this.selectedBranchNameKey, branchName);
+        localStorage.setItem(this.selectedBranchNameKey, branchName);
+      }
     } catch {
       // Bỏ qua nếu storage không khả dụng
     }
@@ -144,9 +154,15 @@ export class StateStorageService {
     return localStorage.getItem(this.selectedBranchKey) ?? sessionStorage.getItem(this.selectedBranchKey);
   }
 
+  getSelectedBranchName(): string | null {
+    return localStorage.getItem(this.selectedBranchNameKey) ?? sessionStorage.getItem(this.selectedBranchNameKey);
+  }
+
   clearSelectedBranch(): void {
     sessionStorage.removeItem(this.selectedBranchKey);
     localStorage.removeItem(this.selectedBranchKey);
+    sessionStorage.removeItem(this.selectedBranchNameKey);
+    localStorage.removeItem(this.selectedBranchNameKey);
   }
 
   /** Đánh dấu phiên đăng nhập đang chờ chọn chi nhánh (requiresScopeAssignment). */
