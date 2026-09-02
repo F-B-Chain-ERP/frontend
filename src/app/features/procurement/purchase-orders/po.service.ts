@@ -40,6 +40,12 @@ interface PoResponseBE {
   subtotalAmount?: number | null;
   totalAmount?: number | null;
   note?: string | null;
+  submittedAt?: string | null;
+  approvedBy?: { id: string; fullName: string } | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  rejectedBy?: { id: string; fullName: string } | null;
+  rejectReason?: string | null;
   items?: PoItemResponseBE[];
   createdAt?: string | null;
 }
@@ -81,6 +87,12 @@ export class PurchaseOrderService {
     }
     if (filter.warehouseId) {
       params = params.set('warehouseId', String(filter.warehouseId));
+    }
+    if (filter.fromDate) {
+      params = params.set('fromDate', filter.fromDate);
+    }
+    if (filter.toDate) {
+      params = params.set('toDate', filter.toDate);
     }
 
     return this.http.get<ApiEnvelope<PageEnvelope<PoResponseBE>>>(this.poApi, { params }).pipe(
@@ -129,6 +141,13 @@ export class PurchaseOrderService {
       .pipe(map(res => this.toDetail(res.data)));
   }
 
+  reject(id: string | number, reason?: string): Observable<PurchaseOrderDetail> {
+    const params = reason ? new HttpParams().set('reason', reason) : undefined;
+    return this.http
+      .post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/reject`, {}, { params })
+      .pipe(map(res => this.toDetail(res.data)));
+  }
+
   receive(id: string | number, items: { purchaseOrderItemId: string; receivedQuantity: number }[]): Observable<PurchaseOrderDetail> {
     return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/receive`, { items }).pipe(map(res => this.toDetail(res.data)));
   }
@@ -154,6 +173,9 @@ export class PurchaseOrderService {
       totalAmount: r.totalAmount ?? 0,
       note: r.note ?? '',
       createdAt: r.createdAt ?? '',
+      rejectedAt: r.rejectedAt ?? null,
+      rejectedBy: r.rejectedBy ?? null,
+      rejectReason: r.rejectReason ?? null,
     };
   }
 
@@ -171,6 +193,13 @@ export class PurchaseOrderService {
       subtotalAmount: r.subtotalAmount ?? 0,
       totalAmount: r.totalAmount ?? 0,
       note: r.note ?? '',
+      submittedAt: r.submittedAt ?? null,
+      approvedBy: r.approvedBy ?? null,
+      approvedAt: r.approvedAt ?? null,
+      rejectedAt: r.rejectedAt ?? null,
+      rejectedBy: r.rejectedBy ?? null,
+      rejectReason: r.rejectReason ?? null,
+      createdAt: r.createdAt ?? null,
       items: (r.items ?? []).map(i => ({
         id: i.id,
         materialId: i.materialId ?? '',

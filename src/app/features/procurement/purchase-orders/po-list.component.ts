@@ -1,6 +1,15 @@
 import { ApplicationRef, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormArray, FormBuilder, Validators, AbstractControl, FormGroup } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormArray,
+  FormBuilder,
+  Validators,
+  AbstractControl,
+  FormGroup,
+  FormControl,
+} from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, tap, takeUntil } from 'rxjs/operators';
@@ -18,6 +27,7 @@ import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
 
 import { BaseComponent } from '../../../shared/base-component/base.component';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
@@ -36,6 +46,7 @@ import {
   PurchaseOrder,
   PurchaseOrderDetail,
   PurchaseOrderFilter,
+  PurchaseOrderItemDetail,
   PurchaseOrderItemForm,
   PurchaseOrderStatus,
   PURCHASE_ORDER_STATUS_OPTIONS,
@@ -69,6 +80,7 @@ interface NameCodeBE {
     NzGridModule,
     NzDividerModule,
     NzModalModule,
+    NzSpinModule,
     AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
@@ -96,6 +108,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   searchQuery = '';
   selectedStatus: PurchaseOrderStatus | string | null = null;
   selectedWarehouseId: string | null = null;
+  selectedFromDate: Date | null = null;
+  selectedToDate: Date | null = null;
   pageIndex = DEFAULT_PAGE_INDEX;
   pageSize = DEFAULT_PAGE_SIZE;
 
@@ -109,6 +123,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   readonly unitOptions = signal<PoOption[]>([]);
 
   selectedPoId: string | number | null = null;
+  readonly modalDetail = signal<PurchaseOrderDetail | null>(null);
 
   readonly poForm = this.fb.group({
     poCode: [''],
@@ -116,7 +131,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     warehouseId: [null as string | null, [Validators.required]],
     orderDate: [null as Date | string | null, [Validators.required]],
     expectedDate: [null as Date | string | null],
-    note: [''],
+    note: ['', [Validators.maxLength(500)]],
     items: this.fb.array([], [Validators.required, this.atLeastOneItem]),
   });
 
@@ -193,6 +208,11 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     return String(option.nzLabel ?? '').toLowerCase().includes(input.toLowerCase());
   };
 
+  disableToDateAfterFromDate = (current: Date): boolean => {
+    if (!this.selectedFromDate) return false;
+    return current < this.selectedFromDate;
+  };
+
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
@@ -201,6 +221,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     ]);
 
     this.poForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcTotals());
+    this.receiveForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcReceiveTotals());
     this.loadData();
   }
 
@@ -211,6 +232,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       query: this.searchQuery,
       status: this.selectedStatus,
       warehouseId: this.selectedWarehouseId,
+      fromDate: this.selectedFromDate ? this.toDateStr(this.selectedFromDate) : null,
+      toDate: this.selectedToDate ? this.toDateStr(this.selectedToDate) : null,
       pageIndex: this.pageIndex,
       pageSize: this.pageSize,
     };
@@ -242,6 +265,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.searchQuery = '';
     this.selectedStatus = null;
     this.selectedWarehouseId = null;
+    this.selectedFromDate = null;
+    this.selectedToDate = null;
     this.columnFilter.reset();
     this.pageIndex = DEFAULT_PAGE_INDEX;
     this.loadData();
@@ -341,16 +366,35 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   }
 
   // ── Status actions ────────────────────────────────────────────────
+  readonly submitTarget = signal<PurchaseOrder | null>(null);
+
   onSubmitPO(po: PurchaseOrder): void {
+    this.submitTarget.set(po);
+  }
+
+  closeSubmitModal(): void {
+    this.submitTarget.set(null);
+  }
+
+  confirmSubmit(): void {
+    const po = this.submitTarget();
+    if (!po) return;
+
+    this.isSaving.set(true);
     this.purchaseOrderService
       .submit(po.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
+          this.isSaving.set(false);
+          this.closeSubmitModal();
           this.toastService.success('Thành công', `Đã trình duyệt đơn mua hàng ${po.code}`);
           this.loadData();
         },
-        error: err => this.toastService.error('Lỗi', err.message || 'Không thể trình duyệt đơn.'),
+        error: err => {
+          this.isSaving.set(false);
+          this.toastService.error('Lỗi', err.message || 'Không thể trình duyệt đơn.');
+        },
       });
   }
 
@@ -368,20 +412,130 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   }
 
   onReceivePO(po: PurchaseOrder): void {
+    this.openReceiveModal(po);
+  }
+
+  // ── Receive modal (nhập số lượng nhận thực tế) ───────────────────
+  readonly receiveTarget = signal<PurchaseOrder | null>(null);
+  readonly receiveItems = signal<PurchaseOrderItemDetail[]>([]);
+  readonly receiveUnitPrices = signal<number[]>([]);
+  readonly receiveForm: FormArray<FormGroup> = this.fb.array<FormGroup>([]);
+
+  get receiveItemsArray(): FormArray<FormGroup> {
+    return this.receiveForm;
+  }
+
+  receiveQtyControl(index: number): FormControl {
+    return (this.receiveForm.at(index) as FormGroup).get('receivedQuantity') as FormControl;
+  }
+
+  receiveQuantityValue(index: number): number {
+    const ctrl = this.receiveForm.at(index) as FormGroup;
+    return Number(ctrl.get('quantity')?.value) || 0;
+  }
+
+  openReceiveModal(po: PurchaseOrder): void {
+    this.receiveTarget.set(po);
+    this.getReceiveItems(po.id);
+  }
+
+  private getReceiveItems(poId: string | number): void {
     this.purchaseOrderService
-      .receive(po.id, [])
+      .getPurchaseOrderById(poId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: () => {
-          this.toastService.success('Thành công', `Đã ghi nhận nhập kho cho đơn ${po.code}`);
-          this.loadData();
+        next: detail => {
+          if (!detail) {
+            this.toastService.error('Lỗi', 'Không thể tải danh sách nguyên vật liệu của đơn.');
+            this.closeReceiveModal();
+            return;
+          }
+          this.receiveItems.set(detail.items ?? []);
+          this.receiveUnitPrices.set((detail.items ?? []).map(it => Number(it.unitPrice) || 0));
+          const controls = (detail.items ?? []).map(it => {
+            const max = Number(it.quantity) || 0;
+            const remaining = Math.max(0, max - (Number(it.receivedQuantity) || 0));
+            return this.fb.group({
+              purchaseOrderItemId: [String(it.id ?? ''), [Validators.required]],
+              materialName: [it.materialName ?? ''],
+              quantity: [max],
+              receivedQuantity: [remaining, [Validators.required, Validators.min(0.001), Validators.max(max || Number.MAX_VALUE)]],
+            });
+          });
+          this.receiveForm.clear();
+          controls.forEach(c => this.receiveForm.push(c));
+          this.recalcReceiveTotals();
         },
-        error: err => this.toastService.error('Lỗi', err.message || 'Không thể ghi nhận nhập kho.'),
+        error: err => {
+          this.toastService.error('Lỗi', err?.message || 'Không thể tải danh sách nguyên vật liệu của đơn.');
+          this.closeReceiveModal();
+        },
       });
   }
 
+  readonly receiveTotals = signal<number[]>([]);
+  readonly receiveGrandTotal = computed(() => this.receiveTotals().reduce((sum, v) => sum + v, 0));
+
+  private recalcReceiveTotals(): void {
+    const prices = this.receiveUnitPrices();
+    const arr = this.receiveForm.controls.map((ctrl, i) => {
+      const g = ctrl as FormGroup;
+      const q = Number(g.get('receivedQuantity')?.value) || 0;
+      return q * (prices[i] || 0);
+    });
+    this.receiveTotals.set(arr);
+    this.appRef.tick();
+  }
+
+  closeReceiveModal(): void {
+    this.receiveTarget.set(null);
+    this.receiveForm.clear();
+    this.receiveItems.set([]);
+    this.receiveUnitPrices.set([]);
+  }
+
+  confirmReceive(): void {
+    if (!this.validateAndFocusFirstInvalid(this.receiveForm)) {
+      return;
+    }
+    const items = this.receiveForm.controls.map(ctrl => {
+      const g = ctrl as FormGroup;
+      const qty = Number(g.get('receivedQuantity')?.value);
+      return { purchaseOrderItemId: g.get('purchaseOrderItemId')?.value as string, receivedQuantity: qty };
+    });
+
+    const po = this.receiveTarget();
+    if (!po) return;
+
+    this.isSaving.set(true);
+    this.purchaseOrderService
+      .receive(po.id, items)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.toastService.success('Thành công', `Đã ghi nhận nhập kho cho đơn ${po.code}`);
+          this.closeReceiveModal();
+          this.loadData();
+        },
+        error: err => {
+          this.isSaving.set(false);
+          this.toastService.error('Lỗi', err?.message || 'Không thể ghi nhận nhập kho.');
+        },
+      });
+  }
+
+  // ── Preview / Print state ─────────────────────────────────────
+  readonly isPreviewVisible = signal(false);
+  readonly previewLoading = signal(false);
+  readonly previewPo = signal<PurchaseOrderDetail | null>(null);
+  readonly previewError = signal<string | null>(null);
+
   readonly cancelTarget = signal<PurchaseOrder | null>(null);
   readonly cancelReason = signal('');
+
+  readonly rejectTarget = signal<PurchaseOrder | null>(null);
+  readonly rejectReason = signal('');
 
   openCancelModal(po: PurchaseOrder): void {
     this.cancelTarget.set(po);
@@ -417,6 +571,129 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       });
   }
 
+  openRejectModal(po: PurchaseOrder): void {
+    this.rejectTarget.set(po);
+    this.rejectReason.set('');
+  }
+
+  closeRejectModal(): void {
+    this.rejectTarget.set(null);
+    this.rejectReason.set('');
+  }
+
+  confirmReject(): void {
+    const po = this.rejectTarget();
+    const reason = this.rejectReason().trim();
+    if (!po || !reason) {
+      return;
+    }
+    this.isSaving.set(true);
+    this.purchaseOrderService
+      .reject(po.id, reason)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.toastService.success('Thành công', `Đã từ chối đơn mua hàng ${po.code}. Đơn có thể sửa và trình duyệt lại.`);
+          this.closeRejectModal();
+          this.loadData();
+        },
+        error: err => {
+          this.isSaving.set(false);
+          this.toastService.error('Lỗi', err?.message || 'Không thể từ chối đơn.');
+        },
+      });
+  }
+
+  // ── Preview / Print ─────────────────────────────────────────
+  openPreviewModal(po: PurchaseOrder): void {
+    this.isPreviewVisible.set(true);
+    this.previewLoading.set(true);
+    this.previewError.set(null);
+    this.previewPo.set(null);
+
+    this.purchaseOrderService
+      .getPurchaseOrderById(po.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: detail => {
+          this.previewLoading.set(false);
+          if (detail) {
+            this.previewPo.set(detail);
+          } else {
+            this.previewError.set(`Đơn mua hàng ${po.code} không tồn tại hoặc đã bị xóa.`);
+          }
+        },
+        error: err => {
+          this.previewLoading.set(false);
+          const msg = err?.error?.message || err?.message || '';
+          if (msg.includes('không tồn tại') || msg.includes('not found') || err?.status === 404) {
+            this.previewError.set(`Đơn mua hàng ${po.code} không tồn tại hoặc đã bị xóa.`);
+          } else {
+            this.previewError.set('Không thể tải dữ liệu đơn mua hàng. Vui lòng thử lại.');
+          }
+        },
+      });
+  }
+
+  closePreviewModal(): void {
+    this.isPreviewVisible.set(false);
+    this.previewPo.set(null);
+    this.previewError.set(null);
+  }
+
+  printPo(): void {
+    const printContent = document.getElementById('po-print-area');
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      this.toastService.error('Lỗi', 'Trình duyệt đã chặn cửa sổ in. Vui lòng cho phép popup.');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+        <title>Phiếu đặt hàng - ${this.previewPo()?.poCode || ''}</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: 'Times New Roman', Times, serif; font-size: 13px; color: #000; padding: 20mm; }
+          .header { text-align: center; margin-bottom: 24px; }
+          .header h1 { font-size: 18px; text-transform: uppercase; margin-bottom: 4px; }
+          .header .company { font-size: 14px; font-weight: bold; }
+          .meta { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 13px; }
+          .meta div { margin-bottom: 4px; }
+          .meta strong { font-weight: bold; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+          th, td { border: 1px solid #000; padding: 6px 8px; font-size: 12px; }
+          th { background-color: #f0f0f0; font-weight: bold; text-align: center; }
+          td { text-align: left; }
+          .text-right { text-align: right; }
+          .text-center { text-align: center; }
+          .total-row td { font-weight: bold; background-color: #f9f9f9; }
+          .note { margin: 12px 0; font-size: 12px; }
+          .signatures { display: flex; justify-content: space-between; margin-top: 40px; font-size: 12px; }
+          .signatures .sig-block { text-align: center; width: 30%; }
+          .signatures .sig-block .title { font-weight: bold; margin-bottom: 50px; }
+          @media print { body { padding: 10mm; } }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  }
+
   onDeletePO(po: PurchaseOrder): void {
     this.modalService.confirm({
       nzTitle: 'Xác nhận xóa đơn mua hàng',
@@ -443,6 +720,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   openCreateModal(): void {
     this.modalMode.set('create');
     this.selectedPoId = null;
+    this.modalDetail.set(null);
     this.resetForm();
     this.warehouseOptions.set(this.mockWarehouses);
     this.unitOptions.set(this.mockUnits);
@@ -467,6 +745,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
           .pipe(takeUntil(this.destroy$))
           .subscribe(detail => {
             if (detail) {
+              this.modalDetail.set(detail);
               this.patchForm(detail);
               if (this.modalMode() === 'view') {
                 this.poForm.disable();
@@ -486,6 +765,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   closeModal(): void {
     this.isModalVisible.set(false);
+    this.modalDetail.set(null);
   }
 
   addItem(): void {
@@ -592,7 +872,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
           materialText: [matLabel, [Validators.required]],
           unitId: [it.unitId, [Validators.required]],
           quantity: [it.quantity, [Validators.required, Validators.min(0.001)]],
-          unitPrice: [it.unitPrice, [Validators.required, Validators.min(0)]],
+          unitPrice: [it.unitPrice, [Validators.required, Validators.min(0.001)]],
         }),
       );
     });
@@ -608,7 +888,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       materialText: ['', [Validators.required]],
       unitId: [null as string | null, [Validators.required]],
       quantity: [null as number | null, [Validators.required, Validators.min(0.001)]],
-      unitPrice: [null as number | null, [Validators.required, Validators.min(0)]],
+      unitPrice: [null as number | null, [Validators.required, Validators.min(0.001)]],
     });
   }
 
