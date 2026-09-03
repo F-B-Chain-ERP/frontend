@@ -133,6 +133,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     categoryId: [null as string | null, [Validators.required]],
     baseUnitId: [null as string | null, [Validators.required]],
     minStockAlert: [10.0, [Validators.required, Validators.min(0)]],
+    shelfLifeDays: [null as number | null, [Validators.min(0)]],
     isPerishable: [false],
     status: ['ACTIVE', [Validators.required]],
     note: ['', [Validators.maxLength(500)]],
@@ -279,6 +280,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       categoryId: null,
       baseUnitId: null,
       minStockAlert: 10.0,
+      shelfLifeDays: 7,
       isPerishable: false,
       status: 'ACTIVE',
       note: '',
@@ -290,39 +292,54 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   openViewModal(item: Material): void {
     this.modalMode.set('view');
     this.selectedMaterial.set(item);
-    this.materialForm.reset({
-      id: item.id,
-      code: item.code,
-      name: item.name,
-      categoryId: item.categoryId || null,
-      baseUnitId: item.baseUnitId || null,
-      minStockAlert: item.minStockAlert,
-      isPerishable: item.isPerishable,
-      status: item.status,
-      note: item.note || '',
-    });
-    this.materialForm.disable();
     this.isModalVisible.set(true);
+    this.materialService
+      .getMaterialById(item.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(detail => {
+        const d = detail || item;
+        this.selectedMaterial.set(d);
+        this.materialForm.reset({
+          id: d.id,
+          code: d.code,
+          name: d.name,
+          categoryId: d.category?.id || d.categoryId || null,
+          baseUnitId: d.baseUnit?.id || d.baseUnitId || null,
+          minStockAlert: d.minStockAlert,
+          shelfLifeDays: d.shelfLifeDays ?? null,
+          isPerishable: d.isPerishable,
+          status: d.status,
+          note: d.note || '',
+        });
+        this.materialForm.disable();
+      });
   }
 
   openEditModal(item: Material): void {
     this.modalMode.set('edit');
     this.selectedMaterial.set(item);
-    this.materialForm.reset({
-      id: item.id,
-      code: item.code,
-      name: item.name,
-      categoryId: item.categoryId || null,
-      baseUnitId: item.baseUnitId || null,
-      minStockAlert: item.minStockAlert,
-      isPerishable: item.isPerishable,
-      status: item.status,
-      note: item.note || '',
-    });
-    this.materialForm.enable();
-    // Mã NVL giữ nguyên không cho sửa khi edit
-    this.materialForm.get('code')?.disable();
     this.isModalVisible.set(true);
+    this.materialService
+      .getMaterialById(item.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(detail => {
+        const d = detail || item;
+        this.selectedMaterial.set(d);
+        this.materialForm.reset({
+          id: d.id,
+          code: d.code,
+          name: d.name,
+          categoryId: d.category?.id || d.categoryId || null,
+          baseUnitId: d.baseUnit?.id || d.baseUnitId || null,
+          minStockAlert: d.minStockAlert,
+          shelfLifeDays: d.shelfLifeDays ?? null,
+          isPerishable: d.isPerishable,
+          status: d.status,
+          note: d.note || '',
+        });
+        this.materialForm.enable();
+        this.materialForm.get('code')?.disable();
+      });
   }
 
   closeModal(): void {
@@ -348,6 +365,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       categoryId: formRaw.categoryId,
       baseUnitId: formRaw.baseUnitId,
       minStockAlert: Number(formRaw.minStockAlert) || 0,
+      shelfLifeDays: formRaw.shelfLifeDays !== null && formRaw.shelfLifeDays !== undefined ? Number(formRaw.shelfLifeDays) : null,
       isPerishable: Boolean(formRaw.isPerishable),
       status: formRaw.status || 'ACTIVE',
       note: formRaw.note?.trim() || '',

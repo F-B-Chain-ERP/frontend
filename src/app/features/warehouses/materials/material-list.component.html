@@ -297,7 +297,7 @@
               <span
                 [class]="getPerishableMeta(item.isPerishable).badgeClass"
                 nz-tooltip
-                [nzTooltipTitle]="item.isPerishable ? 'Nguyên vật liệu dễ hỏng / Date ngắn' : 'Bảo quản điều kiện thường'"
+                [nzTooltipTitle]="item.isPerishable ? ('Nguyên vật liệu dễ hỏng / Date ngắn' + (item.shelfLifeDays ? ' (Hạn dùng: ' + item.shelfLifeDays + ' ngày)' : '')) : 'Bảo quản điều kiện thường'"
               >
                 {{ getPerishableMeta(item.isPerishable).label }}
               </span>
@@ -488,6 +488,20 @@
               <span class="form-error">Định mức tồn không được nhỏ hơn 0.</span>
             }
           }
+        </div>
+
+        <!-- Thời hạn bảo quản / Hạn dùng -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="mat-shelf-life">Thời hạn bảo quản / Hạn dùng (ngày)</label>
+          <nz-input-number
+            id="mat-shelf-life"
+            formControlName="shelfLifeDays"
+            [nzMin]="1"
+            [nzStep]="1"
+            [nzPrecision]="0"
+            nzPlaceHolder="VD: 7 (ngày)"
+            style="width: 100%"
+          ></nz-input-number>
         </div>
 
         <!-- Trạng thái -->

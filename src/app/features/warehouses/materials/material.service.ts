@@ -31,15 +31,25 @@ export const INITIAL_MOCK_MATERIALS: Material[] = [
   {
     id: 'mat-001',
     code: 'NVL-SUA-TUOI',
-    name: 'Sữa tươi thanh trùng',
+    name: 'Sữa tươi',
     categoryId: 'cat-001',
-    categoryName: 'Sữa & Chế phẩm bơ sữa',
+    categoryName: 'Sữa & chế phẩm',
+    category: {
+      id: 'cat-001',
+      name: 'Sữa & chế phẩm',
+    },
     baseUnitId: 'unit-001',
-    baseUnitName: 'Lít (L)',
+    baseUnitName: 'Mililít (ML)',
+    baseUnit: {
+      id: 'unit-001',
+      code: 'ML',
+      name: 'Mililít',
+    },
     minStockAlert: 10.0,
+    shelfLifeDays: 7,
     isPerishable: true,
     status: 'ACTIVE',
-    note: 'Bảo quản nhiệt độ 2-4°C, hạn sử dụng 10 ngày sau mở nắp',
+    note: 'Bảo quản nhiệt độ 2-4°C, hạn sử dụng 7 ngày sau nhập kho',
   },
   {
     id: 'mat-002',
@@ -47,9 +57,19 @@ export const INITIAL_MOCK_MATERIALS: Material[] = [
     name: 'Cà phê hạt Robusta Đắk Lắk',
     categoryId: 'cat-002',
     categoryName: 'Trà & Cà phê',
-    baseUnitId: 'unit-002',
+    category: {
+      id: 'cat-002',
+      name: 'Trà & Cà phê',
+    },
+    baseUnitId: 'unit-003',
     baseUnitName: 'Kilogram (kg)',
+    baseUnit: {
+      id: 'unit-003',
+      code: 'KG',
+      name: 'Kilogram',
+    },
     minStockAlert: 25.0,
+    shelfLifeDays: 365,
     isPerishable: false,
     status: 'ACTIVE',
     note: 'Bảo quản nơi khô ráo, thoáng mát',
@@ -60,9 +80,19 @@ export const INITIAL_MOCK_MATERIALS: Material[] = [
     name: 'Đường đen Hàn Quốc',
     categoryId: 'cat-003',
     categoryName: 'Đường, Siro & Gia vị',
-    baseUnitId: 'unit-002',
+    category: {
+      id: 'cat-003',
+      name: 'Đường, Siro & Gia vị',
+    },
+    baseUnitId: 'unit-003',
     baseUnitName: 'Kilogram (kg)',
+    baseUnit: {
+      id: 'unit-003',
+      code: 'KG',
+      name: 'Kilogram',
+    },
     minStockAlert: 15.0,
+    shelfLifeDays: 180,
     isPerishable: false,
     status: 'ACTIVE',
     note: 'Đóng kín túi sau khi sử dụng',
@@ -73,9 +103,19 @@ export const INITIAL_MOCK_MATERIALS: Material[] = [
     name: 'Trân châu đen cao cấp',
     categoryId: 'cat-004',
     categoryName: 'Topping & Bột pha chế',
-    baseUnitId: 'unit-004',
+    category: {
+      id: 'cat-004',
+      name: 'Topping & Bột pha chế',
+    },
+    baseUnitId: 'unit-005',
     baseUnitName: 'Gói (Gói)',
+    baseUnit: {
+      id: 'unit-005',
+      code: 'GOI',
+      name: 'Gói',
+    },
     minStockAlert: 5.0,
+    shelfLifeDays: 90,
     isPerishable: true,
     status: 'ACTIVE',
     note: 'Thời hạn luộc và dùng trong ngày sau khi mở gói',
@@ -86,9 +126,19 @@ export const INITIAL_MOCK_MATERIALS: Material[] = [
     name: 'Ly nhựa nắp tim 500ml',
     categoryId: 'cat-005',
     categoryName: 'Bao bì & Đóng gói',
-    baseUnitId: 'unit-005',
+    category: {
+      id: 'cat-005',
+      name: 'Bao bì & Đóng gói',
+    },
+    baseUnitId: 'unit-006',
     baseUnitName: 'Thùng (Thùng)',
+    baseUnit: {
+      id: 'unit-006',
+      code: 'THUNG',
+      name: 'Thùng',
+    },
     minStockAlert: 50.0,
+    shelfLifeDays: null,
     isPerishable: false,
     status: 'INACTIVE',
     note: 'Quy cách: 1000 ly / thùng',
@@ -254,10 +304,26 @@ export class WarehouseMaterialService {
   private enrichMaterialNames(m: Material): Material {
     const cat = MATERIAL_CATEGORY_OPTIONS.find(c => c.value === m.categoryId);
     const unit = MATERIAL_BASE_UNIT_OPTIONS.find(u => u.value === m.baseUnitId);
+    const catName = m.category?.name || m.categoryName || cat?.label || m.categoryId || '—';
+    const unitName = m.baseUnit?.name || m.baseUnitName || unit?.label || m.baseUnitId || '—';
+
+    const category = m.category || {
+      id: m.categoryId || 'cat-001',
+      name: catName,
+    };
+
+    const baseUnit = m.baseUnit || {
+      id: m.baseUnitId || 'unit-001',
+      code: 'ML',
+      name: unitName,
+    };
+
     return {
       ...m,
-      categoryName: m.categoryName || cat?.label || m.categoryId || '—',
-      baseUnitName: m.baseUnitName || unit?.label || m.baseUnitId || '—',
+      categoryName: catName,
+      baseUnitName: unitName,
+      category,
+      baseUnit,
     };
   }
 }

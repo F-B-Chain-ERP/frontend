@@ -3,15 +3,29 @@
  * Quản lý Nguyên vật liệu (Kho & Lưu kho)
  */
 
+export interface MaterialCategory {
+  id: string;
+  name: string;
+}
+
+export interface MaterialBaseUnit {
+  id: string;
+  code: string;
+  name: string;
+}
+
 export interface Material {
   id: string;
   code: string;
   name: string;
   categoryId?: string | null;
   categoryName?: string;
+  category?: MaterialCategory;
   baseUnitId?: string | null;
   baseUnitName?: string;
+  baseUnit?: MaterialBaseUnit;
   minStockAlert: number;
+  shelfLifeDays?: number | null;
   isPerishable: boolean;
   status: 'ACTIVE' | 'INACTIVE' | string;
   note?: string;
@@ -44,7 +58,7 @@ export interface MaterialOption {
 
 /** Danh sách tùy chọn nhóm danh mục nguyên vật liệu */
 export const MATERIAL_CATEGORY_OPTIONS: MaterialOption[] = [
-  { value: 'cat-001', label: 'Sữa & Chế phẩm bơ sữa' },
+  { value: 'cat-001', label: 'Sữa & chế phẩm' },
   { value: 'cat-002', label: 'Trà & Cà phê' },
   { value: 'cat-003', label: 'Đường, Siro & Gia vị' },
   { value: 'cat-004', label: 'Topping & Bột pha chế' },
@@ -53,12 +67,13 @@ export const MATERIAL_CATEGORY_OPTIONS: MaterialOption[] = [
 
 /** Danh sách tùy chọn đơn vị tính cơ bản */
 export const MATERIAL_BASE_UNIT_OPTIONS: MaterialOption[] = [
-  { value: 'unit-001', label: 'Lít (L)' },
-  { value: 'unit-002', label: 'Kilogram (kg)' },
-  { value: 'unit-003', label: 'Hộp (Hộp)' },
-  { value: 'unit-004', label: 'Gói (Gói)' },
-  { value: 'unit-005', label: 'Thùng (Thùng)' },
-  { value: 'unit-006', label: 'Chai (Chai)' },
+  { value: 'unit-001', label: 'Mililít (ML)' },
+  { value: 'unit-002', label: 'Lít (L)' },
+  { value: 'unit-003', label: 'Kilogram (kg)' },
+  { value: 'unit-004', label: 'Hộp (Hộp)' },
+  { value: 'unit-005', label: 'Gói (Gói)' },
+  { value: 'unit-006', label: 'Thùng (Thùng)' },
+  { value: 'unit-007', label: 'Chai (Chai)' },
 ];
 
 /** Tùy chọn trạng thái nguyên vật liệu */
