@@ -1,0 +1,564 @@
+<div class="material-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý nguyên vật liệu</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.CREATE]"
+        variant="primary"
+        leftIcon="plus"
+        (click)="openCreateModal()"
+      >
+        Thêm nguyên vật liệu
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Tìm kiếm từ khóa -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="material-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search"/>
+          <input
+            id="material-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Tìm theo mã, tên nguyên vật liệu, danh mục..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Danh mục NVL -->
+      <div class="filter-item filter-item--select">
+        <label class="form-label">Nhóm danh mục</label>
+        <nz-select
+          id="material-category-select"
+          [(ngModel)]="selectedCategory"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả nhóm NVL"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of categoryOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Dễ hỏng -->
+      <div class="filter-item filter-item--perishable">
+        <label class="form-label">Phân loại bảo quản</label>
+        <nz-select
+          id="material-perishable-select"
+          [(ngModel)]="selectedPerishable"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả phân loại"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of perishableOptions; track opt.label) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Trạng thái -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          id="material-status-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Nút thao tác lọc -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+    <app-selection-bar
+      [selectedCount]="setOfCheckedKeys.size"
+      [totalCount]="total()"
+      itemLabel="nguyên vật liệu"
+      (clearSelection)="clearSelection()"
+    >
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.DELETE]"
+        variant="danger"
+        leftIcon="delete"
+        (click)="onBatchDelete()"
+      >
+        Xóa đã chọn
+      </app-button>
+    </app-selection-bar>
+  }
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #materialTable
+      [nzData]="materials()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1320px' }"
+    >
+      <thead>
+      <tr>
+        <!-- Checkbox chọn tất cả -->
+        <th scope="col" nzWidth="48px" nzAlign="center">
+          <label class="cb" for="cb-check-all-materials">
+            <input
+              id="cb-check-all-materials"
+              #checkAllInput
+              type="checkbox"
+              [checked]="allChecked"
+              [indeterminate]="indeterminate"
+              (change)="onCheckAll(checkAllInput.checked)"
+            />
+            <span class="cb__box"></span>
+          </label>
+        </th>
+
+        <!-- STT -->
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+        <!-- Mã NVL -->
+        <th scope="col" nzWidth="160px" nzAlign="left">Mã NVL</th>
+
+        <!-- Tên nguyên vật liệu -->
+        <th scope="col" nzWidth="240px" nzAlign="left">Tên nguyên vật liệu</th>
+
+        <!-- Nhóm danh mục -->
+        <th scope="col" nzWidth="200px" nzAlign="left">Nhóm danh mục</th>
+
+        <!-- Đơn vị cơ bản -->
+        <th scope="col" nzWidth="140px" nzAlign="left">Đơn vị cơ bản</th>
+
+        <!-- Cảnh báo tồn tối thiểu -->
+        <th scope="col" nzWidth="170px" nzAlign="right">Cảnh báo tồn tối thiểu</th>
+
+        <!-- Dễ hỏng -->
+        <th scope="col" nzWidth="150px" nzAlign="center">Dễ hỏng</th>
+
+        <!-- Trạng thái -->
+        <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+
+        <!-- Thao tác -->
+        <th scope="col" nzWidth="140px" nzAlign="center">Thao tác</th>
+      </tr>
+
+      <!-- Hàng lọc theo cột (Table Search Inputs) -->
+      <tr class="thead-search">
+        <th></th>
+        <th></th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('code')"
+            (valueChange)="searchByField('code', $event)"
+            placeholder="Tìm mã NVL"
+          ></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('name')"
+            (valueChange)="searchByField('name', $event)"
+            placeholder="Tìm tên NVL"
+          ></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('categoryName')"
+            (valueChange)="searchByField('categoryName', $event)"
+            placeholder="Tìm nhóm danh mục"
+          ></app-table-search-input>
+        </th>
+        <th>
+          <app-table-search-input
+            [value]="columnFilter.getValue('baseUnitName')"
+            (valueChange)="searchByField('baseUnitName', $event)"
+            placeholder="Tìm đơn vị tính"
+          ></app-table-search-input>
+        </th>
+        <th></th>
+        <th></th>
+        <th>
+          <app-table-search-input
+            type="option"
+            [options]="statusFilterOptions"
+            labelField="label"
+            valueField="value"
+            [value]="columnFilter.getValue('status')"
+            (valueChange)="searchByField('status', $event)"
+            placeholder="Trạng thái"
+          ></app-table-search-input>
+        </th>
+        <th nzAlign="center">
+          <app-button
+            iconOnly="reload"
+            nz-tooltip
+            nzTooltipTitle="Đặt lại bộ lọc cột"
+            (click)="resetAllFieldFilter()"
+            variant="ghost"
+          ></app-button>
+        </th>
+      </tr>
+      </thead>
+
+      <tbody>
+        @for (item of materials(); track item.id; let i = $index) {
+          <tr>
+            <!-- Checkbox từng dòng -->
+            <td nzAlign="center">
+              <label class="cb" [for]="'cb-mat-' + item.id">
+                <input
+                  [id]="'cb-mat-' + item.id"
+                  #rowInput
+                  type="checkbox"
+                  [checked]="isChecked(item.id)"
+                  (change)="onCheckRow(item.id, rowInput.checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </td>
+
+            <!-- STT -->
+            <td nzAlign="center">
+              {{ pageIndex === 1 ? i + 1 : (pageIndex - 1) * pageSize + i + 1 }}
+            </td>
+
+            <!-- Mã NVL -->
+            <td>
+              <span class="table-code font-mono font-semibold" nz-tooltip [nzTooltipTitle]="item.code">
+                {{ item.code }}
+              </span>
+            </td>
+
+            <!-- Tên nguyên vật liệu -->
+            <td>
+              <span class="material-name font-semibold text-primary" nz-tooltip [nzTooltipTitle]="item.name">
+                {{ item.name }}
+              </span>
+            </td>
+
+            <!-- Nhóm danh mục -->
+            <td>
+              <span class="category-tag" nz-tooltip [nzTooltipTitle]="item.categoryName || '—'">
+                <nz-icon nzType="folder" style="margin-right: 6px; color: var(--brand);"/>
+                <span class="category-name-text">{{ item.categoryName || '—' }}</span>
+              </span>
+            </td>
+
+            <!-- Đơn vị cơ bản -->
+            <td>
+              <span class="unit-tag" nz-tooltip [nzTooltipTitle]="item.baseUnitName || '—'">
+                <nz-icon nzType="gold" style="margin-right: 4px; color: var(--text-muted);"/>
+                <span class="unit-name-text">{{ item.baseUnitName || '—' }}</span>
+              </span>
+            </td>
+
+            <!-- Cảnh báo tồn tối thiểu -->
+            <td nzAlign="right">
+              <span
+                class="min-stock font-mono font-semibold"
+                nz-tooltip
+                [nzTooltipTitle]="'Cảnh báo tồn tối thiểu: ' + (item.minStockAlert | number: '1.1-2') + ' ' + (item.baseUnitName || '')"
+              >
+                {{ item.minStockAlert | number: '1.1-2' }}
+              </span>
+              <span class="min-stock-unit text-muted" style="margin-left: 4px;">
+                {{ item.baseUnitName }}
+              </span>
+            </td>
+
+            <!-- Dễ hỏng -->
+            <td nzAlign="center">
+              <span
+                [class]="getPerishableMeta(item.isPerishable).badgeClass"
+                nz-tooltip
+                [nzTooltipTitle]="item.isPerishable ? ('Nguyên vật liệu dễ hỏng / Date ngắn' + (item.shelfLifeDays ? ' (Hạn dùng: ' + item.shelfLifeDays + ' ngày)' : '')) : 'Bảo quản điều kiện thường'"
+              >
+                {{ getPerishableMeta(item.isPerishable).label }}
+              </span>
+            </td>
+
+            <!-- Trạng thái -->
+            <td nzAlign="center">
+              <span
+                [class]="getStatusMeta(item.status).badgeClass"
+                nz-tooltip
+                [nzTooltipTitle]="getStatusMeta(item.status).label"
+              >
+                {{ getStatusMeta(item.status).label }}
+              </span>
+            </td>
+
+            <!-- Cột thao tác -->
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <!-- Xem chi tiết -->
+                <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết"
+                  (click)="openViewModal(item)"
+                >
+                </app-button>
+
+                <!-- Chỉnh sửa -->
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.UPDATE]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Cập nhật nguyên vật liệu"
+                  (click)="openEditModal(item)"
+                >
+                </app-button>
+
+                <!-- Xóa -->
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa nguyên vật liệu"
+                  (click)="onDelete(item)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="10" class="text-center tbl-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-icon"/>
+                <p class="empty-text">Không tìm thấy nguyên vật liệu nào trong kho</p>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 5. Standard Footer & Pagination ──────────────────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 6. Modal Thêm mới / Xem / Cập nhật Nguyên vật liệu ─────────── -->
+  <app-modal
+    [visible]="isModalVisible()"
+    (visibleChange)="isModalVisible.set($event)"
+    [title]="modalTitle"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="modalFooter"
+    (cancelEmit)="closeModal()"
+  >
+    <form [formGroup]="materialForm" class="material-form" (ngSubmit)="submitForm()">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Mã nguyên vật liệu -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="mat-code">Mã NVL</label>
+          <nz-input-wrapper>
+            <input
+              id="mat-code"
+              type="text"
+              nz-input
+              formControlName="code"
+              placeholder="VD: NVL-SUA-TUOI"
+              style="text-transform: uppercase;"
+            />
+          </nz-input-wrapper>
+          @if (materialForm.get('code')?.touched || materialForm.get('code')?.dirty) {
+            @if (materialForm.get('code')?.hasError('required')) {
+              <span class="form-error">Vui lòng nhập mã nguyên vật liệu.</span>
+            }
+          }
+        </div>
+
+        <!-- Tên nguyên vật liệu -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="mat-name">Tên nguyên vật liệu</label>
+          <nz-input-wrapper>
+            <input
+              id="mat-name"
+              type="text"
+              nz-input
+              formControlName="name"
+              placeholder="VD: Sữa tươi thanh trùng"
+            />
+          </nz-input-wrapper>
+          @if (materialForm.get('name')?.touched || materialForm.get('name')?.dirty) {
+            @if (materialForm.get('name')?.hasError('required')) {
+              <span class="form-error">Vui lòng nhập tên nguyên vật liệu.</span>
+            }
+          }
+        </div>
+
+        <!-- Nhóm danh mục -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required">Nhóm danh mục</label>
+          <nz-select
+            id="mat-category"
+            formControlName="categoryId"
+            nzPlaceHolder="Chọn nhóm nguyên vật liệu"
+            style="width: 100%"
+          >
+            @for (opt of categoryOptions; track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          @if (materialForm.get('categoryId')?.touched || materialForm.get('categoryId')?.dirty) {
+            @if (materialForm.get('categoryId')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn nhóm danh mục.</span>
+            }
+          }
+        </div>
+
+        <!-- Đơn vị tính cơ bản -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required">Đơn vị cơ bản</label>
+          <nz-select
+            id="mat-unit"
+            formControlName="baseUnitId"
+            nzPlaceHolder="Chọn đơn vị tính cơ bản"
+            style="width: 100%"
+          >
+            @for (opt of baseUnitOptions; track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          @if (materialForm.get('baseUnitId')?.touched || materialForm.get('baseUnitId')?.dirty) {
+            @if (materialForm.get('baseUnitId')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn đơn vị tính cơ bản.</span>
+            }
+          }
+        </div>
+
+        <!-- Cảnh báo tồn tối thiểu -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="mat-min-stock">Cảnh báo tồn tối thiểu</label>
+          <nz-input-number
+            id="mat-min-stock"
+            formControlName="minStockAlert"
+            [nzMin]="0"
+            [nzStep]="1"
+            [nzPrecision]="2"
+            nzPlaceHolder="Nhập định mức tồn tối thiểu"
+            style="width: 100%"
+          ></nz-input-number>
+          @if (materialForm.get('minStockAlert')?.touched || materialForm.get('minStockAlert')?.dirty) {
+            @if (materialForm.get('minStockAlert')?.hasError('required')) {
+              <span class="form-error">Vui lòng nhập định mức tồn tối thiểu.</span>
+            } @else if (materialForm.get('minStockAlert')?.hasError('min')) {
+              <span class="form-error">Định mức tồn không được nhỏ hơn 0.</span>
+            }
+          }
+        </div>
+
+        <!-- Thời hạn bảo quản / Hạn dùng -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="mat-shelf-life">Thời hạn bảo quản / Hạn dùng (ngày)</label>
+          <nz-input-number
+            id="mat-shelf-life"
+            formControlName="shelfLifeDays"
+            [nzMin]="1"
+            [nzStep]="1"
+            [nzPrecision]="0"
+            nzPlaceHolder="VD: 7 (ngày)"
+            style="width: 100%"
+          ></nz-input-number>
+        </div>
+
+        <!-- Trạng thái -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required">Trạng thái</label>
+          <nz-select
+            id="mat-status"
+            formControlName="status"
+            nzPlaceHolder="Chọn trạng thái"
+            style="width: 100%"
+          >
+            <nz-option nzValue="ACTIVE" nzLabel="Đang sử dụng"></nz-option>
+            <nz-option nzValue="INACTIVE" nzLabel="Ngừng sử dụng"></nz-option>
+          </nz-select>
+        </div>
+
+        <!-- Dễ hỏng / Cần bảo quản date ngắn -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <div class="perishable-toggle-card">
+            <div class="perishable-toggle-text">
+              <span class="toggle-title">Hàng dễ hỏng / Date ngắn</span>
+              <span class="toggle-desc">Đánh dấu nếu nguyên vật liệu cần kiểm soát hạn sử dụng nghiêm ngặt</span>
+            </div>
+            <nz-switch formControlName="isPerishable"></nz-switch>
+          </div>
+        </div>
+
+        <!-- Ghi chú / Hướng dẫn bảo quản -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="mat-note">Ghi chú / Lưu ý bảo quản kho</label>
+          <textarea
+            id="mat-note"
+            nz-input
+            rows="3"
+            formControlName="note"
+            placeholder="Nhập ghi chú hoặc quy cách bảo quản tại kho..."
+          ></textarea>
+        </div>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Template Footer của Modal -->
+  <ng-template #modalFooter>
+    <div class="modal-footer-actions">
+      <app-button variant="secondary" (click)="closeModal()">
+        {{ modalMode() === 'view' ? 'Đóng' : 'Hủy bỏ' }}
+      </app-button>
+      @if (modalMode() !== 'view') {
+        <app-button
+          variant="primary"
+          [loading]="isSaving()"
+          (click)="submitForm()"
+        >
+          {{ modalMode() === 'create' ? 'Tạo mới' : 'Lưu thay đổi' }}
+        </app-button>
+      }
+    </div>
+  </ng-template>
+</div>

@@ -1,0 +1,642 @@
+<div class="stock-in-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý phiếu nhập kho</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.NHAP_KHO.CREATE]"
+        variant="primary"
+        leftIcon="plus"
+        (click)="openCreateModal()"
+      >
+        Tạo phiếu nhập kho
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Tìm kiếm từ khóa -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="stock-in-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="stock-in-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Tìm theo số phiếu nhập, chứng từ gốc, ghi chú..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Kho nhập -->
+      <div class="filter-item filter-item--select">
+        <label class="form-label">Kho nhập</label>
+        <nz-select
+          id="stock-in-warehouse-select"
+          [(ngModel)]="selectedWarehouseId"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả kho nhập"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of warehouseOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Nguồn nhập -->
+      <div class="filter-item filter-item--source">
+        <label class="form-label">Nguồn nhập</label>
+        <nz-select
+          id="stock-in-source-select"
+          [(ngModel)]="selectedSourceType"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả nguồn nhập"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of sourceTypeOptions; track opt.label) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Trạng thái -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          id="stock-in-status-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Từ ngày -->
+      <div class="filter-item filter-item--date">
+        <label class="form-label">Từ ngày</label>
+        <nz-date-picker
+          id="stock-in-from-date"
+          [(ngModel)]="selectedFromDate"
+          nzFormat="yyyy-MM-dd"
+          nzPlaceHolder="Từ ngày"
+          [nzAllowClear]="true"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        ></nz-date-picker>
+      </div>
+
+      <!-- Đến ngày -->
+      <div class="filter-item filter-item--date">
+        <label class="form-label">Đến ngày</label>
+        <nz-date-picker
+          id="stock-in-to-date"
+          [(ngModel)]="selectedToDate"
+          nzFormat="yyyy-MM-dd"
+          nzPlaceHolder="Đến ngày"
+          [nzAllowClear]="true"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        ></nz-date-picker>
+      </div>
+
+      <!-- Nút thao tác lọc -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+    <app-selection-bar
+      [selectedCount]="setOfCheckedKeys.size"
+      [totalCount]="total()"
+      itemLabel="phiếu nhập kho"
+      (clearSelection)="clearSelection()"
+    >
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.NHAP_KHO.DELETE]"
+        variant="danger"
+        leftIcon="delete"
+        (click)="onBatchDelete()"
+      >
+        Xóa đã chọn
+      </app-button>
+    </app-selection-bar>
+  }
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #stockInTable
+      [nzData]="stockIns()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1200px' }"
+    >
+      <thead>
+        <tr>
+          <!-- Checkbox chọn tất cả -->
+          <th scope="col" nzWidth="48px" nzAlign="center">
+            <label class="cb" for="cb-check-all-stock-in">
+              <input
+                id="cb-check-all-stock-in"
+                #checkAllInput
+                type="checkbox"
+                [checked]="allChecked"
+                [indeterminate]="indeterminate"
+                (change)="onCheckAll(checkAllInput.checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
+
+          <!-- STT -->
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+          <!-- Mã phiếu nhập (code) -->
+          <th scope="col" nzWidth="180px" nzAlign="left">Mã phiếu nhập</th>
+
+          <!-- Kho nhập (warehouseId) -->
+          <th scope="col" nzWidth="260px" nzAlign="left">Kho nhập</th>
+
+          <!-- Nguồn nhập (sourceType) -->
+          <th scope="col" nzWidth="200px" nzAlign="center">Nguồn nhập</th>
+
+          <!-- Ngày nhập kho (inDate) -->
+          <th scope="col" nzWidth="150px" nzAlign="center">Ngày nhập</th>
+
+          <!-- Trạng thái (status) -->
+          <th scope="col" nzWidth="150px" nzAlign="center">Trạng thái</th>
+
+          <!-- Thao tác -->
+          <th scope="col" nzWidth="150px" nzAlign="center">Thao tác</th>
+        </tr>
+
+        <!-- Hàng lọc theo cột (Table Search Inputs) -->
+        <tr class="thead-search">
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('code')"
+              (valueChange)="searchByField('code', $event)"
+              placeholder="Tìm mã phiếu"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnFilter.getValue('warehouseName')"
+              (valueChange)="searchByField('warehouseName', $event)"
+              placeholder="Tìm kho nhập"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              type="option"
+              [options]="sourceFilterOptions"
+              labelField="label"
+              valueField="value"
+              [value]="columnFilter.getValue('sourceType')"
+              (valueChange)="searchByField('sourceType', $event)"
+              placeholder="Nguồn nhập"
+            ></app-table-search-input>
+          </th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              type="option"
+              [options]="statusFilterOptions"
+              labelField="label"
+              valueField="value"
+              [value]="columnFilter.getValue('status')"
+              (valueChange)="searchByField('status', $event)"
+              placeholder="Trạng thái"
+            ></app-table-search-input>
+          </th>
+          <th nzAlign="center">
+            <app-button
+              iconOnly="reload"
+              nz-tooltip
+              nzTooltipTitle="Đặt lại bộ lọc cột"
+              (click)="resetAllFieldFilter()"
+              variant="ghost"
+            ></app-button>
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (item of stockIns(); track item.id; let i = $index) {
+          <tr>
+            <!-- Checkbox từng dòng -->
+            <td nzAlign="center">
+              <label class="cb" [for]="'cb-sin-' + item.id">
+                <input
+                  [id]="'cb-sin-' + item.id"
+                  #rowInput
+                  type="checkbox"
+                  [checked]="isChecked(item.id)"
+                  (change)="onCheckRow(item.id, rowInput.checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </td>
+
+            <!-- STT -->
+            <td nzAlign="center">
+              {{ pageIndex === 1 ? i + 1 : (pageIndex - 1) * pageSize + i + 1 }}
+            </td>
+
+            <!-- Mã phiếu nhập (code) -->
+            <td>
+              <span class="table-code font-mono font-semibold" nz-tooltip [nzTooltipTitle]="item.code">
+                {{ item.code }}
+              </span>
+            </td>
+
+            <!-- Kho nhập (warehouseId) -->
+            <td>
+              <span class="warehouse-tag" nz-tooltip [nzTooltipTitle]="item.warehouseName || item.warehouseId">
+                <nz-icon nzType="home" style="margin-right: 6px; color: var(--brand);" />
+                <span class="warehouse-name-text">{{ item.warehouseName || item.warehouseId }}</span>
+              </span>
+            </td>
+
+            <!-- Nguồn nhập (sourceType) -->
+            <td nzAlign="center">
+              <span
+                [class]="getSourceTypeMeta(item.sourceType).badgeClass"
+                nz-tooltip
+                [nzTooltipTitle]="item.sourceReferenceCode ? 'Chứng từ gốc: ' + item.sourceReferenceCode : getSourceTypeMeta(item.sourceType).label"
+              >
+                {{ getSourceTypeMeta(item.sourceType).label }}
+              </span>
+            </td>
+
+            <!-- Ngày nhập kho (inDate) -->
+            <td nzAlign="center">
+              <span class="indate-text font-mono" nz-tooltip [nzTooltipTitle]="'Ngày nhập kho: ' + item.inDate">
+                <nz-icon nzType="calendar" style="margin-right: 4px; color: var(--text-muted);" />
+                {{ item.inDate }}
+              </span>
+            </td>
+
+            <!-- Trạng thái (status) -->
+            <td nzAlign="center">
+              <span
+                [class]="getStatusMeta(item.status).badgeClass"
+                nz-tooltip
+                [nzTooltipTitle]="getStatusMeta(item.status).label"
+              >
+                {{ getStatusMeta(item.status).label }}
+              </span>
+            </td>
+
+            <!-- Cột thao tác -->
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <!-- Xem chi tiết -->
+                <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết"
+                  (click)="openViewModal(item)"
+                >
+                </app-button>
+
+                <!-- Chỉnh sửa -->
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.NHAP_KHO.UPDATE]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Cập nhật phiếu nhập"
+                  (click)="openEditModal(item)"
+                >
+                </app-button>
+
+                <!-- Xóa -->
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.NHAP_KHO.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa phiếu nhập"
+                  (click)="onDelete(item)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="text-center tbl-empty">
+              <div class="empty-state">
+                <nz-icon nzType="inbox" class="empty-icon" />
+                <p class="empty-text">Không tìm thấy phiếu nhập kho nào</p>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 5. Standard Footer & Pagination (Chuẩn UI-Kit) ─────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 6. Modal Thêm mới / Xem / Cập nhật Phiếu nhập kho ──────────── -->
+  <app-modal
+    [visible]="isModalVisible()"
+    (visibleChange)="isModalVisible.set($event)"
+    [title]="modalTitle"
+    size="xl"
+    [maskClosable]="false"
+    [footer]="modalFooter"
+    (cancelEmit)="closeModal()"
+  >
+    <form [formGroup]="stockInForm" class="stock-in-form" (ngSubmit)="submitForm()">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Mã phiếu nhập kho -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label required" for="sin-code">Mã phiếu nhập</label>
+          <nz-input-wrapper>
+            <input
+              id="sin-code"
+              type="text"
+              nz-input
+              formControlName="code"
+              placeholder="VD: SI-202608-0001"
+              style="text-transform: uppercase;"
+            />
+          </nz-input-wrapper>
+          @if (stockInForm.get('code')?.touched || stockInForm.get('code')?.dirty) {
+            @if (stockInForm.get('code')?.hasError('required')) {
+              <span class="form-error">Vui lòng nhập mã phiếu nhập.</span>
+            }
+          }
+        </div>
+
+        <!-- Kho nhập -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label required">Kho nhận hàng</label>
+          <nz-select
+            id="sin-warehouse"
+            formControlName="warehouseId"
+            nzPlaceHolder="Chọn kho nhận hàng"
+            style="width: 100%"
+          >
+            @for (opt of warehouseOptions; track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+          @if (stockInForm.get('warehouseId')?.touched || stockInForm.get('warehouseId')?.dirty) {
+            @if (stockInForm.get('warehouseId')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn kho nhận hàng.</span>
+            }
+          }
+        </div>
+
+        <!-- Nguồn chứng từ -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label required">Nguồn nhập hàng</label>
+          <nz-select
+            id="sin-source-type"
+            formControlName="sourceType"
+            nzPlaceHolder="Chọn nguồn nhập"
+            style="width: 100%"
+          >
+            <nz-option nzValue="PURCHASE" nzLabel="Mua hàng từ NCC"></nz-option>
+            <nz-option nzValue="TRANSFER_IN" nzLabel="Chuyển kho đến"></nz-option>
+            <nz-option nzValue="RETURN" nzLabel="Nhập trả hàng"></nz-option>
+            <nz-option nzValue="ADJUSTMENT" nzLabel="Kiểm kê điều chỉnh"></nz-option>
+          </nz-select>
+        </div>
+
+        <!-- Mã chứng từ liên kết -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label" for="sin-ref">Mã chứng từ gốc (Số PO / Đơn chuyển)</label>
+          <nz-input-wrapper>
+            <input
+              id="sin-ref"
+              type="text"
+              nz-input
+              formControlName="sourceReferenceCode"
+              placeholder="VD: PO-202608-0012"
+            />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Ngày nhập kho -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label required" for="sin-date">Ngày nhập kho</label>
+          <nz-input-wrapper>
+            <input
+              id="sin-date"
+              type="date"
+              nz-input
+              formControlName="inDate"
+            />
+          </nz-input-wrapper>
+          @if (stockInForm.get('inDate')?.touched || stockInForm.get('inDate')?.dirty) {
+            @if (stockInForm.get('inDate')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn ngày nhập kho.</span>
+            }
+          }
+        </div>
+
+        <!-- Trạng thái -->
+        <div nz-col [nzSpan]="24" [nzMd]="8">
+          <label class="form-label required">Trạng thái</label>
+          <nz-select
+            id="sin-status"
+            formControlName="status"
+            nzPlaceHolder="Chọn trạng thái"
+            style="width: 100%"
+          >
+            <nz-option nzValue="DRAFT" nzLabel="Nháp"></nz-option>
+            <nz-option nzValue="POSTED" nzLabel="Đã nhập kho"></nz-option>
+            <nz-option nzValue="CANCELLED" nzLabel="Đã hủy"></nz-option>
+          </nz-select>
+        </div>
+
+        @if (modalMode() === 'view') {
+          <!-- Người nhập kho -->
+          <div nz-col [nzSpan]="24" [nzMd]="12">
+            <label class="form-label">Người nhập kho</label>
+            <nz-input-wrapper>
+              <input nz-input formControlName="receivedByName" readonly />
+            </nz-input-wrapper>
+          </div>
+
+          <!-- Thời gian hoàn tất / Ghi sổ -->
+          <div nz-col [nzSpan]="24" [nzMd]="12">
+            <label class="form-label">Thời gian ghi sổ</label>
+            <nz-input-wrapper>
+              <input
+                nz-input
+                [value]="selectedStockIn()?.postedAt ? (selectedStockIn()?.postedAt | date: 'dd/MM/yyyy HH:mm') : 'Chưa ghi sổ'"
+                readonly
+              />
+            </nz-input-wrapper>
+          </div>
+        }
+
+        <!-- Ghi chú nhập kho -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="sin-note">Ghi chú phiếu nhập kho</label>
+          <textarea
+            id="sin-note"
+            nz-input
+            rows="2"
+            formControlName="note"
+            placeholder="Nhập ghi chú chi tiết về lô hàng, biên bản giao nhận..."
+          ></textarea>
+        </div>
+      </div>
+
+      <nz-divider style="margin: 16px 0 12px">Danh sách nguyên vật liệu nhập kho</nz-divider>
+
+      <!-- Khung danh sách NVL (scroll khi nhiều dòng) -->
+      <div class="stock-items">
+        <div class="stock-items__head">
+          <span class="stock-items__title">Nguyên vật liệu nhập kho ({{ itemsArray.length }})</span>
+          @if (modalMode() !== 'view') {
+            <app-button variant="secondary" leftIcon="plus" (click)="addItem()">Thêm dòng</app-button>
+          }
+        </div>
+
+        <div class="stock-items__scroll" [class.is-scroll]="itemsArray.length > 5">
+          <table class="stock-items__table">
+            <thead>
+              <tr>
+                <th class="col-stt">#</th>
+                <th class="col-material">Nguyên vật liệu</th>
+                <th class="col-batch">Số lô (Batch No)</th>
+                <th class="col-expiry">Hạn sử dụng</th>
+                <th class="col-qty">Số lượng</th>
+                <th class="col-price">Đơn giá (VNĐ)</th>
+                <th class="col-total">Thành tiền (VNĐ)</th>
+                @if (modalMode() !== 'view') {
+                  <th class="col-action"></th>
+                }
+              </tr>
+            </thead>
+            <tbody formArrayName="items">
+              @for (ctrl of itemsArray.controls; track $index; let i = $index) {
+                <tr [formGroupName]="i">
+                  <td class="col-stt">{{ i + 1 }}</td>
+                  <td class="col-material">
+                    @if (modalMode() === 'view') {
+                      <span class="material-name font-semibold">{{ ctrl.get('materialName')?.value }}</span>
+                    } @else {
+                      <nz-select
+                        formControlName="materialId"
+                        (ngModelChange)="onMaterialSelect(i, $event)"
+                        nzPlaceHolder="Chọn NVL"
+                        style="width: 100%"
+                      >
+                        @for (opt of materialOptions; track opt.value) {
+                          <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+                        }
+                      </nz-select>
+                    }
+                  </td>
+                  <td class="col-batch">
+                    <input nz-input formControlName="batchNo" placeholder="Số lô" />
+                  </td>
+                  <td class="col-expiry">
+                    <input nz-input type="date" formControlName="expiryDate" />
+                  </td>
+                  <td class="col-qty">
+                    <input nz-input type="number" formControlName="quantity" min="0.01" step="any" />
+                  </td>
+                  <td class="col-price">
+                    <input nz-input type="number" formControlName="unitPrice" min="0" step="1000" />
+                  </td>
+                  <td class="col-total font-mono font-semibold">
+                    {{ getItemTotal(i) | number: '1.0-0' }} ₫
+                  </td>
+                  @if (modalMode() !== 'view') {
+                    <td class="col-action">
+                      <button type="button" class="btn-remove-item" (click)="removeItem(i)" [disabled]="itemsArray.length <= 1">
+                        <nz-icon nzType="delete" />
+                      </button>
+                    </td>
+                  }
+                </tr>
+              } @empty {
+                <tr>
+                  <td [attr.colspan]="modalMode() === 'view' ? 7 : 8" class="text-center py-4 text-muted">
+                    Chưa có nguyên vật liệu nào trong phiếu nhập.
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" class="text-right font-semibold">Tổng cộng:</td>
+                <td class="col-qty font-mono font-semibold">{{ itemsArray.length }} loại</td>
+                <td></td>
+                <td class="col-total font-mono font-bold text-primary" style="font-size: var(--text-base);">
+                  {{ grandTotal | number: '1.0-0' }} ₫
+                </td>
+                @if (modalMode() !== 'view') {
+                  <td></td>
+                }
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </form>
+  </app-modal>
+
+  <!-- Template Footer của Modal -->
+  <ng-template #modalFooter>
+    <div class="modal-footer-actions">
+      <app-button variant="secondary" (click)="closeModal()">
+        {{ modalMode() === 'view' ? 'Đóng' : 'Hủy bỏ' }}
+      </app-button>
+      @if (modalMode() !== 'view') {
+        <app-button
+          variant="primary"
+          [loading]="isSaving()"
+          (click)="submitForm()"
+        >
+          {{ modalMode() === 'create' ? 'Tạo mới' : 'Lưu thay đổi' }}
+        </app-button>
+      }
+    </div>
+  </ng-template>
+</div>
