@@ -202,10 +202,38 @@
 
             <!-- Chi nhánh công tác -->
             <td nzAlign="left">
-              <span class="branch-text">
-                <nz-icon nzType="shop" style="margin-right: 4px; color: var(--brand);"/>
-                {{ data.primaryBranchName || getBranchName(data.primaryBranchId) }}
-              </span>
+              <div class="branch-text">
+                @let branchList = getBranchesForDisplay(data);
+                @if (branchList.length) {
+                  <div
+                    class="branch-dropdown__trigger"
+                    nz-popover
+                    nzPopoverTrigger="click"
+                    [nzPopoverVisible]="openBranchUserId === data.id"
+                    (nzPopoverVisibleChange)="onBranchPopoverVisibleChange(data.id, $event)"
+                    [nzPopoverPlacement]="['bottomLeft', 'topLeft']"
+                    nzPopoverOverlayClassName="user-branch-popover"
+                    [nzPopoverContent]="branchMenu">
+                    <span>{{ branchList[0].name }}@if (branchList[0].code) { ({{ branchList[0].code }}) }@if (branchList[0].primary) { (chính) }</span>
+                    <nz-icon
+                      [nzType]="openBranchUserId === data.id ? 'up' : 'down'"
+                      class="branch-dropdown__caret"
+                    />
+                  </div>
+                  <ng-template #branchMenu>
+                    <div class="branch-dropdown__menu">
+                      @for (branch of branchList; track branch.id) {
+                        <div class="branch-dropdown__option" (click)="closeBranchPopover()">
+                          <nz-icon nzType="shop" class="branch-item__icon"/>
+                          <span>{{ branch.name }}@if (branch.code) { ({{ branch.code }}) }@if (branch.primary) { (chính) }</span>
+                        </div>
+                      }
+                    </div>
+                  </ng-template>
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </div>
             </td>
 
             <!-- Vai trò (Sử dụng AppOverflowTagsComponent) -->

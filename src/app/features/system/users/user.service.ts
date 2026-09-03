@@ -42,6 +42,7 @@ export class UserService {
       status: backendStatusToUserStatus(a.status),
       primaryBranchId: a.primaryBranchId ?? null,
       primaryBranchName: a.primaryBranchName ?? undefined,
+      branches: a.branches ?? [],
       roles: a.roles ?? [],
       roleIds: a.roleIds ?? [],
       department: '',

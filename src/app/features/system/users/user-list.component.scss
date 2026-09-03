@@ -138,6 +138,86 @@
   font-weight: var(--fw-medium);
 }
 
+.branch-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+.branch-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.branch-item__icon {
+  flex: 0 0 auto;
+  color: var(--brand);
+}
+
+.branch-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.branch-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.branch-dropdown__caret {
+  flex: 0 0 auto;
+  color: var(--brand);
+}
+
+.branch-dropdown__menu {
+  min-width: 260px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.branch-dropdown__option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.branch-dropdown__option:hover {
+  background: var(--surface-sunken);
+  color: var(--brand);
+}
+
+::ng-deep .user-branch-popover .ant-popover-inner {
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+}
+
 .department-text {
   font-size: var(--text-sm);
   color: var(--text-secondary);

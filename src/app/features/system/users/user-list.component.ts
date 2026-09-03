@@ -13,6 +13,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
+import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
@@ -35,6 +36,7 @@ import { AccountService } from '../../../core/auth/account.service';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import {
   User,
+  UserBranch,
   UserFilter,
   UserFormDTO,
   UserStatus,
@@ -63,6 +65,7 @@ import { takeUntil } from 'rxjs/operators';
     NzAvatarModule,
     NzBadgeModule,
     NzPopconfirmModule,
+    NzPopoverModule,
     NzDividerModule,
     NzGridModule,
     NzDescriptionsModule,
@@ -104,6 +107,9 @@ export class UserListComponent extends BaseComponent implements OnInit {
   readonly total = signal(0);
   readonly loading = signal(false);
   readonly isSaving = signal(false);
+
+  /** Account đang mở danh sách chi nhánh trong bảng. */
+  openBranchUserId: string | number | null = null;
 
   // Column-based In-Memory Filter
   columnFilter = new ColumnTextFilter<User>(
@@ -268,6 +274,33 @@ export class UserListComponent extends BaseComponent implements OnInit {
   getBranchName(branchId: string | null | undefined): string {
     if (!branchId) return '—';
     return this.branchMap.get(branchId) || branchId;
+  }
+
+  getBranchNames(user: User): string[] {
+    if (user.branches?.length) {
+      return user.branches.map(branch =>
+        branch.primary ? `${branch.name} (chính)` : branch.name,
+      );
+    }
+
+    const name = user.primaryBranchName || this.getBranchName(user.primaryBranchId);
+    return name && name !== '—' ? [name] : [];
+  }
+
+  getBranchesForDisplay(user: User): UserBranch[] {
+    if (user.branches?.length) return user.branches;
+    const name = user.primaryBranchName || this.getBranchName(user.primaryBranchId);
+    return name && name !== '—' && user.primaryBranchId
+      ? [{ id: String(user.primaryBranchId), name, primary: true }]
+      : [];
+  }
+
+  onBranchPopoverVisibleChange(userId: string | number, visible: boolean): void {
+    this.openBranchUserId = visible ? userId : null;
+  }
+
+  closeBranchPopover(): void {
+    this.openBranchUserId = null;
   }
 
   /**

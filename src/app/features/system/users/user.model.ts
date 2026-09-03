@@ -3,6 +3,13 @@ export enum UserStatus {
   ACTIVE = 1,
 }
 
+export interface UserBranch {
+  id: string;
+  code?: string;
+  name: string;
+  primary?: boolean;
+}
+
 export interface User {
   id: string | number;
   username: string;
@@ -12,6 +19,7 @@ export interface User {
   status: UserStatus;
   primaryBranchId: string | null;
   primaryBranchName?: string;
+  branches?: UserBranch[];
   roles?: string[];
   roleIds?: string[];
   department?: string;
@@ -58,6 +66,7 @@ export interface AccountResponseBE {
   status: string;
   primaryBranchId: string | null;
   primaryBranchName?: string | null;
+  branches?: UserBranch[];
   lastLoginAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
