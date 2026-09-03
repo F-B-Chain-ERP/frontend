@@ -5,6 +5,7 @@ export enum PurchaseOrderStatus {
   PARTIALLY_RECEIVED = 'PARTIALLY_RECEIVED',
   RECEIVED = 'RECEIVED',
   CANCELLED = 'CANCELLED',
+  REJECTED = 'REJECTED',
 }
 
 export interface PurchaseOrderItem {
@@ -32,6 +33,9 @@ export interface PurchaseOrder {
   note?: string;
   createdAt: string;
   updatedAt?: string;
+  rejectedAt?: string | null;
+  rejectedBy?: { id: string; fullName: string } | null;
+  rejectReason?: string | null;
 }
 
 export interface PurchaseOrderFilter {
@@ -39,6 +43,8 @@ export interface PurchaseOrderFilter {
   status?: PurchaseOrderStatus | string | null;
   warehouseId?: string | number | null;
   branchId?: string | number | null;
+  fromDate?: string | null;
+  toDate?: string | null;
   pageIndex: number;
   pageSize: number;
   sortField?: string;
@@ -60,6 +66,7 @@ export const PURCHASE_ORDER_STATUS_OPTIONS = [
   { value: PurchaseOrderStatus.PARTIALLY_RECEIVED, label: 'Đang nhận', badgeClass: 'tbl-badge--info' },
   { value: PurchaseOrderStatus.RECEIVED, label: 'Đã nhận hàng', badgeClass: 'tbl-badge--success' },
   { value: PurchaseOrderStatus.CANCELLED, label: 'Đã hủy', badgeClass: 'tbl-badge--danger' },
+  { value: PurchaseOrderStatus.REJECTED, label: 'Đã từ chối', badgeClass: 'tbl-badge--danger' },
 ];
 
 export function getPurchaseOrderStatusMeta(status: PurchaseOrderStatus | string | number): {
@@ -82,6 +89,8 @@ export function getPurchaseOrderStatusMeta(status: PurchaseOrderStatus | string 
     case 'CANCELLED':
     case '3':
       return { label: 'Đã hủy', badgeClass: 'tbl-badge tbl-badge--danger' };
+    case 'REJECTED':
+      return { label: 'Đã từ chối', badgeClass: 'tbl-badge tbl-badge--danger' };
     default:
       return { label: 'Nháp', badgeClass: 'tbl-badge tbl-badge--neutral' };
   }
@@ -127,6 +136,13 @@ export interface PurchaseOrderDetail {
   subtotalAmount?: number;
   totalAmount: number;
   note?: string;
+  submittedAt?: string | null;
+  approvedBy?: { id: string; fullName: string } | null;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  rejectedBy?: { id: string; fullName: string } | null;
+  rejectReason?: string | null;
+  createdAt?: string | null;
   items: PurchaseOrderItemDetail[];
 }
 

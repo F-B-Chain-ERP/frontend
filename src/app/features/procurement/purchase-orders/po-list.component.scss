@@ -190,3 +190,155 @@
 :host ::ng-deep .selection-bar {
   margin-bottom: var(--space-4);
 }
+
+// ── Approval info (SCRUM-48) ────────────────────────────────────
+.po-approval {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) 0 var(--space-3);
+  font-size: var(--text-sm);
+
+  &__label {
+    font-weight: var(--fw-semibold);
+    color: var(--text-secondary);
+    margin-right: var(--space-2);
+  }
+
+  &__value {
+    color: var(--text-strong);
+  }
+}
+
+// ── Preview / Print Modal ───────────────────────────────────────
+.preview-loading {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-8) 0;
+}
+
+.preview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-8) 0;
+  gap: var(--space-3);
+
+  &__icon {
+    font-size: 48px;
+    color: var(--color-error, #ff4d4f);
+  }
+
+  &__text {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    text-align: center;
+  }
+}
+
+.po-preview {
+  font-family: 'Times New Roman', Times, serif;
+  color: #000;
+
+  &__header {
+    text-align: center;
+    margin-bottom: var(--space-5);
+  }
+
+  &__company {
+    font-size: 15px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  &__title {
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  &__meta {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-5);
+    font-size: var(--text-sm);
+    line-height: 1.8;
+
+    &-left,
+    &-right {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  &__table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--space-4);
+
+    th,
+    td {
+      border: 1px solid #333;
+      padding: 6px 10px;
+      font-size: var(--text-sm);
+    }
+
+    th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+  }
+
+  &__total-row td {
+    background-color: #f9f9f9;
+    font-weight: bold;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: var(--space-6);
+    color: var(--text-muted);
+  }
+
+  &__note {
+    margin-bottom: var(--space-4);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+  }
+
+  &__signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-8);
+    padding: 0 var(--space-4);
+  }
+
+  &__sig-block {
+    text-align: center;
+    width: 28%;
+  }
+
+  &__sig-title {
+    font-weight: bold;
+    font-size: var(--text-sm);
+    margin-bottom: 50px;
+  }
+
+  &__sig-line {
+    border-top: 1px solid #333;
+    padding-top: 4px;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+}

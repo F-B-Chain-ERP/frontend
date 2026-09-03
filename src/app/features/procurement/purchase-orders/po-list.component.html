@@ -33,7 +33,7 @@
 
       <!-- Status dropdown -->
       <div class="filter-item filter-item--status">
-        <label class="form-label" for="po-status-select">Trạng thái</label>
+        <label class="form-label">Trạng thái</label>
         <nz-select
           id="po-status-select"
           [(ngModel)]="selectedStatus"
@@ -46,6 +46,35 @@
             <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
           }
         </nz-select>
+      </div>
+
+      <!-- Từ ngày -->
+      <div class="filter-item">
+        <label class="form-label">Từ ngày</label>
+        <nz-date-picker
+          id="po-from-date"
+          [(ngModel)]="selectedFromDate"
+          nzFormat="yyyy-MM-dd"
+          nzPlaceHolder="Từ ngày"
+          [nzAllowClear]="true"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        ></nz-date-picker>
+      </div>
+
+      <!-- Đến ngày -->
+      <div class="filter-item">
+        <label class="form-label">Đến ngày</label>
+        <nz-date-picker
+          id="po-to-date"
+          [(ngModel)]="selectedToDate"
+          nzFormat="yyyy-MM-dd"
+          nzPlaceHolder="Đến ngày"
+          [nzAllowClear]="true"
+          [nzDisabledDate]="disableToDateAfterFromDate"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        ></nz-date-picker>
       </div>
 
       <!-- Actions -->
@@ -235,8 +264,22 @@
                 >
                 </app-button>
 
-                <!-- DRAFT: Submit for Approval / Cancel / Delete -->
-                @if (po.status === PurchaseOrderStatus.DRAFT || po.status === '0') {
+                <!-- In / Preview phiếu PO -->
+                <app-button
+                  variant="ghost"
+                  iconOnly="printer"
+                  nz-tooltip
+                  nzTooltipTitle="Xem / In phiếu PO"
+                  (click)="openPreviewModal(po)"
+                >
+                </app-button>
+
+                <!-- DRAFT / REJECTED: Submit / Cancel / Delete -->
+                @if (
+                  po.status === PurchaseOrderStatus.DRAFT ||
+                  po.status === PurchaseOrderStatus.REJECTED ||
+                  po.status === '0'
+                ) {
                   <app-button
                     *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.UPDATE]"
                     variant="ghost"
@@ -273,8 +316,8 @@
                     variant="ghost"
                     iconOnly="close"
                     nz-tooltip
-                    nzTooltipTitle="Từ chối / Hủy"
-                    (click)="openCancelModal(po)"
+                    nzTooltipTitle="Từ chối → về nháp"
+                    (click)="openRejectModal(po)"
                   >
                   </app-button>
                 }
@@ -338,7 +381,7 @@
 
         <!-- Nhà cung cấp -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
-          <label class="form-label required" for="po-supplier">Nhà cung cấp</label>
+          <label class="form-label required">Nhà cung cấp</label>
           <nz-select
             id="po-supplier"
             formControlName="supplierId"
@@ -359,7 +402,7 @@
 
         <!-- Kho nhận -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
-          <label class="form-label required" for="po-warehouse">Kho nhận</label>
+          <label class="form-label required">Kho nhận</label>
           <nz-select
             id="po-warehouse"
             formControlName="warehouseId"
@@ -380,7 +423,7 @@
 
         <!-- Ngày đặt -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
-          <label class="form-label required" for="po-orderDate">Ngày đặt</label>
+          <label class="form-label required">Ngày đặt</label>
           <nz-date-picker
             id="po-orderDate"
             formControlName="orderDate"
@@ -396,7 +439,7 @@
 
         <!-- Ngày dự kiến nhận -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
-          <label class="form-label" for="po-expectedDate">Dự kiến nhận</label>
+          <label class="form-label">Dự kiến nhận</label>
           <nz-date-picker
             id="po-expectedDate"
             formControlName="expectedDate"
@@ -409,10 +452,53 @@
         <div nz-col [nzSpan]="24" [nzMd]="8">
           <label class="form-label" for="po-note">Ghi chú</label>
           <nz-input-wrapper>
-            <textarea id="po-note" nz-input formControlName="note" rows="1" placeholder="Ghi chú (tùy chọn)"></textarea>
+            <textarea id="po-note" nz-input formControlName="note" rows="1" maxlength="500" placeholder="Ghi chú (tùy chọn)"></textarea>
           </nz-input-wrapper>
+          @if (poForm.get('note')?.touched || poForm.get('note')?.dirty) {
+            @if (poForm.get('note')?.hasError('maxlength')) {
+              <span class="form-error">Ghi chú không được vượt quá 500 ký tự.</span>
+            }
+          }
         </div>
       </div>
+
+      @if (modalMode() === 'view' && (poForm.getRawValue() && modalDetail())) {
+        @if (
+          modalDetail()?.status === PurchaseOrderStatus.APPROVED ||
+          modalDetail()?.status === PurchaseOrderStatus.PARTIALLY_RECEIVED ||
+          modalDetail()?.status === PurchaseOrderStatus.RECEIVED ||
+          modalDetail()?.status === '2'
+        ) {
+          <nz-divider style="margin: 12px 0 8px">Thông tin phê duyệt</nz-divider>
+          <div class="po-approval">
+            <div>
+              <span class="po-approval__label">Người duyệt:</span>
+              <span class="po-approval__value">{{ modalDetail()?.approvedBy?.fullName || '—' }}</span>
+            </div>
+            <div>
+              <span class="po-approval__label">Thời gian duyệt:</span>
+              <span class="po-approval__value">{{ (modalDetail()?.approvedAt | date: 'dd/MM/yyyy HH:mm') || '—' }}</span>
+            </div>
+          </div>
+        }
+        @if (modalDetail()?.status === PurchaseOrderStatus.REJECTED) {
+          <nz-divider style="margin: 12px 0 8px">Thông tin từ chối</nz-divider>
+          <div class="po-approval">
+            <div>
+              <span class="po-approval__label">Người từ chối:</span>
+              <span class="po-approval__value">{{ modalDetail()?.rejectedBy?.fullName || '—' }}</span>
+            </div>
+            <div>
+              <span class="po-approval__label">Thời gian từ chối:</span>
+              <span class="po-approval__value">{{ (modalDetail()?.rejectedAt | date: 'dd/MM/yyyy HH:mm') || '—' }}</span>
+            </div>
+            <div>
+              <span class="po-approval__label">Lý do:</span>
+              <span class="po-approval__value">{{ modalDetail()?.rejectReason || '—' }}</span>
+            </div>
+          </div>
+        }
+      }
 
       <nz-divider style="margin: 12px 0 8px">Danh sách nguyên vật liệu</nz-divider>
 
@@ -481,7 +567,7 @@
                   <td class="col-price">
                     <nz-input-number
                       formControlName="unitPrice"
-                      [nzMin]="0"
+                      [nzMin]="0.001"
                       [nzStep]="1000"
                       style="width: 100%"
                     ></nz-input-number>
@@ -515,15 +601,41 @@
     <ng-template #modalFooter>
       @if (modalMode() === 'view') {
         <app-button variant="ghost" (click)="closeModal()">Đóng</app-button>
-        <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.UPDATE]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
-          Chỉnh sửa
-        </app-button>
+        @if (
+          modalDetail()?.status === PurchaseOrderStatus.DRAFT ||
+          modalDetail()?.status === PurchaseOrderStatus.REJECTED ||
+          modalDetail()?.status === '0'
+        ) {
+          <app-button *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.UPDATE]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
+            Chỉnh sửa
+          </app-button>
+        }
       } @else {
         <app-button variant="ghost" (click)="closeModal()" [disabled]="isSaving()">Hủy</app-button>
         <app-button variant="primary" leftIcon="save" [loading]="isSaving()" (click)="submitForm()">Lưu đơn mua hàng</app-button>
       }
     </ng-template>
   </app-modal>
+
+  <nz-modal
+    [nzVisible]="!!submitTarget()"
+    nzTitle="Trình duyệt đơn mua hàng"
+    [nzOkText]="'Xác nhận trình duyệt'"
+    [nzOkLoading]="isSaving()"
+    [nzCancelText]="'Hủy'"
+    (nzOnOk)="confirmSubmit()"
+    (nzOnCancel)="closeSubmitModal()"
+  >
+    <ng-container *nzModalContent>
+      <p>
+        Bạn có chắc chắn muốn trình duyệt đơn
+        <strong>{{ submitTarget()?.code }}</strong>?
+      </p>
+      <p style="margin-bottom: 0; color: var(--text-secondary)">
+        Sau khi trình duyệt, đơn sẽ chuyển sang trạng thái <strong>Chờ duyệt</strong> và không thể chỉnh sửa nữa.
+      </p>
+    </ng-container>
+  </nz-modal>
 
   <nz-modal
     [nzVisible]="!!cancelTarget()"
@@ -551,5 +663,217 @@
         <span class="form-error">Vui lòng nhập lý do trước khi hủy đơn.</span>
       }
     </ng-container>
+  </nz-modal>
+
+  <nz-modal
+    [nzVisible]="!!rejectTarget()"
+    nzTitle="Từ chối đơn mua hàng"
+    [nzOkText]="'Xác nhận từ chối'"
+    [nzOkDisabled]="!rejectReason().trim()"
+    [nzOkLoading]="isSaving()"
+    [nzCancelText]="'Đóng'"
+    (nzOnOk)="confirmReject()"
+    (nzOnCancel)="closeRejectModal()"
+  >
+    <ng-container *nzModalContent>
+      <p style="margin-bottom: 12px">
+        Từ chối đơn <strong>{{ rejectTarget()?.code }}</strong> sẽ đưa đơn trở lại trạng thái
+        <strong>Nháp</strong> để sửa và trình duyệt lại.
+      </p>
+      <nz-input-wrapper>
+        <textarea
+          nz-input
+          rows="3"
+          [ngModel]="rejectReason()"
+          (ngModelChange)="rejectReason.set($event)"
+          placeholder="Nhập lý do từ chối... (bắt buộc)"
+        ></textarea>
+      </nz-input-wrapper>
+      @if (!rejectReason().trim()) {
+        <span class="form-error">Vui lòng nhập lý do từ chối.</span>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <!-- ── Modal nhận hàng (nhập số lượng thực nhận) ────────────────── -->
+  <nz-modal
+    [nzVisible]="!!receiveTarget()"
+    nzTitle="Ghi nhận nhập kho"
+    [nzOkText]="'Xác nhận nhập kho'"
+    [nzOkLoading]="isSaving()"
+    [nzOkDisabled]="receiveForm.invalid"
+    [nzCancelText]="'Hủy'"
+    (nzOnOk)="confirmReceive()"
+    (nzOnCancel)="closeReceiveModal()"
+  >
+    <ng-container *nzModalContent>
+      <p style="margin-bottom: 12px">
+        Nhập số lượng thực nhận cho từng nguyên vật liệu của đơn
+        <strong>{{ receiveTarget()?.code }}</strong>.
+      </p>
+      <table class="po-items__table">
+        <thead>
+          <tr>
+            <th class="col-stt">#</th>
+            <th class="col-material">Nguyên vật liệu</th>
+            <th class="col-qty">SL đặt</th>
+            <th class="col-qty">SL nhận</th>
+            <th class="col-total">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of receiveItemsArray.controls; track $index; let i = $index) {
+            <tr>
+              <td class="col-stt">{{ i + 1 }}</td>
+              <td class="col-material">{{ item.get('materialName')?.value }}</td>
+              <td class="col-qty font-mono">{{ item.get('quantity')?.value | number: '1.0-3' }}</td>
+              <td class="col-qty">
+                <nz-input-number
+                  [formControl]="receiveQtyControl(i)"
+                  [nzMin]="0.001"
+                  [nzStep]="1"
+                  [nzMax]="receiveQuantityValue(i)"
+                  style="width: 100%"
+                ></nz-input-number>
+                @if (item.get('receivedQuantity')?.touched || item.get('receivedQuantity')?.dirty) {
+                  @if (item.get('receivedQuantity')?.hasError('required')) {
+                    <span class="form-error">Vui lòng nhập số lượng nhận.</span>
+                  } @else if (item.get('receivedQuantity')?.hasError('min')) {
+                    <span class="form-error">Số lượng nhận phải lớn hơn 0.</span>
+                  } @else if (item.get('receivedQuantity')?.hasError('max')) {
+                    <span class="form-error">Số lượng nhận không được vượt quá số lượng đặt ({{ item.get('quantity')?.value }}).</span>
+                  }
+                }
+              </td>
+              <td class="col-total font-mono">
+                {{ receiveTotals()[i] | number: '1.0-0' }} ₫
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="po-items__empty">Không có nguyên vật liệu để nhận.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="po-items__footer">
+        <span class="po-items__grand-total font-mono font-semibold">
+          Tổng: {{ receiveGrandTotal() | number: '1.0-0' }} ₫
+        </span>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  <!-- ── Modal Preview / In phiếu PO ─────────────────────────────── -->
+  <nz-modal
+    [nzVisible]="isPreviewVisible()"
+    nzTitle="Phiếu đặt hàng"
+    [nzWidth]="820"
+    [nzMaskClosable]="false"
+    (nzOnCancel)="closePreviewModal()"
+    [nzFooter]="previewFooter"
+  >
+    <ng-container *nzModalContent>
+      @if (previewLoading()) {
+        <div class="preview-loading">
+          <nz-spin nzTip="Đang tải dữ liệu..."></nz-spin>
+        </div>
+      } @else if (previewError()) {
+        <div class="preview-error">
+          <nz-icon nzType="warning" nzTheme="outline" class="preview-error__icon"></nz-icon>
+          <p class="preview-error__text">{{ previewError() }}</p>
+          <app-button variant="secondary" (click)="closePreviewModal()">Đóng</app-button>
+        </div>
+      } @else if (previewPo(); as po) {
+        <div id="po-print-area" class="po-preview">
+          <div class="po-preview__header">
+            <div class="po-preview__company">CÔNG TY TNHH PINE DRINK</div>
+            <h2 class="po-preview__title">PHIẾU ĐẶT HÀNG</h2>
+          </div>
+
+          <div class="po-preview__meta">
+            <div class="po-preview__meta-left">
+              <div><strong>Mã đơn:</strong> {{ po.poCode }}</div>
+              <div><strong>Nhà cung cấp:</strong> {{ po.supplierName }}</div>
+              <div><strong>Kho nhận:</strong> {{ po.warehouseName }}</div>
+            </div>
+            <div class="po-preview__meta-right">
+              <div><strong>Ngày đặt:</strong> {{ po.orderDate }}</div>
+              <div><strong>Dự kiến nhận:</strong> {{ po.expectedDate || '—' }}</div>
+              <div>
+                <strong>Trạng thái:</strong>
+                <span [class]="getStatusMeta(po.status).badgeClass">{{ getStatusMeta(po.status).label }}</span>
+              </div>
+            </div>
+          </div>
+
+          <table class="po-preview__table">
+            <thead>
+              <tr>
+                <th class="col-stt">#</th>
+                <th>Nguyên vật liệu</th>
+                <th>Đơn vị</th>
+                <th class="text-right">Số lượng</th>
+                <th class="text-right">Đơn giá</th>
+                <th class="text-right">Thành tiền</th>
+                <th class="text-right">Đã nhận</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of po.items; track item.id; let i = $index) {
+                <tr>
+                  <td class="text-center">{{ i + 1 }}</td>
+                  <td>{{ item.materialName }}</td>
+                  <td>{{ item.unitName }}</td>
+                  <td class="text-right font-mono">{{ item.quantity | number: '1.0-3' }}</td>
+                  <td class="text-right font-mono">{{ item.unitPrice | number: '1.0-0' }}</td>
+                  <td class="text-right font-mono">{{ item.totalPrice | number: '1.0-0' }}</td>
+                  <td class="text-right font-mono">{{ item.receivedQuantity || 0 | number: '1.0-3' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="po-preview__empty">Không có dòng chi tiết.</td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr class="po-preview__total-row">
+                <td colspan="5"></td>
+                <td class="text-right"><strong>Tổng cộng:</strong></td>
+                <td class="text-right font-mono font-semibold">{{ po.totalAmount | number: '1.0-0' }} ₫</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          @if (po.note) {
+            <div class="po-preview__note">
+              <strong>Ghi chú:</strong> {{ po.note }}
+            </div>
+          }
+
+          <div class="po-preview__signatures">
+            <div class="po-preview__sig-block">
+              <div class="po-preview__sig-title">Người lập phiếu</div>
+              <div class="po-preview__sig-line"></div>
+            </div>
+            <div class="po-preview__sig-block">
+              <div class="po-preview__sig-title">Thủ kho</div>
+              <div class="po-preview__sig-line"></div>
+            </div>
+            <div class="po-preview__sig-block">
+              <div class="po-preview__sig-title">Giám đốc</div>
+              <div class="po-preview__sig-line"></div>
+            </div>
+          </div>
+        </div>
+      }
+    </ng-container>
+
+    <ng-template #previewFooter>
+      <app-button variant="ghost" (click)="closePreviewModal()">Đóng</app-button>
+      @if (previewPo()) {
+        <app-button variant="primary" leftIcon="printer" (click)="printPo()">In phiếu</app-button>
+      }
+    </ng-template>
   </nz-modal>
 </div>
