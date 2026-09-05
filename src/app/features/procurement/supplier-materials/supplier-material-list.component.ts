@@ -267,6 +267,30 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
     }
 
     const raw = this.form.getRawValue();
+    // Đồng nhất với BE: mỗi NVL chỉ có 1 NCC ưu tiên. Chỉ confirm khi chuyển false -> true.
+    const turningPreferredOn =
+      !!raw.isPreferred &&
+      (this.modalMode() === 'add' || (this.selectedRecord != null && !this.selectedRecord.isPreferred));
+    if (turningPreferredOn) {
+      this.modalService.confirm({
+        nzTitle: 'Xác nhận nhà cung cấp ưu tiên',
+        nzContent:
+          'Nhà cung cấp này sẽ thành ưu tiên duy nhất của nguyên vật liệu, các nhà cung cấp khác cùng nguyên vật liệu sẽ bị gỡ ưu tiên. Tiếp tục?',
+        nzOkText: 'Xác nhận',
+        nzCancelText: 'Hủy',
+        nzOnOk: () => this.doSubmit(),
+      });
+      return;
+    }
+    this.doSubmit();
+  }
+
+  private doSubmit(): void {
+    if (!this.selectedSupplierId) {
+      this.toastService.error('Lỗi', 'Vui lòng chọn nhà cung cấp trước khi gán nguyên vật liệu.');
+      return;
+    }
+    const raw = this.form.getRawValue();
     const base = {
       supplierSku: (raw.supplierSku || '').trim() || null,
       purchasePrice: Number(raw.purchasePrice),
@@ -289,7 +313,12 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
         .subscribe({
           next: () => {
             this.isSaving.set(false);
-            this.toastService.success('Thành công', 'Đã cập nhật bảng giá nguyên vật liệu.');
+            this.toastService.success(
+              'Thành công',
+              req.isPreferred
+                ? 'Đã đặt làm nhà cung cấp ưu tiên (các NCC khác cùng NVL đã được gỡ).'
+                : 'Đã cập nhật bảng giá nguyên vật liệu.',
+            );
             this.closeFormModal();
             this.loadData();
           },
@@ -311,7 +340,12 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
         .subscribe({
           next: () => {
             this.isSaving.set(false);
-            this.toastService.success('Thành công', 'Đã gán nguyên vật liệu cho nhà cung cấp.');
+            this.toastService.success(
+              'Thành công',
+              req.isPreferred
+                ? 'Đã gán và đặt làm nhà cung cấp ưu tiên (các NCC khác cùng NVL đã được gỡ).'
+                : 'Đã gán nguyên vật liệu cho nhà cung cấp.',
+            );
             this.closeFormModal();
             this.loadData();
           },
