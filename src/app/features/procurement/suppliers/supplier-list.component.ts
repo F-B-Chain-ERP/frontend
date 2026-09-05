@@ -28,7 +28,7 @@ import {
   SUPPLIER_STATUS_OPTIONS,
   getSupplierStatusMeta,
 } from './supplier.model';
-import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
+import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from '../../../shared/constants/constant';
 import { takeUntil } from 'rxjs';
 
 @Component({
@@ -60,7 +60,7 @@ export class SupplierListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
   readonly SupplierStatus = SupplierStatus;
   readonly statusOptions = SUPPLIER_STATUS_OPTIONS;
-  readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
+  readonly pageSizeOptions: number[] = [10];
   readonly getSupplierStatusMeta = getSupplierStatusMeta;
 
   // ── State signals ───────────────────────────────────────────────────

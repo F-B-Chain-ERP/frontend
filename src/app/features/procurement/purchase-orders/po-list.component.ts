@@ -12,7 +12,7 @@ import {
 } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
-import { catchError, tap, takeUntil } from 'rxjs/operators';
+import { catchError, switchMap, tap, takeUntil } from 'rxjs/operators';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -52,7 +52,7 @@ import {
   PURCHASE_ORDER_STATUS_OPTIONS,
   getPurchaseOrderStatusMeta,
 } from './po.model';
-import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
+import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from '../../../shared/constants/constant';
 
 interface NameCodeBE {
   id: string;
@@ -96,7 +96,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   readonly ROLE = ROLE;
   readonly PurchaseOrderStatus = PurchaseOrderStatus;
   readonly statusOptions = PURCHASE_ORDER_STATUS_OPTIONS;
-  readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
+  readonly pageSizeOptions: number[] = [10];
 
   // State signals
   readonly purchaseOrders = signal<PurchaseOrder[]>([]);
@@ -898,11 +898,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   }
 
   private loadSuppliers(): Observable<unknown> {
-    const url = this.appConfig.getEndpointFor('api/v1/proc/suppliers');
-    const params = new HttpParams().set('page', '0').set('size', '1000');
-    return this.http.get<{ data: { content: NameCodeBE[] } }>(url, { params }).pipe(
-      tap(res => {
-        const list: NameCodeBE[] = res?.data?.content ?? [];
+    return this.fetchAllPages('api/v1/proc/suppliers').pipe(
+      tap(list => {
         const active = list.filter(s => s.status === 'ACTIVE');
         this.supplierOptions.set(active.map(s => ({ label: `${s.code || ''} ${s.name || ''}`.trim(), value: s.id })));
       }),
@@ -914,16 +911,28 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   }
 
   private loadMaterials(): Observable<unknown> {
-    const url = this.appConfig.getEndpointFor('api/v1/inv/materials');
-    const params = new HttpParams().set('page', '0').set('size', '1000');
-    return this.http.get<{ data: { content: NameCodeBE[] } }>(url, { params }).pipe(
-      tap(res => {
-        const list: NameCodeBE[] = res?.data?.content ?? [];
+    return this.fetchAllPages('api/v1/inv/materials').pipe(
+      tap(list => {
         this.materialOptions.set(list.map(m => ({ label: `${m.code || ''} ${m.name || ''}`.trim(), value: m.id })));
       }),
       catchError(() => {
         this.materialOptions.set([]);
         return of(null);
+      }),
+    );
+  }
+
+  private fetchAllPages(path: string, page = 0, acc: NameCodeBE[] = []): Observable<NameCodeBE[]> {
+    const url = this.appConfig.getEndpointFor(path);
+    const params = new HttpParams().set('page', String(page)).set('size', '10');
+    return this.http.get<{ data: { content: NameCodeBE[]; totalPages?: number } }>(url, { params }).pipe(
+      switchMap(res => {
+        const all = acc.concat(res?.data?.content ?? []);
+        const totalPages = res?.data?.totalPages ?? 0;
+        if (page + 1 < totalPages) {
+          return this.fetchAllPages(path, page + 1, all);
+        }
+        return of(all);
       }),
     );
   }
