@@ -899,7 +899,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   private loadSuppliers(): Observable<unknown> {
     const url = this.appConfig.getEndpointFor('api/v1/proc/suppliers');
-    const params = new HttpParams().set('page', '0').set('size', '1000');
+    const params = new HttpParams().set('page', '0').set('size', '100');
     return this.http.get<{ data: { content: NameCodeBE[] } }>(url, { params }).pipe(
       tap(res => {
         const list: NameCodeBE[] = res?.data?.content ?? [];
@@ -915,7 +915,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   private loadMaterials(): Observable<unknown> {
     const url = this.appConfig.getEndpointFor('api/v1/inv/materials');
-    const params = new HttpParams().set('page', '0').set('size', '1000');
+    const params = new HttpParams().set('page', '0').set('size', '100');
     return this.http.get<{ data: { content: NameCodeBE[] } }>(url, { params }).pipe(
       tap(res => {
         const list: NameCodeBE[] = res?.data?.content ?? [];
