@@ -1,0 +1,295 @@
+.warehouse-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+// ── Header ──────────────────────────────────────────────────────
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+
+  &__left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  &__title {
+    font-size: var(--fs-2xl);
+    font-weight: var(--fw-bold);
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+
+// ── Filter Box Styling ──────────────────────────────────────────
+.page__filter-box {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  .page__filter-box__row {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+
+    &--grow {
+      flex: 1;
+      min-width: 240px;
+    }
+
+    &--select {
+      width: 220px;
+      flex-shrink: 0;
+    }
+
+    &--type {
+      width: 200px;
+      flex-shrink: 0;
+    }
+
+    &--status {
+      width: 180px;
+      flex-shrink: 0;
+    }
+  }
+
+  .page__filter-box__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
+  }
+
+  @media (max-width: 992px) {
+    .page__filter-box__row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filter-item--select,
+    .filter-item--type,
+    .filter-item--status {
+      width: 100%;
+    }
+
+    .page__filter-box__actions {
+      margin-left: 0;
+      justify-content: flex-end;
+      margin-top: var(--space-2);
+    }
+  }
+}
+
+// ── Table Card ──────────────────────────────────────────────────
+.page__list {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  .ant-card-body {
+    padding: 0;
+  }
+
+  .page__pagination {
+    border-top: 1px solid var(--border-strong);
+  }
+}
+
+// ── Table Cell Styling ─────────────────────────────────────────
+.table-code {
+  font-family: var(--font-mono, monospace);
+  font-weight: var(--fw-semibold);
+  color: var(--brand);
+  cursor: pointer;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--brand-hover);
+    text-decoration: underline;
+  }
+}
+
+.table-name-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.table-name {
+  color: var(--text-primary);
+}
+
+.table-branch-name {
+  color: var(--text-secondary);
+  font-weight: var(--fw-medium);
+}
+
+.table-address {
+  display: inline-block;
+  max-width: 200px;
+  color: var(--text-secondary);
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.font-medium {
+  font-weight: var(--fw-medium);
+}
+
+
+// ── Checkbox ───────────────────────────────────────────────────
+.cb {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+
+    &:checked ~ .cb__box {
+      background-color: var(--brand);
+      border-color: var(--brand);
+
+      &::after {
+        display: block;
+      }
+    }
+
+    &:indeterminate ~ .cb__box {
+      background-color: var(--brand);
+      border-color: var(--brand);
+
+      &::after {
+        display: block;
+        transform: translate(-50%, -50%) rotate(0deg);
+        width: 8px;
+        height: 2px;
+        border: none;
+        background-color: #fff;
+      }
+    }
+  }
+
+  &__box {
+    height: 16px;
+    width: 16px;
+    background-color: var(--surface-card);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    position: relative;
+    transition: all var(--transition-fast, 0.2s);
+
+    &::after {
+      content: '';
+      position: absolute;
+      display: none;
+      left: 50%;
+      top: 45%;
+      width: 4px;
+      height: 8px;
+      border: solid #fff;
+      border-width: 0 2px 2px 0;
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+  }
+}
+
+tr.row-selected {
+  background-color: var(--brand-bg, rgba(24, 144, 255, 0.04));
+}
+
+// ── Table In-line Filter Row ──────────────────────────────────
+.table-filter-row {
+  th {
+    background: var(--surface-subtle) !important;
+    padding: var(--space-2) !important;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+}
+
+// ── Empty State ────────────────────────────────────────────────
+.table-empty {
+  padding: var(--space-10) 0 !important;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+
+  &__icon {
+    font-size: 48px;
+    color: var(--text-muted);
+  }
+
+  &__text {
+    font-size: var(--fs-sm);
+    color: var(--text-secondary);
+    margin: 0;
+  }
+}
+
+// ── Modal Form ─────────────────────────────────────────────────
+.warehouse-form {
+  padding: var(--space-2) 0;
+
+  .form-label {
+    display: block;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+
+    &.required::before {
+      content: '* ';
+      color: var(--danger, #ff4d4f);
+    }
+  }
+
+  .form-error {
+    display: block;
+    font-size: var(--fs-xs);
+    color: var(--danger, #ff4d4f);
+    margin-top: var(--space-1);
+  }
+}
+
+.modal-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

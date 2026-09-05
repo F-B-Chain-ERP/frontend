@@ -1,5 +1,6 @@
 import { ApplicationRef, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -157,16 +158,13 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(ApplicationConfigService);
   private readonly appRef = inject(ApplicationRef);
+  private readonly route = inject(ActivatedRoute);
 
   /**
-   * Dữ liệu Kho & Đơn vị tính: BE chưa có API (chỉ có entity + repository).
-   * Dùng danh sách tĩnh ở FE; giá trị `value` PHẢI là UUID kho/đơn vị thật trong DB
-   * (lấy từ bảng `warehouse` / `unit`) để ràng buộc FK khi lưu PO không bị lỗi.
-   * Khi thêm/xoá kho hoặc đơn vị ở DB, cập nhật 2 mảng dưới cho khớp.
+   * Dữ liệu Đơn vị tính: BE chưa có API CRUD (chỉ có entity + repository).
+   * Dùng danh sách tĩnh ở FE; giá trị `value` PHẢI là UUID đơn vị thật trong DB
+   * (lấy từ bảng `unit`) để ràng buộc FK khi lưu PO không bị lỗi.
    */
-  private readonly mockWarehouses: PoOption[] = [
-    { value: '0229aaa0-ee51-4f70-bf2f-cc44ae13d5db', label: 'WH001 - Kho tổng Hà Nội' },
-  ];
 
   private readonly mockUnits: PoOption[] = [
     { value: '11111111-1111-1111-1111-111111111111', label: 'KG - Kilogram' },
@@ -222,7 +220,21 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
     this.poForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcTotals());
     this.receiveForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcReceiveTotals());
-    this.loadData();
+
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const code = (params['code'] || params['search'] || '').trim();
+      if (code) {
+        this.searchQuery = code;
+        this.selectedStatus = null;
+        this.selectedWarehouseId = null;
+        this.selectedFromDate = null;
+        this.selectedToDate = null;
+        this.pageIndex = DEFAULT_PAGE_INDEX;
+        this.loadDataAndOpenDetail(code);
+      } else {
+        this.loadData();
+      }
+    });
   }
 
   // ── Data loading ───────────────────────────────────────────────────
@@ -248,6 +260,46 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
           this.total.set(res.total);
           this.loading.set(false);
           this.refreshCheckState();
+        },
+        error: err => {
+          this.loading.set(false);
+          this.toastService.error('Lỗi', err.message || 'Không thể tải danh sách đơn mua hàng.');
+        },
+      });
+  }
+
+  loadDataAndOpenDetail(targetCode: string): void {
+    this.loading.set(true);
+    const filter: PurchaseOrderFilter = {
+      query: targetCode,
+      status: this.selectedStatus,
+      warehouseId: this.selectedWarehouseId,
+      fromDate: this.selectedFromDate ? this.toDateStr(this.selectedFromDate) : null,
+      toDate: this.selectedToDate ? this.toDateStr(this.selectedToDate) : null,
+      pageIndex: this.pageIndex,
+      pageSize: this.pageSize,
+    };
+
+    this.purchaseOrderService
+      .getPurchaseOrders(filter)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          this.allLoadedPos.set(res.items);
+          this.purchaseOrders.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : res.items);
+          this.total.set(res.total);
+          this.loading.set(false);
+          this.refreshCheckState();
+
+          const normalizedTarget = targetCode.toLowerCase();
+          const matched = res.items.find(
+            p => p.code?.toLowerCase() === normalizedTarget || p.code?.toLowerCase().includes(normalizedTarget)
+          );
+          if (matched) {
+            this.openDetailModal(matched);
+          } else if (res.items.length === 1) {
+            this.openDetailModal(res.items[0]);
+          }
         },
         error: err => {
           this.loading.set(false);
@@ -722,7 +774,6 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.selectedPoId = null;
     this.modalDetail.set(null);
     this.resetForm();
-    this.warehouseOptions.set(this.mockWarehouses);
     this.unitOptions.set(this.mockUnits);
     this.loadLookupOptions();
     this.isModalVisible.set(true);
@@ -735,9 +786,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   private loadPoIntoModal(po: PurchaseOrder): void {
     this.selectedPoId = po.id;
-    this.warehouseOptions.set(this.mockWarehouses);
     this.unitOptions.set(this.mockUnits);
-    forkJoin([this.loadSuppliers(), this.loadMaterials()])
+    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses()])
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.purchaseOrderService
@@ -834,9 +884,9 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   // ── Private helpers ────────────────────────────────────────────────
   private loadLookupOptions(): void {
-    forkJoin([this.loadSuppliers(), this.loadMaterials()])
+    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses()])
       .pipe(takeUntil(this.destroy$))
-      .subscribe({ error: () => this.toastService.error('Lỗi', 'Không thể tải dữ liệu chọn (NCC/NVL).') });
+      .subscribe({ error: () => this.toastService.error('Lỗi', 'Không thể tải dữ liệu chọn (NCC/NVL/Kho).') });
   }
 
   private resetForm(): void {
@@ -923,6 +973,21 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       }),
       catchError(() => {
         this.materialOptions.set([]);
+        return of(null);
+      }),
+    );
+  }
+
+  private loadWarehouses(): Observable<unknown> {
+    const url = this.appConfig.getEndpointFor('api/v1/inv/warehouses/all');
+    const params = new HttpParams().set('status', 'ACTIVE');
+    return this.http.get<{ data: NameCodeBE[] }>(url, { params }).pipe(
+      tap(res => {
+        const list: NameCodeBE[] = res?.data ?? [];
+        this.warehouseOptions.set(list.map(w => ({ label: `${w.code || ''} - ${w.name || ''}`.trim(), value: w.id })));
+      }),
+      catchError(() => {
+        this.warehouseOptions.set([]);
         return of(null);
       }),
     );

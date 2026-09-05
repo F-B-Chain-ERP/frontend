@@ -1,0 +1,185 @@
+<div
+  class="notification-bell"
+  nz-dropdown
+  [nzDropdownMenu]="notificationMenu"
+  nzTrigger="click"
+  nzPlacement="bottomRight"
+  [nzOverlayStyle]="{ width: '420px' }"
+  [nzVisible]="isVisibleMenu()"
+  (nzVisibleChange)="isVisibleMenu.set($event)"
+  title="Thông báo hệ thống"
+>
+  <div class="notification-bell__trigger">
+    <nz-badge [nzCount]="unreadCount()" [nzOverflowCount]="99" [nzOffset]="[-2, 4]">
+      <div class="notification-bell__icon-wrapper" [class.notification-bell__icon-wrapper--active]="unreadCount() > 0">
+        <nz-icon nzType="bell" class="notification-bell__icon"></nz-icon>
+      </div>
+    </nz-badge>
+    @if (isConnected()) {
+      <span class="notification-bell__live-indicator" title="Realtime SSE Đang kết nối"></span>
+    }
+  </div>
+</div>
+
+<nz-dropdown-menu #notificationMenu="nzDropdownMenu">
+  <div class="notification-dropdown">
+    <!-- Header -->
+    <div class="notification-dropdown__header">
+      <div class="notification-dropdown__title-row">
+        <div class="notification-dropdown__title-group">
+          <span class="notification-dropdown__title">Thông báo</span>
+          @if (unreadCount() > 0) {
+            <span class="notification-dropdown__unread-pill">{{ unreadCount() }} mới</span>
+          }
+        </div>
+        <div class="notification-dropdown__actions">
+          @if (unreadCount() > 0) {
+            <button
+              type="button"
+              class="notification-dropdown__mark-read-btn"
+              (click)="onMarkAllAsRead($event)"
+              title="Đánh dấu tất cả đã đọc"
+            >
+              <nz-icon nzType="check"></nz-icon>
+              <span>Đã đọc</span>
+            </button>
+          }
+          @if (totalCount() > 0) {
+            <button
+              type="button"
+              class="notification-dropdown__delete-all-btn"
+              (click)="onDeleteAll($event)"
+              title="Xóa tất cả thông báo"
+            >
+              <nz-icon nzType="delete"></nz-icon>
+              <span>Xóa tất cả</span>
+            </button>
+          }
+          <div
+            class="notification-dropdown__status-dot"
+            [class.notification-dropdown__status-dot--online]="isConnected()"
+            [title]="isConnected() ? 'Realtime: Đang trực tuyến' : (isConnecting() ? 'Đang kết nối lại...' : 'Ngoại tuyến')"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Filter Tabs / Pills -->
+      <div class="notification-dropdown__filters">
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="activeFilter() === 'ALL'"
+          (click)="onFilterChange('ALL', $event)"
+        >
+          Tất cả ({{ totalCount() }})
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="activeFilter() === 'UNREAD'"
+          (click)="onFilterChange('UNREAD', $event)"
+        >
+          Chưa đọc ({{ unreadCount() }})
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="activeFilter() === 'PENDING'"
+          (click)="onFilterChange('PENDING', $event)"
+        >
+          Chờ duyệt ({{ pendingCount() }})
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="activeFilter() === 'APPROVED'"
+          (click)="onFilterChange('APPROVED', $event)"
+        >
+          Đã duyệt ({{ approvedCount() }})
+        </button>
+        <button
+          type="button"
+          class="filter-pill"
+          [class.filter-pill--active]="activeFilter() === 'REJECTED'"
+          (click)="onFilterChange('REJECTED', $event)"
+        >
+          Từ chối ({{ rejectedCount() }})
+        </button>
+      </div>
+    </div>
+
+    <!-- Notification List -->
+    <div class="notification-dropdown__list">
+      @for (item of filteredNotifications(); track item.id) {
+        <div
+          class="notification-item"
+          [class.notification-item--unread]="!item.readAt"
+          (click)="onNotificationClick(item)"
+          title="Bấm để xem chi tiết"
+        >
+          <div class="notification-item__icon-col">
+            <div class="notification-item__icon-bubble" [class.notification-item__icon-bubble--unread]="!item.readAt">
+              <nz-icon nzType="bell"></nz-icon>
+            </div>
+          </div>
+          <div class="notification-item__content">
+            <div class="notification-item__top">
+              <span class="notification-item__title">{{ item.title }}</span>
+              <div class="notification-item__top-actions">
+                <span class="notification-item__time">{{ item.createdAt | date: 'shortTime' }}</span>
+                <button
+                  type="button"
+                  class="notification-item__delete-btn"
+                  (click)="onDeleteItem(item.id, $event)"
+                  title="Xóa thông báo này"
+                >
+                  <nz-icon nzType="close"></nz-icon>
+                </button>
+              </div>
+            </div>
+            <p class="notification-item__body">{{ item.body }}</p>
+            <div class="notification-item__bottom">
+              <span class="notification-item__date">{{ item.createdAt | date: 'dd/MM/yyyy' }}</span>
+              <div class="notification-item__link-hint">
+                <span>Xem chi tiết</span>
+                <nz-icon nzType="arrow-right"></nz-icon>
+              </div>
+              @if (!item.readAt) {
+                <span class="notification-item__unread-dot"></span>
+              }
+            </div>
+          </div>
+        </div>
+      } @empty {
+        <div class="notification-dropdown__empty">
+          <div class="notification-dropdown__empty-icon">
+            <nz-icon nzType="inbox"></nz-icon>
+          </div>
+          <p class="notification-dropdown__empty-text">Chưa có thông báo nào</p>
+          <span class="notification-dropdown__empty-sub">
+            @if (activeFilter() !== 'ALL') {
+              Không có thông báo trong mục này
+            } @else {
+              Các thông báo duyệt đơn và nhận hàng sẽ xuất hiện tại đây
+            }
+          </span>
+        </div>
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="notification-dropdown__footer">
+      <span class="notification-dropdown__footer-status">
+        @if (isConnected()) {
+          <span class="notification-dropdown__pulse-dot"></span>
+          Cập nhật tức thời qua SSE
+        } @else if (isConnecting()) {
+          <nz-spin nzSimple nzSize="small"></nz-spin>
+          Đang kết nối lại realtime...
+        } @else {
+          Chế độ offline
+        }
+      </span>
+    </div>
+  </div>
+</nz-dropdown-menu>
