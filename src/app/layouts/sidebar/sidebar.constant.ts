@@ -147,6 +147,14 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
         children: [
           {
             kind: 'child',
+            id: 'menu-unit',
+            title: 'Đơn vị tính',
+            route: '/admin/menu/units/list',
+            activePrefix: '/admin/menu/units',
+            authorities: [ROLE.DON_VI_TINH.VIEW],
+          },
+          {
+            kind: 'child',
             id: 'menu-category',
             title: 'Danh mục',
             route: '/admin/menu/categories/list',

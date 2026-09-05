@@ -226,6 +226,17 @@ export const routes: Routes = [
       },
       // ── MENU ─────────────────────────────────────
       {
+        path: 'menu/units',
+        loadChildren: () => import('./features/menu/units/units.routes'),
+        canActivate: [UserRouteAccessService],
+        data: { authorities: [ROLE.DON_VI_TINH.VIEW] },
+      },
+      {
+        path: 'menu/units/list',
+        redirectTo: 'menu/units',
+        pathMatch: 'full',
+      },
+      {
         path: 'menu/categories/list',
         loadComponent: () => import('./features/coming-soon/coming-soon.component'),
         title: 'Danh mục',
