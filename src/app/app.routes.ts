@@ -287,9 +287,8 @@ export const routes: Routes = [
       },
       // ── INVENTORY ────────────────────────────────
       {
-        path: 'inventory/warehouses/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Kho',
+        path: 'inventory/warehouses',
+        loadChildren: () => import('./features/warehouses/warehouse-list/warehouse-list.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.KHO.VIEW] },
       },
@@ -453,6 +452,11 @@ export const routes: Routes = [
   {
     path: 'procurement/supplier/list',
     redirectTo: 'admin/procurement/suppliers/list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'inventory/warehouses/list',
+    redirectTo: 'admin/inventory/warehouses/list',
     pathMatch: 'full',
   },
   {

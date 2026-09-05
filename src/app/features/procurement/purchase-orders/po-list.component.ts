@@ -161,14 +161,10 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   private readonly route = inject(ActivatedRoute);
 
   /**
-   * Dữ liệu Kho & Đơn vị tính: BE chưa có API (chỉ có entity + repository).
-   * Dùng danh sách tĩnh ở FE; giá trị `value` PHẢI là UUID kho/đơn vị thật trong DB
-   * (lấy từ bảng `warehouse` / `unit`) để ràng buộc FK khi lưu PO không bị lỗi.
-   * Khi thêm/xoá kho hoặc đơn vị ở DB, cập nhật 2 mảng dưới cho khớp.
+   * Dữ liệu Đơn vị tính: BE chưa có API CRUD (chỉ có entity + repository).
+   * Dùng danh sách tĩnh ở FE; giá trị `value` PHẢI là UUID đơn vị thật trong DB
+   * (lấy từ bảng `unit`) để ràng buộc FK khi lưu PO không bị lỗi.
    */
-  private readonly mockWarehouses: PoOption[] = [
-    { value: '0229aaa0-ee51-4f70-bf2f-cc44ae13d5db', label: 'WH001 - Kho tổng Hà Nội' },
-  ];
 
   private readonly mockUnits: PoOption[] = [
     { value: '11111111-1111-1111-1111-111111111111', label: 'KG - Kilogram' },
@@ -778,7 +774,6 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.selectedPoId = null;
     this.modalDetail.set(null);
     this.resetForm();
-    this.warehouseOptions.set(this.mockWarehouses);
     this.unitOptions.set(this.mockUnits);
     this.loadLookupOptions();
     this.isModalVisible.set(true);
@@ -791,9 +786,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   private loadPoIntoModal(po: PurchaseOrder): void {
     this.selectedPoId = po.id;
-    this.warehouseOptions.set(this.mockWarehouses);
     this.unitOptions.set(this.mockUnits);
-    forkJoin([this.loadSuppliers(), this.loadMaterials()])
+    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses()])
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.purchaseOrderService
@@ -890,9 +884,9 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   // ── Private helpers ────────────────────────────────────────────────
   private loadLookupOptions(): void {
-    forkJoin([this.loadSuppliers(), this.loadMaterials()])
+    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses()])
       .pipe(takeUntil(this.destroy$))
-      .subscribe({ error: () => this.toastService.error('Lỗi', 'Không thể tải dữ liệu chọn (NCC/NVL).') });
+      .subscribe({ error: () => this.toastService.error('Lỗi', 'Không thể tải dữ liệu chọn (NCC/NVL/Kho).') });
   }
 
   private resetForm(): void {
@@ -979,6 +973,21 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       }),
       catchError(() => {
         this.materialOptions.set([]);
+        return of(null);
+      }),
+    );
+  }
+
+  private loadWarehouses(): Observable<unknown> {
+    const url = this.appConfig.getEndpointFor('api/v1/inv/warehouses/all');
+    const params = new HttpParams().set('status', 'ACTIVE');
+    return this.http.get<{ data: NameCodeBE[] }>(url, { params }).pipe(
+      tap(res => {
+        const list: NameCodeBE[] = res?.data ?? [];
+        this.warehouseOptions.set(list.map(w => ({ label: `${w.code || ''} - ${w.name || ''}`.trim(), value: w.id })));
+      }),
+      catchError(() => {
+        this.warehouseOptions.set([]);
         return of(null);
       }),
     );
