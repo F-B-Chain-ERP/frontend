@@ -43,9 +43,25 @@ export class MaterialService {
   }
 
   private errorMessage(err: unknown): string {
-    const e = err as { status?: number; error?: { message?: string }; message?: string };
-    if (e?.error?.message) {
-      return e.error.message;
+    const e = err as {
+      status?: number;
+      error?: { message?: string; errorCode?: string; data?: unknown };
+      message?: string;
+    };
+    const body = e?.error;
+    if (body?.data && typeof body.data === 'object' && !Array.isArray(body.data)) {
+      const msgs = Object.values(body.data as Record<string, unknown>).filter(
+        (v): v is string => typeof v === 'string' && v.trim().length > 0,
+      );
+      if (msgs.length > 0) {
+        return msgs.join('; ');
+      }
+    }
+    if (body?.message && body.message !== 'Validation error') {
+      return body.message;
+    }
+    if (body?.message === 'Validation error') {
+      return 'Dữ liệu không hợp lệ, vui lòng kiểm tra lại.';
     }
     if (e?.message) {
       return e.message;

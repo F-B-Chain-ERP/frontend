@@ -63,6 +63,14 @@
   color: var(--color-danger, #ff4d4f);
 }
 
+.form-hint {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 16px;
+}
+
 .modal-footer-actions {
   display: flex;
   justify-content: flex-end;
