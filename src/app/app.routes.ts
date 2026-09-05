@@ -226,6 +226,17 @@ export const routes: Routes = [
       },
       // ── MENU ─────────────────────────────────────
       {
+        path: 'menu/units',
+        loadChildren: () => import('./features/menu/units/units.routes'),
+        canActivate: [UserRouteAccessService],
+        data: { authorities: [ROLE.DON_VI_TINH.VIEW] },
+      },
+      {
+        path: 'menu/units/list',
+        redirectTo: 'menu/units',
+        pathMatch: 'full',
+      },
+      {
         path: 'menu/categories/list',
         loadComponent: () => import('./features/coming-soon/coming-soon.component'),
         title: 'Danh mục',
@@ -287,9 +298,8 @@ export const routes: Routes = [
       },
       // ── INVENTORY ────────────────────────────────
       {
-        path: 'inventory/warehouses/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Kho',
+        path: 'inventory/warehouses',
+        loadChildren: () => import('./features/warehouses/warehouse-list/warehouse-list.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.KHO.VIEW] },
       },
@@ -453,6 +463,11 @@ export const routes: Routes = [
   {
     path: 'procurement/supplier/list',
     redirectTo: 'admin/procurement/suppliers/list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'inventory/warehouses/list',
+    redirectTo: 'admin/inventory/warehouses/list',
     pathMatch: 'full',
   },
   {

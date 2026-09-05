@@ -1,4 +1,4 @@
-import {Component, OnInit, computed, inject, signal} from '@angular/core';
+import {Component, OnDestroy, OnInit, computed, inject, signal} from '@angular/core';
 import {RouterLink} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {NzIconDirective} from 'ng-zorro-antd/icon';
@@ -14,6 +14,8 @@ import {LoginService} from '../../features/login/login.service';
 import {BranchService} from '../../core/auth/branch.service';
 import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
 import {BranchResponse} from '../../features/login/login.model';
+import {RealtimeNotificationService} from '../../core/notification/realtime-notification.service';
+import {NotificationBellComponent} from './notification-bell/notification-bell.component';
 import MenuSearchComponent from '../../shared/app-menu-search/app-menu-search.component';
 
 @Component({
@@ -32,16 +34,18 @@ import MenuSearchComponent from '../../shared/app-menu-search/app-menu-search.co
     NzMenuDividerDirective,
     NzSpinComponent,
     MenuSearchComponent,
+    NotificationBellComponent,
   ],
   standalone: true,
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent implements OnInit, OnDestroy {
   readonly theme = inject(ThemeService);
   private readonly layoutService = inject(LayoutService);
   private readonly accountService = inject(AccountService);
   private readonly loginService = inject(LoginService);
   private readonly branchService = inject(BranchService);
   private readonly toast = inject(AppNotificationService);
+  private readonly realtimeNotificationService = inject(RealtimeNotificationService);
 
   protected account = this.accountService.account;
   protected sidebarCollapsed = this.layoutService.sidebarCollapsed;
@@ -71,6 +75,12 @@ export class HeaderComponent implements OnInit {
 
   ngOnInit(): void {
     this.branchService.loadMine().subscribe();
+    this.realtimeNotificationService.loadRecent().subscribe();
+    this.realtimeNotificationService.connect();
+  }
+
+  ngOnDestroy(): void {
+    this.realtimeNotificationService.disconnect();
   }
 
   onToggleSidebar(): void {
@@ -104,6 +114,7 @@ export class HeaderComponent implements OnInit {
   }
 
   onLogout(): void {
+    this.realtimeNotificationService.disconnect();
     this.loginService.logout().subscribe({
       next: () => {
         this.theme.savePreLogoutMode();
