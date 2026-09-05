@@ -94,25 +94,6 @@
     </div>
   </nz-card>
 
-  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
-  @if (setOfCheckedKeys.size > 0) {
-    <app-selection-bar
-      [selectedCount]="setOfCheckedKeys.size"
-      [totalCount]="total()"
-      itemLabel="nguyên vật liệu"
-      (clearSelection)="clearSelection()"
-    >
-      <app-button
-        *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.DELETE]"
-        variant="danger"
-        leftIcon="delete"
-        (click)="onBatchDelete()"
-      >
-        Xóa đã chọn
-      </app-button>
-    </app-selection-bar>
-  }
-
   <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
   <nz-card class="page__list" [nzBordered]="false">
     <nz-table
@@ -126,21 +107,6 @@
     >
       <thead>
       <tr>
-        <!-- Checkbox chọn tất cả -->
-        <th scope="col" nzWidth="48px" nzAlign="center">
-          <label class="cb" for="cb-check-all-materials">
-            <input
-              id="cb-check-all-materials"
-              #checkAllInput
-              type="checkbox"
-              [checked]="allChecked"
-              [indeterminate]="indeterminate"
-              (change)="onCheckAll(checkAllInput.checked)"
-            />
-            <span class="cb__box"></span>
-          </label>
-        </th>
-
         <!-- STT -->
         <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
 
@@ -171,7 +137,6 @@
 
       <!-- Hàng lọc theo cột (Table Search Inputs) -->
       <tr class="thead-search">
-        <th></th>
         <th></th>
         <th>
           <app-table-search-input
@@ -229,20 +194,6 @@
       <tbody>
         @for (item of materials(); track item.id; let i = $index) {
           <tr>
-            <!-- Checkbox từng dòng -->
-            <td nzAlign="center">
-              <label class="cb" [for]="'cb-mat-' + item.id">
-                <input
-                  [id]="'cb-mat-' + item.id"
-                  #rowInput
-                  type="checkbox"
-                  [checked]="isChecked(item.id)"
-                  (change)="onCheckRow(item.id, rowInput.checked)"
-                />
-                <span class="cb__box"></span>
-              </label>
-            </td>
-
             <!-- STT -->
             <td nzAlign="center">
               {{ pageIndex === 1 ? i + 1 : (pageIndex - 1) * pageSize + i + 1 }}
@@ -353,7 +304,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="10" class="text-center tbl-empty">
+            <td colspan="9" class="text-center tbl-empty">
               <div class="empty-state">
                 <nz-icon nzType="inbox" class="empty-icon"/>
                 <p class="empty-text">Không tìm thấy nguyên vật liệu nào trong kho</p>
@@ -458,7 +409,7 @@
             nzPlaceHolder="Chọn đơn vị tính cơ bản"
             style="width: 100%"
           >
-            @for (opt of baseUnitOptions; track opt.value) {
+            @for (opt of unitOptions(); track opt.value) {
               <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
             }
           </nz-select>
@@ -504,19 +455,21 @@
           ></nz-input-number>
         </div>
 
-        <!-- Trạng thái -->
-        <div nz-col [nzSpan]="24" [nzMd]="12">
-          <label class="form-label required">Trạng thái</label>
-          <nz-select
-            id="mat-status"
-            formControlName="status"
-            nzPlaceHolder="Chọn trạng thái"
-            style="width: 100%"
-          >
-            <nz-option nzValue="ACTIVE" nzLabel="Đang sử dụng"></nz-option>
-            <nz-option nzValue="INACTIVE" nzLabel="Ngừng sử dụng"></nz-option>
-          </nz-select>
-        </div>
+        <!-- Trạng thái (chỉ hiện khi edit) -->
+        @if (modalMode() === 'edit') {
+          <div nz-col [nzSpan]="24" [nzMd]="12">
+            <label class="form-label required">Trạng thái</label>
+            <nz-select
+              id="mat-status"
+              formControlName="status"
+              nzPlaceHolder="Chọn trạng thái"
+              style="width: 100%"
+            >
+              <nz-option nzValue="ACTIVE" nzLabel="Đang sử dụng"></nz-option>
+              <nz-option nzValue="INACTIVE" nzLabel="Ngừng sử dụng"></nz-option>
+            </nz-select>
+          </div>
+        }
 
         <!-- Dễ hỏng / Cần bảo quản date ngắn -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
@@ -527,18 +480,6 @@
             </div>
             <nz-switch formControlName="isPerishable"></nz-switch>
           </div>
-        </div>
-
-        <!-- Ghi chú / Hướng dẫn bảo quản -->
-        <div nz-col [nzSpan]="24">
-          <label class="form-label" for="mat-note">Ghi chú / Lưu ý bảo quản kho</label>
-          <textarea
-            id="mat-note"
-            nz-input
-            rows="3"
-            formControlName="note"
-            placeholder="Nhập ghi chú hoặc quy cách bảo quản tại kho..."
-          ></textarea>
         </div>
       </div>
     </form>
