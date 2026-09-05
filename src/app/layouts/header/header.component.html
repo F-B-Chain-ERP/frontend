@@ -6,6 +6,17 @@
     </div>
   </div>
   <div class="ant-flex ant-flex-align-center" style="gap: 12px">
+    <!-- Storefront Quick Link -->
+    <a
+      routerLink="/store"
+      class="topbar__storefront-btn"
+      title="Xem Kênh Bán Hàng Trực Tuyến (Online Storefront)"
+    >
+      <nz-icon nzType="shop" class="topbar__storefront-icon"></nz-icon>
+      <span class="topbar__storefront-text">Kênh Khách Hàng</span>
+      <span class="topbar__storefront-badge">Storefront</span>
+    </a>
+
     <!-- Branch Switcher Pill -->
     @if (currentBranch(); as branch) {
       <div
