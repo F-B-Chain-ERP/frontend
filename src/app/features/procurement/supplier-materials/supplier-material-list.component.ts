@@ -28,7 +28,7 @@ import {
 } from './supplier-material.model';
 import { SupplierService } from '../suppliers/supplier.service';
 import { Supplier } from '../suppliers/supplier.model';
-import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
+import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from '../../../shared/constants/constant';
 import { takeUntil } from 'rxjs';
 
 function positiveNumberValidator(): ValidatorFn {
@@ -78,7 +78,7 @@ function integerMinValidator(min: number): ValidatorFn {
 export class SupplierMaterialListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
   readonly getSupplierMaterialStatusMeta = getSupplierMaterialStatusMeta;
-  readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
+  readonly pageSizeOptions: number[] = [10];
 
   // ── State signals ───────────────────────────────────────────────────
   readonly supplierMaterials = signal<SupplierMaterial[]>([]);
