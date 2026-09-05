@@ -1,5 +1,6 @@
 import { ApplicationRef, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -157,6 +158,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(ApplicationConfigService);
   private readonly appRef = inject(ApplicationRef);
+  private readonly route = inject(ActivatedRoute);
 
   /**
    * Dữ liệu Kho & Đơn vị tính: BE chưa có API (chỉ có entity + repository).
@@ -222,7 +224,21 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
     this.poForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcTotals());
     this.receiveForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcReceiveTotals());
-    this.loadData();
+
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const code = (params['code'] || params['search'] || '').trim();
+      if (code) {
+        this.searchQuery = code;
+        this.selectedStatus = null;
+        this.selectedWarehouseId = null;
+        this.selectedFromDate = null;
+        this.selectedToDate = null;
+        this.pageIndex = DEFAULT_PAGE_INDEX;
+        this.loadDataAndOpenDetail(code);
+      } else {
+        this.loadData();
+      }
+    });
   }
 
   // ── Data loading ───────────────────────────────────────────────────
@@ -248,6 +264,46 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
           this.total.set(res.total);
           this.loading.set(false);
           this.refreshCheckState();
+        },
+        error: err => {
+          this.loading.set(false);
+          this.toastService.error('Lỗi', err.message || 'Không thể tải danh sách đơn mua hàng.');
+        },
+      });
+  }
+
+  loadDataAndOpenDetail(targetCode: string): void {
+    this.loading.set(true);
+    const filter: PurchaseOrderFilter = {
+      query: targetCode,
+      status: this.selectedStatus,
+      warehouseId: this.selectedWarehouseId,
+      fromDate: this.selectedFromDate ? this.toDateStr(this.selectedFromDate) : null,
+      toDate: this.selectedToDate ? this.toDateStr(this.selectedToDate) : null,
+      pageIndex: this.pageIndex,
+      pageSize: this.pageSize,
+    };
+
+    this.purchaseOrderService
+      .getPurchaseOrders(filter)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          this.allLoadedPos.set(res.items);
+          this.purchaseOrders.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : res.items);
+          this.total.set(res.total);
+          this.loading.set(false);
+          this.refreshCheckState();
+
+          const normalizedTarget = targetCode.toLowerCase();
+          const matched = res.items.find(
+            p => p.code?.toLowerCase() === normalizedTarget || p.code?.toLowerCase().includes(normalizedTarget)
+          );
+          if (matched) {
+            this.openDetailModal(matched);
+          } else if (res.items.length === 1) {
+            this.openDetailModal(res.items[0]);
+          }
         },
         error: err => {
           this.loading.set(false);
