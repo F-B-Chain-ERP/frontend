@@ -1,0 +1,305 @@
+<div class="stock-count-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Kiểm kê chốt ca &amp; Hao hụt kho</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        So sánh tồn kho lý thuyết trên hệ thống với tồn thực tế kiểm đếm tại quầy &bull; Giám sát và chống thất thoát nguyên vật liệu
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="download">Xuất biên bản kiểm kê</app-button>
+      <app-button variant="primary" leftIcon="plus">Tạo phiếu kiểm kê mới</app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. KPI Summary Cards ───────────────────────────────────────── -->
+  <div nz-row class="kpi-row" [nzGutter]="[16, 16]">
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Báo cáo kiểm kê ca</span>
+          <span class="stat-card__icon stat-card__icon--teal">
+            <nz-icon nzType="check-circle"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">{{ tickets().length }} ca</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub">6/6 Chi nhánh đã chốt ca trưa</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Độ chính xác tồn kho</span>
+          <span class="stat-card__icon stat-card__icon--brand">
+            <nz-icon nzType="percentage"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">98.8%</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--success">Đạt ngưỡng an toàn kiểm soát</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Phiếu lệch cần giải trình</span>
+          <span class="stat-card__icon stat-card__icon--danger">
+            <nz-icon nzType="alert"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono text-danger">1 phiếu</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--danger">Chi nhánh Cầu Giấy (Lệch trân châu)</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Tổng hao hụt ca trưa</span>
+          <span class="stat-card__icon stat-card__icon--amber">
+            <nz-icon nzType="dollar"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono text-warning">-238.400 ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub">Chiếm 0.49% doanh thu ca</span>
+        </div>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- ── 3. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="stock-count-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="stock-count-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Tìm theo mã phiếu, chi nhánh hoặc người kiểm đếm..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #ticketTable
+      [nzData]="pagedData()"
+      [nzLoading]="isLoading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1240px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="150px" nzAlign="left">Mã phiếu</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Đơn vị / Chi nhánh</th>
+          <th scope="col" nzWidth="140px" nzAlign="left">Ca làm việc</th>
+          <th scope="col" nzWidth="180px" nzAlign="left">Người kiểm đếm</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Thời điểm nộp</th>
+          <th scope="col" nzWidth="180px" nzAlign="right">Giá trị chênh lệch</th>
+          <th scope="col" nzWidth="150px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="100px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (t of ticketTable.data; track t.id; let i = $index) {
+          <tr>
+            <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+            <td><span class="po-code">{{ t.code }}</span></td>
+            <td>
+              <span class="branch-name font-semibold">
+                <nz-icon nzType="home" style="margin-right: 4px; color: var(--brand);"/>
+                {{ t.branchName }}
+              </span>
+            </td>
+            <td><span class="text-secondary">{{ t.shiftName }}</span></td>
+            <td><span class="font-medium">{{ t.countedBy }}</span></td>
+            <td nzAlign="center"><span class="text-secondary font-mono">{{ t.countedDate }}</span></td>
+            <td nzAlign="right">
+              <span
+                class="font-mono font-semibold"
+                [class.text-danger]="t.totalDiscrepancyValue < -50000"
+                [class.text-warning]="t.totalDiscrepancyValue < 0 && t.totalDiscrepancyValue >= -50000"
+                [class.text-success]="t.totalDiscrepancyValue >= 0"
+              >
+                {{ t.totalDiscrepancyValue | number: '1.0-0' }} ₫
+              </span>
+            </td>
+            <td nzAlign="center">
+              @if (t.status === 'BALANCED') {
+                <span class="tbl-badge tbl-badge--success">Khớp chuẩn</span>
+              } @else if (t.status === 'DISCREPANCY') {
+                <span class="tbl-badge tbl-badge--danger">Có hao hụt</span>
+              } @else {
+                <span class="tbl-badge tbl-badge--info">Đã phê duyệt</span>
+              }
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem biên bản kiểm kê"
+                  (click)="onViewTicket(t)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 32px 0; color: var(--text-muted);">
+              Không tìm thấy biên bản kiểm kê phù hợp
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Ticket Detail Drawer ────────────────────────────────────── -->
+  <nz-drawer
+    [nzVisible]="isDrawerVisible()"
+    [nzWidth]="820"
+    [nzTitle]="ticketTitleTpl"
+    (nzOnClose)="onCloseDrawer()"
+  >
+    <ng-container *nzDrawerContent>
+      @if (selectedTicket(); as ticket) {
+        <div class="drawer-body">
+          <div class="ticket-meta">
+            <div class="ticket-meta__row">
+              <div class="meta-item">
+                <span class="label">Chi nhánh:</span>
+                <span class="val font-semibold">{{ ticket.branchName }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Ca làm việc:</span>
+                <span class="val">{{ ticket.shiftName }}</span>
+              </div>
+            </div>
+            <div class="ticket-meta__row">
+              <div class="meta-item">
+                <span class="label">Người lập biên bản:</span>
+                <span class="val font-medium">{{ ticket.countedBy }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Thời điểm chốt:</span>
+                <span class="val font-mono">{{ ticket.countedDate }}</span>
+              </div>
+            </div>
+            @if (ticket.note) {
+              <div class="ticket-note">
+                <nz-icon nzType="message" style="color: var(--brand);"></nz-icon>
+                <span><b>Giải trình của Trưởng ca:</b> {{ ticket.note }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Items Table -->
+          <nz-table #itemsTable [nzData]="ticket.items" [nzShowPagination]="false" nzSize="middle" class="detail-table">
+            <thead>
+              <tr>
+                <th scope="col" style="width: 100px;">Mã NVL</th>
+                <th scope="col">Nguyên vật liệu</th>
+                <th scope="col" style="width: 70px;" nzAlign="center">ĐVT</th>
+                <th scope="col" style="width: 110px;" nzAlign="right">Tồn lý thuyết</th>
+                <th scope="col" style="width: 110px;" nzAlign="right">Tồn thực tế</th>
+                <th scope="col" style="width: 100px;" nzAlign="right">Chênh lệch</th>
+                <th scope="col" style="width: 130px;" nzAlign="right">Giá trị hao hụt</th>
+                <th scope="col">Ghi chú</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of itemsTable.data; track item.id) {
+                <tr [class.row-discrepancy]="item.difference < 0">
+                  <td><span class="po-code">{{ item.materialCode }}</span></td>
+                  <td><span class="font-medium">{{ item.materialName }}</span></td>
+                  <td nzAlign="center"><span class="text-secondary">{{ item.unit }}</span></td>
+                  <td nzAlign="right" class="font-mono">{{ item.systemStock | number }}</td>
+                  <td nzAlign="right" class="font-mono font-semibold">{{ item.actualStock | number }}</td>
+                  <td nzAlign="right" class="font-mono font-bold">
+                    <span
+                      [class.text-danger]="item.difference < 0"
+                      [class.text-success]="item.difference > 0"
+                    >
+                      {{ item.difference > 0 ? '+' : '' }}{{ item.difference | number }}
+                    </span>
+                  </td>
+                  <td nzAlign="right" class="font-mono font-semibold">
+                    <span [class.text-danger]="item.discrepancyValue < 0">
+                      {{ item.discrepancyValue | number: '1.0-0' }} ₫
+                    </span>
+                  </td>
+                  <td>
+                    <span class="reason-text">{{ item.reason || '-' }}</span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+
+          <!-- Drawer Footer -->
+          <div class="drawer-footer">
+            <div class="drawer-footer__stats">
+              <span>Tổng giá trị hao hụt: <b class="font-mono text-danger">{{ ticket.totalDiscrepancyValue | number: '1.0-0' }} ₫</b></span>
+            </div>
+            <div class="drawer-footer__buttons">
+              <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
+              @if (ticket.status !== 'APPROVED') {
+                <app-button variant="primary" (click)="onApproveTicket()" leftIcon="check-circle">
+                  Duyệt biên bản hao hụt
+                </app-button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </ng-container>
+  </nz-drawer>
+
+  <ng-template #ticketTitleTpl>
+    <div class="drawer-title">
+      <nz-icon nzType="file-text" style="color: var(--brand); margin-right: 8px;"></nz-icon>
+      <span>Biên Bản Kiểm Kê Chốt Ca: <b>{{ selectedTicket()?.code }}</b></span>
+    </div>
+  </ng-template>
+</div>

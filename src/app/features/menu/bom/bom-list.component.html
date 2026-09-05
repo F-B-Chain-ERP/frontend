@@ -1,0 +1,290 @@
+<div class="bom-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Định lượng pha chế (BOM) &amp; Giá vốn</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        Cấu hình định mức nguyên vật liệu tiêu hao trên từng ly đồ uống &bull; Tự động tính toán Food Cost % và giá thành vốn
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="download">Xuất bảng định lượng</app-button>
+      <app-button variant="primary" leftIcon="plus">Thêm công thức mới</app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. KPI Summary Cards ───────────────────────────────────────── -->
+  <div nz-row class="kpi-row" [nzGutter]="[16, 16]">
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Tổng công thức hoạt động</span>
+          <span class="stat-card__icon stat-card__icon--teal">
+            <nz-icon nzType="coffee"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">{{ bomList().length }} món</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub">100% đã chuẩn hóa định mức</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Food Cost trung bình</span>
+          <span class="stat-card__icon stat-card__icon--brand">
+            <nz-icon nzType="percentage"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">29.1%</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--success">Đạt ngưỡng an toàn (&lt; 32%)</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Food Cost tối ưu nhất</span>
+          <span class="stat-card__icon stat-card__icon--purple">
+            <nz-icon nzType="trophy"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">27.5%</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub">Trà Sữa Oolong Nướng (M)</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Cần tối ưu giá vốn</span>
+          <span class="stat-card__icon stat-card__icon--amber">
+            <nz-icon nzType="alert"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">30.9%</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--warning">Trà Đào Cam Sả Tươi (L)</span>
+        </div>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- ── 3. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="bom-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="bom-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Tìm theo mã món hoặc tên đồ uống..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #bomTable
+      [nzData]="pagedData()"
+      [nzLoading]="isLoading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1240px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="130px" nzAlign="left">Mã món</th>
+          <th scope="col" nzWidth="240px" nzAlign="left">Tên món đồ uống</th>
+          <th scope="col" nzWidth="160px" nzAlign="left">Danh mục</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Biến thể / Size</th>
+          <th scope="col" nzWidth="160px" nzAlign="right">Giá bán niêm yết</th>
+          <th scope="col" nzWidth="170px" nzAlign="right">Giá vốn NVL (COGS)</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Tỷ lệ Food Cost</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Thành phần</th>
+          <th scope="col" nzWidth="100px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of bomTable.data; track item.id; let i = $index) {
+          <tr>
+            <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+            <td><span class="po-code">{{ item.productCode }}</span></td>
+            <td><span class="font-semibold">{{ item.productName }}</span></td>
+            <td><span class="text-secondary">{{ item.categoryName }}</span></td>
+            <td nzAlign="center"><span class="variant-text">{{ item.variantName }}</span></td>
+            <td nzAlign="right">
+              <span class="font-mono font-semibold">{{ item.sellingPrice | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-semibold cost-val">{{ item.foodCost | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="center">
+              <span
+                class="tbl-badge"
+                [class.tbl-badge--success]="item.foodCostPercentage <= 28.5"
+                [class.tbl-badge--warning]="item.foodCostPercentage > 28.5 && item.foodCostPercentage <= 31"
+                [class.tbl-badge--danger]="item.foodCostPercentage > 31"
+              >
+                {{ item.foodCostPercentage }}%
+              </span>
+            </td>
+            <td nzAlign="center">
+              <span class="nvl-tag">{{ item.recipeItems.length }} NVL</span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa định lượng"
+                  (click)="onOpenRecipeDetail(item)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="10" style="text-align: center; padding: 32px 0; color: var(--text-muted);">
+              Không tìm thấy công thức định lượng phù hợp
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Recipe Detail & Edit Drawer ──────────────────────────────── -->
+  <nz-drawer
+    [nzVisible]="isDrawerVisible()"
+    [nzWidth]="760"
+    [nzTitle]="drawerTitleTpl"
+    (nzOnClose)="onCloseDrawer()"
+  >
+    <ng-container *nzDrawerContent>
+      @if (selectedBOM(); as bom) {
+        <div class="drawer-body">
+          <!-- Overview Banner inside Drawer -->
+          <div class="drawer-header-summary">
+            <div class="drawer-header-summary__item">
+              <span class="label">Giá bán niêm yết:</span>
+              <span class="val font-mono font-semibold">{{ bom.sellingPrice | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="drawer-header-summary__item">
+              <span class="label">Giá vốn hiện tại:</span>
+              <span class="val font-mono font-semibold cost">{{ calculateCurrentTotalCost() | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="drawer-header-summary__item">
+              <span class="label">Tỷ lệ Food Cost:</span>
+              <span
+                class="val font-mono font-semibold percent"
+                [class.text-danger]="calculateCurrentPercentage() > 31"
+                [class.text-success]="calculateCurrentPercentage() <= 31"
+              >
+                {{ calculateCurrentPercentage() }}%
+              </span>
+            </div>
+          </div>
+
+          <p class="recipe-hint">
+            <nz-icon nzType="info-circle"></nz-icon>
+            Chỉnh sửa số lượng tiêu hao để điều chỉnh công thức pha chế. Giá vốn và tỷ lệ Food Cost sẽ tự động tính toán lại thời gian thực.
+          </p>
+
+          <!-- Editable Recipe Items Table -->
+          <nz-table #recipeTable [nzData]="editingItems()" [nzShowPagination]="false" nzSize="middle" class="recipe-table">
+            <thead>
+              <tr>
+                <th scope="col" style="width: 100px;">Mã NVL</th>
+                <th scope="col">Tên nguyên vật liệu</th>
+                <th scope="col" style="width: 75px;" nzAlign="center">ĐVT</th>
+                <th scope="col" style="width: 120px;" nzAlign="right">Định lượng</th>
+                <th scope="col" style="width: 120px;" nzAlign="right">Đơn giá NVL</th>
+                <th scope="col" style="width: 130px;" nzAlign="right">Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of recipeTable.data; track r.id) {
+                <tr>
+                  <td><span class="po-code">{{ r.materialCode }}</span></td>
+                  <td><span class="font-medium">{{ r.materialName }}</span></td>
+                  <td nzAlign="center"><span class="text-secondary">{{ r.unit }}</span></td>
+                  <td nzAlign="right">
+                    <input
+                      type="number"
+                      nz-input
+                      class="quantity-input font-mono"
+                      [(ngModel)]="r.quantity"
+                      min="0"
+                    />
+                  </td>
+                  <td nzAlign="right" class="font-mono text-secondary">
+                    {{ r.unitCost | number: '1.0-0' }} ₫
+                  </td>
+                  <td nzAlign="right" class="font-mono font-semibold">
+                    {{ (r.quantity * r.unitCost) | number: '1.0-0' }} ₫
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+
+          <!-- Drawer Footer Actions -->
+          <div class="drawer-footer">
+            <div class="drawer-footer__stats">
+              <span>Tổng chi phí NVL: <b class="font-mono">{{ calculateCurrentTotalCost() | number: '1.0-0' }} ₫</b></span>
+              <span style="margin-left: 16px;">Tỷ lệ Food Cost: <b class="font-mono">{{ calculateCurrentPercentage() }}%</b></span>
+            </div>
+            <div class="drawer-footer__buttons">
+              <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
+              <app-button variant="primary" leftIcon="check" (click)="onSaveRecipe()">Lưu định mức mới</app-button>
+            </div>
+          </div>
+        </div>
+      }
+    </ng-container>
+  </nz-drawer>
+
+  <ng-template #drawerTitleTpl>
+    <div class="drawer-title">
+      <nz-icon nzType="experiment" style="color: var(--brand); margin-right: 8px;"></nz-icon>
+      <span>Công Thức Định Lượng: <b>{{ selectedBOM()?.productName }}</b> ({{ selectedBOM()?.variantName }})</span>
+    </div>
+  </ng-template>
+</div>

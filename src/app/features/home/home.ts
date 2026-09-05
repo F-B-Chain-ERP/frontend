@@ -7,11 +7,14 @@ import {
   inject,
   viewChild
 } from '@angular/core';
+import {RouterLink} from '@angular/router';
 import {AppButtonComponent} from '../../shared/app-button/app-button.component';
 import {NzColDirective, NzRowDirective} from 'ng-zorro-antd/grid';
 import {NzCardComponent} from 'ng-zorro-antd/card';
 import {NzIconDirective} from 'ng-zorro-antd/icon';
 import {NzTableModule} from 'ng-zorro-antd/table';
+
+import {AppBreadcrumbsComponent} from '../../shared/app-breadcrumbs/app-breadcrumbs.component';
 
 import * as echarts from 'echarts/core';
 import {BarChart, PieChart} from 'echarts/charts';
@@ -25,7 +28,7 @@ echarts.use([BarChart, PieChart, GridComponent, LegendComponent, TooltipComponen
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './home.html',
   styleUrl: './home.scss',
-  imports: [AppButtonComponent, NzRowDirective, NzColDirective, NzCardComponent, NzIconDirective, NzTableModule],
+  imports: [RouterLink, AppButtonComponent, NzRowDirective, NzColDirective, NzCardComponent, NzIconDirective, NzTableModule, AppBreadcrumbsComponent],
   standalone: true,
 })
 export class HomeComponent implements AfterViewInit {
@@ -36,47 +39,47 @@ export class HomeComponent implements AfterViewInit {
 
   readonly recentVouchers = [
     {
-      code: 'PCB245',
-      description: 'Chi thanh toán tiền lương tháng 6',
-      amount: '1.842.500.000',
+      code: 'PO-2026-0089',
+      description: 'Nhập 500kg Trà Oolong & Trà Đen Ceylon từ NCC Hoàng Trà',
+      amount: '42.500.000 ₫',
       statusClass: 'success',
-      statusLabel: 'Đã duyệt'
+      statusLabel: 'Đã nhập kho'
     },
     {
-      code: 'PTB118',
-      description: 'Thu phí, lệ phí nộp ngân sách',
-      amount: '326.000.000',
-      statusClass: 'success',
-      statusLabel: 'Đã duyệt'
-    },
-    {
-      code: 'PCB246',
-      description: 'Chi mua sắm thiết bị văn phòng',
-      amount: '94.200.000',
+      code: 'PO-2026-0091',
+      description: 'Nhập 200 thùng Sữa tươi thanh trùng từ Đà Lạt Milk',
+      amount: '38.200.000 ₫',
       statusClass: 'warning',
       statusLabel: 'Chờ duyệt'
     },
     {
-      code: 'UNB977',
-      description: 'Ủy nhiệm chi nộp bảo hiểm xã hội',
-      amount: '248.700.000',
+      code: 'SC-KD-0224',
+      description: 'Kiểm kê ca sáng Chi nhánh Hà Đông - Đạt chuẩn định mức',
+      amount: 'Khớp 99.8%',
+      statusClass: 'success',
+      statusLabel: 'Đã chốt ca'
+    },
+    {
+      code: 'PO-2026-0092',
+      description: 'Nhập 10.000 Vỏ ly giấy & Ống hút sinh học ECO Green',
+      amount: '18.400.000 ₫',
       statusClass: 'warning',
       statusLabel: 'Chờ duyệt'
     },
     {
-      code: 'PCB247',
-      description: 'Chi công tác phí quý II',
-      amount: '37.500.000',
-      statusClass: 'muted',
-      statusLabel: 'Bản nháp'
+      code: 'SC-CG-0224',
+      description: 'Kiểm kê ca sáng Cầu Giấy - Lệch hao hụt 1.8kg trân châu',
+      amount: '-180.000 ₫',
+      statusClass: 'danger',
+      statusLabel: 'Cần giải trình'
     },
   ];
 
   readonly pendingTasks = [
-    {icon: 'file-text', accent: 'brand', title: '12 chứng từ chờ duyệt', sub: 'Chờ kế toán trưởng phê duyệt'},
-    {icon: 'bank', accent: 'info', title: '3 lệnh chi gửi kho bạc', sub: 'Đang chờ phản hồi từ kho bạc'},
-    {icon: 'sync', accent: 'warning', title: 'Đối chiếu số dư tài khoản', sub: 'Hạn xử lý: 30/06/2026'},
-    {icon: 'audit', accent: 'purple', title: 'Nộp báo cáo tài chính quý II', sub: 'Hạn nộp: 15/07/2026'},
+    {icon: 'alert', accent: 'danger', title: 'Cảnh báo 4 NVL dưới mức an toàn', sub: 'Trà Oolong, Bột sữa béo, Trân châu đen'},
+    {icon: 'file-protect', accent: 'warning', title: '3 Đơn mua hàng (PO) chờ duyệt', sub: 'Tổng giá trị 128.500.000 ₫ từ NCC'},
+    {icon: 'reconciliation', accent: 'brand', title: 'Chốt ca & Đối soát tiền mặt trưa', sub: '6/6 Chi nhánh đã nộp báo cáo ca'},
+    {icon: 'experiment', accent: 'purple', title: 'Cập nhật định lượng món mới (BOM)', sub: 'Trà Sữa Dừa Nướng & Macchiato'},
   ];
 
   private barChart?: echarts.ECharts;
@@ -151,7 +154,7 @@ export class HomeComponent implements AfterViewInit {
       },
       xAxis: {
         type: 'category',
-        data: ['T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
+        data: ['Hà Đông', 'Cầu Giấy', 'Đống Đa', 'Thanh Xuân', 'Hoàn Kiếm', 'Hoàng Mai'],
         axisLine: {show: false},
         axisTick: {show: false},
         axisLabel: {color: textSecondary, fontSize: 12},
@@ -163,18 +166,18 @@ export class HomeComponent implements AfterViewInit {
       },
       series: [
         {
-          name: 'Thu',
+          name: 'Doanh thu (Trđ)',
           type: 'bar',
-          barWidth: '20%',
-          barGap: '20%',
-          data: [5.2, 4.8, 6.1, 7.3, 8.5, 9.2],
+          barWidth: '22%',
+          barGap: '25%',
+          data: [12.8, 14.5, 11.2, 9.6, 16.2, 8.9],
           itemStyle: {color: teal, borderRadius: [4, 4, 0, 0]},
         },
         {
-          name: 'Chi',
+          name: 'Chi phí NVL (Trđ)',
           type: 'bar',
-          barWidth: '20%',
-          data: [3.8, 3.2, 4.5, 5.1, 4.2, 3.9],
+          barWidth: '22%',
+          data: [3.7, 4.2, 3.3, 2.8, 4.6, 2.6],
           itemStyle: {color: brand, borderRadius: [4, 4, 0, 0]},
         },
       ],
@@ -211,7 +214,7 @@ export class HomeComponent implements AfterViewInit {
           label: {
             show: true,
             position: 'center',
-            formatter: ['{title|Tổng chi}', '{value|36,7 tỷ}'].join('\n'),
+            formatter: ['{title|Food Cost}', '{value|29.4%}'].join('\n'),
             rich: {
               title: {color: textSecondary, fontSize: 12, lineHeight: 20},
               value: {color: textPrimary, fontSize: 20, fontWeight: 700, lineHeight: 28},
@@ -219,10 +222,10 @@ export class HomeComponent implements AfterViewInit {
           },
           labelLine: {show: false},
           data: [
-            {value: 44, name: 'Chi thanh toán cá nhân', itemStyle: {color: brand}},
-            {value: 27, name: 'Chi nghiệp vụ chuyên môn', itemStyle: {color: teal}},
-            {value: 17, name: 'Chi mua sắm, sửa chữa', itemStyle: {color: purple}},
-            {value: 12, name: 'Chi khác', itemStyle: {color: amber}},
+            {value: 38, name: 'Cốt trà & Cà phê', itemStyle: {color: teal}},
+            {value: 28, name: 'Sữa tươi & Bột béo', itemStyle: {color: brand}},
+            {value: 20, name: 'Topping & Siro', itemStyle: {color: purple}},
+            {value: 14, name: 'Ly, Nắp & Bao bì', itemStyle: {color: amber}},
           ],
         },
       ],

@@ -1,137 +1,147 @@
-<div class="home">
-  <div class="home__header">
-    <div class="home__header__left">
-      <h2 class="home__header__title">Xin chào, Nguyễn Văn A</h2>
-      <p class="home__header__description">Tổng quan tình hình tài chính đơn vị &bull; Năm ngân sách <b>2026</b> &bull;
-        Cập nhật 08/06/2026</p>
+<div class="home-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Cổng điều hành ERP chuỗi đồ uống Pine Drink</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">Trung tâm giám sát nguồn lực &bull; 6 Chi nhánh &bull; Cập nhật thời gian thực</p>
     </div>
-    <div class="home__header__right">
-      <app-button [variant]="'secondary'" [leftIcon]="'download'">Xuất báo cáo</app-button>
-      <app-button>Lập chứng từ</app-button>
-    </div>
-  </div>
-
-  <div nz-row class="home__statistical" [nzGutter]="[16,16]">
-    <div nz-col nzSpan="6">
-      <nz-card>
-        <div class="stat-card">
-          <div class="stat-card__header">
-            <span class="stat-card__title">Dự toán được giao</span>
-            <span class="stat-card__icon stat-card__icon--brand">
-              <nz-icon [nzType]="'file-text'"></nz-icon>
-            </span>
-          </div>
-          <div class="stat-card__value">124,5 tỷ</div>
-          <div class="stat-card__footer">
-            <span class="stat-card__sub">Năm ngân sách 2026</span>
-          </div>
-        </div>
-      </nz-card>
-    </div>
-    <div nz-col nzSpan="6">
-      <nz-card>
-        <div class="stat-card">
-          <div class="stat-card__header">
-            <span class="stat-card__title">Tổng thu trong kỳ</span>
-            <span class="stat-card__icon stat-card__icon--teal">
-              <nz-icon [nzType]="'arrow-up'"></nz-icon>
-            </span>
-          </div>
-          <div class="stat-card__value">48,2 tỷ</div>
-          <div class="stat-card__footer">
-            <span class="stat-card__delta stat-card__delta--up">
-              <nz-icon [nzType]="'rise'"></nz-icon>
-              +18,4% so với cùng kỳ
-            </span>
-          </div>
-        </div>
-      </nz-card>
-    </div>
-    <div nz-col nzSpan="6">
-      <nz-card>
-        <div class="stat-card">
-          <div class="stat-card__header">
-            <span class="stat-card__title">Đã thực hiện chi</span>
-            <span class="stat-card__icon stat-card__icon--info">
-              <nz-icon [nzType]="'arrow-down'"></nz-icon>
-            </span>
-          </div>
-          <div class="stat-card__value">36,7 tỷ</div>
-          <div class="stat-card__footer">
-            <span class="stat-card__delta stat-card__delta--down">
-              <nz-icon [nzType]="'rise'"></nz-icon>
-              +5,1% so với cùng kỳ
-            </span>
-          </div>
-        </div>
-      </nz-card>
-    </div>
-    <div nz-col nzSpan="6">
-      <nz-card>
-        <div class="stat-card">
-          <div class="stat-card__header">
-            <span class="stat-card__title">Tỷ lệ giải ngân</span>
-            <span class="stat-card__icon stat-card__icon--purple">
-              <nz-icon [nzType]="'percentage'"></nz-icon>
-            </span>
-          </div>
-          <div class="stat-card__value">29,5%</div>
-          <div class="stat-card__footer">
-            <span class="stat-card__sub">Còn lại 8,9 tỷ</span>
-          </div>
-        </div>
-      </nz-card>
+    <div class="page__header__right">
+      <a routerLink="/admin/inventory/counts">
+        <app-button variant="secondary" leftIcon="inbox">Kiểm kê ca</app-button>
+      </a>
+      <a routerLink="/admin/procurement/purchase-orders">
+        <app-button variant="primary" leftIcon="shopping-cart">Đơn mua hàng PO</app-button>
+      </a>
     </div>
   </div>
 
-  <div nz-row class="home__charts" [nzGutter]="[16,16]" nzAlign="stretch">
-    <div nz-col nzSpan="15">
-      <nz-card>
+  <!-- ── 2. Top Statistics Cards ────────────────────────────────────── -->
+  <div nz-row class="home__statistical" [nzGutter]="[16, 16]">
+    <!-- Card 1: Doanh thu chuỗi -->
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Doanh thu hôm nay</span>
+          <span class="stat-card__icon stat-card__icon--teal">
+            <nz-icon nzType="dollar"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">48.520.000 ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__delta stat-card__delta--up">
+            <nz-icon nzType="rise"></nz-icon>
+            +12,4% so với hôm qua
+          </span>
+          <span class="stat-card__sub" style="margin-left: 8px;">(842 đơn)</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <!-- Card 2: Food Cost % -->
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Tỷ lệ giá vốn (Food Cost)</span>
+          <span class="stat-card__icon stat-card__icon--brand">
+            <nz-icon nzType="pie-chart"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">29,4%</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__delta stat-card__delta--down" style="color: var(--teal-500);">
+            <nz-icon nzType="check-circle"></nz-icon>
+            Đạt chuẩn mục tiêu (&lt; 32%)
+          </span>
+        </div>
+      </nz-card>
+    </div>
+
+    <!-- Card 3: Tồn kho an toàn -->
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Cảnh báo tồn kho đỏ</span>
+          <span class="stat-card__icon stat-card__icon--amber">
+            <nz-icon nzType="warning"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono text-danger">4 loại NVL</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--danger">Dưới ngưỡng tồn tối thiểu</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <!-- Card 4: PO chờ duyệt -->
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Đơn PO chờ duyệt</span>
+          <span class="stat-card__icon stat-card__icon--purple">
+            <nz-icon nzType="file-protect"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">3 đơn hàng</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub">Tổng giá trị: 128,5 triệu ₫</span>
+        </div>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- ── 3. Charts Section ──────────────────────────────────────────── -->
+  <div nz-row class="home__charts" [nzGutter]="[16, 16]" nzAlign="stretch">
+    <!-- Biểu đồ 1: Doanh thu & Chi phí theo Chi nhánh -->
+    <div nz-col [nzXs]="24" [nzLg]="15">
+      <nz-card [nzBordered]="false">
         <div class="chart-card">
           <div class="chart-card__header">
             <div>
-              <h3 class="chart-card__title">Tình hình thu – chi ngân sách</h3>
-              <p class="chart-card__sub">Đơn vị: tỷ đồng &middot; 6 tháng gần nhất</p>
+              <h3 class="chart-card__title">Hiệu Quả Vận Hành Từng Chi Nhánh</h3>
+              <p class="chart-card__sub">Đơn vị: triệu đồng &middot; Doanh thu bán hàng vs Chi phí nguyên vật liệu tiêu hao</p>
             </div>
             <div class="chart-card__legend">
-              <span class="chart-card__legend-item chart-card__legend-item--teal">Thu</span>
-              <span class="chart-card__legend-item chart-card__legend-item--brand">Chi</span>
+              <span class="chart-card__legend-item chart-card__legend-item--teal">Doanh thu bán</span>
+              <span class="chart-card__legend-item chart-card__legend-item--brand">Chi phí NVL (BOM)</span>
             </div>
           </div>
           <div class="chart-card__body" #barChartEl></div>
         </div>
       </nz-card>
     </div>
-    <div nz-col nzSpan="9">
-      <nz-card>
+
+    <!-- Biểu đồ 2: Cơ cấu chi phí NVL -->
+    <div nz-col [nzXs]="24" [nzLg]="9">
+      <nz-card [nzBordered]="false">
         <div class="chart-card">
           <div class="chart-card__header">
             <div>
-              <h3 class="chart-card__title">Cơ cấu chi theo nhóm mục</h3>
-              <p class="chart-card__sub">Lũy kế năm 2026</p>
+              <h3 class="chart-card__title">Cơ Cấu Tiêu Thụ Nguyên Vật Liệu</h3>
+              <p class="chart-card__sub">Phân bổ chi phí cấu thành sản phẩm toàn chuỗi</p>
             </div>
           </div>
           <div class="chart-card__body" #pieChartEl></div>
           <ul class="pie-legend">
             <li class="pie-legend__item">
-              <span class="pie-legend__dot pie-legend__dot--brand"></span>
-              <span class="pie-legend__label">Chi thanh toán cá nhân</span>
-              <span class="pie-legend__value">44%</span>
+              <span class="pie-legend__dot pie-legend__dot--teal"></span>
+              <span class="pie-legend__label">Cốt trà &amp; Cà phê</span>
+              <span class="pie-legend__value font-mono font-semibold">38%</span>
             </li>
             <li class="pie-legend__item">
-              <span class="pie-legend__dot pie-legend__dot--teal"></span>
-              <span class="pie-legend__label">Chi nghiệp vụ chuyên môn</span>
-              <span class="pie-legend__value">27%</span>
+              <span class="pie-legend__dot pie-legend__dot--brand"></span>
+              <span class="pie-legend__label">Sữa tươi &amp; Bột béo</span>
+              <span class="pie-legend__value font-mono font-semibold">28%</span>
             </li>
             <li class="pie-legend__item">
               <span class="pie-legend__dot pie-legend__dot--purple"></span>
-              <span class="pie-legend__label">Chi mua sắm, sửa chữa</span>
-              <span class="pie-legend__value">17%</span>
+              <span class="pie-legend__label">Topping &amp; Siro hoa quả</span>
+              <span class="pie-legend__value font-mono font-semibold">20%</span>
             </li>
             <li class="pie-legend__item">
               <span class="pie-legend__dot pie-legend__dot--amber"></span>
-              <span class="pie-legend__label">Chi khác</span>
-              <span class="pie-legend__value">12%</span>
+              <span class="pie-legend__label">Ly, Nắp &amp; Bao bì</span>
+              <span class="pie-legend__value font-mono font-semibold">14%</span>
             </li>
           </ul>
         </div>
@@ -139,35 +149,38 @@
     </div>
   </div>
 
-  <div nz-row class="home__bottom" [nzGutter]="[16,16]" nzAlign="stretch">
-    <!-- Chứng từ gần đây -->
-    <div nz-col nzSpan="15">
-      <nz-card>
+  <!-- ── 4. Bottom Grid: Vouchers Table & Todo Tasks ─────────────────── -->
+  <div nz-row class="home__bottom" [nzGutter]="[16, 16]" nzAlign="stretch">
+    <!-- Nhật ký cung ứng & Vận hành -->
+    <div nz-col [nzXs]="24" [nzLg]="15">
+      <nz-card [nzBordered]="false">
         <div class="recent-voucher">
           <div class="recent-voucher__header">
-            <h3 class="recent-voucher__title">Chứng từ gần đây</h3>
-            <a class="recent-voucher__link">Xem tất cả
-              <nz-icon nzType="arrow-right"></nz-icon>
+            <h3 class="recent-voucher__title">Đơn Mua Hàng (PO) &amp; Kiểm Kê Gần Đây</h3>
+            <a class="recent-voucher__link" routerLink="/admin/procurement/purchase-orders">
+              Xem tất cả <nz-icon nzType="arrow-right"></nz-icon>
             </a>
           </div>
           <nz-table class="tbl-auto" #voucherTable [nzData]="recentVouchers" [nzShowPagination]="false"
-                    [nzFrontPagination]="false" nzSize="small" [nzBordered]="false">
+                    [nzFrontPagination]="false" nzSize="middle" [nzBordered]="false">
             <thead>
             <tr>
-              <th scope='col'>Số chứng từ</th>
-              <th scope='col'>Diễn giải</th>
-              <th scope='col' nzAlign="right">Số tiền</th>
-              <th scope='col' nzAlign="right">Trạng thái</th>
+              <th scope='col' nzWidth="150px">Mã chứng từ</th>
+              <th scope='col'>Diễn giải nghiệp vụ</th>
+              <th scope='col' nzAlign="right" nzWidth="170px">Giá trị / Kết quả</th>
+              <th scope='col' nzAlign="center" nzWidth="150px">Trạng thái</th>
             </tr>
             </thead>
             <tbody>
               @for (v of voucherTable.data; track v.code) {
                 <tr>
-                  <td class="recent-voucher__code">{{ v.code }}</td>
-                  <td>{{ v.description }}</td>
-                  <td nzAlign="right" class="recent-voucher__amount">{{ v.amount }}</td>
+                  <td><span class="po-code">{{ v.code }}</span></td>
+                  <td><span class="font-medium">{{ v.description }}</span></td>
                   <td nzAlign="right">
-                    <span class="status-tag status-tag--{{ v.statusClass }}">{{ v.statusLabel }}</span>
+                    <span class="font-mono font-semibold">{{ v.amount }}</span>
+                  </td>
+                  <td nzAlign="center">
+                    <span class="tbl-badge tbl-badge--{{ v.statusClass }}">{{ v.statusLabel }}</span>
                   </td>
                 </tr>
               }
@@ -177,13 +190,13 @@
       </nz-card>
     </div>
 
-    <!-- Công việc cần xử lý -->
-    <div nz-col nzSpan="9">
-      <nz-card>
+    <!-- Cảnh báo & Nhiệm vụ điều hành -->
+    <div nz-col [nzXs]="24" [nzLg]="9">
+      <nz-card [nzBordered]="false">
         <div class="todo-card">
           <div class="todo-card__header">
-            <h3 class="todo-card__title">Công việc cần xử lý</h3>
-            <span class="todo-card__badge">{{ pendingTasks.length }}</span>
+            <h3 class="todo-card__title">Cảnh Báo &amp; Nhiệm Vụ Điều Hành</h3>
+            <span class="todo-card__badge font-mono font-semibold">{{ pendingTasks.length }}</span>
           </div>
           <ul class="todo-card__list">
             @for (t of pendingTasks; track t.title) {
@@ -192,7 +205,7 @@
                   <nz-icon [nzType]="t.icon"></nz-icon>
                 </span>
                 <div class="todo-card__content">
-                  <span class="todo-card__item-title">{{ t.title }}</span>
+                  <span class="todo-card__item-title font-semibold">{{ t.title }}</span>
                   <span class="todo-card__item-sub">{{ t.sub }}</span>
                 </div>
               </li>

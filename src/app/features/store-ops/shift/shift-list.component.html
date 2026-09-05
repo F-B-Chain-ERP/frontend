@@ -1,0 +1,325 @@
+<div class="shift-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Vận hành ca &amp; Đối soát tiền két</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        Bàn giao ca làm việc &bull; Đối soát tiền mặt thu ngân &bull; Khớp nối doanh thu POS với tiền mặt thực nộp vào két an toàn
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="download">Xuất báo cáo ca</app-button>
+      <app-button variant="primary" leftIcon="plus">Mở ca làm việc mới</app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. KPI Summary Cards ───────────────────────────────────────── -->
+  <div nz-row class="kpi-row" [nzGutter]="[16, 16]">
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Tổng doanh thu ca hôm nay</span>
+          <span class="stat-card__icon stat-card__icon--brand">
+            <nz-icon nzType="dollar"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">54.700.000 ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub">963 đơn hàng toàn chuỗi</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Tiền mặt nộp két</span>
+          <span class="stat-card__icon stat-card__icon--teal">
+            <nz-icon nzType="wallet"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">23.950.000 ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--success">43.8% tổng doanh thu</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Chuyển khoản QR / Thẻ</span>
+          <span class="stat-card__icon stat-card__icon--purple">
+            <nz-icon nzType="qrcode"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">30.750.000 ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub">56.2% tổng doanh thu</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Chênh lệch két toàn chuỗi</span>
+          <span class="stat-card__icon stat-card__icon--amber">
+            <nz-icon nzType="alert"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono text-danger">-20.000 ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--warning">Thu ngân đã tự bù đủ</span>
+        </div>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- ── 3. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="shift-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="shift-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Tìm theo mã ca, chi nhánh hoặc tên thu ngân..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #shiftTable
+      [nzData]="pagedData()"
+      [nzLoading]="isLoading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1360px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="140px" nzAlign="left">Mã ca</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Đơn vị / Chi nhánh</th>
+          <th scope="col" nzWidth="150px" nzAlign="left">Thu ngân</th>
+          <th scope="col" nzWidth="100px" nzAlign="center">Tổng đơn</th>
+          <th scope="col" nzWidth="150px" nzAlign="right">Tiền mặt POS</th>
+          <th scope="col" nzWidth="150px" nzAlign="right">Chuyển khoản</th>
+          <th scope="col" nzWidth="160px" nzAlign="right">Tiền két thực tế</th>
+          <th scope="col" nzWidth="130px" nzAlign="right">Lệch két</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="100px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of shiftTable.data; track s.id; let i = $index) {
+          <tr>
+            <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+            <td><span class="po-code">{{ s.shiftCode }}</span></td>
+            <td>
+              <span class="branch-name font-semibold">
+                <nz-icon nzType="home" style="margin-right: 4px; color: var(--brand);"/>
+                {{ s.branchName }}
+              </span>
+              <div class="text-xs text-secondary">{{ s.shiftName }}</div>
+            </td>
+            <td><span class="font-medium">{{ s.cashierName }}</span></td>
+            <td nzAlign="center">
+              <span class="tag-compact">{{ s.ordersCount }} đơn</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono">{{ s.cashSales | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono text-secondary">{{ s.bankTransferSales | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-semibold">{{ s.actualCash | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span
+                class="font-mono font-bold"
+                [class.text-danger]="s.difference < 0"
+                [class.text-success]="s.difference >= 0"
+              >
+                {{ s.difference > 0 ? '+' : '' }}{{ s.difference | number: '1.0-0' }} ₫
+              </span>
+            </td>
+            <td nzAlign="center">
+              @if (s.status === 'APPROVED') {
+                <span class="tbl-badge tbl-badge--success">Đã duyệt nộp</span>
+              } @else if (s.status === 'BALANCED') {
+                <span class="tbl-badge tbl-badge--success">Khớp két</span>
+              } @else if (s.status === 'SHORTAGE') {
+                <span class="tbl-badge tbl-badge--danger">Thiếu két</span>
+              } @else if (s.status === 'SURPLUS') {
+                <span class="tbl-badge tbl-badge--warning">Thừa két</span>
+              }
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem đối soát tiền ca"
+                  (click)="onViewShift(s)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="11" style="text-align: center; padding: 32px 0; color: var(--text-muted);">
+              Không tìm thấy biên bản ca làm việc phù hợp
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Shift Reconciliation Detail Drawer ──────────────────────── -->
+  <nz-drawer
+    [nzVisible]="isDrawerVisible()"
+    [nzWidth]="720"
+    [nzTitle]="shiftTitleTpl"
+    (nzOnClose)="onCloseDrawer()"
+  >
+    <ng-container *nzDrawerContent>
+      @if (selectedShift(); as shift) {
+        <div class="drawer-body">
+          <div class="shift-meta">
+            <div class="shift-meta__row">
+              <div class="meta-item">
+                <span class="label">Chi nhánh:</span>
+                <span class="val font-semibold">{{ shift.branchName }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Ca làm việc:</span>
+                <span class="val">{{ shift.shiftName }}</span>
+              </div>
+            </div>
+            <div class="shift-meta__row">
+              <div class="meta-item">
+                <span class="label">Thu ngân bàn giao:</span>
+                <span class="val font-medium">{{ shift.cashierName }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">Quản lý duyệt:</span>
+                <span class="val font-medium">{{ shift.managerName || 'Chờ duyệt' }}</span>
+              </div>
+            </div>
+            @if (shift.note) {
+              <div class="shift-note">
+                <nz-icon nzType="message" style="color: var(--brand);"></nz-icon>
+                <span><b>Ghi chú ca:</b> {{ shift.note }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Formula Breakdown Card -->
+          <div class="reconciliation-card">
+            <h4 class="reconciliation-title">Bảng Đối Soát Dòng Tiền Thu Ngân</h4>
+
+            <div class="formula-list">
+              <div class="formula-item">
+                <span class="formula-label">1. Tiền mặt ban đầu trong két (Tiền thối):</span>
+                <span class="formula-val font-mono font-semibold">+{{ shift.initialCash | number: '1.0-0' }} ₫</span>
+              </div>
+              <div class="formula-item">
+                <span class="formula-label">2. Doanh thu tiền mặt bán được trong ca (POS):</span>
+                <span class="formula-val font-mono font-semibold text-success">+{{ shift.cashSales | number: '1.0-0' }} ₫</span>
+              </div>
+              <div class="formula-item formula-item--sub">
+                <span class="formula-label">↳ Doanh thu chuyển khoản VietQR / Thẻ (đã vào TK ngân hàng):</span>
+                <span class="formula-val font-mono text-secondary">{{ shift.bankTransferSales | number: '1.0-0' }} ₫</span>
+              </div>
+              <div class="formula-item">
+                <span class="formula-label">3. Chi tiêu khẩn cấp từ quỹ két (mua đá, phụ phí):</span>
+                <span class="formula-val font-mono font-semibold text-danger">-{{ shift.cashPayout | number: '1.0-0' }} ₫</span>
+              </div>
+
+              <div class="formula-divider"></div>
+
+              <div class="formula-item formula-item--result">
+                <span class="formula-label font-bold">= TIỀN MẶT DỰ KIẾN PHẢI CÓ TRONG KÉT:</span>
+                <span class="formula-val font-mono font-bold">{{ shift.expectedCash | number: '1.0-0' }} ₫</span>
+              </div>
+
+              <div class="formula-item formula-item--actual">
+                <span class="formula-label font-bold">4. TIỀN MẶT THỰC TẾ THU NGÂN ĐẾM BÀN GIAO:</span>
+                <span class="formula-val font-mono font-bold text-brand">{{ shift.actualCash | number: '1.0-0' }} ₫</span>
+              </div>
+
+              <div class="formula-divider"></div>
+
+              <div class="formula-item formula-item--diff" [class.diff-error]="shift.difference < 0">
+                <span class="formula-label font-bold">👉 CHÊNH LỆCH KÉT (CASH OVER / SHORT):</span>
+                <span
+                  class="formula-val font-mono font-bold"
+                  [class.text-danger]="shift.difference < 0"
+                  [class.text-success]="shift.difference >= 0"
+                >
+                  {{ shift.difference > 0 ? '+' : '' }}{{ shift.difference | number: '1.0-0' }} ₫
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Drawer Footer Actions -->
+          <div class="drawer-footer">
+            <div class="drawer-footer__stats">
+              <span>Trạng thái: <b>{{ shift.status === 'APPROVED' ? 'Đã duyệt nộp két' : 'Chờ xác nhận bàn giao' }}</b></span>
+            </div>
+            <div class="drawer-footer__buttons">
+              <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
+              @if (shift.status !== 'APPROVED') {
+                <app-button variant="primary" (click)="onApproveShift()" leftIcon="check">
+                  Cửa hàng trưởng ký duyệt bàn giao
+                </app-button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </ng-container>
+  </nz-drawer>
+
+  <ng-template #shiftTitleTpl>
+    <div class="drawer-title">
+      <nz-icon nzType="account-book" style="color: var(--brand); margin-right: 8px;"></nz-icon>
+      <span>Biên Bản Chốt Ca &amp; Đối Soát Tiền Két: <b>{{ selectedShift()?.shiftCode }}</b></span>
+    </div>
+  </ng-template>
+</div>

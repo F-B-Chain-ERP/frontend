@@ -29,10 +29,10 @@ export const routes: Routes = [
     title: 'Xác thực email',
   },
 
-  // ── 2. Client Storefront (Client Layout, Public Access) ─────
+  // ── 2. Admin ERP as Default Entrypoint ──────────────────────
   {
     path: '',
-    redirectTo: 'store',
+    redirectTo: 'admin/home',
     pathMatch: 'full',
   },
   {
@@ -193,11 +193,15 @@ export const routes: Routes = [
       },
       // ── STORE ────────────────────────────────────
       {
-        path: 'store/shifts/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Ca làm việc',
+        path: 'store/shifts',
+        loadChildren: () => import('./features/store-ops/shift/shift.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.CA_LAM_VIEC.VIEW] },
+      },
+      {
+        path: 'store/shifts/list',
+        redirectTo: 'store/shifts',
+        pathMatch: 'full',
       },
       {
         path: 'store/assignments/list',
@@ -264,11 +268,15 @@ export const routes: Routes = [
         data: { authorities: [ROLE.VOUCHER.VIEW] },
       },
       {
-        path: 'menu/bom/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Định lượng (BOM)',
+        path: 'menu/bom',
+        loadChildren: () => import('./features/menu/bom/bom.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.DINH_LUONG_BOM.VIEW] },
+      },
+      {
+        path: 'menu/bom/list',
+        redirectTo: 'menu/bom',
+        pathMatch: 'full',
       },
       {
         path: 'menu/availability/list',
@@ -318,19 +326,27 @@ export const routes: Routes = [
         data: { authorities: [ROLE.CHUYEN_KHO.VIEW] },
       },
       {
-        path: 'inventory/counts/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Kiểm kê',
+        path: 'inventory/counts',
+        loadChildren: () => import('./features/warehouses/stock-count/stock-count.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.KIEM_KE.VIEW] },
       },
+      {
+        path: 'inventory/counts/list',
+        redirectTo: 'inventory/counts',
+        pathMatch: 'full',
+      },
       // ── FINANCE ────────────────────────────────
       {
-        path: 'finance/payables/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Công nợ NCC',
+        path: 'finance/payables',
+        loadChildren: () => import('./features/finance/payables/payables.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.CONG_NO_PHAI_TRA.VIEW] },
+      },
+      {
+        path: 'finance/payables/list',
+        redirectTo: 'finance/payables',
+        pathMatch: 'full',
       },
       {
         path: 'finance/expenses/list',
