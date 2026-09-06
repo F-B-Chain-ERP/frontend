@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, forkJoin, map, throwError } from 'rxjs';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
+import { ApiResponse } from '../../login/login.model';
 import {
   Material,
   MaterialFilter,
@@ -55,7 +56,7 @@ export class WarehouseMaterialService {
     return this.http.get<ApiResponse<BackendPageResponse>>(this.materialApi, { params }).pipe(
       map(res => {
         const page = res.data;
-        const items = (page?.content ?? []).map(m => this.mapResponse(m));
+        const items = (page?.content ?? []).map(m => this.enrichMaterialNames(m));
         return {
           items,
           total: page?.totalElements ?? items.length,
@@ -68,21 +69,21 @@ export class WarehouseMaterialService {
   }
 
   getMaterialById(id: string): Observable<Material> {
-    return this.http.get<ApiEnvelope<Material>>(`${this.materialApi}/${id}`).pipe(
+    return this.http.get<ApiResponse<Material>>(`${this.materialApi}/${id}`).pipe(
       map(res => this.enrichMaterialNames(res.data)),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
 
   createMaterial(payload: Partial<Material>): Observable<Material> {
-    return this.http.post<ApiEnvelope<Material>>(this.materialApi, payload).pipe(
+    return this.http.post<ApiResponse<Material>>(this.materialApi, payload).pipe(
       map(res => this.enrichMaterialNames(res.data)),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
 
   updateMaterial(id: string, payload: Partial<Material>): Observable<Material> {
-    return this.http.put<ApiEnvelope<Material>>(`${this.materialApi}/${id}`, payload).pipe(
+    return this.http.put<ApiResponse<Material>>(`${this.materialApi}/${id}`, payload).pipe(
       map(res => this.enrichMaterialNames(res.data)),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
@@ -97,19 +98,19 @@ export class WarehouseMaterialService {
 
   /** BE chưa có endpoint xóa hàng loạt -> gọi lặp DELETE từng id. */
   batchDeleteMaterials(ids: string[]): Observable<boolean> {
-    return forkJoin(ids.map(id => this.http.delete<ApiEnvelope<void>>(`${this.materialApi}/${id}`))).pipe(
+    return forkJoin(ids.map(id => this.http.delete<ApiResponse<void>>(`${this.materialApi}/${id}`))).pipe(
       map(() => true),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
 
   private enrichMaterialNames(m: Material): Material {
-    // Chỉ dùng tên THẬT do BE trả về (nested object / categoryName).
-    // Tuyệt đối không bịa tên từ id (trước đây fallback UUID làm hỏng
-    // resolve tên ở component). Tên hiển thị ở danh sách do component
-    // resolve từ master Category/Unit đã nạp.
+    // Chỉ dùng tên THẬT do BE trả về (nested object / categoryName / unitName).
+    // Tuyệt đối không bịa tên từ id và không default '—' ở đây:
+    // component.withDisplayNames sẽ resolve từ master đã nạp, default '—'
+    // ở service sẽ chặn lookup (string truthy) khiến tên thật không bao giờ hiện.
     const catName = m.category?.name || m.categoryName;
-    const unitName = m.baseUnit?.name || m.baseUnitName;
+    const unitName = m.baseUnit?.name || m.baseUnitName || m.unitName;
 
     const category = m.category || {
       id: m.categoryId || '',
@@ -124,8 +125,10 @@ export class WarehouseMaterialService {
 
     return {
       ...m,
-      categoryName: m.categoryName || '—',
-      baseUnitName: m.unitName || m.baseUnitName || '—',
+      categoryName: catName,
+      baseUnitName: unitName,
+      category,
+      baseUnit,
     };
   }
 

@@ -94,7 +94,6 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   readonly allLoadedMaterials = signal<Material[]>([]);
   readonly total = signal(0);
   readonly loading = signal(false);
-  readonly unitOptions = signal<{ value: string; label: string }[]>([]);
 
   // Filter params
   searchQuery = '';
@@ -190,20 +189,6 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   }
 
   // ── Data loading ───────────────────────────────────────────────────
-  loadUnits(): void {
-    this.unitService
-      .getUnits({ pageIndex: 1, pageSize: 100, status: 'ACTIVE' })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: res => {
-          this.unitOptions.set(res.items.map(u => ({ value: u.id, label: `${u.code} - ${u.name}` })));
-        },
-        error() {
-          // Handled by UnitService
-        },
-      });
-  }
-
   loadData(): void {
     this.loading.set(true);
     const filter: MaterialFilter = {
@@ -248,7 +233,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   }
 
   // ── Search & Filter ───────────────────────────────────────────────
-  onSearch(): void {    this.pageIndex = DEFAULT_PAGE_INDEX;
+  onSearch(): void {
+    this.pageIndex = DEFAULT_PAGE_INDEX;
     this.clearSelection();
     this.loadData();
   }
@@ -410,7 +396,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
 
     this.isSaving.set(true);
     const formRaw = this.materialForm.getRawValue();
-    // Payload khớp đúng Create/UpdateMaterialRequest BE (không note/status lạ).
+    // Payload khớp đúng Create/UpdateMaterialRequest BE (không gửi note;
+    // status chỉ gửi khi sửa vì BE create luôn ACTIVE).
     // status chỉ gửi khi sửa (BE create luôn ACTIVE; update nhận ACTIVE/INACTIVE).
     const base = {
       code: formRaw.code?.trim().toUpperCase(),
@@ -440,38 +427,17 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
         });
     } else {
       const id = this.selectedMaterial()?.id || formRaw.id || '';
-      const originalStatus = this.selectedMaterial()?.status;
-      const newStatus = formRaw.status || 'ACTIVE';
-
+      // BE update đã apply status (ACTIVE/INACTIVE) trong cùng 1 request,
+      // không cần gọi riêng lẻ lần 2.
       this.materialService
         .updateMaterial(id, { ...base, status: formRaw.status || 'ACTIVE' })
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
-            if (originalStatus !== newStatus) {
-              this.materialService
-                .updateMaterialStatus(id, newStatus)
-                .pipe(takeUntil(this.destroy$))
-                .subscribe({
-                  next: () => {
-                    this.toastService.success('Cập nhật nguyên vật liệu thành công.');
-                    this.isSaving.set(false);
-                    this.closeModal();
-                    this.loadData();
-                  },
-                  error: (statusErr: Error) => {
-                    this.toastService.error(statusErr.message || 'Cập nhật thông tin thành công nhưng lỗi đổi trạng thái.');
-                    this.isSaving.set(false);
-                    this.closeModal();
-                    this.loadData();
-                  },
-                });
-            } else {
-              this.toastService.success('Cập nhật nguyên vật liệu thành công.');
-              this.isSaving.set(false);
-              this.closeModal();
-              this.loadData();
-            }
+            this.toastService.success('Cập nhật nguyên vật liệu thành công.');
+            this.isSaving.set(false);
+            this.closeModal();
+            this.loadData();
           },
           error: (err: Error) => {
             this.toastService.error(err.message || 'Có lỗi xảy ra khi cập nhật nguyên vật liệu.');
