@@ -1,0 +1,301 @@
+<div class="category-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Danh mục</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.DANH_MUC.CREATE]"
+        variant="primary"
+        leftIcon="plus"
+        (click)="openCreateModal()"
+      >
+        Thêm danh mục
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="category-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="category-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập mã hoặc tên danh mục..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Loại danh mục</label>
+        <nz-select
+          [ngModel]="selectedCategoryType"
+          (ngModelChange)="selectedCategoryType = $event; onSearch()"
+          nzPlaceHolder="Tất cả loại"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (o of categoryTypeOptions; track o.value) {
+            <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [ngModel]="selectedStatus"
+          (ngModelChange)="selectedStatus = $event; onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (o of statusOptions; track o.value) {
+            <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #categoryTable
+      [nzData]="categories()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1200px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="130px" nzAlign="left">Loại</th>
+          <th scope="col" nzWidth="150px" nzAlign="left">Mã danh mục</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Tên danh mục</th>
+          <th scope="col" nzWidth="90px" nzAlign="center">Thứ tự</th>
+          <th scope="col" nzWidth="110px" nzAlign="center">Số đang dùng</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of categories(); track item.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+            <td nzAlign="left">{{ getCategoryTypeLabel(item.categoryType) }}</td>
+            <td nzAlign="left"><span class="supplier-code">{{ item.code }}</span></td>
+            <td nzAlign="left">{{ item.name }}</td>
+            <td nzAlign="center">{{ item.displayOrder }}</td>
+            <td nzAlign="center" class="font-mono">{{ item.usedCount }}</td>
+            <td nzAlign="center">
+              <span [class]="getCategoryStatusMeta(item.status).badgeClass">
+                {{ getCategoryStatusMeta(item.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.DANH_MUC.UPDATE]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Sửa"
+                  (click)="openEditModal(item)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.DANH_MUC.UPDATE]"
+                  variant="ghost"
+                  [iconOnly]="item.status === 'ACTIVE' ? 'stop' : 'check-circle'"
+                  nz-tooltip
+                  [nzTooltipTitle]="item.status === 'ACTIVE' ? 'Ngừng sử dụng' : 'Bật sử dụng'"
+                  (click)="onToggleStatus(item)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.DANH_MUC.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa"
+                  (click)="onDelete(item)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Form Modal (Thêm / Sửa) ─────────────────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="modalMode() === 'edit' ? 'Sửa danh mục' : 'Thêm danh mục'"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="form" class="category-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-categoryType">Loại danh mục</label>
+          <nz-select
+            id="modal-categoryType"
+            formControlName="categoryType"
+            nzPlaceHolder="Chọn loại danh mục"
+            style="width: 100%"
+          >
+            @for (o of categoryTypeOptions; track o.value) {
+              <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+            }
+          </nz-select>
+          @if (form.get('categoryType')?.dirty || form.get('categoryType')?.touched) {
+            @if (form.get('categoryType')?.hasError('required')) {
+              <span class="form-error">Vui lòng chọn loại danh mục.</span>
+            }
+          }
+          <span class="form-hint">Món bán dùng loại Món bán; nguyên vật liệu dùng loại Nguyên vật liệu.</span>
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-displayOrder">Thứ tự hiển thị</label>
+          <nz-input-number
+            id="modal-displayOrder"
+            formControlName="displayOrder"
+            [nzMin]="0"
+            [nzStep]="1"
+            style="width: 100%"
+          ></nz-input-number>
+          @if (form.get('displayOrder')?.dirty || form.get('displayOrder')?.touched) {
+            @if (form.get('displayOrder')?.hasError('min')) {
+              <span class="form-error">Thứ tự hiển thị phải lớn hơn hoặc bằng 0.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-code">Mã danh mục</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="tag" />
+            <input
+              id="modal-code"
+              type="text"
+              nz-input
+              formControlName="code"
+              placeholder="VD: CAFE-TT"
+              maxlength="50"
+              style="text-transform: uppercase"
+            />
+          </nz-input-wrapper>
+          @if (form.get('code')?.dirty || form.get('code')?.touched) {
+            @if (form.get('code')?.hasError('required')) {
+              <span class="form-error">Mã danh mục không được để trống.</span>
+            } @else if (form.get('code')?.hasError('maxlength')) {
+              <span class="form-error">Mã danh mục tối đa 50 ký tự.</span>
+            } @else if (form.get('code')?.hasError('pattern')) {
+              <span class="form-error">Mã chỉ gồm chữ hoa, số, gạch ngang hoặc gạch dưới.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-name">Tên danh mục</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="font-size" />
+            <input
+              id="modal-name"
+              type="text"
+              nz-input
+              formControlName="name"
+              placeholder="VD: Cà phê truyền thống"
+              maxlength="150"
+            />
+          </nz-input-wrapper>
+          @if (form.get('name')?.dirty || form.get('name')?.touched) {
+            @if (form.get('name')?.hasError('required')) {
+              <span class="form-error">Tên danh mục không được để trống.</span>
+            } @else if (form.get('name')?.hasError('maxlength')) {
+              <span class="form-error">Tên danh mục tối đa 150 ký tự.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="modal-description">Mô tả</label>
+          <nz-input-wrapper>
+            <textarea
+              id="modal-description"
+              nz-input
+              formControlName="description"
+              placeholder="Mô tả ngắn về danh mục"
+              maxlength="255"
+              [nzAutosize]="{ minRows: 2, maxRows: 4 }"
+            ></textarea>
+          </nz-input-wrapper>
+        </div>
+
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="modal-imageUrl">Ảnh danh mục (URL)</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="picture" />
+            <input
+              id="modal-imageUrl"
+              type="text"
+              nz-input
+              formControlName="imageUrl"
+              placeholder="https://..."
+              maxlength="500"
+            />
+          </nz-input-wrapper>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[modalMode() === 'edit' ? ROLE.DANH_MUC.UPDATE : ROLE.DANH_MUC.CREATE]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitForm()"
+        >
+          {{ modalMode() === 'edit' ? 'Lưu thay đổi' : 'Thêm danh mục' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

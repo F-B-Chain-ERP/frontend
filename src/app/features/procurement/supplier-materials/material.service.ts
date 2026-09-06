@@ -32,7 +32,8 @@ export class MaterialService {
   }
 
   getMaterials(search?: string): Observable<Material[]> {
-    let params = new HttpParams().set('page', '0').set('size', '10');
+    // Lọc ACTIVE ở BE (đúng BA-02 F-C06) thay vì lọc client; size lớn để dropdown đủ món.
+    let params = new HttpParams().set('page', '0').set('size', '100').set('status', 'ACTIVE');
     if (search?.trim()) {
       params = params.set('search', search.trim());
     }

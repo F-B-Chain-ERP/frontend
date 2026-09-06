@@ -28,7 +28,6 @@ export interface Material {
   shelfLifeDays?: number | null;
   isPerishable: boolean;
   status: 'ACTIVE' | 'INACTIVE' | string;
-  note?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -55,26 +54,6 @@ export interface MaterialOption {
   label: string;
   value: string;
 }
-
-/** Danh sách tùy chọn nhóm danh mục nguyên vật liệu */
-export const MATERIAL_CATEGORY_OPTIONS: MaterialOption[] = [
-  { value: 'cat-001', label: 'Sữa & chế phẩm' },
-  { value: 'cat-002', label: 'Trà & Cà phê' },
-  { value: 'cat-003', label: 'Đường, Siro & Gia vị' },
-  { value: 'cat-004', label: 'Topping & Bột pha chế' },
-  { value: 'cat-005', label: 'Bao bì & Đóng gói' },
-];
-
-/** Danh sách tùy chọn đơn vị tính cơ bản */
-export const MATERIAL_BASE_UNIT_OPTIONS: MaterialOption[] = [
-  { value: 'unit-001', label: 'Mililít (ML)' },
-  { value: 'unit-002', label: 'Lít (L)' },
-  { value: 'unit-003', label: 'Kilogram (kg)' },
-  { value: 'unit-004', label: 'Hộp (Hộp)' },
-  { value: 'unit-005', label: 'Gói (Gói)' },
-  { value: 'unit-006', label: 'Thùng (Thùng)' },
-  { value: 'unit-007', label: 'Chai (Chai)' },
-];
 
 /** Tùy chọn trạng thái nguyên vật liệu */
 export const MATERIAL_STATUS_OPTIONS = [

@@ -10,6 +10,8 @@ import {AppModalComponent} from '../../shared/app-modal/app-modal.component';
 import {AppDrinkCardComponent, DrinkItem} from '../../shared/app-drink-card/app-drink-card.component';
 import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
 import {CartService} from '../../shared/services/cart.service';
+import {CategoryService} from '../menu/categories/category.service';
+import {Category} from '../menu/categories/category.model';
 
 export interface CategoryTab {
   id: string;
@@ -44,6 +46,22 @@ export interface StyleCategory {
   imageUrl: string;
 }
 
+/**
+ * Cầu nối TẠM THỜI: slug mock của drinksList -> mã category seed BA-02.
+ * Cần vì drinks mock chưa có categoryId UUID, còn tabs load từ API thật.
+ * XÓA toàn bộ khi Product API thật lên (drinks khi đó mang categoryId BE).
+ */
+const MOCK_SLUG_TO_CATEGORY_CODE: Record<string, string> = {
+  'traditional-coffee': 'CAFE-TT',
+  'espresso-machine': 'CAFE-MAY',
+  'fruit-tea': 'TRA-TRAICAY',
+  'milk-tea': 'TRASUA-MACCHIATO',
+  'juice-pastry': 'NUOCEP-BANHNGOT',
+};
+
+const FALLBACK_STYLE_IMAGE =
+  'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80';
+
 @Component({
   selector: 'app-store',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -68,6 +86,7 @@ export class StoreComponent implements OnInit {
   readonly cartService = inject(CartService);
   private readonly toast = inject(AppNotificationService);
   private readonly route = inject(ActivatedRoute);
+  private readonly categoryService = inject(CategoryService);
 
   searchQuery = '';
   sortBy = 'featured';
@@ -98,16 +117,18 @@ export class StoreComponent implements OnInit {
     {id: 'lotus', label: 'Hạt sen Huế nấu đường phèn', price: 12000},
   ];
 
-  readonly categories: CategoryTab[] = [
+  // Tabs fallback cứng: dùng khi API Category rỗng/lỗi để store vẫn bán hàng được.
+  // Khi API có dữ liệu sẽ bị thay bằng tabs thật trong applyRealCategories().
+  readonly categories = signal<CategoryTab[]>([
     {id: 'all', name: 'Tất cả món', count: 12},
     {id: 'traditional-coffee', name: 'Cà phê truyền thống', count: 3},
     {id: 'espresso-machine', name: 'Cà phê pha máy', count: 3},
     {id: 'fruit-tea', name: 'Trà trái cây tươi', count: 2},
     {id: 'milk-tea', name: 'Trà sữa & Macchiato', count: 2},
     {id: 'juice-pastry', name: 'Nước ép & Bánh ngọt', count: 2},
-  ];
+  ]);
 
-  readonly styleCategories: StyleCategory[] = [
+  readonly styleCategories = signal<StyleCategory[]>([
     {
       id: 'traditional-coffee',
       name: 'Cà Phê Truyền Thống',
@@ -132,7 +153,7 @@ export class StoreComponent implements OnInit {
       subtitle: 'Oolong nướng than & Matcha kem cheese',
       imageUrl: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=800&q=80',
     },
-  ];
+  ]);
 
   readonly customerReviews: CustomerReview[] = [
     {
@@ -310,6 +331,58 @@ export class StoreComponent implements OnInit {
         this.scrollToSection('all-drinks');
       }
     });
+    this.loadStoreCategories();
+  }
+
+  /**
+   * Tabs danh mục từ API thật (PRODUCT + ACTIVE, đã sort displayOrder ở BE).
+   * API rỗng/lỗi -> giữ tabs fallback cứng để store vẫn hoạt động.
+   */
+  loadStoreCategories(): void {
+    this.categoryService
+      .getCategories({categoryType: 'PRODUCT', status: 'ACTIVE', pageIndex: 1, pageSize: 100})
+      .subscribe({
+        next: res => {
+          if (res.items.length > 0) {
+            this.applyRealCategories(res.items);
+          }
+        },
+      });
+  }
+
+  private applyRealCategories(cats: Category[]): void {
+    const byCode = new Map(cats.map(c => [c.code, c]));
+    // Gắn drinks mock vào UUID thật theo mã seed; món không khớp chỉ hiện ở tab "Tất cả".
+    for (const d of this.drinksList) {
+      const real = byCode.get(MOCK_SLUG_TO_CATEGORY_CODE[d.category]);
+      if (real) {
+        d.category = real.id;
+        d.categoryName = real.name;
+      }
+    }
+    const tabs: CategoryTab[] = [
+      {id: 'all', name: 'Tất cả món', count: this.drinksList.length},
+      ...cats.map(c => ({
+        id: c.id,
+        name: c.name,
+        count: this.drinksList.filter(d => d.category === c.id).length,
+      })),
+    ];
+    this.categories.set(tabs);
+    // Thẻ "Khám phá theo gu" lấy ảnh + mô tả thật của danh mục (BA-02 imageUrl/description).
+    this.styleCategories.set(
+      cats.slice(0, 4).map(c => ({
+        id: c.id,
+        name: c.name,
+        subtitle: c.description || c.name,
+        imageUrl: c.imageUrl || FALLBACK_STYLE_IMAGE,
+      })),
+    );
+    // Tab đang chọn (slug cũ) không còn tồn tại -> về "Tất cả" để khỏi lọc ra danh sách rỗng.
+    if (this.selectedCategoryId() !== 'all' && !tabs.some(t => t.id === this.selectedCategoryId())) {
+      this.selectedCategoryId.set('all');
+    }
+    this.onFilterChange();
   }
 
   formatPrice(amount: number): string {
@@ -324,7 +397,7 @@ export class StoreComponent implements OnInit {
   }
 
   getStyleCount(styleId: string): number {
-    const cat = this.categories.find(c => c.id === styleId);
+    const cat = this.categories().find(c => c.id === styleId);
     return cat ? cat.count : 0;
   }
 
