@@ -8,20 +8,12 @@ import {
   MaterialListResponse,
 } from './material.model';
 
-interface ApiEnvelope<T> {
-  status: number;
-  errorCode: string | null;
-  message: string;
-  data: T;
-  timestamp: string;
-}
-
-interface PageEnvelope<T> {
+interface BackendPageResponse {
   pageNumber: number;
   pageSize: number;
   totalElements: number;
   totalPages: number;
-  content: T[];
+  content: Material[];
 }
 
 /**
@@ -46,9 +38,7 @@ export class WarehouseMaterialService {
   }
 
   getMaterials(filter: MaterialFilter): Observable<MaterialListResponse> {
-    let params = new HttpParams()
-      .set('page', String((filter.pageIndex || 1) - 1))
-      .set('size', String(filter.pageSize || 10));
+    let params = new HttpParams().set('page', String((filter.pageIndex || 1) - 1)).set('size', String(filter.pageSize || 10));
 
     if (filter.query?.trim()) {
       params = params.set('search', filter.query.trim());
@@ -62,10 +52,10 @@ export class WarehouseMaterialService {
     // NOTE: BE MaterialRepository.search chưa hỗ trợ lọc isPerishable,
     // nên filter đó tạm chỉ có tác dụng ở ColumnTextFilter phía client.
 
-    return this.http.get<ApiEnvelope<PageEnvelope<Material>>>(this.materialApi, { params }).pipe(
+    return this.http.get<ApiResponse<BackendPageResponse>>(this.materialApi, { params }).pipe(
       map(res => {
         const page = res.data;
-        const items = (page?.content ?? []).map(r => this.enrichMaterialNames(r));
+        const items = (page?.content ?? []).map(m => this.mapResponse(m));
         return {
           items,
           total: page?.totalElements ?? items.length,
@@ -99,7 +89,7 @@ export class WarehouseMaterialService {
   }
 
   deleteMaterial(id: string): Observable<boolean> {
-    return this.http.delete<ApiEnvelope<void>>(`${this.materialApi}/${id}`).pipe(
+    return this.http.delete<ApiResponse<void>>(`${this.materialApi}/${id}`).pipe(
       map(() => true),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
@@ -134,10 +124,8 @@ export class WarehouseMaterialService {
 
     return {
       ...m,
-      categoryName: catName,
-      baseUnitName: unitName,
-      category,
-      baseUnit,
+      categoryName: m.categoryName || '—',
+      baseUnitName: m.unitName || m.baseUnitName || '—',
     };
   }
 

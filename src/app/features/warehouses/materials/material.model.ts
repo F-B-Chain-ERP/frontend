@@ -23,12 +23,16 @@ export interface Material {
   category?: MaterialCategory;
   baseUnitId?: string | null;
   baseUnitName?: string;
+  unitName?: string;
   baseUnit?: MaterialBaseUnit;
   minStockAlert: number;
   shelfLifeDays?: number | null;
   isPerishable: boolean;
   status: 'ACTIVE' | 'INACTIVE' | string;
+  note?: string;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 
