@@ -12,6 +12,8 @@ import {
   UserFormDTO,
   UserListResponse,
   UserStatus,
+  RoleAssignmentResponseBE,
+  RoleResponseBE,
   backendStatusToUserStatus,
   formatInstant,
 } from './user.model';
@@ -32,6 +34,14 @@ export class UserService {
     return this.applicationConfigService.getEndpointFor('api/v1/accounts');
   }
 
+  private get roleApi(): string {
+    return this.applicationConfigService.getEndpointFor('api/v1/roles');
+  }
+
+  private get roleAssignmentApi(): string {
+    return this.applicationConfigService.getEndpointFor('api/v1/role-assignments');
+  }
+
   private toUser(a: AccountResponseBE): User {
     return {
       id: a.id,
@@ -42,6 +52,7 @@ export class UserService {
       status: backendStatusToUserStatus(a.status),
       primaryBranchId: a.primaryBranchId ?? null,
       primaryBranchName: a.primaryBranchName ?? undefined,
+      assignedBranches: a.assignedBranches ?? [],
       roles: a.roles ?? [],
       roleIds: a.roleIds ?? [],
       department: '',
@@ -58,7 +69,37 @@ export class UserService {
       .set('size', String(UserService.FETCH_SIZE));
     return this.http
       .get<ApiResponseBE<PageResponseBE<AccountResponseBE>>>(this.accountApi, {params})
-      .pipe(map(res => (res.data?.content ?? []).map(a => this.toUser(a))));
+      .pipe(
+        switchMap(res => {
+          const users = (res.data?.content ?? []).map(a => this.toUser(a));
+          if (!users.length) return of(users);
+
+          const roles$ = this.http.get<ApiResponseBE<PageResponseBE<RoleResponseBE>>>(this.roleApi, {
+            params: { page: '0', size: '1000' },
+          });
+          const assignments$ = users.map(user =>
+            this.http.get<ApiResponseBE<RoleAssignmentResponseBE[]>>(
+              `${this.roleAssignmentApi}/account/${user.id}`,
+            ),
+          );
+
+          return forkJoin({ roles: roles$, assignments: forkJoin(assignments$) }).pipe(
+            map(({ roles, assignments }) => {
+              const roleMap = new Map((roles.data?.content ?? []).map(role => [role.id, role.name]));
+              return users.map((user, index) => {
+                const roleAssignments = assignments[index]?.data ?? [];
+                const activeAssignments = roleAssignments.filter(assignment =>
+                  assignment.status === 'ACTIVE' &&
+                  (!assignment.expiresAt || new Date(assignment.expiresAt).getTime() > Date.now()),
+                );
+                const roleIds = [...new Set(activeAssignments.map(assignment => assignment.roleId))];
+                const roleNames = roleIds.map(roleId => roleMap.get(roleId) ?? roleId);
+                return { ...user, roleIds, roles: roleNames };
+              });
+            }),
+          );
+        }),
+      );
   }
 
   /**

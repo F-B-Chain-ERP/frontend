@@ -112,7 +112,7 @@
         <!-- Chi nhánh công tác -->
         <th scope="col" [nzShowSort]="true" [nzSortFn]="sortBranchFn" nzWidth="200px" nzAlign="left">Chi nhánh</th>
 
-        <!-- Vai trò hệ thống (Sử dụng AppOverflowTagsComponent) -->
+        <!-- Vai trò hệ thống -->
         <th scope="col" nzWidth="190px" nzAlign="left">Vai trò</th>
 
         <!-- Trạng thái (Sử dụng .tbl-badge chuẩn UI-Kit) -->
@@ -202,15 +202,55 @@
 
             <!-- Chi nhánh công tác -->
             <td nzAlign="left">
-              <span class="branch-text">
-                <nz-icon nzType="shop" style="margin-right: 4px; color: var(--brand);"/>
-                {{ data.primaryBranchName || getBranchName(data.primaryBranchId) }}
-              </span>
+              <div class="assigned-branches">
+                @if (data.assignedBranches; as branches) {
+                  @if (branches.length) {
+                    <button type="button" class="assigned-branches__trigger" nz-dropdown
+                            [nzDropdownMenu]="branchMenu" nzTrigger="click" [nzOverlayStyle]="{ width: '200px' }"
+                            (click)="$event.stopPropagation()">
+                      <span>{{ branches[0].name }} ({{ branches[0].code }})</span>
+                      <nz-icon nzType="down" />
+                    </button>
+                    <nz-dropdown-menu #branchMenu="nzDropdownMenu">
+                      <ul nz-menu class="assigned-branches__menu">
+                        @for (branch of branches; track branch.id; let branchIndex = $index) {
+                          <li nz-menu-item [class.assigned-branches__menu-item--primary]="branchIndex === 0">
+                            <span>{{ branch.name }} ({{ branch.code }})</span>
+                          </li>
+                        }
+                      </ul>
+                    </nz-dropdown-menu>
+                  } @else {
+                    <span class="branch-text">{{ data.primaryBranchName || getBranchName(data.primaryBranchId) }}</span>
+                  }
+                } @else {
+                  <span class="branch-text">{{ data.primaryBranchName || getBranchName(data.primaryBranchId) }}</span>
+                }
+              </div>
             </td>
 
-            <!-- Vai trò (Sử dụng AppOverflowTagsComponent) -->
+            <!-- Vai trò -->
             <td nzAlign="left">
-              <app-overflow-tags [items]="data.roles && data.roles.length ? data.roles : ['Nhân viên']"></app-overflow-tags>
+              @if (data.roles; as roles) {
+                @if (roles.length) {
+                  <span class="role-dropdown-trigger" nz-dropdown [nzDropdownMenu]="roleMenu"
+                        nzTrigger="click" [nzOverlayStyle]="{ width: '190px' }" (click)="$event.stopPropagation()">
+                    <nz-icon nzType="down" class="role-dropdown-trigger__arrow"/>
+                    <nz-tag>{{ roles[0] }}</nz-tag>
+                  </span>
+                  <nz-dropdown-menu #roleMenu="nzDropdownMenu">
+                    <ul nz-menu class="role-dropdown-menu">
+                      @for (role of roles; track role; let roleIndex = $index) {
+                        <li nz-menu-item [class.role-dropdown-menu__primary]="roleIndex === 0">{{ role }}</li>
+                      }
+                    </ul>
+                  </nz-dropdown-menu>
+                } @else {
+                  <nz-tag>Chưa gán vai trò</nz-tag>
+                }
+              } @else {
+                <nz-tag>Chưa gán vai trò</nz-tag>
+              }
             </td>
 
             <!-- Trạng thái (Huy hiệu .tbl-badge sạch sẽ chuẩn UI-Kit) -->
@@ -469,10 +509,15 @@
           </a>
         </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Chi nhánh công tác" [nzSpan]="2">
-          <span class="font-semibold">
-            <nz-icon nzType="shop" style="margin-right: 6px; color: var(--brand);"/>
-            {{ getBranchName(selectedUserForDetail.primaryBranchId) || selectedUserForDetail.primaryBranchName || 'Chưa phân bổ' }}
-          </span>
+          <div class="branch-list">
+            @for (branch of (selectedUserForDetail.assignedBranches || []); track branch.id) {
+              <nz-tag nzColor="blue">{{ branch.name }} ({{ branch.code }})</nz-tag>
+            }
+            @if (!selectedUserForDetail.assignedBranches?.length) {
+              <span class="font-semibold"><nz-icon nzType="shop" style="margin-right: 6px; color: var(--brand);"/>
+                {{ getBranchName(selectedUserForDetail.primaryBranchId) || selectedUserForDetail.primaryBranchName || 'Chưa phân bổ' }}</span>
+            }
+          </div>
         </nz-descriptions-item>
         <nz-descriptions-item nzTitle="Số điện thoại">
           <span class="font-mono">{{ selectedUserForDetail.phoneNumber || '—' }}</span>
