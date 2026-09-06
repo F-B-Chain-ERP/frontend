@@ -37,7 +37,7 @@ Server triển khai: **Ubuntu 24.04 LTS** (IP: `163.61.72.183`, Domain: `erp-utt
                                                                    ┌─────────────────┐       ┌─────────────────┐
                                                                    │  PostgreSQL 16  │       │     Redis 7     │
                                                                    │  (Port 5432)    │       │  (Port 6379)    │
-                                                                   │  (VPN / Lan)    │       │  (VPN / Lan)    │
+                                                                   │  (Direct / SSH) │       │  (Direct / SSH) │
                                                                    └─────────────────┘       └─────────────────┘
 ```
 
