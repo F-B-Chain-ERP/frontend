@@ -23,13 +23,16 @@ export interface Material {
   category?: MaterialCategory;
   baseUnitId?: string | null;
   baseUnitName?: string;
+  unitName?: string;
   baseUnit?: MaterialBaseUnit;
   minStockAlert: number;
   shelfLifeDays?: number | null;
   isPerishable: boolean;
-  status: 'ACTIVE' | 'INACTIVE' | string;
+  status: string;
   note?: string;
+  createdBy?: string;
   createdAt?: string;
+  updatedBy?: string;
   updatedAt?: string;
 }
 
@@ -56,24 +59,14 @@ export interface MaterialOption {
   value: string;
 }
 
-/** Danh sách tùy chọn nhóm danh mục nguyên vật liệu */
+// TODO: Replace hardcoded category options with Category API when available.
+// Value PHẢI là UUID thật từ DB. Cập nhật sau khi seed data category.
 export const MATERIAL_CATEGORY_OPTIONS: MaterialOption[] = [
-  { value: 'cat-001', label: 'Sữa & chế phẩm' },
-  { value: 'cat-002', label: 'Trà & Cà phê' },
-  { value: 'cat-003', label: 'Đường, Siro & Gia vị' },
-  { value: 'cat-004', label: 'Topping & Bột pha chế' },
-  { value: 'cat-005', label: 'Bao bì & Đóng gói' },
-];
-
-/** Danh sách tùy chọn đơn vị tính cơ bản */
-export const MATERIAL_BASE_UNIT_OPTIONS: MaterialOption[] = [
-  { value: 'unit-001', label: 'Mililít (ML)' },
-  { value: 'unit-002', label: 'Lít (L)' },
-  { value: 'unit-003', label: 'Kilogram (kg)' },
-  { value: 'unit-004', label: 'Hộp (Hộp)' },
-  { value: 'unit-005', label: 'Gói (Gói)' },
-  { value: 'unit-006', label: 'Thùng (Thùng)' },
-  { value: 'unit-007', label: 'Chai (Chai)' },
+  { value: 'a1000000-0000-0000-0000-000000000001', label: 'Sữa & chế phẩm' },
+  { value: 'a1000000-0000-0000-0000-000000000002', label: 'Trà & Cà phê' },
+  { value: 'a1000000-0000-0000-0000-000000000003', label: 'Đường, Siro & Gia vị' },
+  { value: 'a1000000-0000-0000-0000-000000000004', label: 'Topping & Bột pha chế' },
+  { value: 'a1000000-0000-0000-0000-000000000005', label: 'Bao bì & Đóng gói' },
 ];
 
 /** Tùy chọn trạng thái nguyên vật liệu */
@@ -91,7 +84,7 @@ export const MATERIAL_PERISHABLE_OPTIONS = [
 ];
 
 export function getMaterialStatusMeta(status: string): { label: string; badgeClass: string } {
-  const s = String(status || '').toUpperCase();
+  const s = (status || '').toUpperCase();
   if (s === 'ACTIVE' || s === '1' || s === 'HOAT_DONG') {
     return { label: 'Đang sử dụng', badgeClass: 'tbl-badge tbl-badge--success' };
   }

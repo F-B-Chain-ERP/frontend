@@ -33,13 +33,13 @@ import {
   Material,
   MaterialFilter,
   MATERIAL_CATEGORY_OPTIONS,
-  MATERIAL_BASE_UNIT_OPTIONS,
   MATERIAL_STATUS_OPTIONS,
   MATERIAL_PERISHABLE_OPTIONS,
   getMaterialStatusMeta,
   getPerishableMeta,
 } from './material.model';
 import { WarehouseMaterialService } from './material.service';
+import { UnitService } from '../../menu/units/unit.service';
 
 @Component({
   selector: 'app-warehouse-material-list',
@@ -77,7 +77,6 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
 
   // Options
   readonly categoryOptions = MATERIAL_CATEGORY_OPTIONS;
-  readonly baseUnitOptions = MATERIAL_BASE_UNIT_OPTIONS;
   readonly statusOptions = MATERIAL_STATUS_OPTIONS;
   readonly perishableOptions = MATERIAL_PERISHABLE_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
@@ -91,6 +90,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   readonly allLoadedMaterials = signal<Material[]>([]);
   readonly total = signal(0);
   readonly loading = signal(false);
+  readonly unitOptions = signal<{ value: string; label: string }[]>([]);
 
   // Filter params
   searchQuery = '';
@@ -117,7 +117,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     name: 'contains',
     categoryName: 'contains',
     baseUnitName: 'contains',
-    status: 'equals',
+    status: 'contains',
   });
 
   readonly statusFilterOptions = [
@@ -136,10 +136,10 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     shelfLifeDays: [null as number | null, [Validators.min(0)]],
     isPerishable: [false],
     status: ['ACTIVE', [Validators.required]],
-    note: ['', [Validators.maxLength(500)]],
   });
 
   private readonly materialService = inject(WarehouseMaterialService);
+  private readonly unitService = inject(UnitService);
 
   get modalTitle(): string {
     const mode = this.modalMode();
@@ -155,10 +155,25 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       { label: 'Nguyên vật liệu', url: '/admin/inventory/materials/list' },
     ]);
 
+    this.loadUnits();
     this.loadData();
   }
 
   // ── Data loading ───────────────────────────────────────────────────
+  loadUnits(): void {
+    this.unitService
+      .getUnits({ pageIndex: 1, pageSize: 100, status: 'ACTIVE' })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          this.unitOptions.set(res.items.map(u => ({ value: u.id, label: `${u.code} - ${u.name}` })));
+        },
+        error() {
+          // Handled by UnitService
+        },
+      });
+  }
+
   loadData(): void {
     this.loading.set(true);
     const filter: MaterialFilter = {
@@ -181,8 +196,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
           this.loading.set(false);
           this.refreshCheckState();
         },
-        error: () => {
-          this.toastService.error('Không thể tải danh sách nguyên vật liệu.');
+        error: (err: Error) => {
+          this.toastService.error(err.message || 'Không thể tải danh sách nguyên vật liệu.');
           this.loading.set(false);
         },
       });
@@ -257,18 +272,6 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     this.refreshCheckState();
   }
 
-  private refreshCheckState(): void {
-    const list = this.materials();
-    if (!list.length) {
-      this.allChecked = false;
-      this.indeterminate = false;
-      return;
-    }
-    const checkedCount = list.filter(item => this.setOfCheckedKeys.has(item.id)).length;
-    this.allChecked = checkedCount === list.length && list.length > 0;
-    this.indeterminate = checkedCount > 0 && !this.allChecked;
-  }
-
   // ── Modal Actions (Create / View / Edit) ────────────────────────────
   openCreateModal(): void {
     this.modalMode.set('create');
@@ -283,7 +286,6 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       shelfLifeDays: 7,
       isPerishable: false,
       status: 'ACTIVE',
-      note: '',
     });
     this.materialForm.enable();
     this.isModalVisible.set(true);
@@ -296,22 +298,26 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     this.materialService
       .getMaterialById(item.id)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(detail => {
-        const d = detail || item;
-        this.selectedMaterial.set(d);
-        this.materialForm.reset({
-          id: d.id,
-          code: d.code,
-          name: d.name,
-          categoryId: d.category?.id || d.categoryId || null,
-          baseUnitId: d.baseUnit?.id || d.baseUnitId || null,
-          minStockAlert: d.minStockAlert,
-          shelfLifeDays: d.shelfLifeDays ?? null,
-          isPerishable: d.isPerishable,
-          status: d.status,
-          note: d.note || '',
-        });
-        this.materialForm.disable();
+      .subscribe({
+        next: detail => {
+          const d = detail || item;
+          this.selectedMaterial.set(d);
+          this.materialForm.reset({
+            id: d.id,
+            code: d.code,
+            name: d.name,
+            categoryId: d.categoryId || null,
+            baseUnitId: d.baseUnitId || null,
+            minStockAlert: d.minStockAlert,
+            shelfLifeDays: d.shelfLifeDays ?? null,
+            isPerishable: d.isPerishable,
+            status: d.status,
+          });
+          this.materialForm.disable();
+        },
+        error: (err: Error) => {
+          this.toastService.error(err.message || 'Không thể tải chi tiết nguyên vật liệu.');
+        },
       });
   }
 
@@ -322,23 +328,27 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     this.materialService
       .getMaterialById(item.id)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(detail => {
-        const d = detail || item;
-        this.selectedMaterial.set(d);
-        this.materialForm.reset({
-          id: d.id,
-          code: d.code,
-          name: d.name,
-          categoryId: d.category?.id || d.categoryId || null,
-          baseUnitId: d.baseUnit?.id || d.baseUnitId || null,
-          minStockAlert: d.minStockAlert,
-          shelfLifeDays: d.shelfLifeDays ?? null,
-          isPerishable: d.isPerishable,
-          status: d.status,
-          note: d.note || '',
-        });
-        this.materialForm.enable();
-        this.materialForm.get('code')?.disable();
+      .subscribe({
+        next: detail => {
+          const d = detail || item;
+          this.selectedMaterial.set(d);
+          this.materialForm.reset({
+            id: d.id,
+            code: d.code,
+            name: d.name,
+            categoryId: d.categoryId || null,
+            baseUnitId: d.baseUnitId || null,
+            minStockAlert: d.minStockAlert,
+            shelfLifeDays: d.shelfLifeDays ?? null,
+            isPerishable: d.isPerishable,
+            status: d.status,
+          });
+          this.materialForm.enable();
+          this.materialForm.get('code')?.disable();
+        },
+        error: (err: Error) => {
+          this.toastService.error(err.message || 'Không thể tải chi tiết nguyên vật liệu.');
+        },
       });
   }
 
@@ -364,11 +374,9 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       name: formRaw.name?.trim(),
       categoryId: formRaw.categoryId,
       baseUnitId: formRaw.baseUnitId,
-      minStockAlert: Number(formRaw.minStockAlert) || 0,
-      shelfLifeDays: formRaw.shelfLifeDays !== null && formRaw.shelfLifeDays !== undefined ? Number(formRaw.shelfLifeDays) : null,
+      minStockAlert: formRaw.minStockAlert || 0,
+      shelfLifeDays: formRaw.shelfLifeDays ?? null,
       isPerishable: Boolean(formRaw.isPerishable),
-      status: formRaw.status || 'ACTIVE',
-      note: formRaw.note?.trim() || '',
     };
 
     if (this.modalMode() === 'create') {
@@ -382,25 +390,48 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
             this.closeModal();
             this.loadData();
           },
-          error: () => {
-            this.toastService.error('Có lỗi xảy ra khi tạo nguyên vật liệu.');
+          error: (err: Error) => {
+            this.toastService.error(err.message || 'Có lỗi xảy ra khi tạo nguyên vật liệu.');
             this.isSaving.set(false);
           },
         });
     } else {
       const id = this.selectedMaterial()?.id || formRaw.id || '';
+      const originalStatus = this.selectedMaterial()?.status;
+      const newStatus = formRaw.status || 'ACTIVE';
+
       this.materialService
         .updateMaterial(id, payload)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
-            this.toastService.success('Cập nhật nguyên vật liệu thành công.');
-            this.isSaving.set(false);
-            this.closeModal();
-            this.loadData();
+            if (originalStatus !== newStatus) {
+              this.materialService
+                .updateMaterialStatus(id, newStatus)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                  next: () => {
+                    this.toastService.success('Cập nhật nguyên vật liệu thành công.');
+                    this.isSaving.set(false);
+                    this.closeModal();
+                    this.loadData();
+                  },
+                  error: (statusErr: Error) => {
+                    this.toastService.error(statusErr.message || 'Cập nhật thông tin thành công nhưng lỗi đổi trạng thái.');
+                    this.isSaving.set(false);
+                    this.closeModal();
+                    this.loadData();
+                  },
+                });
+            } else {
+              this.toastService.success('Cập nhật nguyên vật liệu thành công.');
+              this.isSaving.set(false);
+              this.closeModal();
+              this.loadData();
+            }
           },
-          error: () => {
-            this.toastService.error('Có lỗi xảy ra khi cập nhật nguyên vật liệu.');
+          error: (err: Error) => {
+            this.toastService.error(err.message || 'Có lỗi xảy ra khi cập nhật nguyên vật liệu.');
             this.isSaving.set(false);
           },
         });
@@ -426,40 +457,23 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
               this.setOfCheckedKeys.delete(item.id);
               this.loadData();
             },
-            error: () => {
-              this.toastService.error('Không thể xóa nguyên vật liệu.');
+            error: (err: Error) => {
+              this.toastService.error(err.message || 'Không thể xóa nguyên vật liệu.');
             },
           });
       },
     });
   }
 
-  onBatchDelete(): void {
-    const selectedIds = Array.from(this.setOfCheckedKeys);
-    if (!selectedIds.length) return;
-
-    this.modalService.confirm({
-      nzTitle: 'Xác nhận xóa hàng loạt',
-      nzContent: `Bạn có chắc chắn muốn xóa ${selectedIds.length} nguyên vật liệu đã chọn khỏi kho?`,
-      nzOkText: 'Xác nhận xóa',
-      nzOkType: 'primary',
-      nzOkDanger: true,
-      nzCancelText: 'Hủy bỏ',
-      nzOnOk: () => {
-        this.materialService
-          .batchDeleteMaterials(selectedIds)
-          .pipe(takeUntil(this.destroy$))
-          .subscribe({
-            next: () => {
-              this.toastService.success(`Đã xóa thành công ${selectedIds.length} nguyên vật liệu.`);
-              this.clearSelection();
-              this.loadData();
-            },
-            error: () => {
-              this.toastService.error('Có lỗi xảy ra khi xóa hàng loạt.');
-            },
-          });
-      },
-    });
+  private refreshCheckState(): void {
+    const list = this.materials();
+    if (!list.length) {
+      this.allChecked = false;
+      this.indeterminate = false;
+      return;
+    }
+    const checkedCount = list.filter(item => this.setOfCheckedKeys.has(item.id)).length;
+    this.allChecked = checkedCount === list.length && list.length > 0;
+    this.indeterminate = checkedCount > 0 && !this.allChecked;
   }
 }
