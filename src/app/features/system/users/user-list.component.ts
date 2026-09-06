@@ -14,13 +14,13 @@ import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzBadgeModule } from 'ng-zorro-antd/badge';
 import { NzPopconfirmModule } from 'ng-zorro-antd/popconfirm';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { BaseComponent } from '../../../shared/base-component/base.component';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
-import { AppOverflowTagsComponent } from '../../../shared/app-overflow-tags/app-overflow-tags.component';
 import { AppSelectionBarComponent } from '../../../shared/app-selection-bar/app-selection-bar.component';
 import { AppTableSearchInputComponent } from '../../../shared/app-table-search-input/app-table-search-input.component';
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
@@ -64,13 +64,13 @@ import { takeUntil } from 'rxjs/operators';
     NzBadgeModule,
     NzPopconfirmModule,
     NzDividerModule,
+    NzDropDownModule,
     NzGridModule,
     NzDescriptionsModule,
     AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
-    AppOverflowTagsComponent,
     AppSelectionBarComponent,
     AppTableSearchInputComponent,
     EnterAsTabContainerDirective,
@@ -269,6 +269,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
     if (!branchId) return '—';
     return this.branchMap.get(branchId) || branchId;
   }
+
 
   /**
    * Load danh sách người dùng từ service

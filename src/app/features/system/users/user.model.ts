@@ -12,13 +12,20 @@ export interface User {
   status: UserStatus;
   primaryBranchId: string | null;
   primaryBranchName?: string;
-  roles?: string[];
+  assignedBranches?: AssignedBranch[];
   roleIds?: string[];
+  roles?: string[];
   department?: string;
   createdAt: string;
   updatedAt?: string;
   avatar?: string;
   note?: string;
+}
+
+export interface AssignedBranch {
+  id: string;
+  code: string;
+  name: string;
 }
 
 export interface UserFilter {
@@ -58,11 +65,24 @@ export interface AccountResponseBE {
   status: string;
   primaryBranchId: string | null;
   primaryBranchName?: string | null;
+  assignedBranches?: AssignedBranch[];
   lastLoginAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
   roleIds?: string[];
   roles?: string[];
+}
+
+export interface RoleResponseBE {
+  id: string;
+  name: string;
+  code: string;
+}
+
+export interface RoleAssignmentResponseBE {
+  roleId: string;
+  status: string;
+  expiresAt?: string | null;
 }
 
 export interface PageResponseBE<T> {

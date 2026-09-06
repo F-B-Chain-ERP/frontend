@@ -138,6 +138,123 @@
   font-weight: var(--fw-medium);
 }
 
+.assigned-branches {
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: var(--fw-medium);
+    text-align: left;
+    cursor: pointer;
+
+    > span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    > nz-icon {
+      flex: 0 0 auto;
+      margin-left: auto;
+    }
+
+    &:hover {
+      color: var(--brand);
+    }
+  }
+
+  &__menu {
+    min-width: 330px;
+    padding: 4px 0;
+
+    ::ng-deep .ant-dropdown-menu-item {
+      padding: 9px 14px;
+      color: var(--text-primary);
+      font-size: var(--text-sm);
+      font-weight: var(--fw-medium);
+    }
+
+    ::ng-deep .assigned-branches__menu-item--primary {
+      color: var(--brand);
+      font-weight: var(--fw-semibold);
+    }
+  }
+}
+
+.role-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  cursor: pointer;
+
+  &__arrow {
+    order: 2;
+    flex: 0 0 auto;
+    margin-left: auto;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+  }
+
+  ::ng-deep .ant-tag {
+    margin-right: 0;
+    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  }
+
+  &:hover {
+    color: var(--brand);
+
+    .role-dropdown-trigger__arrow {
+      color: var(--brand);
+    }
+
+    ::ng-deep .ant-tag {
+      color: var(--brand);
+      border-color: var(--brand);
+    }
+  }
+}
+
+::ng-deep .role-dropdown-menu {
+  min-width: 0 !important;
+  width: 100%;
+
+  .ant-dropdown-menu-item {
+    padding: 8px 14px;
+    color: var(--brand) !important;
+    font-size: var(--text-sm);
+  }
+
+  .role-dropdown-menu__primary {
+    color: var(--brand);
+    font-weight: var(--fw-semibold);
+  }
+}
+
+/* Dropdown render trong CDK overlay nên cần áp dụng style xuyên qua view encapsulation. */
+::ng-deep .assigned-branches__menu {
+  min-width: 0 !important;
+  width: 100%;
+
+  .ant-dropdown-menu-item {
+    padding: 9px 14px;
+    font-size: var(--text-xs);
+    font-weight: var(--fw-medium);
+  }
+}
+
 .department-text {
   font-size: var(--text-sm);
   color: var(--text-secondary);
