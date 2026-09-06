@@ -1,41 +1,44 @@
 # Hướng dẫn Vận hành CI/CD & Triển khai Frontend ERP-UTT
 
-Server triển khai: **Ubuntu 24.04 LTS** (IP: `163.61.72.183`, Hostname: `vm08181524.bnixvps.io.vn`)
+Server triển khai: **Ubuntu 24.04 LTS** (IP: `163.61.72.183`, Domain: `erp-utt.duckdns.org`)
 
 ---
 
-## 1. Kiến trúc Hệ thống & Luồng Xử lý (Request Flow)
+## 1. Kiến trúc Hệ thống & Luồng Xử lý HTTPS (Request Flow)
 
 ```
                             [NGƯỜI DÙNG / TRÌNH DUYỆT]
                                          │
-                                         │ HTTP Port 80 (hoặc 443 HTTPS)
-                                         ▼
-                 ┌──────────────────────────────────────────────────┐
-                 │          NGINX REVERSE PROXY (Port 80)           │
-                 │  - Gzip nén dữ liệu tĩnh (tiết kiệm 60-80% BW)   │
-                 │  - Caching 1 năm cho Hashed Chunks (JS/CSS/Fonts)│
-                 │  - no-cache cho index.html (luôn cập nhật mới)   │
-                 │  - Định tuyến SPA Fallback (try_files index.html)│
-                 └───────────────┬──────────────────┬───────────────┘
-                                 │                  │
-               [Request tĩnh]   │                  │   [Request API]
-         (HTML, JS chunks, CSS)  │                  │   (/api/v1/**)
-                                 ▼                  ▼
-               ┌───────────────────────┐   ┌────────────────────────┐
-               │    ANGULAR 21 SPA     │   │  BACKEND SERVICE       │
-               │ /opt/ERP-UTT/frontend │   │  Spring Boot (Docker)  │
-               │ /browser/             │   │  Port 8080             │
-               └───────────────────────┘   └───────────┬────────────┘
-                                                       │
-                                          ┌────────────┴────────────┐
-                                          │                         │
-                                          ▼                         ▼
-                                 ┌─────────────────┐       ┌─────────────────┐
-                                 │  PostgreSQL 16  │       │     Redis 7     │
-                                 │  Port 5432      │       │  Port 6379      │
-                                 │  (Docker)       │       │  (Rate Limiter) │
-                                 └─────────────────┘       └─────────────────┘
+                 ┌───────────────────────┴───────────────────────┐
+                 │                                               │
+                 ▼ Port 80 (HTTP)                                ▼ Port 443 (HTTPS)
+      ┌─────────────────────┐                         ┌─────────────────────────────────────────┐
+      │ NGINX REDIRECT      │                         │     NGINX TLS 1.3 TERMINATION           │
+      │ 301 Permanent       │                         │  - SSL Let's Encrypt (Auto-renew)       │
+      │ -> https://...      │                         │  - HSTS (1 năm), CSP, Security Headers  │
+      └──────────┬──────────┘                         │  - Gzip nén dữ liệu tĩnh (60-80% BW)    │
+                 │                                    │  - Caching 1 năm cho Hashed Chunks      │
+                 └───────────────────────────────────►│  - no-cache cho index.html              │
+                                                      │  - Định tuyến SPA Fallback              │
+                                                      └─────────────┬─────────────────┬─────────┘
+                                                                    │                 │
+                                                  [Request tĩnh]   │                 │   [Request API]
+                                            (HTML, JS chunks, CSS)  │                 │   (/api/v1/**)
+                                                                    ▼                 ▼
+                                                  ┌───────────────────────┐  ┌────────────────────────┐
+                                                  │    ANGULAR 21 SPA     │  │  BACKEND SERVICE       │
+                                                  │ /opt/ERP-UTT/frontend │  │  Spring Boot (Docker)  │
+                                                  │ /browser/             │  │  127.0.0.1:8080        │
+                                                  └───────────────────────┘  └───────────┬────────────┘
+                                                                                         │
+                                                                            ┌────────────┴────────────┐
+                                                                            │ (Mạng nội bộ Docker)    │
+                                                                            ▼                         ▼
+                                                                   ┌─────────────────┐       ┌─────────────────┐
+                                                                   │  PostgreSQL 16  │       │     Redis 7     │
+                                                                   │  (Port 5432)    │       │  (Port 6379)    │
+                                                                   │  (VPN / Lan)    │       │  (VPN / Lan)    │
+                                                                   └─────────────────┘       └─────────────────┘
 ```
 
 ---
@@ -59,14 +62,15 @@ Server triển khai: **Ubuntu 24.04 LTS** (IP: `163.61.72.183`, Hostname: `vm081
 └── deploy/
     ├── DEPLOYMENT_GUIDE.md        # Hướng dẫn này
     ├── nginx/
-    │   └── erp-utt.conf           # File cấu hình Nginx site
+    │   └── erp-utt.conf           # File cấu hình Nginx site (Port 80 redirect + 443 SSL)
     └── scripts/
         ├── deploy.sh              # Script triển khai trung tâm trên Server (Atomic + Health Check)
         ├── rollback.sh            # Script Rollback khẩn cấp tức thì (1s)
         ├── 01-build-transfer.ps1  # Script build tay trên máy Windows Dev
         ├── 01-build-transfer.sh   # Script build tay trên máy Linux/macOS Dev
         ├── 02-setup-nginx.sh      # Script cài đặt & cấu hình Nginx lần đầu
-        └── 03-check-status.sh     # Script chẩn đoán sức khỏe hệ thống
+        ├── 03-check-status.sh     # Script chẩn đoán sức khỏe hệ thống
+        └── 04-setup-ssl.sh        # Script cấp phát SSL Let's Encrypt (Không cần email)
 ```
 
 ---
@@ -156,7 +160,33 @@ sudo bash /opt/ERP-UTT/frontend/deploy/scripts/rollback.sh /opt/ERP-UTT/frontend
 
 ---
 
-## 6. Kiểm tra & Giám sát Hệ thống (Diagnostics)
+## 6. Thiết lập HTTPS & Chứng chỉ SSL Let's Encrypt (Production)
+
+Hệ thống sử dụng chứng chỉ SSL miễn phí của **Let's Encrypt** cho domain `erp-utt.duckdns.org` và cấu hình tự động chuyển hướng mọi truy cập HTTP sang HTTPS bảo mật.
+
+### Bước cấp phát chứng chỉ SSL trên Server (Chạy 1 lần):
+SSH vào server:
+```bash
+ssh root@163.61.72.183
+cd /opt/ERP-UTT/frontend
+sudo bash deploy/scripts/04-setup-ssl.sh
+```
+
+> **Lưu ý:** Script sử dụng cờ `--register-unsafely-without-email` nên **hoàn toàn không cần nhập email**. Chứng chỉ sẽ được cấp phát ngay lập tức và lưu tại `/etc/letsencrypt/live/erp-utt.duckdns.org/`.
+
+### Kiểm tra tính năng tự động gia hạn (Auto-renewal):
+Certbot tự động gia hạn trước khi chứng chỉ hết hạn 30 ngày qua Systemd Timer:
+```bash
+# Kiểm tra timer tự động gia hạn đang kích hoạt
+systemctl status certbot.timer
+
+# Chạy thử nghiệm gia hạn giả lập (Dry-run)
+certbot renew --dry-run
+```
+
+---
+
+## 7. Kiểm tra & Giám sát Hệ thống (Diagnostics)
 
 ### Chạy script kiểm tra toàn diện:
 ```bash
@@ -183,7 +213,7 @@ tail -f /var/log/nginx/error.log
 
 ---
 
-## 7. Xử lý Sự cố Thường gặp (Troubleshooting)
+## 8. Xử lý Sự cố Thường gặp (Troubleshooting)
 
 | Vấn đề | Nguyên nhân | Cách khắc phục |
 | :--- | :--- | :--- |
