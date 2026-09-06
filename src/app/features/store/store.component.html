@@ -158,7 +158,7 @@
       <h2 class="section-title section-title--inner">KHÁM PHÁ THEO GU THƯỞNG THỨC</h2>
 
       <div class="style-grid">
-        @for (style of styleCategories; track style.id) {
+        @for (style of styleCategories(); track style.id) {
           <div
             class="style-item"
             (click)="selectStyleCategory(style.id)"
@@ -187,7 +187,7 @@
 
     <!-- Category Pills -->
     <div class="category-bar">
-      @for (cat of categories; track cat.id) {
+      @for (cat of categories(); track cat.id) {
         <button
           type="button"
           class="category-bar__pill"

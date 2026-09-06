@@ -566,7 +566,7 @@
                         nzPlaceHolder="Chọn NVL"
                         style="width: 100%"
                       >
-                        @for (opt of materialOptions; track opt.value) {
+                        @for (opt of materialOptions(); track opt.value) {
                           <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
                         }
                       </nz-select>

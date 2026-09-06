@@ -28,7 +28,7 @@ export interface Material {
   minStockAlert: number;
   shelfLifeDays?: number | null;
   isPerishable: boolean;
-  status: string;
+  status: 'ACTIVE' | 'INACTIVE' | string;
   note?: string;
   createdBy?: string;
   createdAt?: string;
@@ -59,16 +59,6 @@ export interface MaterialOption {
   value: string;
 }
 
-// TODO: Replace hardcoded category options with Category API when available.
-// Value PHẢI là UUID thật từ DB. Cập nhật sau khi seed data category.
-export const MATERIAL_CATEGORY_OPTIONS: MaterialOption[] = [
-  { value: 'a1000000-0000-0000-0000-000000000001', label: 'Sữa & chế phẩm' },
-  { value: 'a1000000-0000-0000-0000-000000000002', label: 'Trà & Cà phê' },
-  { value: 'a1000000-0000-0000-0000-000000000003', label: 'Đường, Siro & Gia vị' },
-  { value: 'a1000000-0000-0000-0000-000000000004', label: 'Topping & Bột pha chế' },
-  { value: 'a1000000-0000-0000-0000-000000000005', label: 'Bao bì & Đóng gói' },
-];
-
 /** Tùy chọn trạng thái nguyên vật liệu */
 export const MATERIAL_STATUS_OPTIONS = [
   { value: null, label: 'Tất cả trạng thái' },
@@ -84,7 +74,7 @@ export const MATERIAL_PERISHABLE_OPTIONS = [
 ];
 
 export function getMaterialStatusMeta(status: string): { label: string; badgeClass: string } {
-  const s = (status || '').toUpperCase();
+  const s = String(status || '').toUpperCase();
   if (s === 'ACTIVE' || s === '1' || s === 'HOAT_DONG') {
     return { label: 'Đang sử dụng', badgeClass: 'tbl-badge tbl-badge--success' };
   }

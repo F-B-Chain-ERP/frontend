@@ -42,6 +42,7 @@ import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority
 import { ROLE } from '../../../core/config/functions.constants';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import { PurchaseOrderService } from './po.service';
+import { UnitService } from '../../menu/units/unit.service';
 import {
   PoOption,
   PurchaseOrder,
@@ -155,26 +156,11 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   indeterminate = false;
 
   private readonly purchaseOrderService = inject(PurchaseOrderService);
+  private readonly unitService = inject(UnitService);
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(ApplicationConfigService);
   private readonly appRef = inject(ApplicationRef);
   private readonly route = inject(ActivatedRoute);
-
-  /**
-   * Dữ liệu Đơn vị tính: BE chưa có API CRUD (chỉ có entity + repository).
-   * Dùng danh sách tĩnh ở FE; giá trị `value` PHẢI là UUID đơn vị thật trong DB
-   * (lấy từ bảng `unit`) để ràng buộc FK khi lưu PO không bị lỗi.
-   */
-
-  private readonly mockUnits: PoOption[] = [
-    { value: '11111111-1111-1111-1111-111111111111', label: 'KG - Kilogram' },
-    { value: '4512fda1-f6e8-40b0-8c4b-2da519f01f01', label: 'LIT - Lít' },
-    { value: '539936d1-a992-429b-99d7-a77518f14caf', label: 'GOI - Gói' },
-    { value: 'cebce8d8-f9a2-44eb-95d0-76f091a68431', label: 'THUNG - Thùng' },
-    { value: '88005c04-99dd-470f-9b78-5981e657cb3e', label: 'HOP - Hộp' },
-    { value: '37834718-706b-48d9-beab-2d0bd7ec93fb', label: 'TUI - Túi' },
-    { value: 'c17c929a-e09a-4c9a-8743-06a28048c6f2', label: 'CAI - Cái' },
-  ];
 
   get itemsArray(): FormArray {
     return this.poForm.get('items') as FormArray;
@@ -774,7 +760,6 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.selectedPoId = null;
     this.modalDetail.set(null);
     this.resetForm();
-    this.unitOptions.set(this.mockUnits);
     this.loadLookupOptions();
     this.isModalVisible.set(true);
   }
@@ -786,8 +771,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   private loadPoIntoModal(po: PurchaseOrder): void {
     this.selectedPoId = po.id;
-    this.unitOptions.set(this.mockUnits);
-    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses()])
+    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses(), this.loadUnits()])
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.purchaseOrderService
@@ -884,9 +868,9 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   // ── Private helpers ────────────────────────────────────────────────
   private loadLookupOptions(): void {
-    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses()])
+    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses(), this.loadUnits()])
       .pipe(takeUntil(this.destroy$))
-      .subscribe({ error: () => this.toastService.error('Lỗi', 'Không thể tải dữ liệu chọn (NCC/NVL/Kho).') });
+      .subscribe({ error: () => this.toastService.error('Lỗi', 'Không thể tải dữ liệu chọn (NCC/NVL/Kho/ĐVT).') });
   }
 
   private resetForm(): void {
@@ -972,8 +956,24 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     );
   }
 
-  private loadWarehouses(): Observable<unknown> {
-    const url = this.appConfig.getEndpointFor('api/v1/inv/warehouses/all');
+  // Đơn vị tính từ Unit API thật (chỉ ACTIVE); lỗi -> dropdown rỗng, không mock.
+  private loadUnits(): Observable<unknown> {
+    return this.unitService
+      .getUnits({ status: 'ACTIVE', pageIndex: 1, pageSize: 100 })
+      .pipe(
+        tap(res => {
+          this.unitOptions.set(
+            res.items.map(u => ({ label: `${u.code} - ${u.name}`, value: u.id })),
+          );
+        }),
+        catchError(() => {
+          this.unitOptions.set([]);
+          return of(null);
+        }),
+      );
+  }
+
+  private loadWarehouses(): Observable<unknown> {    const url = this.appConfig.getEndpointFor('api/v1/inv/warehouses/all');
     const params = new HttpParams().set('status', 'ACTIVE');
     return this.http.get<{ data: NameCodeBE[] }>(url, { params }).pipe(
       tap(res => {

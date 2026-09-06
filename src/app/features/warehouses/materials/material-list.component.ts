@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -32,13 +33,14 @@ import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from
 import {
   Material,
   MaterialFilter,
-  MATERIAL_CATEGORY_OPTIONS,
+  MaterialOption,
   MATERIAL_STATUS_OPTIONS,
   MATERIAL_PERISHABLE_OPTIONS,
   getMaterialStatusMeta,
   getPerishableMeta,
 } from './material.model';
 import { WarehouseMaterialService } from './material.service';
+import { CategoryService } from '../../menu/categories/category.service';
 import { UnitService } from '../../menu/units/unit.service';
 
 @Component({
@@ -76,7 +78,9 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
 
   // Options
-  readonly categoryOptions = MATERIAL_CATEGORY_OPTIONS;
+  // Nhóm danh mục + đơn vị tính lấy từ API thật (MATERIAL/ACTIVE, Unit ACTIVE)
+  readonly categoryOptions = signal<MaterialOption[]>([]);
+  readonly unitOptions = signal<MaterialOption[]>([]);
   readonly statusOptions = MATERIAL_STATUS_OPTIONS;
   readonly perishableOptions = MATERIAL_PERISHABLE_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
@@ -90,7 +94,6 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   readonly allLoadedMaterials = signal<Material[]>([]);
   readonly total = signal(0);
   readonly loading = signal(false);
-  readonly unitOptions = signal<{ value: string; label: string }[]>([]);
 
   // Filter params
   searchQuery = '';
@@ -139,6 +142,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   });
 
   private readonly materialService = inject(WarehouseMaterialService);
+  private readonly categoryService = inject(CategoryService);
   private readonly unitService = inject(UnitService);
 
   get modalTitle(): string {
@@ -155,25 +159,36 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       { label: 'Nguyên vật liệu', url: '/admin/inventory/materials/list' },
     ]);
 
-    this.loadUnits();
-    this.loadData();
+    this.loadMasters();
   }
 
-  // ── Data loading ───────────────────────────────────────────────────
-  loadUnits(): void {
-    this.unitService
-      .getUnits({ pageIndex: 1, pageSize: 100, status: 'ACTIVE' })
+  // ── Master Category + Unit từ API thật, xong mới tải danh sách ─────────
+  // để resolve tên danh mục/đơn vị hiển thị (BE list không join tên).
+  private loadMasters(): void {
+    forkJoin({
+      categories: this.categoryService.getCategories({
+        categoryType: 'MATERIAL',
+        status: 'ACTIVE',
+        pageIndex: 1,
+        pageSize: 100,
+      }),
+      units: this.unitService.getUnits({ status: 'ACTIVE', pageIndex: 1, pageSize: 100 }),
+    })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: res => {
-          this.unitOptions.set(res.items.map(u => ({ value: u.id, label: `${u.code} - ${u.name}` })));
+        next: ({ categories, units }) => {
+          this.categoryOptions.set(categories.items.map(c => ({ value: c.id, label: c.name })));
+          this.unitOptions.set(units.items.map(u => ({ value: u.id, label: `${u.name} (${u.code})` })));
+          this.loadData();
         },
-        error() {
-          // Handled by UnitService
+        error: (err: Error) => {
+          this.toastService.error(err.message || 'Không thể tải dữ liệu danh mục/đơn vị.');
+          this.loadData();
         },
       });
   }
 
+  // ── Data loading ───────────────────────────────────────────────────
   loadData(): void {
     this.loading.set(true);
     const filter: MaterialFilter = {
@@ -190,8 +205,9 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-          this.allLoadedMaterials.set(res.items);
-          this.materials.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : res.items);
+          const items = this.withDisplayNames(res.items);
+          this.allLoadedMaterials.set(items);
+          this.materials.set(this.columnFilter.hasActiveFilters ? this.columnFilter.apply() : items);
           this.total.set(res.total);
           this.loading.set(false);
           this.refreshCheckState();
@@ -201,6 +217,19 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
           this.loading.set(false);
         },
       });
+  }
+
+  // ── Resolve tên danh mục/đơn vị để hiển thị (BE list không join tên) ──
+  // Ưu tiên: tên thật từ BE -> label trong master đã nạp -> '—'.
+  // (Không fallback UUID: chuỗi UUID vô nghĩa với user.)
+  private withDisplayNames(items: Material[]): Material[] {
+    const cats = this.categoryOptions();
+    const units = this.unitOptions();
+    return items.map(m => ({
+      ...m,
+      categoryName: m.categoryName || cats.find(c => c.value === m.categoryId)?.label || '—',
+      baseUnitName: m.baseUnitName || units.find(u => u.value === m.baseUnitId)?.label || '—',
+    }));
   }
 
   // ── Search & Filter ───────────────────────────────────────────────
@@ -306,8 +335,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
             id: d.id,
             code: d.code,
             name: d.name,
-            categoryId: d.categoryId || null,
-            baseUnitId: d.baseUnitId || null,
+            categoryId: d.category?.id || d.categoryId || null,
+            baseUnitId: d.baseUnit?.id || d.baseUnitId || null,
             minStockAlert: d.minStockAlert,
             shelfLifeDays: d.shelfLifeDays ?? null,
             isPerishable: d.isPerishable,
@@ -315,9 +344,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
           });
           this.materialForm.disable();
         },
-        error: (err: Error) => {
-          this.toastService.error(err.message || 'Không thể tải chi tiết nguyên vật liệu.');
-        },
+        error: (err: Error) =>
+          this.toastService.error(err.message || 'Không thể tải chi tiết nguyên vật liệu.'),
       });
   }
 
@@ -336,8 +364,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
             id: d.id,
             code: d.code,
             name: d.name,
-            categoryId: d.categoryId || null,
-            baseUnitId: d.baseUnitId || null,
+            categoryId: d.category?.id || d.categoryId || null,
+            baseUnitId: d.baseUnit?.id || d.baseUnitId || null,
             minStockAlert: d.minStockAlert,
             shelfLifeDays: d.shelfLifeDays ?? null,
             isPerishable: d.isPerishable,
@@ -346,9 +374,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
           this.materialForm.enable();
           this.materialForm.get('code')?.disable();
         },
-        error: (err: Error) => {
-          this.toastService.error(err.message || 'Không thể tải chi tiết nguyên vật liệu.');
-        },
+        error: (err: Error) =>
+          this.toastService.error(err.message || 'Không thể tải chi tiết nguyên vật liệu.'),
       });
   }
 
@@ -369,7 +396,10 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
 
     this.isSaving.set(true);
     const formRaw = this.materialForm.getRawValue();
-    const payload: Partial<Material> = {
+    // Payload khớp đúng Create/UpdateMaterialRequest BE (không gửi note;
+    // status chỉ gửi khi sửa vì BE create luôn ACTIVE).
+    // status chỉ gửi khi sửa (BE create luôn ACTIVE; update nhận ACTIVE/INACTIVE).
+    const base = {
       code: formRaw.code?.trim().toUpperCase(),
       name: formRaw.name?.trim(),
       categoryId: formRaw.categoryId,
@@ -381,7 +411,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
 
     if (this.modalMode() === 'create') {
       this.materialService
-        .createMaterial(payload)
+        .createMaterial(base)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
@@ -397,38 +427,17 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
         });
     } else {
       const id = this.selectedMaterial()?.id || formRaw.id || '';
-      const originalStatus = this.selectedMaterial()?.status;
-      const newStatus = formRaw.status || 'ACTIVE';
-
+      // BE update đã apply status (ACTIVE/INACTIVE) trong cùng 1 request,
+      // không cần gọi riêng lẻ lần 2.
       this.materialService
-        .updateMaterial(id, payload)
+        .updateMaterial(id, { ...base, status: formRaw.status || 'ACTIVE' })
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
-            if (originalStatus !== newStatus) {
-              this.materialService
-                .updateMaterialStatus(id, newStatus)
-                .pipe(takeUntil(this.destroy$))
-                .subscribe({
-                  next: () => {
-                    this.toastService.success('Cập nhật nguyên vật liệu thành công.');
-                    this.isSaving.set(false);
-                    this.closeModal();
-                    this.loadData();
-                  },
-                  error: (statusErr: Error) => {
-                    this.toastService.error(statusErr.message || 'Cập nhật thông tin thành công nhưng lỗi đổi trạng thái.');
-                    this.isSaving.set(false);
-                    this.closeModal();
-                    this.loadData();
-                  },
-                });
-            } else {
-              this.toastService.success('Cập nhật nguyên vật liệu thành công.');
-              this.isSaving.set(false);
-              this.closeModal();
-              this.loadData();
-            }
+            this.toastService.success('Cập nhật nguyên vật liệu thành công.');
+            this.isSaving.set(false);
+            this.closeModal();
+            this.loadData();
           },
           error: (err: Error) => {
             this.toastService.error(err.message || 'Có lỗi xảy ra khi cập nhật nguyên vật liệu.');

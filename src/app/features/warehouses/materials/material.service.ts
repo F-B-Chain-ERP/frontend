@@ -1,10 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, catchError, forkJoin, map, throwError } from 'rxjs';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import { ApiResponse } from '../../login/login.model';
-import { Material, MaterialFilter, MaterialListResponse } from './material.model';
+import {
+  Material,
+  MaterialFilter,
+  MaterialListResponse,
+} from './material.model';
 
 interface BackendPageResponse {
   pageNumber: number;
@@ -14,6 +17,16 @@ interface BackendPageResponse {
   content: Material[];
 }
 
+/**
+ * API thật 100% (MaterialController, base /api/v1/inv/materials):
+ * - GET    /api/v1/inv/materials?search&categoryId&status
+ * - GET    /api/v1/inv/materials/{id}
+ * - POST   /api/v1/inv/materials
+ * - PUT    /api/v1/inv/materials/{id}
+ * - DELETE /api/v1/inv/materials/{id} (xóa nhiều = gọi lặp từng id)
+ *
+ * Không còn mock/fallback in-memory: BE lỗi -> báo lỗi thật cho user.
+ */
 @Injectable({
   providedIn: 'root',
 })
@@ -37,14 +50,13 @@ export class WarehouseMaterialService {
     if (filter.status) {
       params = params.set('status', filter.status);
     }
-    if (filter.isPerishable !== null && filter.isPerishable !== undefined) {
-      params = params.set('isPerishable', String(filter.isPerishable));
-    }
+    // NOTE: BE MaterialRepository.search chưa hỗ trợ lọc isPerishable,
+    // nên filter đó tạm chỉ có tác dụng ở ColumnTextFilter phía client.
 
     return this.http.get<ApiResponse<BackendPageResponse>>(this.materialApi, { params }).pipe(
       map(res => {
         const page = res.data;
-        const items = (page?.content ?? []).map(m => this.mapResponse(m));
+        const items = (page?.content ?? []).map(m => this.enrichMaterialNames(m));
         return {
           items,
           total: page?.totalElements ?? items.length,
@@ -56,48 +68,23 @@ export class WarehouseMaterialService {
     );
   }
 
-  getMaterialById(id: string): Observable<Material | null> {
+  getMaterialById(id: string): Observable<Material> {
     return this.http.get<ApiResponse<Material>>(`${this.materialApi}/${id}`).pipe(
-      map(res => (res.data ? this.mapResponse(res.data) : null)),
+      map(res => this.enrichMaterialNames(res.data)),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
 
   createMaterial(payload: Partial<Material>): Observable<Material> {
-    const body = {
-      code: payload.code,
-      name: payload.name,
-      categoryId: payload.categoryId,
-      baseUnitId: payload.baseUnitId,
-      minStockAlert: payload.minStockAlert,
-      shelfLifeDays: payload.shelfLifeDays,
-      isPerishable: payload.isPerishable,
-    };
-    return this.http.post<ApiResponse<Material>>(this.materialApi, body).pipe(
-      map(res => this.mapResponse(res.data)),
+    return this.http.post<ApiResponse<Material>>(this.materialApi, payload).pipe(
+      map(res => this.enrichMaterialNames(res.data)),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
 
   updateMaterial(id: string, payload: Partial<Material>): Observable<Material> {
-    const body = {
-      code: payload.code,
-      name: payload.name,
-      categoryId: payload.categoryId,
-      baseUnitId: payload.baseUnitId,
-      minStockAlert: payload.minStockAlert,
-      shelfLifeDays: payload.shelfLifeDays,
-      isPerishable: payload.isPerishable,
-    };
-    return this.http.put<ApiResponse<Material>>(`${this.materialApi}/${id}`, body).pipe(
-      map(res => this.mapResponse(res.data)),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
-    );
-  }
-
-  updateMaterialStatus(id: string, status: string): Observable<Material> {
-    return this.http.patch<ApiResponse<Material>>(`${this.materialApi}/${id}/status`, { status }).pipe(
-      map(res => this.mapResponse(res.data)),
+    return this.http.put<ApiResponse<Material>>(`${this.materialApi}/${id}`, payload).pipe(
+      map(res => this.enrichMaterialNames(res.data)),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
@@ -109,11 +96,39 @@ export class WarehouseMaterialService {
     );
   }
 
-  private mapResponse(m: Material): Material {
+  /** BE chưa có endpoint xóa hàng loạt -> gọi lặp DELETE từng id. */
+  batchDeleteMaterials(ids: string[]): Observable<boolean> {
+    return forkJoin(ids.map(id => this.http.delete<ApiResponse<void>>(`${this.materialApi}/${id}`))).pipe(
+      map(() => true),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
+  }
+
+  private enrichMaterialNames(m: Material): Material {
+    // Chỉ dùng tên THẬT do BE trả về (nested object / categoryName / unitName).
+    // Tuyệt đối không bịa tên từ id và không default '—' ở đây:
+    // component.withDisplayNames sẽ resolve từ master đã nạp, default '—'
+    // ở service sẽ chặn lookup (string truthy) khiến tên thật không bao giờ hiện.
+    const catName = m.category?.name || m.categoryName;
+    const unitName = m.baseUnit?.name || m.baseUnitName || m.unitName;
+
+    const category = m.category || {
+      id: m.categoryId || '',
+      name: catName || '',
+    };
+
+    const baseUnit = m.baseUnit || {
+      id: m.baseUnitId || '',
+      code: '',
+      name: unitName || '',
+    };
+
     return {
       ...m,
-      categoryName: m.categoryName || '—',
-      baseUnitName: m.unitName || m.baseUnitName || '—',
+      categoryName: catName,
+      baseUnitName: unitName,
+      category,
+      baseUnit,
     };
   }
 
@@ -124,6 +139,7 @@ export class WarehouseMaterialService {
       message?: string;
     };
     const body = e?.error;
+    // BE validation errors: { message: 'Validation error', data: { field: msg } }
     if (body?.data && typeof body.data === 'object' && !Array.isArray(body.data)) {
       const msgs = Object.values(body.data as Record<string, unknown>).filter(
         (v): v is string => typeof v === 'string' && v.trim().length > 0,

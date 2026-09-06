@@ -237,11 +237,15 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
-        path: 'menu/categories/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Danh mục',
+        path: 'menu/categories',
+        loadChildren: () => import('./features/menu/categories/categories.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.DANH_MUC.VIEW] },
+      },
+      {
+        path: 'menu/categories/list',
+        redirectTo: 'menu/categories',
+        pathMatch: 'full',
       },
       {
         path: 'menu/products/list',

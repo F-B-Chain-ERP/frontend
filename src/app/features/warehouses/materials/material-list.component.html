@@ -46,7 +46,7 @@
           [nzAllowClear]="true"
           style="width: 100%"
         >
-          @for (opt of categoryOptions; track opt.value) {
+          @for (opt of categoryOptions(); track opt.value) {
             <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
           }
         </nz-select>
@@ -389,7 +389,7 @@
             nzPlaceHolder="Chọn nhóm nguyên vật liệu"
             style="width: 100%"
           >
-            @for (opt of categoryOptions; track opt.value) {
+            @for (opt of categoryOptions(); track opt.value) {
               <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
             }
           </nz-select>
@@ -455,8 +455,8 @@
           ></nz-input-number>
         </div>
 
-        <!-- Trạng thái (chỉ hiện khi edit) -->
-        @if (modalMode() === 'edit') {
+        <!-- Trạng thái (chỉ khi xem/sửa: BE create luôn ACTIVE) -->
+        @if (modalMode() !== 'create') {
           <div nz-col [nzSpan]="24" [nzMd]="12">
             <label class="form-label required">Trạng thái</label>
             <nz-select
@@ -481,6 +481,7 @@
             <nz-switch formControlName="isPerishable"></nz-switch>
           </div>
         </div>
+
       </div>
     </form>
   </app-modal>

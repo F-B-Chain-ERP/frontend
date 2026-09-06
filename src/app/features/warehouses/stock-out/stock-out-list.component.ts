@@ -38,6 +38,7 @@ import {
   getStockOutDestinationTypeMeta,
 } from './stock-out.model';
 import { StockOutService } from './stock-out.service';
+import { WarehouseMaterialService } from '../materials/material.service';
 
 @Component({
   selector: 'app-stock-out-list',
@@ -124,13 +125,8 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
     ...STOCK_OUT_DESTINATION_TYPE_OPTIONS.filter(o => o.value !== null).map(o => ({ label: o.label, value: o.value })),
   ];
 
-  readonly materialOptions = [
-    { value: 'mat-001', label: 'NVL-SUA-TUOI - Sữa tươi', name: 'Sữa tươi', defaultPrice: 32000 },
-    { value: 'mat-002', label: 'NVL-CA-PHE - Cà phê hạt Robusta Đắk Lắk', name: 'Cà phê hạt Robusta Đắk Lắk', defaultPrice: 150000 },
-    { value: 'mat-003', label: 'NVL-DUONG-DEN - Đường đen Hàn Quốc', name: 'Đường đen Hàn Quốc', defaultPrice: 45000 },
-    { value: 'mat-004', label: 'NVL-TRAN-CHAU - Trân châu đen cao cấp', name: 'Trân châu đen cao cấp', defaultPrice: 38000 },
-    { value: 'mat-005', label: 'NVL-LY-NHUA - Ly nhựa nắp tim 500ml', name: 'Ly nhựa nắp tim 500ml', defaultPrice: 550000 },
-  ];
+  // NVL từ Material API thật (không còn mock mat-00x).
+  readonly materialOptions = signal<{ value: string; label: string; name: string }[]>([]);
 
   // Form
   readonly stockOutForm = this.fb.group({
@@ -155,8 +151,8 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
   createItemGroup(item?: Partial<StockOutItem>) {
     return this.fb.group({
       id: [item?.id || ''],
-      materialId: [item?.materialId || 'mat-001', [Validators.required]],
-      materialName: [item?.materialName || 'Sữa tươi', [Validators.required]],
+      materialId: [item?.materialId || null, [Validators.required]],
+      materialName: [item?.materialName || '', [Validators.required]],
       quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(0.01)]],
       unitPrice: [item?.unitPrice ?? 0, [Validators.required, Validators.min(0)]],
       batchNo: [item?.batchNo || ''],
@@ -172,13 +168,10 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
   }
 
   onMaterialSelect(index: number, matId: string): void {
-    const opt = this.materialOptions.find(m => m.value === matId);
+    const opt = this.materialOptions().find(m => m.value === matId);
     if (opt) {
-      const grp = this.itemsArray.at(index);
-      grp.patchValue({
-        materialName: opt.name,
-        unitPrice: opt.defaultPrice,
-      });
+      // NVL thật không có giá mặc định: chỉ điền tên, đơn giá do user nhập.
+      this.itemsArray.at(index).patchValue({ materialName: opt.name });
     }
   }
 
@@ -195,6 +188,7 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
   }
 
   private readonly stockOutService = inject(StockOutService);
+  private readonly materialService = inject(WarehouseMaterialService);
 
   get modalTitle(): string {
     const mode = this.modalMode();
@@ -210,7 +204,25 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
       { label: 'Xuất kho', url: '/admin/inventory/stock-out/list' },
     ]);
 
+    this.loadMaterialOptions();
     this.loadData();
+  }
+
+  // NVL từ Material API thật (chỉ ACTIVE); lỗi -> dropdown rỗng, không mock.
+  private loadMaterialOptions(): void {
+    this.materialService
+      .getMaterials({ status: 'ACTIVE', pageIndex: 1, pageSize: 100 })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res =>
+          this.materialOptions.set(
+            res.items.map(m => ({ value: m.id, label: `${m.code} - ${m.name}`, name: m.name })),
+          ),
+        error: (err: Error) => {
+          this.materialOptions.set([]);
+          this.toastService.error(err.message || 'Không thể tải danh sách nguyên vật liệu.');
+        },
+      });
   }
 
   // ── Data loading ───────────────────────────────────────────────────
@@ -335,13 +347,7 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
     const dateStr = new Date().toISOString().slice(0, 10);
     const monthCode = dateStr.slice(0, 7).replace('-', '');
     this.itemsArray.clear();
-    this.addItem({
-      materialId: 'mat-001',
-      materialName: 'Sữa tươi',
-      quantity: 20,
-      unitPrice: 32000,
-      batchNo: 'LOT-300826-A',
-    });
+    this.addItem();
     this.stockOutForm.reset({
       id: '',
       code: `SO-${monthCode}-${Date.now().toString().slice(-4)}`,
