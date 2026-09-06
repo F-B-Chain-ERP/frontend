@@ -36,7 +36,9 @@ certbot certonly --standalone \
   -d "$DOMAIN" \
   --non-interactive \
   --agree-tos \
-  --register-unsafely-without-email
+  --register-unsafely-without-email \
+  --pre-hook "systemctl stop nginx" \
+  --post-hook "systemctl start nginx"
 
 # Khởi động lại Nginx với chứng chỉ SSL chính thức vừa lấy
 systemctl start nginx
