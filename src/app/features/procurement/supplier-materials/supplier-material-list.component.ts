@@ -27,9 +27,10 @@ import {
   getSupplierMaterialStatusMeta,
 } from './supplier-material.model';
 import { SupplierService } from '../suppliers/supplier.service';
-import { Supplier } from '../suppliers/supplier.model';
+import { Supplier, SupplierStatus } from '../suppliers/supplier.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from '../../../shared/constants/constant';
-import { takeUntil } from 'rxjs';
+import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 
 function positiveNumberValidator(): ValidatorFn {
   return (control: AbstractControl) => {
@@ -86,9 +87,14 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
   readonly loading = signal(false);
   readonly isSaving = signal(false);
 
-  // ── Dropdown data ───────────────────────────────────────────────────
+  // ── Dropdown NCC (giữ size=10 theo BE @Max(10)): tìm kiếm server + cuộn tải thêm ──
   suppliers: Supplier[] = [];
   materials: Material[] = [];
+  supplierTotal = 0;
+  supplierPageIndex = 1;
+  readonly supplierPageSize = 10;
+  supplierSearchText = '';
+  readonly isLoadingSuppliers = signal(false);
 
   selectedSupplierId: string | null = null;
   searchQuery = '';
@@ -112,6 +118,12 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
   private readonly supplierMaterialService = inject(SupplierMaterialService);
   private readonly materialService = inject(MaterialService);
   private readonly supplierService = inject(SupplierService);
+  /** Cache NCC đang chọn để giữ label khi search/scroll làm mất item khỏi list. */
+  private selectedSupplierCache: Supplier | null = null;
+  /** Chuỗi tìm kiếm gõ từ dropdown (debounce để tránh spam API). */
+  private readonly supplierSearch$ = new Subject<string>();
+  /** Chặn response cũ ghi đè response mới khi search/cuộn nhanh. */
+  private supplierRequestSeq = 0;
 
   get selectedMaterialDisplay(): string {
     if (!this.selectedRecord) {
@@ -132,21 +144,113 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
       { label: 'Nhà cung cấp', url: '/admin/procurement/suppliers/list' },
       { label: 'Bảng giá nguyên vật liệu', url: '/admin/procurement/supplier-materials/list' },
     ]);
+    this.supplierSearch$.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$)).subscribe(text => {
+      this.supplierSearchText = text;
+      this.loadSuppliers(true);
+    });
     this.loadSuppliers();
     this.loadMaterials();
   }
 
+  // ── Dropdown NCC: tìm kiếm server (debounce) + cuộn tải thêm ──────────
+  onSupplierSearch(value: string): void {
+    this.supplierSearch$.next((value ?? '').trim());
+  }
+
+  onSupplierScrollBottom(): void {
+    // Hết dữ liệu thì thôi; data ít (<10) thì list phẳng, không gọi thêm.
+    if (this.isLoadingSuppliers()) {
+      return;
+    }
+    if (this.suppliers.length >= this.supplierTotal) {
+      return;
+    }
+    this.supplierPageIndex += 1;
+    this.loadSuppliers(false);
+  }
+
   // ── Data loading ────────────────────────────────────────────────────
-  private loadSuppliers(): void {
+  private loadSuppliers(reset = true): void {
+    if (reset) {
+      this.supplierPageIndex = 1;
+    }
+    const requestId = ++this.supplierRequestSeq;
+    this.isLoadingSuppliers.set(true);
     this.supplierService
-      .getSuppliers({ query: '', status: null, pageIndex: 1, pageSize: 10 })
+      .getSuppliers({
+        query: this.supplierSearchText,
+        status: SupplierStatus.ACTIVE,
+        pageIndex: this.supplierPageIndex,
+        pageSize: this.supplierPageSize,
+      })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-          this.suppliers = res.items;
+          if (requestId !== this.supplierRequestSeq) {
+            return;
+          }
+          const base = reset ? res.items : [...this.suppliers, ...res.items];
+          this.suppliers = this.withSelectedSupplier(this.dedupeSuppliers(base));
+          this.supplierTotal = res.total;
+          this.isLoadingSuppliers.set(false);
         },
-        error: err => this.toastService.error('Lỗi', err.message || 'Không thể tải danh sách nhà cung cấp.'),
+        error: err => {
+          if (requestId !== this.supplierRequestSeq) {
+            return;
+          }
+          this.isLoadingSuppliers.set(false);
+          this.toastService.error('Lỗi', err.message || 'Không thể tải danh sách nhà cung cấp.');
+        },
       });
+  }
+
+  /** Giữ NCC đang chọn trong list để không mất label khi search/scroll. */
+  private withSelectedSupplier(items: Supplier[]): Supplier[] {
+    const selectedId = this.selectedSupplierId;
+    if (!selectedId) {
+      return items;
+    }
+    if (items.some(s => this.isSameId(s.id, selectedId))) {
+      return items;
+    }
+    if (this.selectedSupplierCache && this.isSameId(this.selectedSupplierCache.id, selectedId)) {
+      return [this.selectedSupplierCache, ...items];
+    }
+    this.fetchSelectedSupplier(selectedId);
+    return items;
+  }
+
+  private fetchSelectedSupplier(id: string): void {
+    this.supplierService
+      .getSupplierById(id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: supplier => {
+          if (!supplier || !this.isSameId(supplier.id, this.selectedSupplierId)) {
+            return;
+          }
+          this.selectedSupplierCache = supplier;
+          if (!this.suppliers.some(s => this.isSameId(s.id, supplier.id))) {
+            this.suppliers = [supplier, ...this.suppliers];
+          }
+        },
+      });
+  }
+
+  private isSameId(a: string | number | null | undefined, b: string | number | null | undefined): boolean {
+    return String(a) === String(b);
+  }
+
+  private dedupeSuppliers(items: Supplier[]): Supplier[] {
+    const seen = new Set<string>();
+    return items.filter(s => {
+      const key = String(s.id);
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
   }
 
   private loadMaterials(): void {
@@ -163,6 +267,16 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
 
   onSupplierChange(id: string | null): void {
     this.selectedSupplierId = id;
+    if (id) {
+      const found = this.suppliers.find(s => this.isSameId(s.id, id));
+      if (found) {
+        this.selectedSupplierCache = found;
+      } else if (!this.selectedSupplierCache || !this.isSameId(this.selectedSupplierCache.id, id)) {
+        this.fetchSelectedSupplier(id);
+      }
+    } else {
+      this.selectedSupplierCache = null;
+    }
     this.pageIndex = DEFAULT_PAGE_INDEX;
     this.loadData();
   }

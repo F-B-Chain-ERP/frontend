@@ -29,13 +29,27 @@
           (ngModelChange)="onSupplierChange($event)"
           nzPlaceHolder="Chọn nhà cung cấp"
           nzShowSearch
+          nzServerSearch
+          [nzLoading]="isLoadingSuppliers()"
           [nzAllowClear]="true"
+          nzNotFoundContent="Không tìm thấy nhà cung cấp đang hợp tác"
+          (nzOnSearch)="onSupplierSearch($event)"
+          (nzScrollToBottom)="onSupplierScrollBottom()"
           style="width: 100%"
         >
           @for (s of suppliers; track s.id) {
-            <nz-option [nzValue]="s.id" [nzLabel]="s.name"></nz-option>
+            <nz-option [nzValue]="s.id" [nzLabel]="s.code + ' - ' + s.name"></nz-option>
           }
         </nz-select>
+        <span class="form-hint">
+          @if (isLoadingSuppliers()) {
+            Đang tải nhà cung cấp...
+          } @else if (supplierTotal > 0) {
+            Đã tải {{ suppliers.length }}/{{ supplierTotal }} NCC đang hợp tác — kéo xuống để tải thêm, gõ để tìm kiếm.
+          } @else {
+            Chưa có nhà cung cấp đang hợp tác.
+          }
+        </span>
       </div>
 
       <div class="filter-item filter-item--grow">
