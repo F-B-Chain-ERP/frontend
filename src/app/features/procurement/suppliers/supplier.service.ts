@@ -75,15 +75,19 @@ export class SupplierService {
     if (filter.query?.trim()) {
       params = params.set('search', filter.query.trim());
     }
+    // Lọc ACTIVE/INACTIVE ở BE (SupplierRepository.search hỗ trợ status).
+    // Giữ size=10 do BE @Max(10); dropdown dùng phân trang từng trang 10.
+    if (filter.status === SupplierStatus.ACTIVE) {
+      params = params.set('status', 'ACTIVE');
+    } else if (filter.status === SupplierStatus.INACTIVE) {
+      params = params.set('status', 'INACTIVE');
+    }
 
     return this.http.get<ApiResponse<BackendPageResponse>>(this.baseUrl, { params }).pipe(
       map(res => {
         const page = res.data;
         const content = page?.content ?? [];
-        let items = content.map(s => this.toSupplier(s));
-        if (filter.status !== null && filter.status !== undefined) {
-          items = items.filter(s => s.status === filter.status);
-        }
+        const items = content.map(s => this.toSupplier(s));
         return {
           items,
           total: page?.totalElements ?? 0,
