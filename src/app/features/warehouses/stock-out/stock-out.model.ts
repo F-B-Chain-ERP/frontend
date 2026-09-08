@@ -61,14 +61,6 @@ export interface StockOutOption {
   value: string;
 }
 
-/** Danh sách kho xuất */
-export const STOCK_OUT_WAREHOUSE_OPTIONS: StockOutOption[] = [
-  { value: 'wh-001', label: 'WH-HN - Kho tổng Hà Nội' },
-  { value: 'wh-002', label: 'WH-DN - Kho nguyên liệu Đà Nẵng' },
-  { value: 'wh-003', label: 'WH-HCM - Kho lạnh TP.HCM' },
-  { value: 'wh-004', label: 'WH-MT - Kho trung chuyển Miền Tây' },
-];
-
 /** Mục đích / Phân loại xuất kho */
 export const STOCK_OUT_DESTINATION_TYPE_OPTIONS = [
   { value: null, label: 'Tất cả mục đích xuất' },

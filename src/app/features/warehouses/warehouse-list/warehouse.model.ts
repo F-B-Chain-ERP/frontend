@@ -54,7 +54,6 @@ export function getWarehouseStatusMeta(status?: string | null): {
   return { label: 'Ngừng hoạt động', badgeClass: 'tbl-badge tbl-badge--danger' };
 }
 
-
 export function getWarehouseTypeMeta(type?: string | null): {
   label: string;
   color: string;

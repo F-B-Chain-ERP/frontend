@@ -1,0 +1,43 @@
+// ── Trạng thái steps có màu (cả sáng + tối) ──────────────────────
+// Xong = xanh lá, đang làm = cam brand, chưa tới = xám.
+.ant-steps-item-finish > .ant-steps-item-container > .ant-steps-item-icon {
+  border-color: var(--success);
+  background: var(--success-soft);
+
+  > .ant-steps-icon {
+    color: var(--success);
+  }
+}
+
+.ant-steps-item-process > .ant-steps-item-container > .ant-steps-item-icon {
+  border-color: var(--brand-500);
+  background: var(--brand-500);
+
+  > .ant-steps-icon {
+    color: #fff;
+  }
+}
+
+// ── Dark theme cho nz-steps (ng-zorro không tự đổi theo data-theme) ──
+// Selector phải dài bằng ng-zorro (4 class) mới thắng được màu chữ mặc định.
+[data-theme='dark'] .ant-steps {
+  .ant-steps-item-wait > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-title,
+  .ant-steps-item-wait > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-description {
+    color: var(--text-muted);
+  }
+
+  .ant-steps-item-process > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-title,
+  .ant-steps-item-finish > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-title,
+  .ant-steps-item-process > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-description,
+  .ant-steps-item-finish > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-description {
+    color: var(--text-primary);
+  }
+
+  .ant-steps-item-wait > .ant-steps-item-container > .ant-steps-item-tail::after {
+    background: var(--border-subtle);
+  }
+
+  .ant-steps-item-tail::after {
+    background: var(--border-subtle);
+  }
+}

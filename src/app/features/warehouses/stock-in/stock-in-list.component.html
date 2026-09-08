@@ -122,24 +122,7 @@
     </div>
   </nz-card>
 
-  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
-  @if (setOfCheckedKeys.size > 0) {
-    <app-selection-bar
-      [selectedCount]="setOfCheckedKeys.size"
-      [totalCount]="total()"
-      itemLabel="phiếu nhập kho"
-      (clearSelection)="clearSelection()"
-    >
-      <app-button
-        *erpUTTHasSomeAuthority="[ROLE.NHAP_KHO.DELETE]"
-        variant="danger"
-        leftIcon="delete"
-        (click)="onBatchDelete()"
-      >
-        Xóa đã chọn
-      </app-button>
-    </app-selection-bar>
-  }
+  <!-- ── 3. Bulk Selection Actions Bar (BE không hỗ trợ bulk -> ẩn) ─── -->
 
   <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
   <nz-card class="page__list" [nzBordered]="false">

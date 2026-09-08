@@ -1,0 +1,128 @@
+<div class="stock-balance-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Tồn kho nguyên vật liệu</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow filter-item--wide">
+        <label class="form-label">Kho</label>
+        <nz-select
+          [(ngModel)]="selectedWarehouseId"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả kho"
+          nzShowSearch
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (w of warehouses; track w.id) {
+            <nz-option [nzValue]="w.id" [nzLabel]="w.code + ' - ' + w.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow filter-item--wide">
+        <label class="form-label">Nguyên vật liệu</label>
+        <nz-select
+          [(ngModel)]="selectedMaterialId"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả nguyên vật liệu"
+          nzShowSearch
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (m of materials; track m.id) {
+            <nz-option [nzValue]="m.id" [nzLabel]="m.code + ' - ' + m.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="balance-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="balance-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập mã/tên NVL hoặc kho..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      [nzData]="balances()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1100px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="160px" nzAlign="left">Kho</th>
+          <th scope="col" nzWidth="140px" nzAlign="left">Mã NVL</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Tên nguyên vật liệu</th>
+          <th scope="col" nzWidth="120px" nzAlign="right">Tồn hệ thống</th>
+          <th scope="col" nzWidth="120px" nzAlign="right">Giữ chỗ</th>
+          <th scope="col" nzWidth="120px" nzAlign="right">Khả dụng</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Cảnh báo</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of balances(); track item.id ?? item.warehouseId + '-' + item.materialId; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+            <td nzAlign="left">{{ item.warehouseCode || '—' }}</td>
+            <td nzAlign="left">
+              <span class="supplier-code">{{ item.materialCode || '—' }}</span>
+            </td>
+            <td nzAlign="left">{{ item.materialName || '—' }}</td>
+            <td nzAlign="right">{{ item.quantityOnHand | number }}</td>
+            <td nzAlign="right">{{ item.quantityReserved | number }}</td>
+            <td nzAlign="right">{{ item.availableQuantity | number }}</td>
+            <td nzAlign="center">
+              <span [class]="getStockBalanceMeta(item).badgeClass">
+                {{ getStockBalanceMeta(item).label }}
+              </span>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" nzAlign="center" class="text-muted" style="padding: 24px">
+              Không có dữ liệu tồn kho. Thử đổi bộ lọc hoặc kho khác.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+</div>

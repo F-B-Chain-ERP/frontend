@@ -138,33 +138,14 @@ export class WarehouseListComponent extends BaseComponent implements OnInit {
     super();
     this.warehouseForm = this.fb.group({
       id: [''],
-      code: [
-        '',
-        [
-          Validators.required,
-          Validators.maxLength(50),
-          Validators.pattern('^[A-Z0-9_-]+$'),
-        ],
-      ],
+      code: ['', [Validators.required, Validators.maxLength(50), Validators.pattern('^[A-Z0-9_-]+$')]],
       name: ['', [Validators.required, Validators.maxLength(150)]],
       warehouseType: ['BRANCH', [Validators.required]],
-      branchId: [null as string | null],
+      // BE bắt buộc mọi kho thuộc một chi nhánh (chống kho mồ côi).
+      branchId: [null as string | null, [Validators.required]],
       address: ['', [Validators.maxLength(255)]],
       status: ['ACTIVE'],
     });
-
-    // Tự động điều chỉnh validator branchId theo warehouseType
-    this.warehouseForm.get('warehouseType')?.valueChanges
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((type: string) => {
-        const branchCtrl = this.warehouseForm.get('branchId');
-        if (type === 'BRANCH') {
-          branchCtrl?.setValidators([Validators.required]);
-        } else {
-          branchCtrl?.clearValidators();
-        }
-        branchCtrl?.updateValueAndValidity();
-      });
   }
 
   ngOnInit(): void {
@@ -432,7 +413,6 @@ export class WarehouseListComponent extends BaseComponent implements OnInit {
         });
     }
   }
-
 
   // ── Delete ────────────────────────────────────────────────────────
   onDelete(item: Warehouse): void {

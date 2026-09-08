@@ -1,0 +1,365 @@
+<div class="stock-transfer-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Chuyển kho</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.CHUYEN_KHO.CREATE]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
+        Tạo phiếu chuyển
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Kho (đi/đến)</label>
+        <nz-select
+          [(ngModel)]="selectedWarehouseId"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả kho"
+          nzShowSearch
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (w of warehouses; track w.id) {
+            <nz-option [nzValue]="w.id" [nzLabel]="w.code + ' - ' + w.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (o of statusOptions; track o.value) {
+            <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="transfer-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input id="transfer-search-input" nz-input [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" placeholder="Nhập mã phiếu..." />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      [nzData]="transfers()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1200px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="150px" nzAlign="left">Mã phiếu</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Kho đi → Kho đến</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Ngày chuyển</th>
+          <th scope="col" nzWidth="90px" nzAlign="center">Số dòng</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="200px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of transfers(); track item.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+            <td nzAlign="left">
+              <span class="supplier-code">{{ item.code }}</span>
+            </td>
+            <td nzAlign="left">{{ item.fromWarehouseCode }} → {{ item.toWarehouseCode }}</td>
+            <td nzAlign="center">{{ item.transferDate }}</td>
+            <td nzAlign="center">{{ item.items.length }}</td>
+            <td nzAlign="center">
+              <span [class]="getTransferStatusMeta(item.status).badgeClass">
+                {{ getTransferStatusMeta(item.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Chi tiết" (click)="onViewDetail(item)"> </app-button>
+                @if (canEditTransfer(item.status)) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.CHUYEN_KHO.UPDATE]"
+                    variant="ghost"
+                    iconOnly="edit"
+                    nz-tooltip
+                    nzTooltipTitle="Sửa"
+                    (click)="openEditModal(item)"
+                  >
+                  </app-button>
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.CHUYEN_KHO.UPDATE]"
+                    variant="ghost"
+                    iconOnly="export"
+                    nz-tooltip
+                    nzTooltipTitle="Xuất hàng"
+                    (click)="onDispatch(item)"
+                  >
+                  </app-button>
+                }
+                @if (canReceiveTransfer(item.status)) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.CHUYEN_KHO.UPDATE]"
+                    variant="ghost"
+                    iconOnly="import"
+                    nz-tooltip
+                    nzTooltipTitle="Nhận hàng"
+                    (click)="openReceiveModal(item)"
+                  >
+                  </app-button>
+                }
+                @if (canCancelTransfer(item.status)) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.CHUYEN_KHO.UPDATE]"
+                    variant="ghost"
+                    iconOnly="delete"
+                    nz-tooltip
+                    nzTooltipTitle="Hủy phiếu"
+                    (click)="openCancelModal(item)"
+                  >
+                  </app-button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Detail Drawer ───────────────────────────────────────────── -->
+  <nz-drawer [nzVisible]="isDrawerVisible()" nzTitle="Chi tiết phiếu chuyển kho" nzWidth="720px" (nzOnClose)="onCloseDrawer()">
+    <ng-container *nzDrawerContent>
+      @if (selectedTransfer(); as detail) {
+        <div nz-row [nzGutter]="[16, 12]">
+          <div nz-col [nzSpan]="12"><strong>Mã phiếu:</strong> {{ detail.code }}</div>
+          <div nz-col [nzSpan]="12"><strong>Trạng thái:</strong> {{ getTransferStatusMeta(detail.status).label }}</div>
+          <div nz-col [nzSpan]="12"><strong>Kho đi:</strong> {{ detail.fromWarehouseCode }} - {{ detail.fromWarehouseName }}</div>
+          <div nz-col [nzSpan]="12"><strong>Kho đến:</strong> {{ detail.toWarehouseCode }} - {{ detail.toWarehouseName }}</div>
+          <div nz-col [nzSpan]="12"><strong>Ngày chuyển:</strong> {{ detail.transferDate }}</div>
+          <div nz-col [nzSpan]="12"><strong>Ghi chú:</strong> {{ detail.note || '—' }}</div>
+        </div>
+        <nz-table [nzData]="detail.items" [nzShowPagination]="false" [nzFrontPagination]="false" nzSize="small">
+          <thead>
+            <tr>
+              <th scope="col">Nguyên vật liệu</th>
+              <th scope="col" nzAlign="right">SL chuyển</th>
+              <th scope="col" nzAlign="right">Đã nhận</th>
+              <th scope="col" nzAlign="right">Còn thiếu</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of detail.items; track line.id) {
+              <tr>
+                <td>{{ line.materialCode }} - {{ line.materialName }}</td>
+                <td nzAlign="right">{{ line.quantity | number }}</td>
+                <td nzAlign="right">{{ line.receivedQuantity | number }}</td>
+                <td nzAlign="right">{{ line.remainingQuantity | number }}</td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      }
+    </ng-container>
+  </nz-drawer>
+
+  <!-- ── 5. Form Modal (Tạo / Sửa) ──────────────────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="modalMode() === 'edit' ? 'Sửa phiếu chuyển kho' : 'Tạo phiếu chuyển kho'"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="form" class="transfer-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required">Kho đi</label>
+          <nz-select formControlName="fromWarehouseId" nzPlaceHolder="Chọn kho đi" nzShowSearch style="width: 100%">
+            @for (w of warehouses; track w.id) {
+              <nz-option [nzValue]="w.id" [nzLabel]="w.code + ' - ' + w.name"></nz-option>
+            }
+          </nz-select>
+        </div>
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required">Kho đến</label>
+          <nz-select formControlName="toWarehouseId" nzPlaceHolder="Chọn kho đến" nzShowSearch style="width: 100%">
+            @for (w of warehouses; track w.id) {
+              <nz-option [nzValue]="w.id" [nzLabel]="w.code + ' - ' + w.name"></nz-option>
+            }
+          </nz-select>
+        </div>
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required">Ngày chuyển</label>
+          <nz-input-wrapper>
+            <input type="date" nz-input formControlName="transferDate" />
+          </nz-input-wrapper>
+        </div>
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label">Ghi chú</label>
+          <nz-input-wrapper>
+            <input type="text" nz-input formControlName="note" placeholder="Ghi chú" maxlength="500" />
+          </nz-input-wrapper>
+        </div>
+        <div nz-col [nzSpan]="24">
+          <label class="form-label required">Mặt hàng chuyển</label>
+          <div formArrayName="items">
+            @for (group of itemsArray.controls; track $index; let i = $index) {
+              <div nz-row [nzGutter]="[8, 8]" [formGroupName]="i" style="margin-bottom: 8px">
+                <div nz-col [nzSpan]="10">
+                  <nz-select formControlName="materialId" nzPlaceHolder="Chọn NVL" nzShowSearch style="width: 100%">
+                    @for (m of materials; track m.id) {
+                      <nz-option [nzValue]="m.id" [nzLabel]="m.code + ' - ' + m.name"></nz-option>
+                    }
+                  </nz-select>
+                </div>
+                <div nz-col [nzSpan]="6">
+                  <nz-input-wrapper>
+                    <input type="number" nz-input formControlName="quantity" placeholder="SL" min="0" step="0.001" />
+                  </nz-input-wrapper>
+                </div>
+                <div nz-col [nzSpan]="6">
+                  <nz-input-wrapper>
+                    <input type="number" nz-input formControlName="unitPrice" placeholder="Đơn giá" min="0" step="0.01" />
+                  </nz-input-wrapper>
+                </div>
+                <div nz-col [nzSpan]="2">
+                  <app-button variant="ghost" iconOnly="delete" (click)="removeItemLine(i)"> </app-button>
+                </div>
+              </div>
+            }
+          </div>
+          <app-button variant="secondary" leftIcon="plus" (click)="addItemLine()"> Thêm dòng </app-button>
+        </div>
+      </div>
+    </form>
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[modalMode() === 'edit' ? ROLE.CHUYEN_KHO.UPDATE : ROLE.CHUYEN_KHO.CREATE]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitForm()"
+        >
+          {{ modalMode() === 'edit' ? 'Lưu thay đổi' : 'Tạo phiếu' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 6. Receive Modal ───────────────────────────────────────────── -->
+  <app-modal
+    [visible]="isReceiveModalVisible()"
+    (visibleChange)="isReceiveModalVisible.set($event)"
+    title="Nhận hàng chuyển kho"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="receiveModalFooter"
+    (cancelEmit)="closeReceiveModal()"
+  >
+    <p class="form-hint">Chỉ nhập dòng nhận đợt này, bỏ trống dòng không nhận. Không vượt số còn thiếu.</p>
+    <form [formGroup]="receiveForm">
+      <div formArrayName="lines">
+        @for (group of linesArray.controls; track $index; let i = $index) {
+          <div nz-row [nzGutter]="[8, 8]" [formGroupName]="i" style="margin-bottom: 8px">
+            <div nz-col [nzSpan]="12">
+              <nz-input-wrapper>
+                <input type="text" nz-input formControlName="materialLabel" [disabled]="true" />
+              </nz-input-wrapper>
+            </div>
+            <div nz-col [nzSpan]="6" style="align-content: center">
+              <span class="text-muted">Còn thiếu: {{ group.get('remaining')?.value | number }}</span>
+            </div>
+            <div nz-col [nzSpan]="6">
+              <nz-input-wrapper>
+                <input type="number" nz-input formControlName="receivedQuantity" placeholder="SL nhận" min="0" step="0.001" />
+              </nz-input-wrapper>
+            </div>
+          </div>
+        }
+      </div>
+    </form>
+    <ng-template #receiveModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeReceiveModal()"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.CHUYEN_KHO.UPDATE]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitReceive()"
+        >
+          Xác nhận nhận hàng
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 7. Cancel Modal ────────────────────────────────────────────── -->
+  <app-modal
+    [visible]="isCancelModalVisible()"
+    (visibleChange)="isCancelModalVisible.set($event)"
+    title="Hủy phiếu chuyển kho"
+    size="md"
+    [maskClosable]="false"
+    [footer]="cancelModalFooter"
+    (cancelEmit)="closeCancelModal()"
+  >
+    <form [formGroup]="cancelForm">
+      <label class="form-label" [class.required]="cancelTarget?.status === 'IN_TRANSIT'">Lý do hủy</label>
+      <nz-input-wrapper>
+        <textarea nz-input formControlName="reason" rows="3" maxlength="500" placeholder="Nhập lý do hủy"></textarea>
+      </nz-input-wrapper>
+      @if (cancelTarget?.status === 'IN_TRANSIT') {
+        <span class="form-hint">Phiếu đang đi đường: bắt buộc lý do, kho nguồn đã trừ không hoàn lại.</span>
+      } @else {
+        <span class="form-hint">Phiếu chưa xuất hàng: hủy không ảnh hưởng tồn kho.</span>
+      }
+    </form>
+    <ng-template #cancelModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeCancelModal()"> Hủy bỏ </app-button>
+        <app-button variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitCancel()"> Xác nhận hủy </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

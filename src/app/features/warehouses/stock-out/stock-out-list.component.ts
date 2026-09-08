@@ -31,7 +31,6 @@ import {
   StockOut,
   StockOutFilter,
   StockOutItem,
-  STOCK_OUT_WAREHOUSE_OPTIONS,
   STOCK_OUT_DESTINATION_TYPE_OPTIONS,
   STOCK_OUT_STATUS_OPTIONS,
   getStockOutStatusMeta,
@@ -39,6 +38,9 @@ import {
 } from './stock-out.model';
 import { StockOutService } from './stock-out.service';
 import { WarehouseMaterialService } from '../materials/material.service';
+import { WarehouseService } from '../warehouse-list/warehouse.service';
+import { Warehouse } from '../warehouse-list/warehouse.model';
+import { StockBalanceService } from '../stock-balance/stock-balance.service';
 
 @Component({
   selector: 'app-stock-out-list',
@@ -72,8 +74,11 @@ import { WarehouseMaterialService } from '../materials/material.service';
 export class StockOutListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
 
-  // Options & Metadata helpers
-  readonly warehouseOptions = STOCK_OUT_WAREHOUSE_OPTIONS;
+  // Options & Metadata helpers (kho dùng API thật)
+  readonly warehouses = signal<Warehouse[]>([]);
+  get warehouseOptions(): { value: string; label: string }[] {
+    return this.warehouses().map(w => ({ value: w.id, label: `${w.code} - ${w.name}` }));
+  }
   readonly destinationTypeOptions = STOCK_OUT_DESTINATION_TYPE_OPTIONS;
   readonly statusOptions = STOCK_OUT_STATUS_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
@@ -128,16 +133,19 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
   // NVL từ Material API thật (không còn mock mat-00x).
   readonly materialOptions = signal<{ value: string; label: string; name: string }[]>([]);
 
-  // Form
+  // Tồn khả dụng theo dòng: key = materialId (theo kho đang chọn ở form)
+  readonly availableMap = signal<Record<string, number | null>>({});
+
+  // Form (code/status do BE quản lý)
   readonly stockOutForm = this.fb.group({
     id: [''],
-    code: ['', [Validators.required, Validators.maxLength(50)]],
+    code: [{ value: '', disabled: true }],
     warehouseId: [null as string | null, [Validators.required]],
     destinationType: ['BRANCH_ISSUE', [Validators.required]],
     destinationReferenceId: [''],
     destinationReferenceCode: ['', [Validators.maxLength(50)]],
     outDate: [new Date().toISOString().slice(0, 10), [Validators.required]],
-    status: ['DRAFT', [Validators.required]],
+    status: [{ value: 'DRAFT', disabled: true }],
     note: ['', [Validators.maxLength(500)]],
     issuedByName: [''],
     postedAt: [''],
@@ -173,6 +181,43 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
       // NVL thật không có giá mặc định: chỉ điền tên, đơn giá do user nhập.
       this.itemsArray.at(index).patchValue({ materialName: opt.name });
     }
+    this.refreshAvailableFor(index);
+  }
+
+  onWarehouseChange(): void {
+    this.availableMap.set({});
+    for (let i = 0; i < this.itemsArray.length; i++) {
+      this.refreshAvailableFor(i);
+    }
+  }
+
+  availableFor(index: number): number | null {
+    const matId = this.itemsArray.at(index)?.get('materialId')?.value as string | null;
+    if (!matId) return null;
+    const v = this.availableMap()[matId];
+    return v ?? null;
+  }
+
+  isOverAvailable(index: number): boolean {
+    const avail = this.availableFor(index);
+    if (avail === null) return false;
+    const qty = Number(this.itemsArray.at(index)?.get('quantity')?.value) || 0;
+    return qty > avail;
+  }
+
+  refreshAvailableFor(index: number): void {
+    const warehouseId = this.stockOutForm.get('warehouseId')?.value as string | null;
+    const matId = this.itemsArray.at(index)?.get('materialId')?.value as string | null;
+    if (!warehouseId || !matId) return;
+    this.stockBalanceService.getBalance(warehouseId, matId).subscribe({
+      next: b => {
+        const avail = b ? Number((b as unknown as Record<string, unknown>)['availableQuantity'] ?? (b as unknown as Record<string, unknown>)['available'] ?? 0) : 0;
+        this.availableMap.update(m => ({ ...m, [matId]: avail }));
+      },
+      error: () => {
+        this.availableMap.update(m => ({ ...m, [matId]: null }));
+      },
+    });
   }
 
   getItemTotal(index: number): number {
@@ -189,6 +234,8 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
 
   private readonly stockOutService = inject(StockOutService);
   private readonly materialService = inject(WarehouseMaterialService);
+  private readonly warehouseService = inject(WarehouseService);
+  private readonly stockBalanceService = inject(StockBalanceService);
 
   get modalTitle(): string {
     const mode = this.modalMode();
@@ -205,7 +252,22 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
     ]);
 
     this.loadMaterialOptions();
+    this.loadWarehouses();
     this.loadData();
+    this.stockOutForm
+      .get('warehouseId')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.onWarehouseChange());
+  }
+
+  private loadWarehouses(): void {
+    this.warehouseService
+      .getAllWarehouses('ACTIVE')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: list => this.warehouses.set(list),
+        error: () => this.warehouses.set([]),
+      });
   }
 
   // NVL từ Material API thật (chỉ ACTIVE); lỗi -> dropdown rỗng, không mock.
@@ -345,23 +407,24 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
     this.modalMode.set('create');
     this.selectedStockOut.set(null);
     const dateStr = new Date().toISOString().slice(0, 10);
-    const monthCode = dateStr.slice(0, 7).replace('-', '');
-    this.itemsArray.clear();
-    this.addItem();
     this.stockOutForm.reset({
       id: '',
-      code: `SO-${monthCode}-${Date.now().toString().slice(-4)}`,
-      warehouseId: 'wh-001',
+      code: '',
+      warehouseId: null,
       destinationType: 'BRANCH_ISSUE',
-      destinationReferenceId: 'branch-001',
-      destinationReferenceCode: 'REQ-CN-0012',
+      destinationReferenceId: '',
+      destinationReferenceCode: '',
       outDate: dateStr,
       status: 'DRAFT',
       note: '',
       issuedByName: '',
       postedAt: '',
     });
+    this.itemsArray.clear();
+    this.addItem();
     this.stockOutForm.enable();
+    this.stockOutForm.get('code')?.disable();
+    this.stockOutForm.get('status')?.disable();
     this.isModalVisible.set(true);
   }
 
@@ -375,8 +438,6 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
       .subscribe(detail => {
         const d = detail || item;
         this.selectedStockOut.set(d);
-        this.itemsArray.clear();
-        (d.items || []).forEach(it => this.addItem(it));
         this.stockOutForm.reset({
           id: d.id,
           code: d.code,
@@ -390,6 +451,8 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
           issuedByName: (typeof d.issuedBy === 'object' ? d.issuedBy?.fullName : d.issuedByName) || '—',
           postedAt: d.postedAt || '',
         });
+        this.itemsArray.clear();
+        (d.items || []).forEach(it => this.addItem(it));
         this.stockOutForm.disable();
       });
   }
@@ -404,11 +467,6 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
       .subscribe(detail => {
         const d = detail || item;
         this.selectedStockOut.set(d);
-        this.itemsArray.clear();
-        (d.items || []).forEach(it => this.addItem(it));
-        if (this.itemsArray.length === 0) {
-          this.addItem();
-        }
         this.stockOutForm.reset({
           id: d.id,
           code: d.code,
@@ -422,8 +480,14 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
           issuedByName: (typeof d.issuedBy === 'object' ? d.issuedBy?.fullName : d.issuedByName) || '',
           postedAt: d.postedAt || '',
         });
+        this.itemsArray.clear();
+        (d.items || []).forEach(it => this.addItem(it));
+        if (this.itemsArray.length === 0) {
+          this.addItem();
+        }
         this.stockOutForm.enable();
         this.stockOutForm.get('code')?.disable();
+        this.stockOutForm.get('status')?.disable();
       });
   }
 
@@ -446,13 +510,11 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
     this.isSaving.set(true);
     const formRaw = this.stockOutForm.getRawValue();
     const payload: Partial<StockOut> = {
-      code: formRaw.code?.trim().toUpperCase(),
-      warehouseId: formRaw.warehouseId || 'wh-001',
+      warehouseId: formRaw.warehouseId as string,
       destinationType: formRaw.destinationType || 'BRANCH_ISSUE',
-      destinationReferenceId: formRaw.destinationReferenceId?.trim() || '',
+      destinationReferenceId: formRaw.destinationReferenceId?.trim() || null,
       destinationReferenceCode: formRaw.destinationReferenceCode?.trim() || '',
       outDate: typeof formRaw.outDate === 'string' ? formRaw.outDate : this.formatDate(formRaw.outDate as any),
-      status: formRaw.status || 'DRAFT',
       note: formRaw.note?.trim() || '',
       items: formRaw.items as StockOutItem[],
     };
@@ -493,27 +555,64 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
     }
   }
 
+  // ── Post / Cancel (BE chỉ hỗ trợ PATCH /status, không có DELETE) ──
+  canEdit(item: StockOut): boolean {
+    return item.status === 'DRAFT';
+  }
+
+  onPost(item: StockOut): void {
+    if (!this.canEdit(item)) return;
+    this.modalService.confirm({
+      nzTitle: 'Xác nhận ghi sổ phiếu xuất kho',
+      nzContent: `Ghi sổ phiếu "${item.code}"? Tồn kho sẽ giảm và không sửa được nữa. Nếu kho hết hàng, BE sẽ báo thiếu tồn.`,
+      nzOkText: 'Ghi sổ',
+      nzCancelText: 'Hủy bỏ',
+      nzOnOk: () => {
+        this.stockOutService
+          .changeStatus(item.id, 'POSTED')
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.toastService.success(`Đã ghi sổ phiếu ${item.code}.`);
+              this.loadData();
+            },
+            error: (err: unknown) => {
+              const msg =
+                (err as { error?: { message?: string } })?.error?.message ||
+                (err as Error)?.message ||
+                'Không thể ghi sổ: kho không đủ tồn.';
+              this.toastService.error(msg);
+            },
+          });
+      },
+    });
+  }
+
   // ── Delete ────────────────────────────────────────────────────────
   onDelete(item: StockOut): void {
+    if (!this.canEdit(item)) {
+      this.toastService.error('Chỉ hủy được phiếu đang ở trạng thái Nháp.');
+      return;
+    }
     this.modalService.confirm({
-      nzTitle: 'Xác nhận xóa phiếu xuất kho',
-      nzContent: `Bạn có chắc chắn muốn xóa phiếu xuất kho "${item.code}"?`,
-      nzOkText: 'Xác nhận xóa',
+      nzTitle: 'Xác nhận hủy phiếu xuất kho',
+      nzContent: `Bạn có chắc chắn muốn hủy phiếu xuất kho "${item.code}"? (BE không hỗ trợ xóa cứng)`,
+      nzOkText: 'Xác nhận hủy',
       nzOkType: 'primary',
       nzOkDanger: true,
       nzCancelText: 'Hủy bỏ',
       nzOnOk: () => {
         this.stockOutService
-          .deleteStockOut(item.id)
+          .changeStatus(item.id, 'CANCELLED')
           .pipe(takeUntil(this.destroy$))
           .subscribe({
             next: () => {
-              this.toastService.success(`Đã xóa phiếu xuất kho ${item.code}.`);
+              this.toastService.success(`Đã hủy phiếu xuất kho ${item.code}.`);
               this.setOfCheckedKeys.delete(item.id);
               this.loadData();
             },
             error: () => {
-              this.toastService.error('Không thể xóa phiếu xuất kho.');
+              this.toastService.error('Không thể hủy phiếu xuất kho.');
             },
           });
       },
@@ -521,32 +620,7 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
   }
 
   onBatchDelete(): void {
-    const selectedIds = Array.from(this.setOfCheckedKeys);
-    if (!selectedIds.length) return;
-
-    this.modalService.confirm({
-      nzTitle: 'Xác nhận xóa hàng loạt',
-      nzContent: `Bạn có chắc chắn muốn xóa ${selectedIds.length} phiếu xuất kho đã chọn?`,
-      nzOkText: 'Xác nhận xóa',
-      nzOkType: 'primary',
-      nzOkDanger: true,
-      nzCancelText: 'Hủy bỏ',
-      nzOnOk: () => {
-        this.stockOutService
-          .batchDeleteStockOut(selectedIds)
-          .pipe(takeUntil(this.destroy$))
-          .subscribe({
-            next: () => {
-              this.toastService.success(`Đã xóa thành công ${selectedIds.length} phiếu xuất kho.`);
-              this.clearSelection();
-              this.loadData();
-            },
-            error: () => {
-              this.toastService.error('Có lỗi xảy ra khi xóa hàng loạt.');
-            },
-          });
-      },
-    });
+    this.toastService.error('BE không hỗ trợ xóa/hủy hàng loạt phiếu xuất. Vui lòng hủy từng phiếu DRAFT.');
   }
 
   private formatDate(date: Date): string {

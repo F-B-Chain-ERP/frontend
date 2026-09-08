@@ -108,16 +108,21 @@
 
 .email-text {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   color: var(--text-secondary);
   font-size: var(--text-sm);
   text-decoration: none;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
   transition: color var(--dur-fast) var(--ease);
 
   .email-icon {
     color: var(--text-muted);
     font-size: var(--text-sm);
+    flex-shrink: 0;
+    margin-top: 2px;
   }
 
   &:hover {
@@ -128,6 +133,21 @@
       color: var(--brand);
     }
   }
+}
+
+.branch-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+// Ô chi tiết: chữ dài (email, username, ghi chú) chỉ ngắt ở ranh giới từ,
+// không ngắt giữa chữ.
+.user-detail-header,
+nz-descriptions {
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .branch-text {

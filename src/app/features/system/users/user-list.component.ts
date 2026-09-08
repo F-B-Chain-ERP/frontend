@@ -29,18 +29,12 @@ import { ROLE } from '../../../core/config/functions.constants';
 import { ColumnTextFilter } from '../../../shared/utils/column-text-filter';
 import { EnterAsTabContainerDirective } from '../../../shared/directives/enter-as-tab-container.directive';
 import { UserService } from './user.service';
+import { RoleAssignmentService } from '../roles/services/role-assignment.service';
 import { BranchManagementService } from '../branches/branch-management.service';
 import { BranchService } from '../../../core/auth/branch.service';
 import { AccountService } from '../../../core/auth/account.service';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
-import {
-  User,
-  UserFilter,
-  UserFormDTO,
-  UserStatus,
-  USER_STATUS_OPTIONS,
-  getUserStatusMeta,
-} from './user.model';
+import { User, UserFilter, UserFormDTO, UserStatus, USER_STATUS_OPTIONS, getUserStatusMeta } from './user.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
 import { createSortFn } from '../../../shared/helpers/table.helper';
 import { takeUntil } from 'rxjs/operators';
@@ -81,6 +75,7 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class UserListComponent extends BaseComponent implements OnInit {
   private readonly userService = inject(UserService);
+  private readonly roleAssignmentService = inject(RoleAssignmentService);
   private readonly branchManagementService = inject(BranchManagementService);
   private readonly branchService = inject(BranchService);
   private readonly accountService = inject(AccountService);
@@ -96,7 +91,10 @@ export class UserListComponent extends BaseComponent implements OnInit {
   readonly branchOptions = signal<{ label: string; value: string }[]>([]);
   readonly branchMap = new Map<string, string>();
   readonly roleOptions = signal<{ label: string; value: string }[]>([]);
-  readonly roleMap = new Map<string, string>();
+  /** true khi tài khoản đang sửa giữ quyền toàn hệ thống (quản lý ở màn Roles). */
+  readonly hasSystemAssignment = signal(false);
+  /** Các chi nhánh đã gán lúc mở sửa (để phát hiện chi nhánh bị bỏ tick = thu hồi). */
+  private initialBranchIds: string[] = [];
 
   // State signals
   readonly allLoadedUsers = signal<User[]>([]);
@@ -106,15 +104,12 @@ export class UserListComponent extends BaseComponent implements OnInit {
   readonly isSaving = signal(false);
 
   // Column-based In-Memory Filter
-  columnFilter = new ColumnTextFilter<User>(
-    () => this.allLoadedUsers(),
-    {
-      status: 'equals',
-      primaryBranchName: 'contains',
-      roles: 'contains',
-      createdAt: 'contains',
-    }
-  );
+  columnFilter = new ColumnTextFilter<User>(() => this.allLoadedUsers(), {
+    status: 'equals',
+    primaryBranchName: 'contains',
+    roles: 'contains',
+    createdAt: 'contains',
+  });
 
   readonly statusFilterOptions = [
     { label: 'Tất cả trạng thái', value: '' },
@@ -164,7 +159,10 @@ export class UserListComponent extends BaseComponent implements OnInit {
     password: ['', [Validators.minLength(8), Validators.maxLength(128)]],
     status: [UserStatus.ACTIVE, [Validators.required]],
     primaryBranchId: ['', [Validators.required]],
+    /** Vai trò chung áp dụng cho mọi chi nhánh đã chọn. */
     roleIds: [[] as string[]],
+    /** Các chi nhánh áp dụng (ngoài chi nhánh công tác). */
+    branchIds: [[] as string[]],
     note: ['', [Validators.maxLength(500)]],
   });
 
@@ -180,9 +178,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
   }
 
   get formModalTitle(): string {
-    return this.isEditMode
-      ? `Cập nhật người dùng: ${this.selectedUserForEdit?.fullName || ''}`
-      : 'Thêm mới người dùng';
+    return this.isEditMode ? `Cập nhật người dùng: ${this.selectedUserForEdit?.fullName || ''}` : 'Thêm mới người dùng';
   }
 
   ngOnInit(): void {
@@ -193,15 +189,21 @@ export class UserListComponent extends BaseComponent implements OnInit {
     ]);
 
     // Gợi ý username tự động từ email khi thêm mới
-    this.userForm.get('email')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(email => {
-      if (!this.isEditMode && email) {
-        const usernameControl = this.userForm.get('username');
-        if (!usernameControl?.dirty && email.includes('@')) {
-          const suggested = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_.]/g, '');
-          usernameControl?.setValue(suggested, { emitEvent: false });
+    this.userForm
+      .get('email')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(email => {
+        if (!this.isEditMode && email) {
+          const usernameControl = this.userForm.get('username');
+          if (!usernameControl?.dirty && email.includes('@')) {
+            const suggested = email
+              .split('@')[0]
+              .toLowerCase()
+              .replace(/[^a-z0-9_.]/g, '');
+            usernameControl?.setValue(suggested, { emitEvent: false });
+          }
         }
-      }
-    });
+      });
 
     this.loadBranches();
     this.loadRoles();
@@ -213,9 +215,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
    */
   private loadBranches(): void {
     const isGlobalAdmin = this.accountService.hasAnyAuthority(['FULL_PERMISSION', 'sys:branch:view', 'ROLE_ADMIN']);
-    const branchSource$ = isGlobalAdmin
-      ? this.branchManagementService.getAll()
-      : this.branchService.getMine();
+    const branchSource$ = isGlobalAdmin ? this.branchManagementService.getAll() : this.branchService.getMine();
 
     branchSource$.pipe(takeUntil(this.destroy$)).subscribe({
       next: branches => {
@@ -249,27 +249,27 @@ export class UserListComponent extends BaseComponent implements OnInit {
    */
   private loadRoles(): void {
     const roleApi = this.applicationConfigService.getEndpointFor('api/v1/roles');
-    this.http.get<{ data?: { content?: Array<{ id: string; name: string; code: string }> } }>(roleApi, {
-      params: { page: '0', size: '100' }
-    }).pipe(takeUntil(this.destroy$)).subscribe({
-      next: res => {
-        const roles = res.data?.content || [];
-        const opts = roles.map(r => ({ label: `${r.name} (${r.code})`, value: r.id }));
-        this.roleOptions.set(opts);
-        this.roleMap.clear();
-        roles.forEach(r => this.roleMap.set(r.id, r.name));
-      },
-      error: err => {
-        this.toastService.error('Lỗi', err?.message || 'Không thể tải danh sách vai trò.');
-      }
-    });
+    this.http
+      .get<{ data?: { content?: { id: string; name: string; code: string }[] } }>(roleApi, {
+        params: { page: '0', size: '100' },
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          const roles = res.data?.content || [];
+          const opts = roles.map(r => ({ label: `${r.name} (${r.code})`, value: r.id }));
+          this.roleOptions.set(opts);
+        },
+        error: err => {
+          this.toastService.error('Lỗi', err?.message || 'Không thể tải danh sách vai trò.');
+        },
+      });
   }
 
   getBranchName(branchId: string | null | undefined): string {
     if (!branchId) return '—';
     return this.branchMap.get(branchId) || branchId;
   }
-
 
   /**
    * Load danh sách người dùng từ service
@@ -390,7 +390,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
   openCreateModal(): void {
     this.selectedUserForEdit = null;
     const branches = this.branchOptions();
-    const defaultBranchId = branches.length === 1 ? branches[0].value : (branches.length > 0 ? branches[0].value : '');
+    const defaultBranchId = branches.length === 1 ? branches[0].value : branches.length > 0 ? branches[0].value : '';
     this.userForm.reset({
       fullName: '',
       email: '',
@@ -400,8 +400,11 @@ export class UserListComponent extends BaseComponent implements OnInit {
       status: UserStatus.ACTIVE,
       primaryBranchId: defaultBranchId,
       roleIds: [],
+      branchIds: defaultBranchId ? [defaultBranchId] : [],
       note: '',
     });
+    this.initialBranchIds = [];
+    this.hasSystemAssignment.set(false);
     this.userForm.get('username')?.enable();
     this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(8), Validators.maxLength(128)]);
     this.userForm.get('password')?.enable();
@@ -409,7 +412,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
   }
 
   /**
-   * Mở modal chỉnh sửa người dùng
+   * Mở modal chỉnh sửa người dùng (nạp phân quyền đa chi nhánh).
    */
   openEditModal(user: User): void {
     this.selectedUserForEdit = { ...user };
@@ -421,18 +424,51 @@ export class UserListComponent extends BaseComponent implements OnInit {
       password: '',
       status: user.status,
       primaryBranchId: user.primaryBranchId || '',
-      roleIds: user.roleIds || [],
+      roleIds: [],
+      branchIds: [],
       note: user.note || '',
     });
+    this.initialBranchIds = [];
+    this.hasSystemAssignment.set(false);
     this.userForm.get('username')?.disable();
     this.userForm.get('password')?.clearValidators();
     this.userForm.get('password')?.setValue('');
     this.userForm.get('password')?.disable();
     this.isFormModalVisible.set(true);
+    this.loadBranchRoles(user.id);
+  }
+
+  /** Nạp các chi nhánh + vai trò (chung) hiện tại của tài khoản. */
+  private loadBranchRoles(userId: string | number): void {
+    this.roleAssignmentService
+      .getByAccount(userId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: assignments => {
+          const primary = this.userForm.get('primaryBranchId')?.value as string | null;
+          const byBranch = new Map<string, string[]>();
+          for (const a of assignments) {
+            if (!a.branchId) {
+              this.hasSystemAssignment.set(true);
+              continue;
+            }
+            const roles = byBranch.get(a.branchId) ?? [];
+            if (!roles.includes(a.roleId)) {
+              roles.push(a.roleId);
+            }
+            byBranch.set(a.branchId, roles);
+          }
+          const branchIds = [...byBranch.keys()];
+          this.initialBranchIds = branchIds;
+          this.userForm.get('branchIds')?.setValue(branchIds);
+          this.userForm.get('roleIds')?.setValue(byBranch.get(primary ?? '') ?? []);
+        },
+        error: () => this.toastService.warning('Thông báo', 'Không tải được phân quyền chi nhánh, vui lòng nhập lại.'),
+      });
   }
 
   /**
-   * Mở modal xem chi tiết người dùng
+   * Mở modal xem chi tiết người dùng (nạp phân quyền theo chi nhánh).
    */
   openDetailModal(user: User): void {
     this.selectedUserForDetail = user;
@@ -456,7 +492,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
   }
 
   /**
-   * Lưu biểu mẫu người dùng
+   * Lưu biểu mẫu người dùng: 1 bộ vai trò chung + tick nhiều chi nhánh áp dụng.
    */
   onSubmitForm(): void {
     if (!this.validateAndFocusFirstInvalid(this.userForm)) {
@@ -464,15 +500,25 @@ export class UserListComponent extends BaseComponent implements OnInit {
     }
 
     const formRaw = this.userForm.getRawValue();
-    const payload: UserFormDTO = {
+    const sharedRoles = formRaw.roleIds ?? [];
+    const selectedBranches = formRaw.branchIds ?? [];
+    const primary = formRaw.primaryBranchId ?? null;
+    // Chi nhánh bị bỏ tick so với lúc mở sửa = thu hồi toàn bộ quyền ở đó.
+    const revoked = this.initialBranchIds
+      .filter(b => !selectedBranches.includes(b))
+      .map(branchId => ({ branchId, roleIds: [] as string[] }));
+    // Chi nhánh phụ được tick = gán cùng bộ vai trò chung.
+    const extraRoles = selectedBranches.filter(b => b !== primary).map(branchId => ({ branchId, roleIds: [...sharedRoles] }));
+
+    const basePayload: UserFormDTO = {
       fullName: formRaw.fullName || '',
       email: formRaw.email || '',
       username: formRaw.username || '',
       phoneNumber: formRaw.phoneNumber || '',
       password: formRaw.password || '',
-      status: Number(formRaw.status) as UserStatus,
-      primaryBranchId: formRaw.primaryBranchId || null,
-      roleIds: formRaw.roleIds || [],
+      status: Number(formRaw.status),
+      primaryBranchId: primary,
+      roleIds: sharedRoles,
       note: formRaw.note || '',
     };
 
@@ -480,7 +526,7 @@ export class UserListComponent extends BaseComponent implements OnInit {
 
     if (this.isEditMode && this.selectedUserForEdit) {
       this.userService
-        .updateUser(this.selectedUserForEdit.id, payload)
+        .updateUser(this.selectedUserForEdit.id, { ...basePayload, branchRoles: [...extraRoles, ...revoked] })
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: updatedUser => {
@@ -496,14 +542,34 @@ export class UserListComponent extends BaseComponent implements OnInit {
         });
     } else {
       this.userService
-        .createUser(payload)
+        .createUser(basePayload)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: createdUser => {
-            this.isSaving.set(false);
-            this.toastService.success('Thành công', `Đã thêm mới người dùng "${createdUser.fullName}"`);
-            this.closeFormModal();
-            this.loadData();
+            if (extraRoles.length === 0) {
+              this.isSaving.set(false);
+              this.toastService.success('Thành công', `Đã thêm mới người dùng "${createdUser.fullName}"`);
+              this.closeFormModal();
+              this.loadData();
+              return;
+            }
+            this.userService.updateUser(createdUser.id, { branchRoles: extraRoles }).subscribe({
+              next: () => {
+                this.isSaving.set(false);
+                this.toastService.success('Thành công', `Đã thêm mới người dùng "${createdUser.fullName}"`);
+                this.closeFormModal();
+                this.loadData();
+              },
+              error: err => {
+                this.isSaving.set(false);
+                this.toastService.warning(
+                  'Tạo xong, gán thêm chi nhánh lỗi',
+                  `Đã tạo "${createdUser.fullName}" nhưng chưa gán chi nhánh phụ: ${err.message || ''}`,
+                );
+                this.closeFormModal();
+                this.loadData();
+              },
+            });
           },
           error: err => {
             this.isSaving.set(false);

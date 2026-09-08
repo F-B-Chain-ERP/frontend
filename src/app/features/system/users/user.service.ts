@@ -1,8 +1,8 @@
-import {Injectable, inject} from '@angular/core';
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {Observable, forkJoin, of, throwError} from 'rxjs';
-import {catchError, map, switchMap} from 'rxjs/operators';
-import {ApplicationConfigService} from '../../../core/config/application-config.service';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, forkJoin, of, throwError } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import {
   AccountResponseBE,
   ApiResponseBE,
@@ -64,42 +64,36 @@ export class UserService {
   }
 
   private fetchAll(): Observable<User[]> {
-    const params = new HttpParams()
-      .set('page', '0')
-      .set('size', String(UserService.FETCH_SIZE));
-    return this.http
-      .get<ApiResponseBE<PageResponseBE<AccountResponseBE>>>(this.accountApi, {params})
-      .pipe(
-        switchMap(res => {
-          const users = (res.data?.content ?? []).map(a => this.toUser(a));
-          if (!users.length) return of(users);
+    const params = new HttpParams().set('page', '0').set('size', String(UserService.FETCH_SIZE));
+    return this.http.get<ApiResponseBE<PageResponseBE<AccountResponseBE>>>(this.accountApi, { params }).pipe(
+      switchMap(res => {
+        const users = (res.data?.content ?? []).map(a => this.toUser(a));
+        if (!users.length) return of(users);
 
-          const roles$ = this.http.get<ApiResponseBE<PageResponseBE<RoleResponseBE>>>(this.roleApi, {
-            params: { page: '0', size: '1000' },
-          });
-          const assignments$ = users.map(user =>
-            this.http.get<ApiResponseBE<RoleAssignmentResponseBE[]>>(
-              `${this.roleAssignmentApi}/account/${user.id}`,
-            ),
-          );
+        const roles$ = this.http.get<ApiResponseBE<PageResponseBE<RoleResponseBE>>>(this.roleApi, {
+          params: { page: '0', size: '1000' },
+        });
+        const assignments$ = users.map(user =>
+          this.http.get<ApiResponseBE<RoleAssignmentResponseBE[]>>(`${this.roleAssignmentApi}/account/${user.id}`),
+        );
 
-          return forkJoin({ roles: roles$, assignments: forkJoin(assignments$) }).pipe(
-            map(({ roles, assignments }) => {
-              const roleMap = new Map((roles.data?.content ?? []).map(role => [role.id, role.name]));
-              return users.map((user, index) => {
-                const roleAssignments = assignments[index]?.data ?? [];
-                const activeAssignments = roleAssignments.filter(assignment =>
-                  assignment.status === 'ACTIVE' &&
-                  (!assignment.expiresAt || new Date(assignment.expiresAt).getTime() > Date.now()),
-                );
-                const roleIds = [...new Set(activeAssignments.map(assignment => assignment.roleId))];
-                const roleNames = roleIds.map(roleId => roleMap.get(roleId) ?? roleId);
-                return { ...user, roleIds, roles: roleNames };
-              });
-            }),
-          );
-        }),
-      );
+        return forkJoin({ roles: roles$, assignments: forkJoin(assignments$) }).pipe(
+          map(({ roles, assignments }) => {
+            const roleMap = new Map((roles.data?.content ?? []).map(role => [role.id, role.name]));
+            return users.map((user, index) => {
+              const roleAssignments = assignments[index]?.data ?? [];
+              const activeAssignments = roleAssignments.filter(
+                assignment =>
+                  assignment.status === 'ACTIVE' && (!assignment.expiresAt || new Date(assignment.expiresAt).getTime() > Date.now()),
+              );
+              const roleIds = [...new Set(activeAssignments.map(assignment => assignment.roleId))];
+              const roleNames = roleIds.map(roleId => roleMap.get(roleId) ?? roleId);
+              return { ...user, roleIds, roles: roleNames };
+            });
+          }),
+        );
+      }),
+    );
   }
 
   /**
@@ -116,16 +110,16 @@ export class UserService {
   private applyFilter(all: User[], filter: UserFilter): UserListResponse {
     let result = [...all];
 
-    if (filter.query && filter.query.trim()) {
+    if (filter.query?.trim()) {
       const q = filter.query.trim().toLowerCase();
       result = result.filter(
         u =>
           (u.fullName && u.fullName.toLowerCase().includes(q)) ||
           (u.email && u.email.toLowerCase().includes(q)) ||
           (u.username && u.username.toLowerCase().includes(q)) ||
-          (u.phoneNumber && u.phoneNumber.includes(q)) ||
-          (u.primaryBranchName && u.primaryBranchName.toLowerCase().includes(q)) ||
-          (u.department && u.department.toLowerCase().includes(q)),
+          u.phoneNumber?.includes(q) ||
+          u.primaryBranchName?.toLowerCase().includes(q) ||
+          u.department?.toLowerCase().includes(q),
       );
     }
 
@@ -155,7 +149,7 @@ export class UserService {
     const startIndex = (pageIndex - 1) * pageSize;
     const items = result.slice(startIndex, startIndex + pageSize);
 
-    return {items, total, pageIndex, pageSize};
+    return { items, total, pageIndex, pageSize };
   }
 
   /**
@@ -180,12 +174,10 @@ export class UserService {
       primaryBranchId: dto.primaryBranchId || null,
       authProvider: 'LOCAL',
     };
-    if (dto.roleIds && dto.roleIds.length) {
+    if (dto.roleIds?.length) {
       body['roleIds'] = dto.roleIds;
     }
-    return this.http
-      .post<ApiResponseBE<AccountResponseBE>>(this.accountApi, body)
-      .pipe(map(res => this.toUser(res.data)));
+    return this.http.post<ApiResponseBE<AccountResponseBE>>(this.accountApi, body).pipe(map(res => this.toUser(res.data)));
   }
 
   /**
@@ -196,12 +188,7 @@ export class UserService {
       fullName: dto.fullName?.trim(),
       email: dto.email?.trim().toLowerCase(),
       phone: dto.phoneNumber ? dto.phoneNumber.trim() : null,
-      status:
-        dto.status !== undefined
-          ? Number(dto.status) === UserStatus.ACTIVE
-            ? 'ACTIVE'
-            : 'INACTIVE'
-          : null,
+      status: dto.status !== undefined ? (Number(dto.status) === UserStatus.ACTIVE ? 'ACTIVE' : 'INACTIVE') : null,
     };
     if (dto.primaryBranchId !== undefined) {
       body['primaryBranchId'] = dto.primaryBranchId;
@@ -209,40 +196,37 @@ export class UserService {
     if (dto.roleIds !== undefined) {
       body['roleIds'] = dto.roleIds;
     }
-    return this.http
-      .put<ApiResponseBE<AccountResponseBE>>(`${this.accountApi}/${id}`, body)
-      .pipe(map(res => this.toUser(res.data)));
+    if (dto.branchRoles !== undefined) {
+      body['branchRoles'] = dto.branchRoles;
+    }
+    return this.http.put<ApiResponseBE<AccountResponseBE>>(`${this.accountApi}/${id}`, body).pipe(map(res => this.toUser(res.data)));
   }
 
   /**
    * Đổi trạng thái hoạt động người dùng (toggle)
    */
   toggleStatus(id: string | number): Observable<User> {
-    return this.http
-      .get<ApiResponseBE<AccountResponseBE>>(`${this.accountApi}/${id}`)
-      .pipe(
-        switchMap(res => {
-          const current = res.data;
-          if (!current) {
-            return throwError(() => new Error('Người dùng không tồn tại'));
-          }
-          const newStatus = current.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-          return this.http
-            .put<ApiResponseBE<AccountResponseBE>>(`${this.accountApi}/${id}`, {
-              status: newStatus,
-            })
-            .pipe(map(r => this.toUser(r.data)));
-        }),
-      );
+    return this.http.get<ApiResponseBE<AccountResponseBE>>(`${this.accountApi}/${id}`).pipe(
+      switchMap(res => {
+        const current = res.data;
+        if (!current) {
+          return throwError(() => new Error('Người dùng không tồn tại'));
+        }
+        const newStatus = current.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+        return this.http
+          .put<ApiResponseBE<AccountResponseBE>>(`${this.accountApi}/${id}`, {
+            status: newStatus,
+          })
+          .pipe(map(r => this.toUser(r.data)));
+      }),
+    );
   }
 
   /**
    * Xóa người dùng theo ID
    */
   deleteUser(id: string | number): Observable<boolean> {
-    return this.http
-      .delete<ApiResponseBE<void>>(`${this.accountApi}/${id}`)
-      .pipe(map(() => true));
+    return this.http.delete<ApiResponseBE<void>>(`${this.accountApi}/${id}`).pipe(map(() => true));
   }
 
   /**
@@ -250,9 +234,7 @@ export class UserService {
    */
   deleteBatch(ids: (string | number)[]): Observable<boolean> {
     if (!ids.length) return of(true);
-    const reqs = ids.map(id =>
-      this.http.delete<ApiResponseBE<void>>(`${this.accountApi}/${id}`),
-    );
+    const reqs = ids.map(id => this.http.delete<ApiResponseBE<void>>(`${this.accountApi}/${id}`));
     return forkJoin(reqs).pipe(map(() => true));
   }
 
