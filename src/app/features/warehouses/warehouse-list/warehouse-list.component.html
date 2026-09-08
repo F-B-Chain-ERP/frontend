@@ -25,7 +25,7 @@
       <div class="filter-item filter-item--grow">
         <label class="form-label" for="warehouse-search-input">Tìm kiếm</label>
         <nz-input-wrapper [nzAllowClear]="true">
-          <nz-icon nzInputPrefix nzType="search"/>
+          <nz-icon nzInputPrefix nzType="search" />
           <input
             id="warehouse-search-input"
             nz-input
@@ -127,115 +127,111 @@
       [nzScroll]="{ x: '1240px' }"
     >
       <thead>
-      <tr>
-        <!-- Checkbox chọn tất cả -->
-        <th scope="col" nzWidth="48px" nzAlign="center">
-          <label class="cb" for="cb-check-all-warehouses">
-            <input
-              id="cb-check-all-warehouses"
-              #checkAllInput
-              type="checkbox"
-              [checked]="allChecked"
-              [indeterminate]="indeterminate"
-              (change)="onCheckAll(checkAllInput.checked)"
+        <tr>
+          <!-- Checkbox chọn tất cả -->
+          <th scope="col" nzWidth="48px" nzAlign="center">
+            <label class="cb" for="cb-check-all-warehouses">
+              <input
+                id="cb-check-all-warehouses"
+                #checkAllInput
+                type="checkbox"
+                [checked]="allChecked"
+                [indeterminate]="indeterminate"
+                (change)="onCheckAll(checkAllInput.checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
+
+          <!-- STT -->
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+          <!-- Mã kho -->
+          <th scope="col" nzWidth="150px" nzAlign="left">Mã kho</th>
+
+          <!-- Tên kho -->
+          <th scope="col" nzWidth="200px" nzAlign="left">Tên kho</th>
+
+          <!-- Loại kho -->
+          <th scope="col" nzWidth="150px" nzAlign="left">Loại kho</th>
+
+          <!-- Chi nhánh -->
+          <th scope="col" nzWidth="180px" nzAlign="left">Chi nhánh</th>
+
+          <!-- Địa chỉ -->
+          <th scope="col" nzWidth="220px" nzAlign="left">Địa chỉ</th>
+
+          <!-- Trạng thái -->
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+
+          <!-- Ngày tạo -->
+          <th scope="col" nzWidth="140px" nzAlign="center">Ngày tạo</th>
+
+          <!-- Thao tác -->
+          <th scope="col" nzWidth="140px" nzAlign="center">Thao tác</th>
+        </tr>
+
+        <!-- Sub-header lọc cột tại chỗ -->
+        <tr class="table-filter-row">
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input id="col-filter-warehouse-code" placeholder="Lọc mã..." (searchChange)="searchByField('code', $event)" />
+          </th>
+          <th>
+            <app-table-search-input
+              id="col-filter-warehouse-name"
+              placeholder="Lọc tên..."
+              (searchChange)="searchByField('name', $event)"
             />
-            <span class="cb__box"></span>
-          </label>
-        </th>
-
-        <!-- STT -->
-        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
-
-        <!-- Mã kho -->
-        <th scope="col" nzWidth="150px" nzAlign="left">Mã kho</th>
-
-        <!-- Tên kho -->
-        <th scope="col" nzWidth="200px" nzAlign="left">Tên kho</th>
-
-        <!-- Loại kho -->
-        <th scope="col" nzWidth="150px" nzAlign="left">Loại kho</th>
-
-        <!-- Chi nhánh -->
-        <th scope="col" nzWidth="180px" nzAlign="left">Chi nhánh</th>
-
-        <!-- Địa chỉ -->
-        <th scope="col" nzWidth="220px" nzAlign="left">Địa chỉ</th>
-
-        <!-- Trạng thái -->
-        <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
-
-        <!-- Ngày tạo -->
-        <th scope="col" nzWidth="140px" nzAlign="center">Ngày tạo</th>
-
-        <!-- Thao tác -->
-        <th scope="col" nzWidth="140px" nzAlign="center">Thao tác</th>
-      </tr>
-
-      <!-- Sub-header lọc cột tại chỗ -->
-      <tr class="table-filter-row">
-        <th></th>
-        <th></th>
-        <th>
-          <app-table-search-input
-            id="col-filter-warehouse-code"
-            placeholder="Lọc mã..."
-            (searchChange)="searchByField('code', $event)"
-          />
-        </th>
-        <th>
-          <app-table-search-input
-            id="col-filter-warehouse-name"
-            placeholder="Lọc tên..."
-            (searchChange)="searchByField('name', $event)"
-          />
-        </th>
-        <th>
-          <nz-select
-            id="col-filter-warehouse-type"
-            [ngModel]="null"
-            (ngModelChange)="searchByField('warehouseType', $event)"
-            nzPlaceHolder="Tất cả"
-            [nzAllowClear]="true"
-            nzSize="small"
-            style="width: 100%"
-          >
-            @for (opt of warehouseTypeOptions; track opt.value) {
-              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
-            }
-          </nz-select>
-        </th>
-        <th>
-          <app-table-search-input
-            id="col-filter-warehouse-branch"
-            placeholder="Lọc CN..."
-            (searchChange)="searchByField('branchName', $event)"
-          />
-        </th>
-        <th>
-          <app-table-search-input
-            id="col-filter-warehouse-address"
-            placeholder="Lọc địa chỉ..."
-            (searchChange)="searchByField('address', $event)"
-          />
-        </th>
-        <th>
-          <nz-select
-            id="col-filter-warehouse-status"
-            [ngModel]="null"
-            (ngModelChange)="searchByField('status', $event)"
-            nzPlaceHolder="Tất cả"
-            [nzAllowClear]="true"
-            nzSize="small"
-            style="width: 100%"
-          >
-            @for (opt of statusOptions; track opt.value) {
-              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
-            }
-          </nz-select>
-        </th>
-        <th></th>
-        <th></th>
-      </tr>
+          </th>
+          <th>
+            <nz-select
+              id="col-filter-warehouse-type"
+              [ngModel]="null"
+              (ngModelChange)="searchByField('warehouseType', $event)"
+              nzPlaceHolder="Tất cả"
+              [nzAllowClear]="true"
+              nzSize="small"
+              style="width: 100%"
+            >
+              @for (opt of warehouseTypeOptions; track opt.value) {
+                <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+              }
+            </nz-select>
+          </th>
+          <th>
+            <app-table-search-input
+              id="col-filter-warehouse-branch"
+              placeholder="Lọc CN..."
+              (searchChange)="searchByField('branchName', $event)"
+            />
+          </th>
+          <th>
+            <app-table-search-input
+              id="col-filter-warehouse-address"
+              placeholder="Lọc địa chỉ..."
+              (searchChange)="searchByField('address', $event)"
+            />
+          </th>
+          <th>
+            <nz-select
+              id="col-filter-warehouse-status"
+              [ngModel]="null"
+              (ngModelChange)="searchByField('status', $event)"
+              nzPlaceHolder="Tất cả"
+              [nzAllowClear]="true"
+              nzSize="small"
+              style="width: 100%"
+            >
+              @for (opt of statusOptions; track opt.value) {
+                <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+              }
+            </nz-select>
+          </th>
+          <th></th>
+          <th></th>
+        </tr>
       </thead>
 
       <tbody>
@@ -284,7 +280,7 @@
               @let typeMeta = getWarehouseTypeMeta(item.warehouseType);
               <nz-tag [nzColor]="typeMeta.color">
                 <nz-icon [nzType]="typeMeta.icon" />
-                <span style="margin-left: 4px;">{{ typeMeta.label }}</span>
+                <span style="margin-left: 4px">{{ typeMeta.label }}</span>
               </nz-tag>
             </td>
 
@@ -306,11 +302,7 @@
 
             <!-- Trạng thái -->
             <td nzAlign="center">
-              <span
-                [class]="getStatusMeta(item.status).badgeClass"
-                nz-tooltip
-                [nzTooltipTitle]="getStatusMeta(item.status).label"
-              >
+              <span [class]="getStatusMeta(item.status).badgeClass" nz-tooltip [nzTooltipTitle]="getStatusMeta(item.status).label">
                 {{ getStatusMeta(item.status).label }}
               </span>
             </td>
@@ -324,13 +316,7 @@
             <td nzAlign="center">
               <div class="tbl-actions">
                 <!-- Xem chi tiết -->
-                <app-button
-                  variant="ghost"
-                  iconOnly="eye"
-                  nz-tooltip
-                  nzTooltipTitle="Xem chi tiết"
-                  (click)="openViewModal(item)"
-                >
+                <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết" (click)="openViewModal(item)">
                 </app-button>
 
                 <!-- Chỉnh sửa -->
@@ -401,13 +387,7 @@
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label required" for="warehouse-code">Mã kho</label>
           <nz-input-wrapper>
-            <input
-              id="warehouse-code"
-              nz-input
-              formControlName="code"
-              placeholder="VD: WH-HN-01"
-              style="text-transform: uppercase"
-            />
+            <input id="warehouse-code" nz-input formControlName="code" placeholder="VD: WH-HN-01" style="text-transform: uppercase" />
           </nz-input-wrapper>
           @if (warehouseForm.get('code')?.touched || warehouseForm.get('code')?.dirty) {
             @if (warehouseForm.get('code')?.hasError('required')) {
@@ -424,12 +404,7 @@
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label required" for="warehouse-name">Tên kho</label>
           <nz-input-wrapper>
-            <input
-              id="warehouse-name"
-              nz-input
-              formControlName="name"
-              placeholder="VD: Kho tổng Hà Nội"
-            />
+            <input id="warehouse-name" nz-input formControlName="name" placeholder="VD: Kho tổng Hà Nội" />
           </nz-input-wrapper>
           @if (warehouseForm.get('name')?.touched || warehouseForm.get('name')?.dirty) {
             @if (warehouseForm.get('name')?.hasError('required')) {
@@ -443,12 +418,7 @@
         <!-- Loại kho -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label required">Loại kho</label>
-          <nz-select
-            id="warehouse-type-input"
-            formControlName="warehouseType"
-            nzPlaceHolder="Chọn loại kho"
-            style="width: 100%"
-          >
+          <nz-select id="warehouse-type-input" formControlName="warehouseType" nzPlaceHolder="Chọn loại kho" style="width: 100%">
             @for (opt of warehouseTypeOptions; track opt.value) {
               <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
             }
@@ -460,14 +430,9 @@
           }
         </div>
 
-        <!-- Chi nhánh -->
+        <!-- Chi nhánh (bắt buộc với mọi loại kho) -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
-          <label
-            class="form-label"
-            [class.required]="warehouseForm.get('warehouseType')?.value === 'BRANCH'"
-          >
-            Chi nhánh trực thuộc
-          </label>
+          <label class="form-label required"> Chi nhánh trực thuộc </label>
           <nz-select
             id="warehouse-branch-input"
             formControlName="branchId"
@@ -481,7 +446,7 @@
           </nz-select>
           @if (warehouseForm.get('branchId')?.touched || warehouseForm.get('branchId')?.dirty) {
             @if (warehouseForm.get('branchId')?.hasError('required')) {
-              <span class="form-error">Kho chi nhánh yêu cầu chọn chi nhánh trực thuộc.</span>
+              <span class="form-error">Vui lòng chọn chi nhánh trực thuộc của kho.</span>
             }
           }
         </div>
@@ -489,12 +454,7 @@
         <!-- Trạng thái -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label required">Trạng thái</label>
-          <nz-select
-            id="warehouse-status-input"
-            formControlName="status"
-            nzPlaceHolder="Chọn trạng thái"
-            style="width: 100%"
-          >
+          <nz-select id="warehouse-status-input" formControlName="status" nzPlaceHolder="Chọn trạng thái" style="width: 100%">
             <nz-option nzValue="ACTIVE" nzLabel="Đang hoạt động"></nz-option>
             <nz-option nzValue="INACTIVE" nzLabel="Ngừng hoạt động"></nz-option>
           </nz-select>
@@ -504,12 +464,7 @@
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label" for="warehouse-address">Địa chỉ kho</label>
           <nz-input-wrapper>
-            <input
-              id="warehouse-address"
-              nz-input
-              formControlName="address"
-              placeholder="VD: Số 54 Triều Khúc, Thanh Xuân, Hà Nội"
-            />
+            <input id="warehouse-address" nz-input formControlName="address" placeholder="VD: Số 54 Triều Khúc, Thanh Xuân, Hà Nội" />
           </nz-input-wrapper>
           @if (warehouseForm.get('address')?.touched || warehouseForm.get('address')?.dirty) {
             @if (warehouseForm.get('address')?.hasError('maxlength')) {
@@ -528,20 +483,11 @@
         {{ modalMode() === 'view' ? 'Đóng' : 'Hủy bỏ' }}
       </app-button>
       @if (modalMode() === 'view') {
-        <app-button
-          *erpUTTHasSomeAuthority="[ROLE.KHO.UPDATE]"
-          variant="primary"
-          leftIcon="edit"
-          (click)="enterEditMode()"
-        >
+        <app-button *erpUTTHasSomeAuthority="[ROLE.KHO.UPDATE]" variant="primary" leftIcon="edit" (click)="enterEditMode()">
           Chỉnh sửa
         </app-button>
       } @else {
-        <app-button
-          variant="primary"
-          [loading]="isSaving()"
-          (click)="submitForm()"
-        >
+        <app-button variant="primary" [loading]="isSaving()" (click)="submitForm()">
           {{ modalMode() === 'create' ? 'Tạo mới' : 'Lưu thay đổi' }}
         </app-button>
       }

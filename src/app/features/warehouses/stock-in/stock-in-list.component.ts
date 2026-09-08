@@ -31,7 +31,6 @@ import {
   StockIn,
   StockInFilter,
   StockInItem,
-  STOCK_IN_WAREHOUSE_OPTIONS,
   STOCK_IN_SOURCE_TYPE_OPTIONS,
   STOCK_IN_STATUS_OPTIONS,
   getStockInStatusMeta,
@@ -39,6 +38,8 @@ import {
 } from './stock-in.model';
 import { StockInService } from './stock-in.service';
 import { WarehouseMaterialService } from '../materials/material.service';
+import { WarehouseService } from '../warehouse-list/warehouse.service';
+import { Warehouse } from '../warehouse-list/warehouse.model';
 
 @Component({
   selector: 'app-stock-in-list',
@@ -72,8 +73,11 @@ import { WarehouseMaterialService } from '../materials/material.service';
 export class StockInListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
 
-  // Options & Metadata helpers
-  readonly warehouseOptions = STOCK_IN_WAREHOUSE_OPTIONS;
+  // Options & Metadata helpers (kho dùng API thật, không hardcode wh-00x)
+  readonly warehouses = signal<Warehouse[]>([]);
+  get warehouseOptions(): { value: string; label: string }[] {
+    return this.warehouses().map(w => ({ value: w.id, label: `${w.code} - ${w.name}` }));
+  }
   readonly sourceTypeOptions = STOCK_IN_SOURCE_TYPE_OPTIONS;
   readonly statusOptions = STOCK_IN_STATUS_OPTIONS;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
@@ -128,16 +132,16 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   // NVL từ Material API thật (không còn mock mat-00x).
   readonly materialOptions = signal<{ value: string; label: string; name: string }[]>([]);
 
-  // Form
+  // Form (code/status do BE quản lý: code tự sinh, create luôn DRAFT)
   readonly stockInForm = this.fb.group({
     id: [''],
-    code: ['', [Validators.required, Validators.maxLength(50)]],
+    code: [{ value: '', disabled: true }],
     warehouseId: [null as string | null, [Validators.required]],
     sourceType: ['PURCHASE', [Validators.required]],
     sourceReferenceId: [''],
     sourceReferenceCode: ['', [Validators.maxLength(50)]],
     inDate: [new Date().toISOString().slice(0, 10), [Validators.required]],
-    status: ['DRAFT', [Validators.required]],
+    status: [{ value: 'DRAFT', disabled: true }],
     note: ['', [Validators.maxLength(500)]],
     receivedByName: [''],
     postedAt: [''],
@@ -191,6 +195,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
 
   private readonly stockInService = inject(StockInService);
   private readonly materialService = inject(WarehouseMaterialService);
+  private readonly warehouseService = inject(WarehouseService);
 
   get modalTitle(): string {
     const mode = this.modalMode();
@@ -207,7 +212,18 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     ]);
 
     this.loadMaterialOptions();
+    this.loadWarehouses();
     this.loadData();
+  }
+
+  private loadWarehouses(): void {
+    this.warehouseService
+      .getAllWarehouses('ACTIVE')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: list => this.warehouses.set(list),
+        error: () => this.warehouses.set([]),
+      });
   }
 
   // NVL từ Material API thật (chỉ ACTIVE); lỗi -> dropdown rỗng, không mock.
@@ -347,23 +363,24 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     this.modalMode.set('create');
     this.selectedStockIn.set(null);
     const dateStr = new Date().toISOString().slice(0, 10);
-    const monthCode = dateStr.slice(0, 7).replace('-', '');
-    this.itemsArray.clear();
-    this.addItem();
     this.stockInForm.reset({
       id: '',
-      code: `SI-${monthCode}-${Date.now().toString().slice(-4)}`,
-      warehouseId: 'wh-001',
+      code: '',
+      warehouseId: null,
       sourceType: 'PURCHASE',
-      sourceReferenceId: 'po-001',
-      sourceReferenceCode: 'PO-202608-0012',
+      sourceReferenceId: '',
+      sourceReferenceCode: '',
       inDate: dateStr,
       status: 'DRAFT',
       note: '',
       receivedByName: '',
       postedAt: '',
     });
+    this.itemsArray.clear();
+    this.addItem();
     this.stockInForm.enable();
+    this.stockInForm.get('code')?.disable();
+    this.stockInForm.get('status')?.disable();
     this.isModalVisible.set(true);
   }
 
@@ -377,8 +394,6 @@ export class StockInListComponent extends BaseComponent implements OnInit {
       .subscribe(detail => {
         const d = detail || item;
         this.selectedStockIn.set(d);
-        this.itemsArray.clear();
-        (d.items || []).forEach(it => this.addItem(it));
         this.stockInForm.reset({
           id: d.id,
           code: d.code,
@@ -392,6 +407,8 @@ export class StockInListComponent extends BaseComponent implements OnInit {
           receivedByName: (typeof d.receivedBy === 'object' ? d.receivedBy?.fullName : d.receivedByName) || '—',
           postedAt: d.postedAt || '',
         });
+        this.itemsArray.clear();
+        (d.items || []).forEach(it => this.addItem(it));
         this.stockInForm.disable();
       });
   }
@@ -406,11 +423,6 @@ export class StockInListComponent extends BaseComponent implements OnInit {
       .subscribe(detail => {
         const d = detail || item;
         this.selectedStockIn.set(d);
-        this.itemsArray.clear();
-        (d.items || []).forEach(it => this.addItem(it));
-        if (this.itemsArray.length === 0) {
-          this.addItem();
-        }
         this.stockInForm.reset({
           id: d.id,
           code: d.code,
@@ -424,8 +436,14 @@ export class StockInListComponent extends BaseComponent implements OnInit {
           receivedByName: (typeof d.receivedBy === 'object' ? d.receivedBy?.fullName : d.receivedByName) || '',
           postedAt: d.postedAt || '',
         });
+        this.itemsArray.clear();
+        (d.items || []).forEach(it => this.addItem(it));
+        if (this.itemsArray.length === 0) {
+          this.addItem();
+        }
         this.stockInForm.enable();
         this.stockInForm.get('code')?.disable();
+        this.stockInForm.get('status')?.disable();
       });
   }
 
@@ -448,13 +466,11 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     this.isSaving.set(true);
     const formRaw = this.stockInForm.getRawValue();
     const payload: Partial<StockIn> = {
-      code: formRaw.code?.trim().toUpperCase(),
-      warehouseId: formRaw.warehouseId || 'wh-001',
+      warehouseId: formRaw.warehouseId as string,
       sourceType: formRaw.sourceType || 'PURCHASE',
-      sourceReferenceId: formRaw.sourceReferenceId?.trim() || '',
+      sourceReferenceId: formRaw.sourceReferenceId?.trim() || null,
       sourceReferenceCode: formRaw.sourceReferenceCode?.trim() || '',
       inDate: typeof formRaw.inDate === 'string' ? formRaw.inDate : this.formatDate(formRaw.inDate as any),
-      status: formRaw.status || 'DRAFT',
       note: formRaw.note?.trim() || '',
       items: formRaw.items as StockInItem[],
     };
@@ -495,27 +511,60 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     }
   }
 
+  // ── Post / Cancel (BE chỉ hỗ trợ PATCH /status, không có DELETE) ──
+  canEdit(item: StockIn): boolean {
+    return item.status === 'DRAFT';
+  }
+
+  onPost(item: StockIn): void {
+    if (!this.canEdit(item)) return;
+    this.modalService.confirm({
+      nzTitle: 'Xác nhận ghi sổ phiếu nhập kho',
+      nzContent: `Ghi sổ phiếu "${item.code}"? Tồn kho sẽ tăng và không sửa được nữa.`,
+      nzOkText: 'Ghi sổ',
+      nzCancelText: 'Hủy bỏ',
+      nzOnOk: () => {
+        this.stockInService
+          .changeStatus(item.id, 'POSTED')
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.toastService.success(`Đã ghi sổ phiếu ${item.code}.`);
+              this.loadData();
+            },
+            error: () => {
+              this.toastService.error('Không thể ghi sổ phiếu nhập kho.');
+            },
+          });
+      },
+    });
+  }
+
   // ── Delete ────────────────────────────────────────────────────────
   onDelete(item: StockIn): void {
+    if (!this.canEdit(item)) {
+      this.toastService.error('Chỉ hủy được phiếu đang ở trạng thái Nháp.');
+      return;
+    }
     this.modalService.confirm({
-      nzTitle: 'Xác nhận xóa phiếu nhập kho',
-      nzContent: `Bạn có chắc chắn muốn xóa phiếu nhập kho "${item.code}"?`,
-      nzOkText: 'Xác nhận xóa',
+      nzTitle: 'Xác nhận hủy phiếu nhập kho',
+      nzContent: `Bạn có chắc chắn muốn hủy phiếu nhập kho "${item.code}"? (BE không hỗ trợ xóa cứng)`,
+      nzOkText: 'Xác nhận hủy',
       nzOkType: 'primary',
       nzOkDanger: true,
       nzCancelText: 'Hủy bỏ',
       nzOnOk: () => {
         this.stockInService
-          .deleteStockIn(item.id)
+          .changeStatus(item.id, 'CANCELLED')
           .pipe(takeUntil(this.destroy$))
           .subscribe({
             next: () => {
-              this.toastService.success(`Đã xóa phiếu nhập kho ${item.code}.`);
+              this.toastService.success(`Đã hủy phiếu nhập kho ${item.code}.`);
               this.setOfCheckedKeys.delete(item.id);
               this.loadData();
             },
             error: () => {
-              this.toastService.error('Không thể xóa phiếu nhập kho.');
+              this.toastService.error('Không thể hủy phiếu nhập kho.');
             },
           });
       },
@@ -523,32 +572,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   }
 
   onBatchDelete(): void {
-    const selectedIds = Array.from(this.setOfCheckedKeys);
-    if (!selectedIds.length) return;
-
-    this.modalService.confirm({
-      nzTitle: 'Xác nhận xóa hàng loạt',
-      nzContent: `Bạn có chắc chắn muốn xóa ${selectedIds.length} phiếu nhập kho đã chọn?`,
-      nzOkText: 'Xác nhận xóa',
-      nzOkType: 'primary',
-      nzOkDanger: true,
-      nzCancelText: 'Hủy bỏ',
-      nzOnOk: () => {
-        this.stockInService
-          .batchDeleteStockIn(selectedIds)
-          .pipe(takeUntil(this.destroy$))
-          .subscribe({
-            next: () => {
-              this.toastService.success(`Đã xóa thành công ${selectedIds.length} phiếu nhập kho.`);
-              this.clearSelection();
-              this.loadData();
-            },
-            error: () => {
-              this.toastService.error('Có lỗi xảy ra khi xóa hàng loạt.');
-            },
-          });
-      },
-    });
+    this.toastService.error('BE không hỗ trợ xóa/hủy hàng loạt phiếu nhập. Vui lòng hủy từng phiếu DRAFT.');
   }
 
   private formatDate(date: Date): string {

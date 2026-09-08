@@ -19,10 +19,11 @@ interface BackendPageResponse {
 
 /**
  * API thật 100% (MaterialController, base /api/v1/inv/materials):
- * - GET    /api/v1/inv/materials?search&categoryId&status
+ * - GET    /api/v1/inv/materials?search&categoryId&status&isPerishable
  * - GET    /api/v1/inv/materials/{id}
  * - POST   /api/v1/inv/materials
  * - PUT    /api/v1/inv/materials/{id}
+ * - PATCH  /api/v1/inv/materials/{id}/status
  * - DELETE /api/v1/inv/materials/{id} (xóa nhiều = gọi lặp từng id)
  *
  * Không còn mock/fallback in-memory: BE lỗi -> báo lỗi thật cho user.
@@ -50,8 +51,9 @@ export class WarehouseMaterialService {
     if (filter.status) {
       params = params.set('status', filter.status);
     }
-    // NOTE: BE MaterialRepository.search chưa hỗ trợ lọc isPerishable,
-    // nên filter đó tạm chỉ có tác dụng ở ColumnTextFilter phía client.
+    if (filter.isPerishable !== undefined && filter.isPerishable !== null) {
+      params = params.set('isPerishable', String(filter.isPerishable));
+    }
 
     return this.http.get<ApiResponse<BackendPageResponse>>(this.materialApi, { params }).pipe(
       map(res => {
@@ -92,6 +94,13 @@ export class WarehouseMaterialService {
   deleteMaterial(id: string): Observable<boolean> {
     return this.http.delete<ApiResponse<void>>(`${this.materialApi}/${id}`).pipe(
       map(() => true),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
+  }
+
+  updateStatus(id: string, status: 'ACTIVE' | 'INACTIVE'): Observable<Material> {
+    return this.http.patch<ApiResponse<Material>>(`${this.materialApi}/${id}/status`, { status }).pipe(
+      map(res => this.enrichMaterialNames(res.data)),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }

@@ -1,0 +1,16 @@
+.stock-transfer-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+// 3 ô lọc + cụm nút tác vụ: cho wrap để không tràn hàng trên màn hẹp.
+.page__filter-box__row {
+  flex-wrap: wrap;
+}
+
+.page__filter-box__actions {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-bottom: 1px;
+}

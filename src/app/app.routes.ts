@@ -315,7 +315,8 @@ export const routes: Routes = [
       },
       {
         path: 'inventory/balances/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
+        loadComponent: () =>
+          import('./features/warehouses/stock-balance/stock-balance-list.component').then(m => m.StockBalanceListComponent),
         title: 'Tồn kho',
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.XEM_TON_KHO.VIEW] },
@@ -334,7 +335,8 @@ export const routes: Routes = [
       },
       {
         path: 'inventory/transfers/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
+        loadComponent: () =>
+          import('./features/warehouses/stock-transfer/stock-transfer-list.component').then(m => m.StockTransferListComponent),
         title: 'Chuyển kho',
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.CHUYEN_KHO.VIEW] },

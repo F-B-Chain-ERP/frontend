@@ -38,6 +38,11 @@ export interface UserFilter {
   sortOrder?: 'ascend' | 'descend' | null;
 }
 
+export interface UserBranchRole {
+  branchId: string;
+  roleIds: string[];
+}
+
 export interface UserFormDTO {
   fullName: string;
   email: string;
@@ -47,6 +52,8 @@ export interface UserFormDTO {
   status: UserStatus;
   primaryBranchId: string | null;
   roleIds?: string[];
+  /** Gán vai trò đa chi nhánh (chỉ màn sửa dùng; mỗi chi nhánh một danh sách role). */
+  branchRoles?: UserBranchRole[];
   department?: string;
   roles?: string[];
   note?: string;
@@ -126,9 +133,9 @@ export interface UserListResponse {
 }
 
 export const USER_STATUS_OPTIONS = [
-  {value: null, label: 'Tất cả trạng thái'},
-  {value: UserStatus.ACTIVE, label: 'Đang hoạt động', badgeClass: 'tbl-badge--success'},
-  {value: UserStatus.INACTIVE, label: 'Ngừng hoạt động', badgeClass: 'tbl-badge--danger'},
+  { value: null, label: 'Tất cả trạng thái' },
+  { value: UserStatus.ACTIVE, label: 'Đang hoạt động', badgeClass: 'tbl-badge--success' },
+  { value: UserStatus.INACTIVE, label: 'Ngừng hoạt động', badgeClass: 'tbl-badge--danger' },
 ];
 
 export function getUserStatusMeta(status: UserStatus | number): {
