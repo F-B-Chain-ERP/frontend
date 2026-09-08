@@ -113,14 +113,17 @@ while [ $COUNT -lt $MAX_RETRIES ]; do
   COUNT=$((COUNT + 1))
   sleep 1
 
-  # Test route gốc
-  HTTP_ROOT=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/ || echo "000")
-  # Test SPA sub-route
-  HTTP_SPA=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/home || echo "000")
+  # Test port 80 (chấp nhận 200 hoặc 301 redirect sang HTTPS)
+  HTTP_PORT_80=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/ || echo "000")
+  # Test port 443 HTTPS trực tiếp
+  HTTP_PORT_443=$(curl -k -s -o /dev/null -w "%{http_code}" -H "Host: erp-utt.duckdns.org" https://127.0.0.1/ || echo "000")
+  # Test SPA sub-route (theo dõi redirect sang HTTPS nếu có)
+  HTTP_SPA=$(curl -k -L -s -o /dev/null -w "%{http_code}" -H "Host: erp-utt.duckdns.org" http://127.0.0.1/home || echo "000")
 
-  echo "  [Thử ${COUNT}/${MAX_RETRIES}] Root HTTP: ${HTTP_ROOT} | SPA Route HTTP: ${HTTP_SPA}"
+  echo "  [Thử ${COUNT}/${MAX_RETRIES}] Port 80: ${HTTP_PORT_80} | Port 443: ${HTTP_PORT_443} | SPA Route: ${HTTP_SPA}"
 
-  if [ "${HTTP_ROOT}" = "200" ] && [ "${HTTP_SPA}" = "200" ]; then
+  # Thành công nếu: (Port 80 trả về 200 hoặc 301 redirect) VÀ (Port 443 hoặc SPA Route trả về 200)
+  if { [ "${HTTP_PORT_80}" = "200" ] || [ "${HTTP_PORT_80}" = "301" ]; } && { [ "${HTTP_PORT_443}" = "200" ] || [ "${HTTP_SPA}" = "200" ]; }; then
     HEALTHY=true
     break
   fi

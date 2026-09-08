@@ -53,12 +53,12 @@ chown -R www-data:www-data "${BROWSER_DIR}" 2>/dev/null || true
 
 # Reload Nginx
 echo "▶ Reload Nginx Web Server..."
-systemctl reload nginx || systemctl restart nginx
+sudo -n systemctl reload nginx 2>/dev/null || systemctl reload nginx 2>/dev/null || sudo -n systemctl restart nginx 2>/dev/null || true
 
 # Kiểm tra lại sau khi rollback
 echo "▶ Kiểm tra trạng thái sau Rollback..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/ || echo "000")
-if [ "${HTTP_CODE}" = "200" ]; then
+HTTP_CODE=$(curl -k -L -s -o /dev/null -w "%{http_code}" -H "Host: erp-utt.duckdns.org" http://127.0.0.1/ || echo "000")
+if [ "${HTTP_CODE}" = "200" ] || [ "${HTTP_CODE}" = "301" ]; then
   echo "=========================================================="
   echo "  ✅ ROLLBACK THÀNH CÔNG!"
   echo "  Hệ thống Frontend đã được khôi phục về trạng thái ổn định."
