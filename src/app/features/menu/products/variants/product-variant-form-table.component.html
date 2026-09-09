@@ -1,0 +1,109 @@
+<div class="variant-form-items">
+  <div class="variant-form-items__head">
+    <div class="variant-form-items__title-group">
+      <span class="variant-form-items__title">
+        <nz-icon nzType="appstore" /> Biến thể / Kích cỡ ({{ variantsArray.length }})
+      </span>
+      <span class="variant-form-items__hint text-muted text-xs">
+        (Ví dụ: Size S, M, L... Chênh lệch giá sẽ cộng/trừ so với giá bán cơ bản)
+      </span>
+    </div>
+    <div class="variant-form-items__actions">
+      @for (preset of standardSizePresets; track preset.label) {
+        <app-button
+          variant="ghost"
+          leftIcon="thunderbolt"
+          nz-tooltip
+          [nzTooltipTitle]="preset.description"
+          (click)="applyStandardSizePreset(preset)"
+        >
+          {{ preset.label }}
+        </app-button>
+      }
+      <app-button variant="secondary" leftIcon="plus" (click)="addVariantLine()">
+        Thêm kích cỡ
+      </app-button>
+    </div>
+  </div>
+
+  <div class="variant-form-items__scroll" [class.is-scroll]="variantsArray.length > 3">
+    <table class="variant-form-table">
+      <thead>
+        <tr>
+          <th class="col-stt">#</th>
+          <th class="col-code">Mã Size *</th>
+          <th class="col-name">Tên hiển thị *</th>
+          <th class="col-label">Nhãn *</th>
+          <th class="col-delta text-right">Chênh lệch (₫) *</th>
+          <th class="col-price text-right">Giá bán dự kiến</th>
+          <th class="col-order text-center">Thứ tự</th>
+          <th class="col-action"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (vGroup of variantsArray.controls; track $index; let i = $index) {
+          <tr [formGroup]="$any(vGroup)">
+            <td class="col-stt">{{ i + 1 }}</td>
+            <td class="col-code">
+              <input
+                nz-input
+                formControlName="variantCode"
+                placeholder="Mã (VD: L)"
+                style="text-transform: uppercase"
+              />
+            </td>
+            <td class="col-name">
+              <input
+                nz-input
+                formControlName="variantName"
+                placeholder="Tên (VD: Size L)"
+              />
+            </td>
+            <td class="col-label">
+              <input
+                nz-input
+                formControlName="sizeLabel"
+                placeholder="Nhãn (VD: L)"
+              />
+            </td>
+            <td class="col-delta">
+              <nz-input-number
+                formControlName="priceDelta"
+                [nzStep]="1000"
+                [nzFormatter]="currencyFormatter"
+                style="width: 100%"
+              ></nz-input-number>
+            </td>
+            <td class="col-price text-right font-mono font-semibold text-primary">
+              {{ calculateVariantFinalPrice(vGroup.get('priceDelta')?.value) | number: '1.0-0' }} ₫
+            </td>
+            <td class="col-order text-center">
+              <nz-input-number
+                formControlName="displayOrder"
+                [nzMin]="0"
+                [nzStep]="1"
+                style="width: 100%"
+              ></nz-input-number>
+            </td>
+            <td class="col-action">
+              <app-button
+                variant="ghost"
+                iconOnly="delete"
+                nz-tooltip
+                nzTooltipTitle="Xóa kích cỡ này"
+                (click)="removeVariantLine(i)"
+              ></app-button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="variant-form-empty">
+              <nz-icon nzType="inbox" />
+              <span>Chưa có biến thể nào. Sản phẩm sẽ áp dụng một kích cỡ mặc định theo giá bán cơ bản. Nhấn "Thêm kích cỡ" hoặc chọn "Bộ 3 Size Tiêu chuẩn" để thêm nhanh.</span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

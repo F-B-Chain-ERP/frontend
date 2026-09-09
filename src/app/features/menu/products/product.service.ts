@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ApiResponse } from '../../login/login.model';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
+import { ProductVariantService } from './variants/variant.service';
 import {
   CreateProductFormData,
   CreateProductRequestDto,
@@ -41,6 +42,7 @@ interface BackendPageResponse {
 export class ProductService {
   private readonly http = inject(HttpClient);
   private readonly applicationConfigService = inject(ApplicationConfigService);
+  private readonly variantService = inject(ProductVariantService);
 
   private get baseUrl(): string {
     return this.applicationConfigService.getEndpointFor('api/v1/menu/products');
@@ -181,56 +183,31 @@ export class ProductService {
       );
   }
 
-  // ── Product Variants API ───────────────────────────────────────────
+  // ── Product Variants API (Ủy quyền sang ProductVariantService) ─────
 
   /** Lấy danh sách toàn bộ biến thể của sản phẩm */
   getVariants(productId: string): Observable<ProductVariant[]> {
-    return this.http
-      .get<ApiResponse<ProductVariant[]>>(`${this.baseUrl}/${productId}/variants`)
-      .pipe(
-        map(res => res.data ?? []),
-        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
-      );
+    return this.variantService.getVariants(productId);
   }
 
   /** Tạo một biến thể mới cho sản phẩm */
   createVariant(productId: string, data: CreateProductVariantRequest): Observable<ProductVariant> {
-    return this.http
-      .post<ApiResponse<ProductVariant>>(`${this.baseUrl}/${productId}/variants`, data)
-      .pipe(
-        map(res => res.data),
-        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
-      );
+    return this.variantService.createVariant(productId, data);
   }
 
   /** Cập nhật một biến thể của sản phẩm */
   updateVariant(productId: string, variantId: string, data: UpdateProductVariantRequest): Observable<ProductVariant> {
-    return this.http
-      .put<ApiResponse<ProductVariant>>(`${this.baseUrl}/${productId}/variants/${variantId}`, data)
-      .pipe(
-        map(res => res.data),
-        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
-      );
+    return this.variantService.updateVariant(productId, variantId, data);
   }
 
   /** Xóa một biến thể khỏi sản phẩm */
   deleteVariant(productId: string, variantId: string): Observable<void> {
-    return this.http
-      .delete<ApiResponse<void>>(`${this.baseUrl}/${productId}/variants/${variantId}`)
-      .pipe(
-        map(() => void 0),
-        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
-      );
+    return this.variantService.deleteVariant(productId, variantId);
   }
 
   /** Đồng bộ toàn bộ danh sách biến thể của sản phẩm */
   syncVariants(productId: string, variants: SyncProductVariantItem[]): Observable<ProductVariant[]> {
-    return this.http
-      .put<ApiResponse<ProductVariant[]>>(`${this.baseUrl}/${productId}/variants/sync`, { variants })
-      .pipe(
-        map(res => res.data ?? []),
-        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
-      );
+    return this.variantService.syncVariants(productId, variants);
   }
 
   private errorMessage(err: unknown): string {
