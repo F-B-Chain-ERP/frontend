@@ -3,15 +3,15 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
 import { ApiResponse } from '../../login/login.model';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
-import { StockBalance, StockBalanceFilter, StockBalanceListResponse } from './stock-balance.model';
+import { StockBalance, StockBalanceFilter, StockBalanceListResponse, normalizeStockBalance } from './stock-balance.model';
 
-/** Page BE trả về (pageNumber 0-based). */
+/** Page BE trả về (pageNumber 0-based). Content là StockBalanceResponse của BE. */
 interface BackendPageResponse {
   pageNumber: number;
   pageSize: number;
   totalElements: number;
   totalPages: number;
-  content: StockBalance[];
+  content: unknown[];
 }
 
 /** Đọc tồn kho: GET /api/v1/inv/stocks (read-only, quyền inv:stock_balance:view). */
@@ -40,8 +40,9 @@ export class StockBalanceService {
     return this.http.get<ApiResponse<BackendPageResponse>>(this.baseUrl, { params }).pipe(
       map(res => {
         const page = res.data;
+        const rawItems = page?.content ?? [];
         return {
-          items: page?.content ?? [],
+          items: rawItems.map(item => normalizeStockBalance(item)),
           total: page?.totalElements ?? 0,
           pageIndex: (page?.pageNumber ?? 0) + 1,
           pageSize: page?.pageSize ?? filter.pageSize ?? 10,
@@ -53,9 +54,9 @@ export class StockBalanceService {
 
   getBalance(warehouseId: string, materialId: string): Observable<StockBalance | null> {
     return this.http
-      .get<ApiResponse<StockBalance>>(`${this.baseUrl}/warehouse/${warehouseId}/material/${materialId}`)
+      .get<ApiResponse<unknown>>(`${this.baseUrl}/warehouse/${warehouseId}/material/${materialId}`)
       .pipe(
-        map(res => res.data ?? null),
+        map(res => (res.data ? normalizeStockBalance(res.data) : null)),
         catchError(() => throwError(() => new Error('Không thể tải tồn kho.'))),
       );
   }

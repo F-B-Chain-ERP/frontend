@@ -211,8 +211,10 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
     if (!warehouseId || !matId) return;
     this.stockBalanceService.getBalance(warehouseId, matId).subscribe({
       next: b => {
-        const avail = b ? Number((b as unknown as Record<string, unknown>)['availableQuantity'] ?? (b as unknown as Record<string, unknown>)['available'] ?? 0) : 0;
-        this.availableMap.update(m => ({ ...m, [matId]: avail }));
+        // StockBalanceService đã normalize về `availableQuantity`; giữ fallback cho response thô cũ.
+        const raw = b as unknown as Record<string, unknown> | null;
+        const avail = b ? Number(raw?.['availableQuantity'] ?? raw?.['quantityAvailable'] ?? raw?.['available'] ?? 0) : 0;
+        this.availableMap.update(m => ({ ...m, [matId]: Number.isFinite(avail) ? avail : 0 }));
       },
       error: () => {
         this.availableMap.update(m => ({ ...m, [matId]: null }));
