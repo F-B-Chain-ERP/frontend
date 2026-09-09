@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormArray, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -30,6 +30,11 @@ import {
   PRODUCT_STATUS_OPTIONS,
   getProductStatusMeta,
   CreateProductFormData,
+  SyncProductVariantItem,
+  CreateProductVariantRequest,
+  UpdateProductVariantRequest,
+  STANDARD_BEVERAGE_SIZE_PRESETS,
+  VariantPreset,
 } from './product.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
 import { takeUntil } from 'rxjs';
@@ -95,6 +100,38 @@ export class ProductListComponent extends BaseComponent implements OnInit {
   readonly imagePreviewUrl = signal<string | null>(null);
   readonly imageInputMode = signal<'file' | 'url'>('file');
 
+  // ── Quản lý Biến thể độc lập (Quick Variant Management Modal) ───────
+  readonly activeProductForVariants = signal<Product | ProductDetail | null>(null);
+  readonly isVariantModalVisible = signal(false);
+  readonly variantList = signal<ProductVariant[]>([]);
+  readonly loadingVariants = signal(false);
+  readonly isSavingVariant = signal(false);
+  readonly editingVariantId = signal<string | null>(null);
+  readonly standardSizePresets = STANDARD_BEVERAGE_SIZE_PRESETS;
+
+  // ── Form quản lý biến thể nhanh trong modal riêng ───────────────────
+  readonly variantForm = this.fb.group({
+    variantCode: this.fb.control<string>('', [
+      Validators.required,
+      Validators.maxLength(50),
+    ]),
+    variantName: this.fb.control<string>('', [
+      Validators.required,
+      Validators.maxLength(100),
+    ]),
+    sizeLabel: this.fb.control<string>('', [
+      Validators.required,
+      Validators.maxLength(30),
+    ]),
+    priceDelta: this.fb.control<number>(0, [
+      Validators.required,
+    ]),
+    displayOrder: this.fb.control<number>(1, [
+      Validators.min(0),
+    ]),
+    status: this.fb.control<string>('ACTIVE'),
+  });
+
   // ── Filter inputs ───────────────────────────────────────────────────
   searchQuery = '';
   selectedCategoryId: string | null = null;
@@ -104,7 +141,7 @@ export class ProductListComponent extends BaseComponent implements OnInit {
   pageIndex = DEFAULT_PAGE_INDEX;
   pageSize = DEFAULT_PAGE_SIZE;
 
-  // ── Form tạo / chỉnh sửa sản phẩm ──────────────────────────────────
+  // ── Form tạo / chỉnh sửa sản phẩm (kèm FormArray biến thể) ─────────
   readonly createForm = this.fb.group({
     categoryId: this.fb.control<string | null>(null, [Validators.required]),
     code: this.fb.control<string | null>(null, [
@@ -121,7 +158,12 @@ export class ProductListComponent extends BaseComponent implements OnInit {
     isBestSeller: this.fb.control<boolean>(false),
     isCombo: this.fb.control<boolean>(false),
     status: this.fb.control<string>('ACTIVE'),
+    variants: this.fb.array<FormGroup>([]),
   });
+
+  get variantsArray(): FormArray {
+    return this.createForm.get('variants') as FormArray;
+  }
 
   private readonly productService = inject(ProductService);
   private readonly categoryService = inject(CategoryService);
@@ -243,6 +285,54 @@ export class ProductListComponent extends BaseComponent implements OnInit {
       .filter(Boolean);
   }
 
+  // ── FormArray Variant Helpers (Dùng trong Modal Tạo / Chỉnh sửa) ───
+  createVariantGroup(v?: Partial<SyncProductVariantItem>): FormGroup {
+    return this.fb.group({
+      id: this.fb.control<string | null>(v?.id ?? null),
+      variantCode: this.fb.control<string>(v?.variantCode ?? '', [
+        Validators.required,
+        Validators.maxLength(50),
+      ]),
+      variantName: this.fb.control<string>(v?.variantName ?? '', [
+        Validators.required,
+        Validators.maxLength(100),
+      ]),
+      sizeLabel: this.fb.control<string>(v?.sizeLabel ?? '', [
+        Validators.required,
+        Validators.maxLength(30),
+      ]),
+      priceDelta: this.fb.control<number>(v?.priceDelta ?? 0, [
+        Validators.required,
+      ]),
+      displayOrder: this.fb.control<number>(v?.displayOrder ?? (this.variantsArray.length + 1), [
+        Validators.min(0),
+      ]),
+      status: this.fb.control<string>(v?.status ?? 'ACTIVE'),
+    });
+  }
+
+  addVariantLine(): void {
+    const nextOrder = this.variantsArray.length + 1;
+    this.variantsArray.push(this.createVariantGroup({ displayOrder: nextOrder }));
+  }
+
+  removeVariantLine(index: number): void {
+    this.variantsArray.removeAt(index);
+  }
+
+  applyStandardSizePreset(preset: VariantPreset): void {
+    this.variantsArray.clear();
+    preset.items.forEach(item => {
+      this.variantsArray.push(this.createVariantGroup(item));
+    });
+    this.toastService.success(`Đã áp dụng "${preset.label}" vào danh sách kích cỡ!`);
+  }
+
+  calculateVariantFinalPrice(priceDelta: number | null | undefined): number {
+    const base = Number(this.createForm.get('basePrice')?.value) || 0;
+    return base + (Number(priceDelta) || 0);
+  }
+
   // ── Create Modal ────────────────────────────────────────────────────
   openCreateModal(): void {
     this.modalMode.set('create');
@@ -260,6 +350,7 @@ export class ProductListComponent extends BaseComponent implements OnInit {
       isCombo: false,
       status: 'ACTIVE',
     });
+    this.variantsArray.clear();
     this.selectedImageFile.set(null);
     this.imagePreviewUrl.set(null);
     this.imageInputMode.set('file');
@@ -283,10 +374,27 @@ export class ProductListComponent extends BaseComponent implements OnInit {
       isCombo: !!item.isCombo,
       status: item.status ?? 'ACTIVE',
     });
+    this.variantsArray.clear();
     this.selectedImageFile.set(null);
     this.imagePreviewUrl.set(item.imageUrl ?? null);
     this.imageInputMode.set(item.imageUrl ? 'url' : 'file');
     this.isCreateModalVisible.set(true);
+
+    // Tự động tải danh sách biến thể hiện có của sản phẩm vào form
+    this.productService
+      .getProduct(item.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: detail => {
+          this.variantsArray.clear();
+          (detail.variants || []).forEach(v => {
+            this.variantsArray.push(this.createVariantGroup(v));
+          });
+        },
+        error: err => {
+          console.error('Không thể nạp biến thể khi sửa sản phẩm:', err);
+        },
+      });
   }
 
   closeCreateModal(): void {
@@ -294,6 +402,7 @@ export class ProductListComponent extends BaseComponent implements OnInit {
     this.editingProductId.set(null);
     this.selectedImageFile.set(null);
     this.imagePreviewUrl.set(null);
+    this.variantsArray.clear();
   }
 
   onFileSelected(event: Event): void {
@@ -347,16 +456,41 @@ export class ProductListComponent extends BaseComponent implements OnInit {
       image: this.selectedImageFile(),
     };
 
+    const variantPayload: SyncProductVariantItem[] = this.variantsArray.getRawValue().map(v => ({
+      id: v.id || null,
+      variantCode: (v.variantCode || '').trim().toUpperCase(),
+      variantName: (v.variantName || '').trim(),
+      sizeLabel: (v.sizeLabel || '').trim(),
+      priceDelta: Number(v.priceDelta) || 0,
+      displayOrder: Number(v.displayOrder) || 0,
+      status: v.status || 'ACTIVE',
+    }));
+
     if (this.modalMode() === 'edit' && this.editingProductId()) {
+      const pId = this.editingProductId()!;
       this.productService
-        .update(this.editingProductId()!, formData)
+        .update(pId, formData)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: updated => {
-            this.isSubmitting.set(false);
-            this.toastService.success(`Cập nhật sản phẩm "${updated.name}" thành công!`);
-            this.closeCreateModal();
-            this.loadProducts();
+            // Sau khi cập nhật sản phẩm thành công, đồng bộ danh sách biến thể
+            this.productService
+              .syncVariants(pId, variantPayload)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe({
+                next: () => {
+                  this.isSubmitting.set(false);
+                  this.toastService.success(`Cập nhật sản phẩm "${updated.name}" và biến thể thành công!`);
+                  this.closeCreateModal();
+                  this.loadProducts();
+                },
+                error: vErr => {
+                  this.isSubmitting.set(false);
+                  this.toastService.warning(`Đã cập nhật sản phẩm nhưng đồng bộ biến thể gặp lỗi: ${vErr.message}`);
+                  this.closeCreateModal();
+                  this.loadProducts();
+                },
+              });
           },
           error: err => {
             this.isSubmitting.set(false);
@@ -369,10 +503,31 @@ export class ProductListComponent extends BaseComponent implements OnInit {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: created => {
-            this.isSubmitting.set(false);
-            this.toastService.success(`Tạo sản phẩm "${created.name}" thành công!`);
-            this.closeCreateModal();
-            this.loadProducts();
+            if (variantPayload.length > 0 && created.id) {
+              // Đồng bộ biến thể cho sản phẩm vừa tạo
+              this.productService
+                .syncVariants(created.id, variantPayload)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe({
+                  next: () => {
+                    this.isSubmitting.set(false);
+                    this.toastService.success(`Tạo sản phẩm "${created.name}" kèm biến thể thành công!`);
+                    this.closeCreateModal();
+                    this.loadProducts();
+                  },
+                  error: vErr => {
+                    this.isSubmitting.set(false);
+                    this.toastService.warning(`Đã tạo sản phẩm nhưng đồng bộ biến thể gặp lỗi: ${vErr.message}`);
+                    this.closeCreateModal();
+                    this.loadProducts();
+                  },
+                });
+            } else {
+              this.isSubmitting.set(false);
+              this.toastService.success(`Tạo sản phẩm "${created.name}" thành công!`);
+              this.closeCreateModal();
+              this.loadProducts();
+            }
           },
           error: err => {
             this.isSubmitting.set(false);
@@ -380,6 +535,212 @@ export class ProductListComponent extends BaseComponent implements OnInit {
           },
         });
     }
+  }
+
+  // ── Quick Variant Management Modal Methods ─────────────────────────
+  openVariantModal(item: Product | ProductDetail): void {
+    this.activeProductForVariants.set(item);
+    this.editingVariantId.set(null);
+    this.variantForm.reset({
+      variantCode: '',
+      variantName: '',
+      sizeLabel: '',
+      priceDelta: 0,
+      displayOrder: 1,
+      status: 'ACTIVE',
+    });
+    this.isVariantModalVisible.set(true);
+    this.loadVariantsForActiveProduct();
+  }
+
+  closeVariantModal(): void {
+    this.isVariantModalVisible.set(false);
+    this.activeProductForVariants.set(null);
+    this.variantList.set([]);
+    this.editingVariantId.set(null);
+  }
+
+  loadVariantsForActiveProduct(): void {
+    const product = this.activeProductForVariants();
+    if (!product) return;
+    this.loadingVariants.set(true);
+    this.productService
+      .getVariants(product.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: list => {
+          this.variantList.set(list || []);
+          this.loadingVariants.set(false);
+          const nextOrder = (list ? list.length : 0) + 1;
+          this.variantForm.patchValue({ displayOrder: nextOrder });
+        },
+        error: err => {
+          this.loadingVariants.set(false);
+          this.toastService.error(err.message || 'Không thể tải danh sách biến thể');
+        },
+      });
+  }
+
+  editVariantQuick(v: ProductVariant): void {
+    this.editingVariantId.set(v.id);
+    this.variantForm.patchValue({
+      variantCode: v.variantCode,
+      variantName: v.variantName,
+      sizeLabel: v.sizeLabel,
+      priceDelta: v.priceDelta,
+      displayOrder: v.displayOrder,
+      status: v.status || 'ACTIVE',
+    });
+  }
+
+  cancelEditVariantQuick(): void {
+    this.editingVariantId.set(null);
+    const nextOrder = (this.variantList().length || 0) + 1;
+    this.variantForm.reset({
+      variantCode: '',
+      variantName: '',
+      sizeLabel: '',
+      priceDelta: 0,
+      displayOrder: nextOrder,
+      status: 'ACTIVE',
+    });
+  }
+
+  submitVariantQuick(): void {
+    if (!this.validateAndFocusFirstInvalid(this.variantForm)) {
+      return;
+    }
+    const product = this.activeProductForVariants();
+    if (!product) return;
+
+    const raw = this.variantForm.getRawValue();
+    this.isSavingVariant.set(true);
+
+    if (this.editingVariantId()) {
+      const updateData: UpdateProductVariantRequest = {
+        variantCode: (raw.variantCode || '').trim().toUpperCase(),
+        variantName: (raw.variantName || '').trim(),
+        sizeLabel: (raw.sizeLabel || '').trim(),
+        priceDelta: Number(raw.priceDelta) || 0,
+        displayOrder: Number(raw.displayOrder) || 0,
+        status: raw.status || 'ACTIVE',
+      };
+      this.productService
+        .updateVariant(product.id, this.editingVariantId()!, updateData)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: updated => {
+            this.isSavingVariant.set(false);
+            this.toastService.success(`Cập nhật biến thể "${updated.variantName}" thành công!`);
+            this.cancelEditVariantQuick();
+            this.loadVariantsForActiveProduct();
+            if (this.selectedProduct()?.id === product.id) {
+              this.openDetailModal(product);
+            }
+          },
+          error: err => {
+            this.isSavingVariant.set(false);
+            this.toastService.error(err.message || 'Không thể cập nhật biến thể');
+          },
+        });
+    } else {
+      const createData: CreateProductVariantRequest = {
+        variantCode: (raw.variantCode || '').trim().toUpperCase(),
+        variantName: (raw.variantName || '').trim(),
+        sizeLabel: (raw.sizeLabel || '').trim(),
+        priceDelta: Number(raw.priceDelta) || 0,
+        displayOrder: Number(raw.displayOrder) || 0,
+      };
+      this.productService
+        .createVariant(product.id, createData)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: created => {
+            this.isSavingVariant.set(false);
+            this.toastService.success(`Tạo biến thể "${created.variantName}" thành công!`);
+            this.cancelEditVariantQuick();
+            this.loadVariantsForActiveProduct();
+            if (this.selectedProduct()?.id === product.id) {
+              this.openDetailModal(product);
+            }
+          },
+          error: err => {
+            this.isSavingVariant.set(false);
+            this.toastService.error(err.message || 'Không thể tạo biến thể');
+          },
+        });
+    }
+  }
+
+  deleteVariantQuick(v: ProductVariant): void {
+    const product = this.activeProductForVariants();
+    if (!product) return;
+
+    this.modalService.confirm({
+      nzTitle: 'Xác nhận xóa biến thể',
+      nzContent: `Bạn có chắc muốn xóa biến thể <strong>${v.variantName} (${v.variantCode})</strong> của sản phẩm này?`,
+      nzOkText: 'Xóa biến thể',
+      nzOkDanger: true,
+      nzCancelText: 'Hủy',
+      nzOnOk: () => {
+        this.productService
+          .deleteVariant(product.id, v.id)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: () => {
+              this.toastService.success(`Đã xóa biến thể "${v.variantName}"!`);
+              this.loadVariantsForActiveProduct();
+              if (this.selectedProduct()?.id === product.id) {
+                this.openDetailModal(product);
+              }
+            },
+            error: err => {
+              this.toastService.error(err.message || 'Không thể xóa biến thể');
+            },
+          });
+      },
+    });
+  }
+
+  applyPresetQuick(preset: VariantPreset): void {
+    const product = this.activeProductForVariants();
+    if (!product) return;
+
+    this.modalService.confirm({
+      nzTitle: 'Áp dụng mẫu kích cỡ chuẩn',
+      nzContent: `Hệ thống sẽ đồng bộ biến thể sản phẩm <strong>${product.name}</strong> theo ${preset.label}. Tiếp tục?`,
+      nzOkText: 'Đồng ý',
+      nzCancelText: 'Hủy',
+      nzOnOk: () => {
+        const payload: SyncProductVariantItem[] = preset.items.map(item => ({
+          variantCode: item.variantCode,
+          variantName: item.variantName,
+          sizeLabel: item.sizeLabel,
+          priceDelta: item.priceDelta,
+          displayOrder: item.displayOrder,
+          status: 'ACTIVE',
+        }));
+
+        this.loadingVariants.set(true);
+        this.productService
+          .syncVariants(product.id, payload)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: res => {
+              this.loadingVariants.set(false);
+              this.variantList.set(res || []);
+              this.toastService.success(`Đã áp dụng thành công ${preset.label}!`);
+              if (this.selectedProduct()?.id === product.id) {
+                this.openDetailModal(product);
+              }
+            },
+            error: err => {
+              this.loadingVariants.set(false);
+              this.toastService.error(err.message || 'Không thể áp dụng mẫu');
+            },
+          });
+      },
+    });
   }
 
   // ── Soft Delete ─────────────────────────────────────────────────────
