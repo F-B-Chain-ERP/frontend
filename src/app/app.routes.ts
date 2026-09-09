@@ -248,11 +248,15 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
-        path: 'menu/products/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Sản phẩm',
+        path: 'menu/products',
+        loadChildren: () => import('./features/menu/products/products.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.SAN_PHAM.VIEW] },
+      },
+      {
+        path: 'menu/products/list',
+        redirectTo: 'menu/products',
+        pathMatch: 'full',
       },
       {
         path: 'menu/variants/list',
