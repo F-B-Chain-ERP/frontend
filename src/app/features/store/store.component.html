@@ -124,7 +124,8 @@
         @for (drink of newArrivals(); track drink.id) {
           <app-drink-card
             [item]="drink"
-            (selectItem)="openCustomizeModal($event)"
+            (viewDetail)="goToProductDetail($event)"
+            (selectItem)="goToProductDetail($event)"
             (addToCart)="quickAddToCart($event)"
           />
         }
@@ -164,7 +165,8 @@
         @for (drink of topSelling(); track drink.id) {
           <app-drink-card
             [item]="drink"
-            (selectItem)="openCustomizeModal($event)"
+            (viewDetail)="goToProductDetail($event)"
+            (selectItem)="goToProductDetail($event)"
             (addToCart)="quickAddToCart($event)"
           />
         }
@@ -221,8 +223,8 @@
   <section id="all-drinks" class="section-block">
     <h2 class="section-title">TOÀN BỘ THỰC ĐƠN</h2>
 
-    <!-- Category Pills -->
-    <div class="category-bar">
+    <!-- Sticky Category Navigation Bar with icons & real-time badge counts -->
+    <div class="category-bar category-bar--sticky">
       @if (isLoadingCategories()) {
         @for (item of [1, 2, 3, 4, 5]; track item) {
           <div class="category-bar__pill category-bar__pill--skeleton skeleton-shimmer"></div>
@@ -235,7 +237,8 @@
             [class.category-bar__pill--active]="selectedCategoryId() === cat.id"
             (click)="onSelectCategory(cat.id)"
           >
-            <span>{{ cat.name }}</span>
+            <nz-icon [nzType]="cat.icon" class="category-bar__icon"/>
+            <span class="category-bar__name">{{ cat.name }}</span>
             <span class="category-bar__count">{{ cat.count }}</span>
           </button>
         }
@@ -288,7 +291,8 @@
         @for (drink of filteredDrinks(); track drink.id) {
           <app-drink-card
             [item]="drink"
-            (selectItem)="openCustomizeModal($event)"
+            (viewDetail)="goToProductDetail($event)"
+            (selectItem)="goToProductDetail($event)"
             (addToCart)="quickAddToCart($event)"
           />
         } @empty {
@@ -378,147 +382,201 @@
     </div>
   </section>
 
-  <!-- ── Modal Tùy Chỉnh Món (Size, Đường, Đá, Topping, Số Lượng, Ghi Chú) ── -->
+  <!-- ── 9. MODAL TÙY CHỈNH CHỌN MÓN ĐẶT HÀNG NHANH (Quick Order Customize Modal) ── -->
   <app-modal
     [visible]="isModalVisible()"
-    (visibleChange)="isModalVisible.set($event)"
+    (visibleChange)="onModalVisibleChange($event)"
     [title]="selectedDrink() ? 'Tùy chỉnh: ' + selectedDrink()!.name : 'Chọn món'"
     [footer]="customFooterTemplate"
-    size="md"
+    size="lg"
+    [centered]="true"
   >
     @if (selectedDrink(); as drink) {
-      <div class="custom-modal-body">
-        <!-- Image & Basic info -->
-        <div class="custom-modal-body__img-col">
-          <div class="custom-modal-body__img-wrap">
-            <img [src]="drink.imageUrl" [alt]="drink.name" class="custom-modal-body__img"/>
-            <span class="custom-modal-body__cat-tag">{{ drink.categoryName }}</span>
+      <div class="custom-modal-layout">
+        <!-- Cột trái: Hero Preview Thông tin sản phẩm & Tạm tính -->
+        <div class="custom-modal-layout__preview-col">
+          <div class="preview-img-card">
+            <img [src]="drink.imageUrl" [alt]="drink.name" class="preview-img"/>
+            <span class="preview-cat-tag">{{ drink.categoryName }}</span>
+            @if (drink.badge) {
+              <span class="preview-badge preview-badge--{{ drink.badgeType || 'signature' }}">
+                {{ drink.badge }}
+              </span>
+            }
           </div>
 
-          <div class="custom-modal-body__prep-badge">
-            <nz-icon nzType="clock-circle" class="clock-icon"/>
-            <span>~{{ selectedProductDetail()?.preparationMinutes || 10 }} phút pha chế</span>
-          </div>
+          <div class="preview-info-box">
+            <h3 class="preview-title">{{ drink.name }}</h3>
+            <div class="preview-price-highlight">
+              <span class="unit-price">{{ formatPrice(drink.price) }}</span>
+              <span class="price-note">Giá cơ bản</span>
+            </div>
 
-          <p class="custom-modal-body__desc">{{ drink.description }}</p>
+            <div class="preview-prep-tag">
+              <nz-icon nzType="clock-circle"/>
+              <span>~{{ selectedProductDetail()?.preparationMinutes || 10 }} phút pha chế</span>
+            </div>
+
+            <p class="preview-desc">{{ drink.description }}</p>
+          </div>
         </div>
 
-        <!-- Custom Options -->
-        <div class="custom-modal-body__options-col">
+        <!-- Cột phải: Các tùy chọn pha chế trực quan & tinh gọn -->
+        <div class="custom-modal-layout__options-col">
           @if (isLoadingVariants()) {
             <div class="modal-loading-box">
               <nz-icon nzType="loading" class="modal-loading-icon"/>
-              <span>Đang tải kích cỡ &amp; tùy chọn...</span>
+              <span>Đang tải kích cỡ &amp; tùy chọn pha chế...</span>
             </div>
           } @else {
-            <!-- 1. Size Selector -->
-            <div class="option-group">
-              <span class="option-group__label">1. Kích cỡ (Size)</span>
-              <div class="option-group__items">
+            <!-- 1. Thẻ chọn Kích cỡ (Size Cards Grid) -->
+            <div class="option-section">
+              <div class="option-section__header">
+                <span class="option-section__label">1. Kích cỡ (Size)</span>
+                <span class="option-section__sub">Bắt buộc chọn 1 kích cỡ</span>
+              </div>
+
+              <div class="size-cards-grid">
                 @for (size of availableSizes(); track size.id) {
-                  <label class="cb cb--pill" [for]="'size-' + size.id">
-                    <input
-                      [id]="'size-' + size.id"
-                      type="radio"
-                      name="drink-size"
-                      [value]="size.id"
-                      [checked]="selectedSize() === size.id"
-                      (change)="selectedSize.set(size.id)"
-                    />
-                    <span class="cb__box"></span>
-                    <span>
-                      {{ size.label }}
+                  <div
+                    class="size-card"
+                    [class.size-card--selected]="selectedSize() === size.id"
+                    (click)="selectedSize.set(size.id)"
+                    role="button"
+                    tabindex="0"
+                  >
+                    <div class="size-card__top">
+                      <span class="size-card__badge">{{ size.sizeLabel }}</span>
+                      <span class="size-card__icon">
+                        <nz-icon nzType="coffee"/>
+                      </span>
+                    </div>
+
+                    <div class="size-card__body">
+                      <strong class="size-card__name">{{ size.name }}</strong>
+                      <span class="size-card__vol">{{ size.volume }}</span>
+                    </div>
+
+                    <div class="size-card__footer">
                       @if (size.extraPrice > 0) {
-                        (+{{ formatPrice(size.extraPrice) }})
+                        <span class="size-card__price">+{{ formatPrice(size.extraPrice) }}</span>
+                      } @else {
+                        <span class="size-card__price size-card__price--base">Chuẩn (+0 đ)</span>
                       }
-                    </span>
-                  </label>
+                    </div>
+
+                    @if (selectedSize() === size.id) {
+                      <div class="size-card__check-indicator">
+                        <nz-icon nzType="check"/>
+                      </div>
+                    }
+                  </div>
                 }
               </div>
             </div>
 
-            <!-- 2. Sugar Selector -->
-            @if (availableSugarOptions().length > 0) {
-              <div class="option-group">
-                <span class="option-group__label">2. Lượng đường</span>
-                <div class="option-group__items">
+            <!-- 2. Độ ngọt (Segmented Control Pill - 1 hàng ngang duy nhất) -->
+            @if (isBeverage(drink) && availableSugarOptions().length > 0) {
+              <div class="option-section">
+                <div class="option-section__header">
+                  <span class="option-section__label">2. Lượng đường</span>
+                  <span class="option-section__sub">Chọn độ ngọt theo khẩu vị</span>
+                </div>
+
+                <div class="segmented-pill-bar">
                   @for (s of availableSugarOptions(); track s) {
-                    <label class="cb cb--pill" [for]="'sugar-' + s">
-                      <input
-                        [id]="'sugar-' + s"
-                        type="radio"
-                        name="drink-sugar"
-                        [value]="s"
-                        [checked]="selectedSugar() === s"
-                        (change)="selectedSugar.set(s)"
-                      />
-                      <span class="cb__box"></span>
-                      <span>{{ s }}</span>
-                    </label>
+                    <button
+                      type="button"
+                      class="segmented-pill-bar__item"
+                      [class.segmented-pill-bar__item--active]="selectedSugar() === s"
+                      (click)="selectedSugar.set(s)"
+                    >
+                      {{ s }}
+                    </button>
                   }
                 </div>
               </div>
             }
 
-            <!-- 3. Ice Selector -->
-            @if (availableIceOptions().length > 0) {
-              <div class="option-group">
-                <span class="option-group__label">3. Lượng đá</span>
-                <div class="option-group__items">
+            <!-- 3. Lượng đá (Segmented Control Pill - 1 hàng ngang duy nhất) -->
+            @if (isBeverage(drink) && availableIceOptions().length > 0) {
+              <div class="option-section">
+                <div class="option-section__header">
+                  <span class="option-section__label">3. Lượng đá</span>
+                  <span class="option-section__sub">Chọn lượng đá hoặc uống nóng</span>
+                </div>
+
+                <div class="segmented-pill-bar">
                   @for (ice of availableIceOptions(); track ice) {
-                    <label class="cb cb--pill" [for]="'ice-' + ice">
-                      <input
-                        [id]="'ice-' + ice"
-                        type="radio"
-                        name="drink-ice"
-                        [value]="ice"
-                        [checked]="selectedIce() === ice"
-                        (change)="selectedIce.set(ice)"
-                      />
-                      <span class="cb__box"></span>
-                      <span>{{ ice }}</span>
-                    </label>
+                    <button
+                      type="button"
+                      class="segmented-pill-bar__item"
+                      [class.segmented-pill-bar__item--active]="selectedIce() === ice"
+                      (click)="selectedIce.set(ice)"
+                    >
+                      {{ ice }}
+                    </button>
                   }
                 </div>
               </div>
             }
 
-            <!-- 4. Topping Options -->
-            <div class="option-group">
-              <span class="option-group__label">4. Thêm Topping</span>
-              <div class="option-group__items">
+            <!-- 4. Thêm Topping (Card Grid 2 cột mềm mại) -->
+            <div class="option-section">
+              <div class="option-section__header">
+                <span class="option-section__label">4. Thêm Topping</span>
+                <span class="option-section__sub">Chọn một hoặc nhiều topping thêm</span>
+              </div>
+
+              <div class="topping-cards-grid">
                 @for (t of toppingOptions; track t.id) {
-                  <label class="cb" [for]="'top-' + t.id">
-                    <input
-                      [id]="'top-' + t.id"
-                      type="checkbox"
-                      [checked]="selectedToppingIds().has(t.id)"
-                      (change)="toggleTopping(t.id)"
-                    />
-                    <span class="cb__box"></span>
-                    <span>{{ t.label }} (+{{ formatPrice(t.price) }})</span>
-                  </label>
+                  <div
+                    class="topping-card"
+                    [class.topping-card--selected]="selectedToppingIds().has(t.id)"
+                    (click)="toggleTopping(t.id)"
+                    role="button"
+                    tabindex="0"
+                  >
+                    <div class="topping-card__info">
+                      <span class="topping-card__name">{{ t.label }}</span>
+                      <span class="topping-card__price">+{{ formatPrice(t.price) }}</span>
+                    </div>
+
+                    <div class="topping-card__toggle">
+                      @if (selectedToppingIds().has(t.id)) {
+                        <span class="toggle-btn toggle-btn--checked">
+                          <nz-icon nzType="check"/>
+                        </span>
+                      } @else {
+                        <span class="toggle-btn">
+                          <nz-icon nzType="plus"/>
+                        </span>
+                      }
+                    </div>
+                  </div>
                 }
               </div>
             </div>
 
-            <!-- 5. Quantity Stepper -->
-            <div class="option-group">
-              <span class="option-group__label">5. Số lượng ly / phần</span>
-              <div class="option-group__stepper-row">
-                <app-quantity-stepper
-                  [value]="modalQuantity()"
-                  [min]="1"
-                  [max]="50"
-                  (valueChange)="onQuantityChange($event)"
-                />
-                <span class="stepper-helper-text">Chọn số lượng bạn muốn đặt</span>
+            <!-- 5. Ghi chú cho Barista & Quán -->
+            <div class="option-section">
+              <div class="option-section__header">
+                <span class="option-section__label">5. Ghi chú cho quán (tuỳ chọn)</span>
               </div>
-            </div>
 
-            <!-- 6. Special Note -->
-            <div class="option-group">
-              <span class="option-group__label">6. Ghi chú cho quán (tuỳ chọn)</span>
+              <div class="quick-tags-row">
+                @for (tag of quickNotes; track tag) {
+                  <button
+                    type="button"
+                    class="quick-tag-btn"
+                    [class.quick-tag-btn--active]="modalNote.includes(tag)"
+                    (click)="applyQuickNote(tag)"
+                  >
+                    + {{ tag }}
+                  </button>
+                }
+              </div>
+
               <input
                 nz-input
                 type="text"
@@ -534,17 +592,30 @@
     }
   </app-modal>
 
-  <!-- Modal Footer Template -->
+  <!-- Modal Customize Footer Template -->
   <ng-template #customFooterTemplate>
-    <div class="modal-price-footer">
-      <div class="modal-price-footer__total">
-        <span class="modal-price-footer__label">Tổng cộng ({{ modalQuantity() }} ly):</span>
-        <span class="modal-price-footer__amount">{{ formatPrice(computeCurrentModalTotal()) }}</span>
+    <div class="custom-sticky-footer">
+      <div class="custom-sticky-footer__left">
+        <div class="footer-stepper-group">
+          <span class="stepper-label">Số lượng:</span>
+          <app-quantity-stepper
+            [value]="modalQuantity()"
+            [min]="1"
+            [max]="50"
+            (valueChange)="onQuantityChange($event)"
+          />
+        </div>
+
+        <div class="footer-total-box">
+          <span class="footer-total-box__label">Tạm tính ({{ modalQuantity() }} ly):</span>
+          <span class="footer-total-box__amount">{{ formatPrice(computeCurrentModalTotal()) }}</span>
+        </div>
       </div>
-      <div class="modal-price-footer__btns">
-        <app-button variant="secondary" (click)="isModalVisible.set(false)">Hủy</app-button>
+
+      <div class="custom-sticky-footer__btns">
+        <app-button variant="secondary" (click)="closeCustomizeModal()">Hủy</app-button>
         <app-button variant="primary" leftIcon="shopping-cart" (click)="confirmAddToCart()">
-          Thêm vào giỏ hàng
+          Thêm vào giỏ hàng • {{ formatPrice(computeCurrentModalTotal()) }}
         </app-button>
       </div>
     </div>

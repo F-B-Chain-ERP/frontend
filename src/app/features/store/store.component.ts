@@ -1,7 +1,7 @@
 import {ChangeDetectionStrategy, Component, OnInit, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {NzIconDirective} from 'ng-zorro-antd/icon';
 import {NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent} from 'ng-zorro-antd/input';
 import {NzOptionComponent, NzSelectComponent} from 'ng-zorro-antd/select';
@@ -11,22 +11,26 @@ import {AppDrinkCardComponent, DrinkItem} from '../../shared/app-drink-card/app-
 import {AppQuantityStepperComponent} from '../../shared/app-quantity-stepper/app-quantity-stepper.component';
 import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
 import {CartService} from '../../shared/services/cart.service';
-import {CategoryService} from '../menu/categories/category.service';
 import {Category} from '../menu/categories/category.model';
-import {ProductService} from '../menu/products/product.service';
 import {Product, ProductDetail} from '../menu/products/product.model';
+import {ProductVariant} from '../menu/products/variants/variant.model';
+import {SalesService} from './services/sales.service';
 
 export interface CategoryTab {
   id: string;
   name: string;
   count: number;
+  icon: string;
 }
 
 export interface SizeOption {
   id: string;
   variantCode: string;
-  label: string;
+  name: string;
+  sizeLabel: string;
+  volume: string;
   extraPrice: number;
+  finalPrice: number;
 }
 
 export interface ToppingOption {
@@ -56,6 +60,49 @@ const DEFAULT_BEVERAGE_IMAGE =
 const FALLBACK_STYLE_IMAGE =
   'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80';
 
+function getCategoryIcon(name: string): string {
+  const lower = (name || '').toLowerCase();
+  if (lower.includes('cà phê') || lower.includes('coffee') || lower.includes('espresso')) return 'coffee';
+  if (lower.includes('trà sữa') || lower.includes('milktea') || lower.includes('macchiato')) return 'experiment';
+  if (lower.includes('trà') || lower.includes('tea')) return 'heart';
+  if (lower.includes('đá xay') || lower.includes('freeze') || lower.includes('smoothie')) return 'cloud';
+  if (lower.includes('bánh') || lower.includes('pastry') || lower.includes('snack') || lower.includes('croissant')) return 'shop';
+  if (lower.includes('gói') || lower.includes('hạt') || lower.includes('bean') || lower.includes('quà')) return 'gift';
+  return 'appstore';
+}
+
+function parseSizeOption(v: ProductVariant, basePrice: number): SizeOption {
+  const label = (v.sizeLabel || '').trim().toUpperCase();
+  const code = (v.variantCode || '').trim().toUpperCase();
+  let volume = 'Tiêu chuẩn';
+  let name = v.variantName || `Size ${label || 'Chuẩn'}`;
+
+  if (label === 'S' || code.includes('-S') || code.endsWith('S')) {
+    volume = '355ml';
+    if (!v.variantName) name = 'Size Nhỏ (S)';
+  } else if (label === 'M' || code.includes('-M') || code.endsWith('M')) {
+    volume = '500ml';
+    if (!v.variantName) name = 'Size Vừa (M)';
+  } else if (label === 'L' || code.includes('-L') || code.endsWith('L')) {
+    volume = '700ml';
+    if (!v.variantName) name = 'Size Lớn (L)';
+  } else if (label === 'XL' || code.includes('-XL') || code.endsWith('XL')) {
+    volume = '850ml';
+    if (!v.variantName) name = 'Size Khổng Lồ (XL)';
+  }
+
+  const extra = Number(v.priceDelta) || 0;
+  return {
+    id: v.id,
+    variantCode: v.variantCode,
+    name,
+    sizeLabel: label || 'STD',
+    volume,
+    extraPrice: extra,
+    finalPrice: basePrice + extra,
+  };
+}
+
 @Component({
   selector: 'app-store',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,8 +128,8 @@ export class StoreComponent implements OnInit {
   readonly cartService = inject(CartService);
   private readonly toast = inject(AppNotificationService);
   private readonly route = inject(ActivatedRoute);
-  private readonly categoryService = inject(CategoryService);
-  private readonly productService = inject(ProductService);
+  private readonly router = inject(Router);
+  private readonly salesService = inject(SalesService);
 
   // Filter & Search states
   searchQuery = '';
@@ -94,6 +141,7 @@ export class StoreComponent implements OnInit {
   readonly isLoadingProducts = signal<boolean>(true);
   readonly isLoadingCategories = signal<boolean>(true);
   readonly isLoadingVariants = signal<boolean>(false);
+  readonly isLoadingDetail = signal<boolean>(false);
 
   // Real data signals
   readonly rawProducts = signal<Product[]>([]);
@@ -103,11 +151,11 @@ export class StoreComponent implements OnInit {
   readonly topSelling = signal<DrinkItem[]>([]);
 
   // Category Tabs & Style Categories
-  readonly categories = signal<CategoryTab[]>([{id: 'all', name: 'Tất cả món', count: 0}]);
+  readonly categories = signal<CategoryTab[]>([{id: 'all', name: 'Tất cả món', count: 0, icon: 'appstore'}]);
   readonly styleCategories = signal<StyleCategory[]>([]);
 
-  // Modal customization state
-  readonly isModalVisible = signal(false);
+  // Modal 2: Customize Order (Size, Sugar, Ice, Toppings, Note, Quantity)
+  readonly isModalVisible = signal<boolean>(false);
   readonly selectedDrink = signal<DrinkItem | null>(null);
   readonly selectedProductDetail = signal<ProductDetail | null>(null);
   readonly availableSizes = signal<SizeOption[]>([]);
@@ -120,10 +168,18 @@ export class StoreComponent implements OnInit {
   readonly modalQuantity = signal<number>(1);
   modalNote = '';
 
+  readonly quickNotes: string[] = [
+    'Ít ngọt',
+    'Nhiều đá',
+    'Để riêng đá mang về',
+    'Không lấy ống hút',
+    'Uống nóng',
+  ];
+
   // Topping Options (Standard cafe addons)
   readonly toppingOptions: ToppingOption[] = [
     {id: 'pearl', label: 'Trân châu hoàng kim', price: 8000},
-    {id: 'peach', label: 'Thạch đào giòn', price: 10000},
+    {id: 'peach', label: 'Thạch đào giòn giòn', price: 10000},
     {id: 'cheese', label: 'Kem phô mai Cheese Foam', price: 12000},
     {id: 'lotus', label: 'Hạt sen Huế nấu đường phèn', price: 12000},
   ];
@@ -170,43 +226,39 @@ export class StoreComponent implements OnInit {
   }
 
   /**
-   * Tải danh mục thực tế từ API CategoryService (categoryType: 'PRODUCT', status: 'ACTIVE')
+   * Tải danh mục thực tế từ SalesService
    */
   loadStoreCategories(): void {
     this.isLoadingCategories.set(true);
-    this.categoryService
-      .getCategories({categoryType: 'PRODUCT', status: 'ACTIVE', pageIndex: 1, pageSize: 100})
-      .subscribe({
-        next: res => {
-          this.isLoadingCategories.set(false);
-          const activeCats = res.items || [];
-          this.applyCategories(activeCats);
-        },
-        error: () => {
-          this.isLoadingCategories.set(false);
-        },
-      });
+    this.salesService.getCategories().subscribe({
+      next: res => {
+        this.isLoadingCategories.set(false);
+        const activeCats = res.items || [];
+        this.applyCategories(activeCats);
+      },
+      error: () => {
+        this.isLoadingCategories.set(false);
+      },
+    });
   }
 
   /**
-   * Tải danh sách sản phẩm thực tế từ API ProductService (status: 'ACTIVE')
+   * Tải danh sách sản phẩm thực tế từ SalesService
    */
   loadStoreProducts(): void {
     this.isLoadingProducts.set(true);
-    this.productService
-      .getProducts({status: 'ACTIVE', pageIndex: 1, pageSize: 100})
-      .subscribe({
-        next: res => {
-          this.isLoadingProducts.set(false);
-          const products = res.items || [];
-          this.rawProducts.set(products);
-          this.processProducts(products);
-        },
-        error: () => {
-          this.isLoadingProducts.set(false);
-          this.toast.error('Không thể tải thực đơn đồ uống. Vui lòng thử lại sau!', '');
-        },
-      });
+    this.salesService.getProducts({pageSize: 100}).subscribe({
+      next: res => {
+        this.isLoadingProducts.set(false);
+        const products = res.items || [];
+        this.rawProducts.set(products);
+        this.processProducts(products);
+      },
+      error: () => {
+        this.isLoadingProducts.set(false);
+        this.toast.error('Không thể tải thực đơn đồ uống. Vui lòng thử lại sau!', '');
+      },
+    });
   }
 
   /**
@@ -215,11 +267,12 @@ export class StoreComponent implements OnInit {
   private applyCategories(cats: Category[]): void {
     const products = this.drinksList();
     const tabs: CategoryTab[] = [
-      {id: 'all', name: 'Tất cả món', count: products.length},
+      {id: 'all', name: 'Tất cả món', count: products.length, icon: 'appstore'},
       ...cats.map(c => ({
         id: c.id,
         name: c.name,
         count: products.filter(p => p.category === c.id).length,
+        icon: getCategoryIcon(c.name),
       })),
     ];
     this.categories.set(tabs);
@@ -268,7 +321,7 @@ export class StoreComponent implements OnInit {
     });
     this.newArrivals.set(sortedByDate.slice(0, 4));
 
-    // Phân luồng: Món bán chạy nhất (Top Selling: các món có isBestSeller = true hoặc isFeatured = true)
+    // Phân luồng: Món bán chạy nhất
     const topItems = items.filter(d => {
       const raw = products.find(p => p.id === d.id);
       return raw?.isBestSeller || raw?.isFeatured;
@@ -313,7 +366,7 @@ export class StoreComponent implements OnInit {
     if (!createdAt) return false;
     const createdTime = new Date(createdAt).getTime();
     const daysDiff = (Date.now() - createdTime) / (1000 * 3600 * 24);
-    return daysDiff <= 30; // Món được tạo trong 30 ngày gần nhất
+    return daysDiff <= 30;
   }
 
   formatPrice(amount: number): string {
@@ -389,6 +442,48 @@ export class StoreComponent implements OnInit {
   }
 
   /**
+   * Kiểm tra xem sản phẩm có phải đồ uống (có mức đường/đá) hay không
+   */
+  isBeverage(item?: DrinkItem | ProductDetail | null): boolean {
+    if (!item) return true;
+    const cat = (item as any).categoryName || '';
+    const lower = cat.toLowerCase();
+    if (lower.includes('bánh') || lower.includes('pastry') || lower.includes('snack') || lower.includes('đóng gói')) {
+      return false;
+    }
+    const detail = this.selectedProductDetail();
+    if (detail && !detail.availableSugarLevels && !detail.availableIceLevels) {
+      return false;
+    }
+    return true;
+  }
+
+  // ── 1. ĐIỀU HƯỚNG SANG TRANG CHI TIẾT SẢN PHẨM & BIẾN THỂ ─────────
+  /**
+   * Chuyển hướng sang trang chi tiết sản phẩm /store/product/:id
+   * Nơi khách hàng có thể xem đầy đủ thông số, bảng biến thể và đặt món trực tiếp
+   */
+  goToProductDetail(drink: DrinkItem): void {
+    this.router.navigate(['/store/product', drink.id]);
+  }
+
+  // ── 2. MODAL TÙY CHỈNH CHỌN MÓN ĐẶT HÀNG NHANH (Quick Order) ───────
+  onModalVisibleChange(visible: boolean): void {
+    this.isModalVisible.set(visible);
+    if (typeof document !== 'undefined') {
+      if (visible) {
+        document.body.classList.add('modal-open');
+      } else {
+        document.body.classList.remove('modal-open');
+      }
+    }
+  }
+
+  closeCustomizeModal(): void {
+    this.onModalVisibleChange(false);
+  }
+
+  /**
    * Mở Modal Tùy chỉnh: Lấy chi tiết sản phẩm và danh sách biến thể / kích cỡ thực tế từ BE
    */
   openCustomizeModal(drink: DrinkItem): void {
@@ -397,10 +492,9 @@ export class StoreComponent implements OnInit {
     this.modalNote = '';
     this.selectedToppingIds.set(new Set());
     this.isLoadingVariants.set(true);
-    this.isModalVisible.set(true);
+    this.onModalVisibleChange(true);
 
-    // Gọi API lấy thông tin chi tiết (kèm danh sách variants thật)
-    this.productService.getProduct(drink.id).subscribe({
+    this.salesService.getProductDetail(drink.id).subscribe({
       next: detail => {
         this.selectedProductDetail.set(detail);
         this.isLoadingVariants.set(false);
@@ -409,45 +503,55 @@ export class StoreComponent implements OnInit {
         if (detail.variants && detail.variants.length > 0) {
           const sizes: SizeOption[] = detail.variants
             .filter(v => !v.status || v.status === 'ACTIVE')
-            .map(v => ({
-              id: v.id,
-              variantCode: v.variantCode,
-              label: v.variantName ? `${v.variantName} (${v.sizeLabel})` : `Size ${v.sizeLabel}`,
-              extraPrice: Number(v.priceDelta) || 0,
-            }));
+            .map(v => parseSizeOption(v, Number(detail.basePrice) || 0));
           this.availableSizes.set(sizes);
           // Mặc định chọn size đầu tiên hoặc size có giá gốc extraPrice = 0
           const defaultSize = sizes.find(s => s.extraPrice === 0) || sizes[0];
           this.selectedSize.set(defaultSize ? defaultSize.id : '');
         } else {
-          // Sản phẩm không có biến thể size (ví dụ bánh ngọt hoặc đồ uống 1 size)
+          // Sản phẩm không có biến thể size (bánh ngọt hoặc đồ uống 1 size)
           this.availableSizes.set([
-            {id: 'default', variantCode: 'STD', label: 'Tiêu chuẩn (Mặc định)', extraPrice: 0},
+            {
+              id: 'default',
+              variantCode: 'STD',
+              name: 'Tiêu chuẩn',
+              sizeLabel: 'STD',
+              volume: 'Chuẩn',
+              extraPrice: 0,
+              finalPrice: Number(detail.basePrice) || 0,
+            },
           ]);
           this.selectedSize.set('default');
         }
 
-        // 2. Cấu hình Mức đường từ availableSugarLevels
+        // 2. Cấu hình Mức đường
         const sugarOpts = this.parseSugarOptions(detail.availableSugarLevels);
         this.availableSugarOptions.set(sugarOpts);
-        this.selectedSugar.set(sugarOpts[0] || '100% (Chuẩn)');
+        this.selectedSugar.set(sugarOpts.includes('100% (Chuẩn)') ? '100% (Chuẩn)' : sugarOpts[0] || '');
 
-        // 3. Cấu hình Mức đá từ availableIceLevels
+        // 3. Cấu hình Mức đá
         const iceOpts = this.parseIceOptions(detail.availableIceLevels);
         this.availableIceOptions.set(iceOpts);
-        this.selectedIce.set(iceOpts[0] || '100% đá');
+        this.selectedIce.set(iceOpts.includes('100% đá (Chuẩn)') ? '100% đá (Chuẩn)' : iceOpts[0] || '');
       },
       error: () => {
         this.isLoadingVariants.set(false);
-        // Fallback kích cỡ tiêu chuẩn nếu có lỗi mạng
         this.availableSizes.set([
-          {id: 'default', variantCode: 'STD', label: 'Tiêu chuẩn', extraPrice: 0},
+          {
+            id: 'default',
+            variantCode: 'STD',
+            name: 'Tiêu chuẩn',
+            sizeLabel: 'STD',
+            volume: 'Chuẩn',
+            extraPrice: 0,
+            finalPrice: drink.price,
+          },
         ]);
         this.selectedSize.set('default');
-        this.availableSugarOptions.set(['100% (Chuẩn)', '70%', '50%', 'Không đường']);
+        this.availableSugarOptions.set(['100% (Chuẩn)', '70%', '50%', 'Không đường (0%)']);
         this.selectedSugar.set('100% (Chuẩn)');
-        this.availableIceOptions.set(['100% đá', '70% đá', '50% đá', 'Không đá', 'Uống nóng']);
-        this.selectedIce.set('100% đá');
+        this.availableIceOptions.set(['100% đá (Chuẩn)', '70% đá', '50% đá', 'Không đá (0%)', 'Uống nóng']);
+        this.selectedIce.set('100% đá (Chuẩn)');
       },
     });
   }
@@ -456,22 +560,30 @@ export class StoreComponent implements OnInit {
     this.openCustomizeModal(drink);
   }
 
+  applyQuickNote(noteTag: string): void {
+    if (!this.modalNote.trim()) {
+      this.modalNote = noteTag;
+    } else if (!this.modalNote.includes(noteTag)) {
+      this.modalNote = `${this.modalNote.trim()}, ${noteTag}`;
+    }
+  }
+
   private parseSugarOptions(csvStr?: string | null): string[] {
     if (!csvStr || !csvStr.trim()) {
-      return ['100% (Chuẩn)', '70%', '50%', 'Không đường'];
+      return ['0%', '30%', '50%', '70%', '100% (Chuẩn)'];
     }
     const levels = csvStr.split(',').map(s => s.trim()).filter(Boolean);
     const mapLevel = (lvl: string) => {
       if (lvl === '100') return '100% (Chuẩn)';
       if (lvl === '0') return 'Không đường (0%)';
-      return `${lvl}% đường`;
+      return `${lvl}%`;
     };
     return levels.map(mapLevel);
   }
 
   private parseIceOptions(csvStr?: string | null): string[] {
     if (!csvStr || !csvStr.trim()) {
-      return ['100% đá', '70% đá', '50% đá', 'Không đá', 'Uống nóng'];
+      return ['100% đá (Chuẩn)', '70% đá', '50% đá', 'Không đá (0%)', 'Uống nóng'];
     }
     const levels = csvStr.split(',').map(s => s.trim()).filter(Boolean);
     const mapLevel = (lvl: string) => {
@@ -480,7 +592,7 @@ export class StoreComponent implements OnInit {
       return `${lvl}% đá`;
     };
     const parsed = levels.map(mapLevel);
-    if (!parsed.includes('Uống nóng')) {
+    if (!parsed.some(s => s.includes('nóng') || s.includes('Nóng'))) {
       parsed.push('Uống nóng');
     }
     return parsed;
@@ -530,16 +642,16 @@ export class StoreComponent implements OnInit {
     this.cartService.addItem(
       drink,
       {
-        size: sizeOpt?.label || this.selectedSize(),
+        size: sizeOpt?.name || sizeOpt?.sizeLabel || this.selectedSize(),
         sizeExtra: sizeOpt?.extraPrice || 0,
-        sugar: this.selectedSugar(),
-        ice: this.selectedIce(),
+        sugar: this.isBeverage(drink) ? this.selectedSugar() : undefined,
+        ice: this.isBeverage(drink) ? this.selectedIce() : undefined,
         toppings: selectedToppings,
       },
       qty
     );
 
-    this.isModalVisible.set(false);
+    this.closeCustomizeModal();
     this.toast.success(
       `Đã thêm ${qty}x "${drink.name}" vào giỏ hàng!`,
       note ? `Ghi chú: "${note}"` : 'Nhấn vào biểu tượng giỏ hàng để xem chi tiết hoặc thanh toán.'

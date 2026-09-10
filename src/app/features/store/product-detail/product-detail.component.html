@@ -1,0 +1,313 @@
+<div class="product-detail-page">
+  <!-- ── 1. Top Breadcrumbs Bar ── -->
+  <div class="detail-breadcrumb">
+    <button type="button" class="back-link-btn" (click)="goBack()">
+      <nz-icon nzType="arrow-left"/>
+      <span>Quay lại Thực Đơn</span>
+    </button>
+    <div class="breadcrumb-trail">
+      <a routerLink="/store" class="trail-item">Cửa Hàng</a>
+      <span class="trail-sep">/</span>
+      <span class="trail-item">{{ product()?.categoryName || 'Đồ uống' }}</span>
+      <span class="trail-sep">/</span>
+      <span class="trail-item trail-item--current">{{ product()?.name || 'Đang tải...' }}</span>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <!-- Skeleton Loading Screen -->
+    <div class="detail-skeleton-container">
+      <div class="skeleton-img skeleton-shimmer"></div>
+      <div class="skeleton-content">
+        <div class="skeleton-line skeleton-line--title skeleton-shimmer"></div>
+        <div class="skeleton-line skeleton-line--price skeleton-shimmer"></div>
+        <div class="skeleton-line skeleton-line--desc skeleton-shimmer"></div>
+        <div class="skeleton-line skeleton-line--box skeleton-shimmer"></div>
+      </div>
+    </div>
+  } @else if (product(); as p) {
+    <!-- ── 2. Main Product Detail & Direct Order Layout ── -->
+    <div class="detail-main-grid">
+      <!-- Cột Trái: Ảnh lớn, Giới thiệu món & Bảng biến thể -->
+      <div class="detail-main-grid__left">
+        <div class="product-media-card">
+          <img
+            [src]="p.imageUrl || 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=600&q=80'"
+            [alt]="p.name"
+            class="product-media-card__img"
+          />
+          <span class="product-media-card__cat-tag">{{ p.categoryName || 'Đồ uống' }}</span>
+
+          @if (p.isFeatured) {
+            <span class="product-media-card__badge product-media-card__badge--featured">
+              <nz-icon nzType="fire"/> Signature
+            </span>
+          } @else if (p.isBestSeller) {
+            <span class="product-media-card__badge product-media-card__badge--bestseller">
+              <nz-icon nzType="star"/> Bán chạy
+            </span>
+          }
+        </div>
+
+        <!-- Meta Features Badges -->
+        <div class="product-highlights">
+          <div class="highlight-item">
+            <nz-icon nzType="clock-circle" class="highlight-item__icon"/>
+            <div class="highlight-item__text">
+              <span class="label">Thời gian chuẩn bị</span>
+              <span class="val">~{{ p.preparationMinutes || 10 }} phút</span>
+            </div>
+          </div>
+
+          <div class="highlight-item">
+            <nz-icon nzType="check-circle" class="highlight-item__icon highlight-item__icon--success"/>
+            <div class="highlight-item__text">
+              <span class="label">Phục vụ tại quán &amp; Mang về</span>
+              <span class="val">Pha chế tươi mới</span>
+            </div>
+          </div>
+
+          <div class="highlight-item">
+            <nz-icon nzType="star" class="highlight-item__icon highlight-item__icon--warning"/>
+            <div class="highlight-item__text">
+              <span class="label">Đánh giá khách hàng</span>
+              <span class="val">4.8 / 5.0 (120+ lượt mua)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chi tiết mô tả & câu chuyện món -->
+        <div class="product-info-block">
+          <h3 class="product-info-block__title">Mô tả món ăn / đồ uống</h3>
+          <p class="product-info-block__text">
+            {{ p.description || 'Thức uống thủ công tươi mới từ nguyên liệu tự nhiên chọn lọc, mang hương vị đậm đà, cân bằng và khơi nguồn năng lượng tích cực.' }}
+          </p>
+        </div>
+
+        <!-- Bảng danh sách tất cả biến thể có trong hệ thống -->
+        <div class="product-info-block">
+          <div class="product-info-block__header-row">
+            <h3 class="product-info-block__title">Các kích cỡ &amp; biến thể có sẵn ({{ availableSizes().length }})</h3>
+            <span class="status-badge-active">
+              <nz-icon nzType="check"/> Sẵn sàng phục vụ
+            </span>
+          </div>
+
+          <div class="variants-table-card">
+            @for (size of availableSizes(); track size.id) {
+              <div
+                class="variant-row"
+                [class.variant-row--active]="selectedSize() === size.id"
+                (click)="selectedSize.set(size.id)"
+              >
+                <div class="variant-row__left">
+                  <span class="variant-badge">{{ size.sizeLabel }}</span>
+                  <div class="variant-meta">
+                    <strong class="variant-name">{{ size.name }}</strong>
+                    <span class="variant-sku">Dung tích: {{ size.volume }} • Mã: {{ size.variantCode }}</span>
+                  </div>
+                </div>
+
+                <div class="variant-row__right">
+                  <span class="variant-price">{{ formatPrice(size.finalPrice) }}</span>
+                  @if (size.extraPrice > 0) {
+                    <span class="variant-delta">(+{{ formatPrice(size.extraPrice) }})</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Cột Phải: Bảng Cấu Hình Đặt Món Trực Tiếp ("Order trong xem chi tiết") -->
+      <div class="detail-main-grid__right">
+        <div class="order-config-card">
+          <div class="order-config-header">
+            <span class="order-config-header__sku">Mã sản phẩm: {{ p.code }}</span>
+            <h1 class="order-config-header__title">{{ p.name }}</h1>
+
+            <div class="order-config-header__price-row">
+              <span class="current-total">{{ formatPrice(computeTotal()) }}</span>
+              <span class="base-note">(Giá cơ bản: {{ formatPrice(p.basePrice) }})</span>
+            </div>
+          </div>
+
+          <hr class="config-divider"/>
+
+          <!-- 1. Chọn Kích cỡ -->
+          <div class="config-group">
+            <div class="config-group__header">
+              <span class="config-group__label">1. Chọn kích cỡ (Size)</span>
+              <span class="config-group__sub">Bắt buộc chọn 1</span>
+            </div>
+
+            <div class="size-selector-grid">
+              @for (size of availableSizes(); track size.id) {
+                <div
+                  class="size-choice-card"
+                  [class.size-choice-card--active]="selectedSize() === size.id"
+                  (click)="selectedSize.set(size.id)"
+                >
+                  <div class="size-choice-card__top">
+                    <span class="size-pill">{{ size.sizeLabel }}</span>
+                    <nz-icon nzType="coffee" class="size-icon"/>
+                  </div>
+                  <strong class="size-choice-card__name">{{ size.name }}</strong>
+                  <span class="size-choice-card__vol">{{ size.volume }}</span>
+                  <span class="size-choice-card__price">
+                    @if (size.extraPrice > 0) {
+                      +{{ formatPrice(size.extraPrice) }}
+                    } @else {
+                      Chuẩn (+0 đ)
+                    }
+                  </span>
+
+                  @if (selectedSize() === size.id) {
+                    <div class="size-checked-tag">
+                      <nz-icon nzType="check"/>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- 2. Lượng đường (Nếu là đồ uống) -->
+          @if (isBeverage(p) && availableSugarOptions().length > 0) {
+            <div class="config-group">
+              <div class="config-group__header">
+                <span class="config-group__label">2. Lượng đường</span>
+                <span class="config-group__sub">Tùy chỉnh độ ngọt</span>
+              </div>
+
+              <div class="segmented-pill-row">
+                @for (s of availableSugarOptions(); track s) {
+                  <button
+                    type="button"
+                    class="segmented-pill-btn"
+                    [class.segmented-pill-btn--active]="selectedSugar() === s"
+                    (click)="selectedSugar.set(s)"
+                  >
+                    {{ s }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- 3. Lượng đá (Nếu là đồ uống) -->
+          @if (isBeverage(p) && availableIceOptions().length > 0) {
+            <div class="config-group">
+              <div class="config-group__header">
+                <span class="config-group__label">3. Lượng đá</span>
+                <span class="config-group__sub">Tùy chỉnh độ lạnh</span>
+              </div>
+
+              <div class="segmented-pill-row">
+                @for (ice of availableIceOptions(); track ice) {
+                  <button
+                    type="button"
+                    class="segmented-pill-btn"
+                    [class.segmented-pill-btn--active]="selectedIce() === ice"
+                    (click)="selectedIce.set(ice)"
+                  >
+                    @if (ice.includes('nóng') || ice.includes('Nóng')) {
+                      <nz-icon nzType="fire"/>
+                    }
+                    {{ ice }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- 4. Thêm Topping -->
+          <div class="config-group">
+            <div class="config-group__header">
+              <span class="config-group__label">4. Thêm Topping</span>
+              <span class="config-group__sub">Tùy chọn thêm</span>
+            </div>
+
+            <div class="topping-select-grid">
+              @for (t of toppingOptions; track t.id) {
+                <div
+                  class="topping-select-card"
+                  [class.topping-select-card--selected]="selectedToppingIds().has(t.id)"
+                  (click)="toggleTopping(t.id)"
+                >
+                  <div class="topping-info">
+                    <span class="name">{{ t.label }}</span>
+                    <span class="price">+{{ formatPrice(t.price) }}</span>
+                  </div>
+
+                  <div class="toggle-box">
+                    @if (selectedToppingIds().has(t.id)) {
+                      <span class="circle-btn circle-btn--checked">
+                        <nz-icon nzType="check"/>
+                      </span>
+                    } @else {
+                      <span class="circle-btn">
+                        <nz-icon nzType="plus"/>
+                      </span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- 5. Ghi chú -->
+          <div class="config-group">
+            <span class="config-group__label">5. Ghi chú cho quán</span>
+            <div class="quick-chips">
+              @for (tag of quickNotes; track tag) {
+                <button
+                  type="button"
+                  class="quick-chip-btn"
+                  [class.quick-chip-btn--active]="note.includes(tag)"
+                  (click)="applyQuickNote(tag)"
+                >
+                  + {{ tag }}
+                </button>
+              }
+            </div>
+
+            <input
+              nz-input
+              type="text"
+              placeholder="Ví dụ: Ít ngọt, để riêng đá mang về..."
+              [(ngModel)]="note"
+              class="note-field"
+              maxlength="150"
+            />
+          </div>
+
+          <hr class="config-divider"/>
+
+          <!-- 6. Bottom Action: Stepper & Add to cart button -->
+          <div class="order-action-footer">
+            <div class="stepper-box">
+              <span class="stepper-title">Số lượng:</span>
+              <app-quantity-stepper
+                [value]="quantity()"
+                [min]="1"
+                [max]="50"
+                (valueChange)="onQuantityChange($event)"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="add-cart-large-btn"
+              (click)="addToCart()"
+            >
+              <nz-icon nzType="shopping-cart"/>
+              <span>Thêm vào giỏ hàng • {{ formatPrice(computeTotal()) }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>

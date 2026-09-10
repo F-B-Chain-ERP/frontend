@@ -3,6 +3,19 @@
   width: 100%;
 }
 
+::ng-deep body.modal-open {
+  overflow: hidden !important;
+}
+
+::ng-deep .ant-modal-wrap {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+  }
+}
+
 .store-container {
   width: 100%;
 }
@@ -399,9 +412,9 @@
   cursor: pointer;
   transition: all var(--dur-fast) var(--ease);
 
-    &:hover {
-      background: var(--brand);
-      color: var(--on-brand);
+  &:hover {
+    background: var(--brand);
+    color: var(--on-brand);
     border-color: var(--brand);
     transform: translateY(-2px);
   }
@@ -625,35 +638,54 @@
 .category-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 36px;
+  justify-content: flex-start;
+  overflow-x: auto;
+  padding: 8px 4px 14px 4px;
+  gap: 10px;
+  margin-bottom: 28px;
+  scrollbar-width: thin;
+
+  &--sticky {
+    position: sticky;
+    top: 68px;
+    z-index: 20;
+    background: color-mix(in srgb, var(--surface-bg, #ffffff) 90%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 12px 16px;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--border-subtle);
+  }
 
   &__pill {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 22px;
+    padding: 9px 18px;
     border-radius: var(--radius-pill);
     border: 1px solid var(--border-subtle);
     background: var(--surface-card);
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
+    white-space: nowrap;
     transition: all var(--dur-fast) var(--ease);
+    box-shadow: var(--shadow-xs);
 
     &:hover {
       background: var(--surface-sunken);
       color: var(--text-primary);
       border-color: var(--border-strong);
+      transform: translateY(-1px);
     }
 
     &--active {
       background: var(--brand) !important;
       color: var(--on-brand) !important;
       border-color: var(--brand) !important;
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 30%, transparent);
 
       .category-bar__count {
         background: color-mix(in srgb, var(--on-brand) 25%, transparent);
@@ -662,8 +694,13 @@
     }
   }
 
+  &__icon {
+    font-size: 16px;
+    line-height: 1;
+  }
+
   &__count {
-    padding: 2px 8px;
+    padding: 2px 7px;
     border-radius: var(--radius-pill);
     background: var(--surface-sunken);
     font-size: 11px;
@@ -980,160 +1017,314 @@
   }
 }
 
-// ── Custom Modal Body & Footer (Options Selector) ─────────
-.custom-modal-body {
+// ── 9. Product Detail Quick View Modal ──────────────────────────────
+.detail-modal-body {
   display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: var(--space-6);
+  grid-template-columns: 320px 1fr;
+  gap: 28px;
+  padding: 6px 0;
 
-  @media (max-width: 640px) {
+  @media (max-width: 800px) {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
 
   &__img-col {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 14px;
+  }
+
+  &__img-box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    background: var(--surface-sunken);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
   }
 
   &__img {
     width: 100%;
-    height: 180px;
+    height: 100%;
     object-fit: cover;
-    border-radius: var(--radius-lg);
+    display: block;
+    transition: transform var(--dur-slow) var(--ease);
+
+    &:hover {
+      transform: scale(1.05);
+    }
   }
 
-  &__desc {
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-    line-height: 1.5;
-    margin: 0;
+  &__cat-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
-  &__options-col {
+  &__featured-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    color: #ffffff;
+    text-transform: uppercase;
+
+    &--signature {
+      background: var(--brand);
+    }
+
+    &--bestseller {
+      background: var(--danger);
+    }
+
+    &--new {
+      background: var(--success);
+    }
+  }
+
+  &__meta-row {
     display: flex;
     flex-direction: column;
-    gap: var(--space-5);
-    max-height: 420px;
+    gap: 8px;
+
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: var(--surface-sunken);
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border-subtle);
+
+      .meta-icon {
+        color: var(--brand);
+      }
+
+      &--rating {
+        .star {
+          color: #f59e0b;
+          font-size: 15px;
+        }
+      }
+    }
+  }
+
+  &__content-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-height: 520px;
     overflow-y: auto;
-    padding-right: var(--space-2);
+    padding-right: 8px;
+    scrollbar-width: thin;
   }
 }
 
-.option-group {
+.detail-header {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 14px;
 
-  &__label {
-    font-size: var(--text-sm);
+  &__code-tag {
+    font-size: 11px;
     font-weight: 700;
+    color: var(--brand);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__title {
+    font-size: 24px;
+    font-weight: 800;
     color: var(--text-primary);
+    margin: 0;
+    line-height: 1.25;
   }
 
-  &__items {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-}
-
-.cb {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px 12px;
-  background: var(--surface-sunken);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  font-size: var(--text-xs);
-  color: var(--text-primary);
-  cursor: pointer;
-  user-select: none;
-  transition: all var(--dur-fast) var(--ease);
-
-  &:hover {
-    border-color: var(--brand);
-    background: var(--brand-soft);
-  }
-
-  input[type='radio'],
-  input[type='checkbox'] {
-    display: none;
-  }
-
-  input:checked + .cb__box {
-    background: var(--brand);
-    border-color: var(--brand);
-  }
-
-  input:checked + .cb__box::after {
-    opacity: 1;
-  }
-
-  &--pill {
-    border-radius: var(--radius-pill);
-  }
-
-  &__box {
-    position: relative;
-    width: 16px;
-    height: 16px;
-    border-radius: 4px;
-    border: 1px solid var(--border-strong);
-    background: var(--surface-card);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all var(--dur-fast) var(--ease);
-
-    &::after {
-      content: '';
-      width: 6px;
-      height: 6px;
-      border-radius: 2px;
-      background: var(--on-brand);
-      opacity: 0;
-      transition: opacity var(--dur-fast) var(--ease);
-    }
-  }
-
-  &--pill &__box {
-    border-radius: var(--radius-circle);
-
-    &::after {
-      border-radius: var(--radius-circle);
-    }
-  }
-}
-
-.modal-price-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding-top: var(--space-2);
-
-  &__total {
+  &__price-box {
     display: flex;
     align-items: baseline;
-    gap: var(--space-2);
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
-  &__label {
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-  }
-
-  &__amount {
-    font-size: var(--text-lg);
+  &__base-price {
+    font-size: 22px;
     font-weight: 800;
     color: var(--brand);
   }
 
-  &__btns {
+  &__range-note {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__header-row {
     display: flex;
-    gap: var(--space-2);
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  &__tag {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--success);
+    background: color-mix(in srgb, var(--success) 12%, transparent);
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+  }
+
+  &__desc {
+    font-size: 13.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+}
+
+.detail-variants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-variant-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  transition: all var(--dur-fast) var(--ease);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--brand) 35%, transparent);
+    background: var(--surface-sunken);
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--brand) 12%, transparent);
+    color: var(--brand);
+    font-weight: 800;
+    font-size: 13px;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+
+    .name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .vol {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+  }
+
+  &__right {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+
+    .final-price {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .extra-badge {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--brand);
+    }
+  }
+}
+
+.detail-specs-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .spec-tag {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    background: var(--surface-sunken);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border-left: 3px solid var(--brand);
+  }
+}
+
+.modal-detail-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-top: 4px;
+
+  &__left {
+    .helper-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+  }
+
+  &__right {
+    display: flex;
+    gap: 10px;
   }
 }
 
@@ -1149,10 +1340,10 @@
 
 .skeleton-shimmer {
   background: linear-gradient(
-    90deg,
-    var(--surface-sunken) 25%,
-    color-mix(in srgb, var(--surface-sunken) 70%, white 30%) 50%,
-    var(--surface-sunken) 75%
+      90deg,
+      var(--surface-sunken) 25%,
+      color-mix(in srgb, var(--surface-sunken) 70%, white 30%) 50%,
+      var(--surface-sunken) 75%
   );
   background-size: 200% 100%;
   animation: shimmerPulse 1.6s infinite ease-in-out;
@@ -1213,75 +1404,452 @@
   border-radius: var(--radius-pill);
 }
 
-// ── Modal Enhancements (Image tag, prep badge, stepper, notes) ────────
-.custom-modal-body {
-  &__img-wrap {
-    position: relative;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
+// ── 10. Redesigned Customize Order Modal ────────────────────────────
+.custom-modal-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  padding: 4px 0;
+
+  @media (max-width: 800px) {
+    grid-template-columns: 1fr;
+    gap: 18px;
   }
 
-  &__cat-tag {
+  &__preview-col {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  &__options-col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-height: 520px;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 4px;
+    }
+  }
+}
+
+.preview-img-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+
+  .preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .preview-cat-tag {
     position: absolute;
     top: 10px;
     left: 10px;
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(8px);
-    color: #fff;
+    color: #ffffff;
     padding: 3px 10px;
     border-radius: var(--radius-pill);
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
 
-  &__prep-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    background: var(--surface-sunken);
-    border: 1px solid var(--border-subtle);
+  .preview-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 10px;
     border-radius: var(--radius-pill);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    width: fit-content;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #ffffff;
+    text-transform: uppercase;
 
-    .clock-icon {
-      color: var(--brand);
-      font-size: 14px;
+    &--signature {
+      background: var(--brand);
+    }
+
+    &--bestseller {
+      background: var(--danger);
+    }
+
+    &--new {
+      background: var(--success);
     }
   }
 }
 
-.modal-loading-box {
+.preview-info-box {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  padding: var(--space-8);
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
+  flex-direction: column;
+  gap: 8px;
 
-  .modal-loading-icon {
-    font-size: 20px;
-    color: var(--brand);
+  .preview-title {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .preview-price-highlight {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    .unit-price {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--brand);
+    }
+
+    .price-note {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+  }
+
+  .preview-prep-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface-sunken);
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-subtle);
+    width: fit-content;
+
+    nz-icon {
+      color: var(--brand);
+    }
+  }
+
+  .preview-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
   }
 }
 
-.option-group {
-  &__stepper-row {
+.option-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  &__sub {
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+}
+
+// ── Size Cards Grid ──
+.size-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.size-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--dur-fast) var(--ease);
+  box-shadow: var(--shadow-xs);
+
+  &:hover {
+    border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+    background: var(--surface-sunken);
+    transform: translateY(-2px);
+  }
+
+  &--selected {
+    border-color: var(--brand) !important;
+    background: color-mix(in srgb, var(--brand) 7%, var(--surface-card)) !important;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--brand) 20%, transparent);
+
+    .size-card__badge {
+      background: var(--brand);
+      color: var(--on-brand);
+    }
+
+    .size-card__name {
+      color: var(--brand);
+    }
+  }
+
+  &__top {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--surface-sunken);
+    color: var(--text-secondary);
+    font-weight: 800;
+    font-size: 12px;
+    transition: all var(--dur-fast) var(--ease);
+  }
+
+  &__icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 6px;
+  }
+
+  &__name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.25;
+  }
+
+  &__vol {
+    font-size: 11.5px;
+    color: var(--text-muted);
+  }
+
+  &__footer {
+    margin-top: auto;
+  }
+
+  &__price {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--brand);
+
+    &--base {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+  }
+
+  &__check-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: var(--on-brand);
+    font-size: 11px;
   }
 }
 
-.stepper-helper-text {
-  font-size: var(--text-xs);
-  color: var(--text-muted);
+// ── Segmented Control Pill Bar (Sugar & Ice) ──
+.segmented-pill-bar {
+  display: flex;
+  align-items: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &__item {
+    flex: 1;
+    min-width: fit-content;
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-pill);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    text-align: center;
+    transition: all var(--dur-fast) var(--ease);
+
+    &:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    &--active {
+      background: var(--brand) !important;
+      color: var(--on-brand) !important;
+      font-weight: 700;
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--brand) 25%, transparent);
+    }
+  }
+}
+
+// ── Topping Cards Grid ──
+.topping-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+
+  @media (max-width: 540px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.topping-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: all var(--dur-fast) var(--ease);
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-sunken);
+  }
+
+  &--selected {
+    border-color: var(--brand) !important;
+    background: color-mix(in srgb, var(--brand) 6%, var(--surface-card)) !important;
+
+    .topping-card__name {
+      color: var(--brand);
+      font-weight: 700;
+    }
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  &__price {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--brand);
+  }
+
+  &__toggle {
+    .toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--surface-sunken);
+      border: 1px solid var(--border-strong);
+      color: var(--text-secondary);
+      font-size: 11px;
+      transition: all var(--dur-fast) var(--ease);
+
+      &--checked {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: var(--on-brand);
+      }
+    }
+  }
+}
+
+// ── Quick Note Chips ──
+.quick-tags-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.quick-tag-btn {
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+
+  &:hover {
+    border-color: var(--brand);
+    color: var(--brand);
+    background: color-mix(in srgb, var(--brand) 6%, transparent);
+  }
+
+  &--active {
+    border-color: var(--brand);
+    background: var(--brand);
+    color: var(--on-brand);
+    font-weight: 600;
+  }
 }
 
 .modal-note-input {
@@ -1297,5 +1865,77 @@
   &:focus {
     border-color: var(--brand);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 20%, transparent);
+  }
+}
+
+// ── Sticky Customize Footer ──
+.custom-sticky-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+  padding-top: 4px;
+
+  @media (max-width: 680px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  &__btns {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+.footer-stepper-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .stepper-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+}
+
+.footer-total-box {
+  display: flex;
+  flex-direction: column;
+
+  &__label {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  &__amount {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--brand);
+    line-height: 1.1;
+  }
+}
+
+.modal-loading-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-8);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+
+  .modal-loading-icon {
+    font-size: 20px;
+    color: var(--brand);
   }
 }
