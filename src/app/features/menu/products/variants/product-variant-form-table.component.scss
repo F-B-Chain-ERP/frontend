@@ -1,0 +1,139 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.variant-form-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  &__title-group {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: var(--fw-semibold, 600);
+    color: var(--text-primary);
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  &__scroll {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background-color: var(--surface-card);
+    overflow-x: auto;
+
+    &.is-scroll {
+      max-height: 280px;
+      overflow-y: auto;
+    }
+  }
+
+  .variant-form-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+
+    thead {
+      background-color: var(--surface-sunken);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+
+      th {
+        padding: 8px 10px;
+        font-weight: var(--fw-semibold, 600);
+        color: var(--text-secondary);
+        white-space: nowrap;
+      }
+    }
+
+    tbody {
+      tr {
+        border-bottom: 1px solid var(--border-subtle);
+        transition: background-color 0.15s ease;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        &:hover {
+          background-color: var(--surface-hover, rgba(0, 0, 0, 0.02));
+        }
+
+        td {
+          padding: 6px 10px;
+          vertical-align: middle;
+        }
+      }
+    }
+
+    .col-stt {
+      width: 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-family: var(--font-mono, monospace);
+    }
+
+    .col-code {
+      width: 100px;
+    }
+
+    .col-name {
+      min-width: 140px;
+    }
+
+    .col-label {
+      width: 85px;
+    }
+
+    .col-delta {
+      width: 140px;
+    }
+
+    .col-price {
+      width: 130px;
+      white-space: nowrap;
+    }
+
+    .col-order {
+      width: 80px;
+    }
+
+    .col-action {
+      width: 44px;
+      text-align: center;
+    }
+  }
+
+  .variant-form-empty {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--text-muted);
+    font-size: 13px;
+
+    nz-icon {
+      font-size: 22px;
+      display: block;
+      margin-bottom: 6px;
+    }
+  }
+}

@@ -1,0 +1,772 @@
+<div class="product-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Danh sách sản phẩm</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM.CREATE]"
+        variant="primary"
+        leftIcon="plus"
+        (click)="openCreateModal()"
+      >
+        Tạo sản phẩm
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Tìm kiếm -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="product-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search"/>
+          <input
+            id="product-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập mã hoặc tên sản phẩm..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Danh mục -->
+      <div class="filter-item filter-item--select">
+        <label class="form-label">Danh mục</label>
+        <nz-select
+          [ngModel]="selectedCategoryId"
+          (ngModelChange)="selectedCategoryId = $event; onSearch()"
+          nzPlaceHolder="Tất cả danh mục"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (c of categories(); track c.id) {
+            <nz-option [nzValue]="c.id" [nzLabel]="c.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Trạng thái -->
+      <div class="filter-item filter-item--sm">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [ngModel]="selectedStatus"
+          (ngModelChange)="selectedStatus = $event; onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (o of statusOptions; track o.value) {
+            <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Nổi bật -->
+      <div class="filter-item filter-item--sm">
+        <label class="form-label">Nổi bật</label>
+        <nz-select
+          [ngModel]="selectedFeatured"
+          (ngModelChange)="selectedFeatured = $event; onSearch()"
+          nzPlaceHolder="Tất cả"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (o of booleanFilterOptions; track o.label) {
+            <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Bán chạy -->
+      <div class="filter-item filter-item--sm">
+        <label class="form-label">Bán chạy</label>
+        <nz-select
+          [ngModel]="selectedBestSeller"
+          (ngModelChange)="selectedBestSeller = $event; onSearch()"
+          nzPlaceHolder="Tất cả"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (o of booleanFilterOptions; track o.label) {
+            <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Filter Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #productTable
+      [nzData]="products()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1350px' }"
+    >
+      <thead>
+      <tr>
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+        <th scope="col" nzWidth="150px" nzAlign="left">Mã sản phẩm</th>
+        <th scope="col" nzWidth="280px" nzAlign="left">Tên sản phẩm</th>
+        <th scope="col" nzWidth="180px" nzAlign="left">Danh mục</th>
+        <th scope="col" nzWidth="140px" nzAlign="right">Giá bán</th>
+        <th scope="col" nzWidth="180px" nzAlign="center">Đặc điểm</th>
+        <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
+        <th scope="col" nzWidth="130px" nzAlign="center">Thao tác</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (item of products(); track item.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+            <td nzAlign="left">
+              <span class="product-code">{{ item.code }}</span>
+            </td>
+            <td nzAlign="left">
+              <div class="product-name-cell">
+                @if (item.imageUrl) {
+                  <img [src]="item.imageUrl" [alt]="item.name" class="product-thumb"/>
+                } @else {
+                  <div class="product-thumb-placeholder">
+                    <nz-icon nzType="coffee"/>
+                  </div>
+                }
+                <span
+                  class="product-name-title font-semibold"
+                  [nz-tooltip]="item.description || item.name"
+                  [nzTooltipTitle]="item.description || item.name"
+                >
+                  {{ item.name }}
+                </span>
+              </div>
+            </td>
+            <td nzAlign="left">
+              <span class="category-tag">
+                <nz-icon nzType="folder" style="margin-right: 6px; color: var(--brand);"/>
+                {{ item.categoryName || '—' }}
+              </span>
+            </td>
+            <td nzAlign="right" class="font-mono font-semibold product-price">
+              {{ item.basePrice | number: '1.0-0' }} ₫
+            </td>
+            <td nzAlign="center">
+              <div class="tag-group">
+                @if (item.isFeatured) {
+                  <span class="custom-badge custom-badge--featured" nz-tooltip nzTooltipTitle="Sản phẩm nổi bật">
+                    <nz-icon nzType="star" nzTheme="fill"/> Nổi bật
+                  </span>
+                }
+                @if (item.isBestSeller) {
+                  <span class="custom-badge custom-badge--bestseller" nz-tooltip nzTooltipTitle="Sản phẩm bán chạy">
+                    <nz-icon nzType="fire" nzTheme="fill"/> Bán chạy
+                  </span>
+                }
+                @if (item.isCombo) {
+                  <span class="custom-badge custom-badge--combo" nz-tooltip nzTooltipTitle="Sản phẩm Combo">
+                    Combo
+                  </span>
+                }
+                @if (!item.isFeatured && !item.isBestSeller && !item.isCombo) {
+                  <span class="text-muted">—</span>
+                }
+              </div>
+            </td>
+            <td nzAlign="center">
+              <span [class]="getProductStatusMeta(item.status).badgeClass">
+                {{ getProductStatusMeta(item.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết"
+                  (click)="openDetailModal(item)"
+                ></app-button>
+                <app-button
+                  variant="ghost"
+                  iconOnly="appstore"
+                  nz-tooltip
+                  nzTooltipTitle="Quản lý biến thể / kích cỡ"
+                  (click)="openVariantModal(item)"
+                  *erpUTTHasSomeAuthority="ROLE.BIEN_THE_SAN_PHAM.VIEW"
+                ></app-button>
+                <app-button
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa sản phẩm"
+                  (click)="openEditModal(item)"
+                  *erpUTTHasSomeAuthority="ROLE.SAN_PHAM.UPDATE"
+                ></app-button>
+                <app-button
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa sản phẩm"
+                  (click)="onDelete(item)"
+                  *erpUTTHasSomeAuthority="ROLE.SAN_PHAM.DELETE"
+                ></app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- ── 4. Standard Footer & Pagination ──────────────────────────── -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Product Detail Modal ─────────────────────────────────────── -->
+  <app-modal
+    [visible]="isDetailModalVisible()"
+    (visibleChange)="isDetailModalVisible.set($event)"
+    title="Thông tin chi tiết sản phẩm"
+    size="lg"
+    [maskClosable]="true"
+    [footer]="detailModalFooter"
+    (cancelEmit)="closeDetailModal()"
+  >
+    @if (loadingDetail()) {
+      <div class="detail-loading-box">
+        <nz-spin nzSimple nzTip="Đang tải dữ liệu sản phẩm..."></nz-spin>
+      </div>
+    } @else if (selectedProduct(); as p) {
+      <div class="product-detail-modal">
+        <!-- Header: Ảnh + Tên + Mã + Tags -->
+        <div class="product-detail-header">
+          <div class="detail-image-container">
+            @if (p.imageUrl) {
+              <img [src]="p.imageUrl" [alt]="p.name" class="detail-image"/>
+            } @else {
+              <div class="detail-image-placeholder">
+                <nz-icon nzType="coffee"/>
+              </div>
+            }
+          </div>
+          <div class="detail-header-info">
+            <div class="detail-badges">
+              <span class="product-code">{{ p.code }}</span>
+              <span [class]="getProductStatusMeta(p.status).badgeClass">
+                {{ getProductStatusMeta(p.status).label }}
+              </span>
+              @if (p.isFeatured) {
+                <span class="custom-badge custom-badge--featured"><nz-icon nzType="star" nzTheme="fill"/> Nổi bật</span>
+              }
+              @if (p.isBestSeller) {
+                <span class="custom-badge custom-badge--bestseller"><nz-icon nzType="fire"
+                                                                             nzTheme="fill"/> Bán chạy</span>
+              }
+              @if (p.isCombo) {
+                <span class="custom-badge custom-badge--combo">Combo</span>
+              }
+            </div>
+            <h2 class="detail-title">{{ p.name }}</h2>
+            <div class="detail-price-highlight">
+              <span class="price-label">Giá bán cơ bản:</span>
+              <span class="price-value">{{ p.basePrice | number: '1.0-0' }} ₫</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Thông tin tổng quan -->
+        <div class="detail-section">
+          <h4 class="detail-section__title">
+            <nz-icon nzType="info-circle"/>
+            Thông tin sản phẩm
+          </h4>
+          <div class="detail-grid" nz-row [nzGutter]="[16, 16]">
+            <div nz-col [nzSpan]="12">
+              <div class="detail-field">
+                <label class="detail-field__label">Danh mục</label>
+                <div class="detail-field__value">{{ p.categoryName || '—' }}</div>
+              </div>
+            </div>
+
+            <div nz-col [nzSpan]="12">
+              <div class="detail-field">
+                <label class="detail-field__label">Thời gian chuẩn bị</label>
+                <div class="detail-field__value font-medium">
+                  <nz-icon nzType="clock-circle" class="mr-1 text-muted"/>
+                  {{ p.preparationMinutes ? p.preparationMinutes + ' phút' : '10 phút' }}
+                </div>
+              </div>
+            </div>
+
+            <div nz-col [nzSpan]="12">
+              <div class="detail-field">
+                <label class="detail-field__label">Loại sản phẩm</label>
+                <div class="detail-field__value">{{ p.isCombo ? 'Sản phẩm Combo' : 'Sản phẩm đơn' }}</div>
+              </div>
+            </div>
+
+            <div nz-col [nzSpan]="12">
+              <div class="detail-field">
+                <label class="detail-field__label">Trạng thái</label>
+                <div class="detail-field__value">
+                  <span [class]="getProductStatusMeta(p.status).badgeClass">
+                    {{ getProductStatusMeta(p.status).label }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mức đá khả dụng -->
+            <div nz-col [nzSpan]="12">
+              <div class="detail-field">
+                <label class="detail-field__label">Mức đá khả dụng</label>
+                <div class="detail-field__value levels-list">
+                  @for (ice of parseLevels(p.availableIceLevels); track ice) {
+                    <span class="level-pill level-pill--ice">
+                      <nz-icon nzType="cloud"/>
+                      {{ ice }}% đá
+                    </span>
+                  } @empty {
+                    <span class="text-muted">Mặc định</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- Mức đường khả dụng -->
+            <div nz-col [nzSpan]="12">
+              <div class="detail-field">
+                <label class="detail-field__label">Mức đường khả dụng</label>
+                <div class="detail-field__value levels-list">
+                  @for (sugar of parseLevels(p.availableSugarLevels); track sugar) {
+                    <span class="level-pill level-pill--sugar">
+                      <nz-icon nzType="heart"/>
+                      {{ sugar }}% đường
+                    </span>
+                  } @empty {
+                    <span class="text-muted">Mặc định</span>
+                  }
+                </div>
+              </div>
+            </div>
+
+            @if (p.description) {
+              <div nz-col [nzSpan]="24">
+                <div class="detail-field">
+                  <label class="detail-field__label">Mô tả sản phẩm</label>
+                  <div class="detail-field__value detail-description">{{ p.description }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Danh sách phiên bản / Kích cỡ (Variants) -->
+        <div class="detail-section">
+          <div class="detail-section__header">
+            <h4 class="detail-section__title">
+              <nz-icon nzType="appstore"/>
+              Danh sách phiên bản / Kích cỡ (Variants)
+            </h4>
+            <div class="detail-section__header-actions">
+              <span class="variants-count-badge">{{ p.variants ? p.variants.length : 0 }} phiên bản</span>
+              <app-button
+                variant="secondary"
+                leftIcon="appstore"
+                (click)="openVariantModal(p)"
+                *erpUTTHasSomeAuthority="ROLE.BIEN_THE_SAN_PHAM.UPDATE"
+              >
+                Quản lý kích cỡ
+              </app-button>
+            </div>
+          </div>
+
+          @if (p.variants && p.variants.length > 0) {
+            <div class="variants-table-container">
+              <table class="variants-table">
+                <thead>
+                <tr>
+                  <th>STT</th>
+                  <th>Kích cỡ</th>
+                  <th>Tên phiên bản</th>
+                  <th>Mã Size</th>
+                  <th class="text-right">Chênh lệch giá</th>
+                  <th class="text-right">Giá bán dự kiến</th>
+                  <th class="text-center">Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                  @for (v of p.variants; track v.id || v.variantCode; let idx = $index) {
+                    <tr>
+                      <td class="text-muted font-mono">{{ v.displayOrder || idx + 1 }}</td>
+                      <td>
+                        <span class="size-badge">{{ v.sizeLabel || v.variantCode }}</span>
+                      </td>
+                      <td class="font-semibold text-primary">{{ v.variantName }}</td>
+                      <td>
+                        <span class="variant-code-tag">{{ v.variantCode }}</span>
+                      </td>
+                      <td class="text-right font-mono">
+                        @if (v.priceDelta > 0) {
+                          <span class="text-success font-semibold">+{{ v.priceDelta | number: '1.0-0' }} ₫</span>
+                        } @else if (v.priceDelta < 0) {
+                          <span class="text-danger font-semibold">{{ v.priceDelta | number: '1.0-0' }} ₫</span>
+                        } @else {
+                          <span class="text-muted">+0 ₫</span>
+                        }
+                      </td>
+                      <td class="text-right font-mono font-bold text-primary">
+                        {{ (p.basePrice + (v.priceDelta || 0)) | number: '1.0-0' }} ₫
+                      </td>
+                      <td class="text-center">
+                        <span [class]="getProductStatusMeta(v.status || 'ACTIVE').badgeClass">
+                          {{ getProductStatusMeta(v.status || 'ACTIVE').label }}
+                        </span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="variants-empty">
+              <nz-icon nzType="inbox" class="empty-icon"/>
+              <span>Chưa có cấu hình phiên bản / size cho sản phẩm này (áp dụng giá bán cơ bản)</span>
+            </div>
+          }
+        </div>
+
+        <!-- Thông tin hệ thống / Audit -->
+        <div class="detail-section detail-section--audit">
+          <div class="detail-grid" nz-row [nzGutter]="[16, 16]">
+            <div nz-col [nzSpan]="12">
+              <div class="detail-field">
+                <label class="detail-field__label">Người tạo</label>
+                <div class="detail-field__value text-muted">{{ p.createdBy || 'Hệ thống' }}</div>
+              </div>
+            </div>
+
+            <div nz-col [nzSpan]="12">
+              <div class="detail-field">
+                <label class="detail-field__label">Ngày tạo</label>
+                <div class="detail-field__value text-muted font-mono">
+                  {{ p.createdAt ? (p.createdAt | date: 'dd/MM/yyyy HH:mm:ss') : '—' }}
+                </div>
+              </div>
+            </div>
+
+            @if (p.updatedBy || p.updatedAt) {
+              <div nz-col [nzSpan]="12">
+                <div class="detail-field">
+                  <label class="detail-field__label">Cập nhật gần nhất bởi</label>
+                  <div class="detail-field__value text-muted">{{ p.updatedBy || '—' }}</div>
+                </div>
+              </div>
+
+              <div nz-col [nzSpan]="12">
+                <div class="detail-field">
+                  <label class="detail-field__label">Thời điểm cập nhật</label>
+                  <div class="detail-field__value text-muted font-mono">
+                    {{ p.updatedAt ? (p.updatedAt | date: 'dd/MM/yyyy HH:mm:ss') : '—' }}
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <ng-template #detailModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="secondary" (click)="closeDetailModal()">Đóng</app-button>
+        @if (selectedProduct(); as p) {
+          <app-button
+            variant="primary"
+            leftIcon="edit"
+            *erpUTTHasSomeAuthority="ROLE.SAN_PHAM.UPDATE"
+            (click)="editFromDetail()"
+          >
+            Chỉnh sửa sản phẩm
+          </app-button>
+        }
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 5. Product Form Modal (Tạo mới & Chỉnh sửa) ───────────────── -->
+  <app-modal
+    [visible]="isCreateModalVisible()"
+    (visibleChange)="isCreateModalVisible.set($event)"
+    [title]="modalMode() === 'create' ? 'Thêm sản phẩm mới' : 'Cập nhật sản phẩm'"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="createModalFooter"
+    (cancelEmit)="closeCreateModal()"
+  >
+    <form [formGroup]="createForm" class="create-product-form" (ngSubmit)="submitCreate()">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Danh mục -->
+        <div nz-col [nzSpan]="12">
+          <div class="form-group">
+            <label class="form-label required">Danh mục</label>
+            <nz-select
+              formControlName="categoryId"
+              nzPlaceHolder="Chọn danh mục"
+              style="width: 100%"
+              [nzStatus]="createForm.controls.categoryId.invalid && createForm.controls.categoryId.touched ? 'error' : ''"
+            >
+              @for (c of categories(); track c.id) {
+                <nz-option [nzValue]="c.id" [nzLabel]="c.name"></nz-option>
+              }
+            </nz-select>
+            @if (createForm.controls.categoryId.invalid && createForm.controls.categoryId.touched) {
+              <div class="form-error">Vui lòng chọn danh mục sản phẩm.</div>
+            }
+          </div>
+        </div>
+
+        <!-- Mã sản phẩm -->
+        <div nz-col [nzSpan]="12">
+          <div class="form-group">
+            <label class="form-label required">Mã sản phẩm</label>
+            <nz-input-wrapper>
+              <input
+                nz-input
+                formControlName="code"
+                placeholder="VD: CF-BAC-XIU"
+                maxlength="50"
+                style="text-transform: uppercase"
+                [class.ng-invalid]="createForm.controls.code.invalid && createForm.controls.code.touched"
+              />
+            </nz-input-wrapper>
+            @if (createForm.controls.code.invalid && createForm.controls.code.touched) {
+              <div class="form-error">
+                @if (createForm.controls.code.errors?.['required']) {
+                  Vui lòng nhập mã sản phẩm.
+                } @else if (createForm.controls.code.errors?.['pattern']) {
+                  Mã chỉ gồm chữ cái, chữ số, gạch nối hoặc gạch dưới.
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Tên sản phẩm -->
+        <div nz-col [nzSpan]="14">
+          <div class="form-group">
+            <label class="form-label required">Tên sản phẩm</label>
+            <nz-input-wrapper>
+              <input
+                nz-input
+                formControlName="name"
+                placeholder="VD: Bạc Xỉu Đá"
+                maxlength="150"
+                [class.ng-invalid]="createForm.controls.name.invalid && createForm.controls.name.touched"
+              />
+            </nz-input-wrapper>
+            @if (createForm.controls.name.invalid && createForm.controls.name.touched) {
+              <div class="form-error">Vui lòng nhập tên sản phẩm.</div>
+            }
+          </div>
+        </div>
+
+        <!-- Giá bán -->
+        <div nz-col [nzSpan]="10">
+          <div class="form-group">
+            <label class="form-label required">Giá bán (₫)</label>
+            <nz-input-number
+              formControlName="basePrice"
+              [nzMin]="0"
+              [nzStep]="1000"
+              [nzFormatter]="currencyFormatter"
+              nzPlaceHolder="VD: 29000"
+              style="width: 100%"
+              [nzStatus]="createForm.controls.basePrice.invalid && createForm.controls.basePrice.touched ? 'error' : ''"
+            ></nz-input-number>
+            @if (createForm.controls.basePrice.invalid && createForm.controls.basePrice.touched) {
+              <div class="form-error">Giá bán phải >= 0.</div>
+            }
+          </div>
+        </div>
+
+        <!-- Thời gian chuẩn bị -->
+        <div nz-col [nzSpan]="12">
+          <div class="form-group">
+            <label class="form-label">Thời gian chuẩn bị (phút)</label>
+            <nz-input-number
+              formControlName="preparationMinutes"
+              [nzMin]="0"
+              [nzStep]="1"
+              nzPlaceHolder="10"
+              style="width: 100%"
+            ></nz-input-number>
+          </div>
+        </div>
+
+        <!-- Trạng thái bán -->
+        <div nz-col [nzSpan]="12">
+          <div class="form-group">
+            <label class="form-label">Trạng thái bán</label>
+            <nz-select formControlName="status" style="width: 100%">
+              @for (st of statusOptions; track st.value) {
+                <nz-option [nzValue]="st.value" [nzLabel]="st.label"></nz-option>
+              }
+            </nz-select>
+          </div>
+        </div>
+
+        <!-- Cờ trạng thái / phân loại -->
+        <div nz-col [nzSpan]="24">
+          <div class="flags-card">
+            <div class="flag-item">
+              <nz-switch formControlName="isFeatured" id="switch-featured"></nz-switch>
+              <label for="switch-featured" class="flag-label">
+                <nz-icon nzType="star" nzTheme="fill" class="text-gold"/>
+                <span>Sản phẩm nổi bật (Featured)</span>
+              </label>
+            </div>
+            <div class="flag-item">
+              <nz-switch formControlName="isBestSeller" id="switch-bestseller"></nz-switch>
+              <label for="switch-bestseller" class="flag-label">
+                <nz-icon nzType="fire" nzTheme="fill" class="text-danger"/>
+                <span>Sản phẩm bán chạy (Best Seller)</span>
+              </label>
+            </div>
+            <div class="flag-item">
+              <nz-switch formControlName="isCombo" id="switch-combo"></nz-switch>
+              <label for="switch-combo" class="flag-label">
+                <nz-icon nzType="appstore"/>
+                <span>Sản phẩm Combo</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ảnh sản phẩm (MinIO upload / URL) -->
+        <div nz-col [nzSpan]="24">
+          <div class="form-group">
+            <label class="form-label">Ảnh sản phẩm</label>
+            <div class="image-upload-wrapper">
+              @if (imagePreviewUrl() || createForm.controls.imageUrl.value) {
+                <div class="image-preview-card">
+                  <img [src]="imagePreviewUrl() || createForm.controls.imageUrl.value" alt="Preview"
+                       class="preview-img"/>
+                  <div class="image-preview-overlay">
+                    <button type="button" class="btn-remove-img" (click)="removeSelectedImage()" title="Xoá ảnh">
+                      <nz-icon nzType="delete"/>
+                    </button>
+                  </div>
+                  @if (selectedImageFile(); as f) {
+                    <div class="image-file-info">
+                      <nz-icon nzType="cloud-upload"/>
+                      {{ f.name }} ({{ (f.size / 1024).toFixed(0) }} KB)
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="image-dropzone" (click)="fileInput.click()">
+                  <input
+                    #fileInput
+                    type="file"
+                    style="display: none"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    (change)="onFileSelected($event)"
+                  />
+                  <div class="dropzone-content">
+                    <div class="dropzone-icon">
+                      <nz-icon nzType="cloud-upload"/>
+                    </div>
+                    <div class="dropzone-text">
+                      <span class="dropzone-main">Nhấn để tải lên ảnh sản phẩm</span>
+                      <span class="dropzone-sub">PNG, JPG, WebP hoặc GIF (Tối đa 5MB) - Tự động lưu trên MinIO</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="image-url-fallback">
+                  <span class="text-muted text-xs">Hoặc nhập link ảnh trực tiếp:</span>
+                  <input
+                    nz-input
+                    formControlName="imageUrl"
+                    placeholder="https://example.com/image.jpg"
+                    class="mt-1"
+                  />
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Mô tả sản phẩm -->
+        <div nz-col [nzSpan]="24">
+          <div class="form-group">
+            <label class="form-label">Mô tả sản phẩm</label>
+            <textarea
+              nz-input
+              formControlName="description"
+              rows="2"
+              placeholder="Mô tả hương vị, nguyên liệu đặc trưng, lưu ý pha chế..."
+              maxlength="500"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Danh sách biến thể / Kích cỡ (Component riêng trong variants/) -->
+        <div nz-col [nzSpan]="24">
+          <nz-divider style="margin: 16px 0 12px"></nz-divider>
+          <app-product-variant-form-table
+            [variantsArray]="variantsArray"
+            [basePrice]="createForm.get('basePrice')?.value"
+          ></app-product-variant-form-table>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #createModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="secondary" (click)="closeCreateModal()" [disabled]="isSubmitting()">
+          Hủy bỏ
+        </app-button>
+        <app-button
+          variant="primary"
+          [leftIcon]="modalMode() === 'create' ? 'check' : 'save'"
+          [loading]="isSubmitting()"
+          (click)="submitCreate()"
+        >
+          {{ modalMode() === 'create' ? 'Tạo sản phẩm' : 'Lưu thay đổi' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 5. Quick Variant Management Modal (Component riêng trong variants/) ── -->
+  <app-product-variant-modal
+    [visible]="isVariantModalVisible()"
+    (visibleChange)="isVariantModalVisible.set($event)"
+    [product]="activeProductForVariants()"
+    (variantsUpdated)="onVariantsUpdated()"
+  ></app-product-variant-modal>
+</div>

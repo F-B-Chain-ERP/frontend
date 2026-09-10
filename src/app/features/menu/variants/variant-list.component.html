@@ -1,0 +1,412 @@
+<div class="page variant-page">
+  <!-- ── 1. Page Header (Đồng bộ theo chuẩn chung hệ thống) ───────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý biến thể</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="thunderbolt" [disabled]="!selectedProduct()" (click)="openPresetModal()"
+                  *erpUTTHasSomeAuthority="ROLE.BIEN_THE_SAN_PHAM.UPDATE">
+        Áp dụng Preset Size
+      </app-button>
+
+      <app-button variant="primary" leftIcon="plus" [disabled]="!selectedProduct()" (click)="openAddModal()"
+                  *erpUTTHasSomeAuthority="ROLE.BIEN_THE_SAN_PHAM.CREATE">
+        Thêm biến thể mới
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Main 2-Column Layout ────────────────────────────────────── -->
+  <div nz-row [nzGutter]="[20, 20]" class="variant-layout">
+    <!-- Left Column: Product Selection Panel (8 Cols) -->
+    <div nz-col [nzSpan]="24" [nzLg]="8" [nzXl]="7">
+      <nz-card class="product-selector-card" [nzBordered]="false">
+        <div class="selector-header">
+          <div class="selector-title">
+            <nz-icon nzType="coffee"/>
+            <span>Chọn sản phẩm</span>
+          </div>
+          <span class="product-count-badge">{{ filteredProducts().length }} món</span>
+        </div>
+
+        <!-- Filters -->
+        <div class="selector-filters">
+          <nz-select [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryFilterChange($event)"
+                     nzPlaceHolder="Tất cả danh mục" [nzAllowClear]="true" class="selector-select">
+            @for (cat of categories(); track cat.id) {
+              <nz-option [nzValue]="cat.id" [nzLabel]="cat.name"></nz-option>
+            }
+          </nz-select>
+
+          <nz-input-wrapper class="selector-search" [nzAllowClear]="true">
+            <nz-icon nzInputPrefix nzType="search"/>
+            <input type="text" nz-input [(ngModel)]="productSearchText" placeholder="Tìm tên hoặc mã món..."/>
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Product List -->
+        <div class="product-item-list">
+          @if (loadingProducts()) {
+            <div class="loading-box">
+              <nz-spin nzTip="Đang tải danh sách món..."></nz-spin>
+            </div>
+          } @else if (filteredProducts().length === 0) {
+            <div class="selector-empty">
+              <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Không tìm thấy món nào"></nz-empty>
+            </div>
+          } @else {
+            @for (item of filteredProducts(); track item.id) {
+              <div class="product-item" [class.product-item--active]="selectedProduct()?.id === item.id"
+                   (click)="onSelectProduct(item)">
+                <div class="product-item__thumb">
+                  @if (item.imageUrl) {
+                    <img [src]="item.imageUrl" [alt]="item.name"/>
+                  } @else {
+                    <div class="thumb-placeholder">
+                      <nz-icon nzType="coffee"/>
+                    </div>
+                  }
+                </div>
+                <div class="product-item__info">
+                  <div class="product-item__header">
+                    <span class="product-item__code font-mono">{{ item.code }}</span>
+                    <span class="product-item__price font-mono font-semibold">
+                  {{ item.basePrice | number: '1.0-0' }} ₫
+                </span>
+                  </div>
+                  <div class="product-item__name font-medium" [title]="item.name">
+                    {{ item.name }}
+                  </div>
+                  <div class="product-item__cat text-muted text-xs">
+                    {{ item.categoryName || 'Chưa phân loại' }}
+                  </div>
+                </div>
+                <div class="product-item__arrow">
+                  <nz-icon nzType="right"/>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </nz-card>
+    </div>
+
+    <!-- Right Column: Variant Management & Details Panel (16-17 Cols) -->
+    <div nz-col [nzSpan]="24" [nzLg]="16" [nzXl]="17">
+      @if (selectedProduct(); as prod) {
+        <!-- Product Banner Summary Card -->
+        <nz-card class="product-banner-card" [nzBordered]="false">
+          <div class="banner-content">
+            <div class="banner-media">
+              @if (prod.imageUrl) {
+                <img [src]="prod.imageUrl" [alt]="prod.name" class="banner-thumb"/>
+              } @else {
+                <div class="banner-thumb-placeholder">
+                  <nz-icon nzType="coffee"/>
+                </div>
+              }
+            </div>
+
+            <div class="banner-info">
+              <div class="banner-tags">
+                <span class="badge-code font-mono">{{ prod.code }}</span>
+                <span class="badge-cat">
+                <nz-icon nzType="folder" style="margin-right: 4px"/>
+                  {{ prod.categoryName || 'Thực đơn' }}
+              </span>
+                <span [class]="getProductStatusMeta(prod.status).badgeClass">
+                {{ getProductStatusMeta(prod.status).label }}
+              </span>
+              </div>
+              <h2 class="banner-title">{{ prod.name }}</h2>
+              <div class="banner-price">
+                <span class="text-muted">Giá cơ bản:</span>
+                <span class="price-value font-mono font-bold">{{ prod.basePrice | number: '1.0-0' }} ₫</span>
+              </div>
+            </div>
+
+            <div class="banner-stats">
+              <div class="kpi-card">
+                <div class="kpi-label">Tổng kích cỡ</div>
+                <div class="kpi-val font-mono">{{ totalVariantsCount() }}</div>
+                <div class="kpi-sub text-success">{{ activeVariantsCount() }} đang áp dụng</div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-label">Khoảng giá bán</div>
+                <div class="kpi-val kpi-val--price font-mono">
+                  @if (totalVariantsCount() === 0) {
+                    {{ prod.basePrice | number: '1.0-0' }} ₫
+                  } @else {
+                    {{ minPrice() | number: '1.0-0' }} - {{ maxPrice() | number: '1.0-0' }} ₫
+                  }
+                </div>
+                <div class="kpi-sub text-muted">Tùy chọn theo Size</div>
+              </div>
+            </div>
+          </div>
+        </nz-card>
+
+        <!-- Variants Table Card -->
+        <nz-card class="variant-table-card" [nzBordered]="false">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h3 class="section-title">
+                <nz-icon nzType="profile"/>
+                Danh sách biến thể / Kích cỡ
+              </h3>
+              <span class="section-badge">{{ filteredVariants().length }} biến thể</span>
+            </div>
+
+            <div class="toolbar-right">
+              <nz-input-wrapper class="table-search" [nzAllowClear]="true">
+                <nz-icon nzInputPrefix nzType="search"/>
+                <input type="text" nz-input [(ngModel)]="variantFilterQuery" placeholder="Tìm mã / tên / size..."/>
+              </nz-input-wrapper>
+
+              <nz-select [(ngModel)]="selectedVariantStatus" nzPlaceHolder="Tất cả trạng thái" [nzAllowClear]="true"
+                         style="width: 140px">
+                <nz-option nzValue="ACTIVE" nzLabel="Đang áp dụng"></nz-option>
+                <nz-option nzValue="INACTIVE" nzLabel="Tạm dừng"></nz-option>
+              </nz-select>
+
+              <app-button variant="ghost" iconOnly="reload" nz-tooltip nzTooltipTitle="Tải lại danh sách biến thể"
+                          [loading]="loadingVariants()" (click)="refreshCurrentVariants()"></app-button>
+            </div>
+          </div>
+
+          <!-- Table with [nzScroll] so all 9 columns display properly -->
+          <nz-table #variantTable [nzData]="filteredVariants()" [nzLoading]="loadingVariants()"
+                    [nzShowPagination]="false"
+                    [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '980px' }">
+            <thead>
+            <tr>
+              <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+              <th scope="col" nzWidth="110px" nzAlign="left">Mã Size</th>
+              <th scope="col" nzWidth="180px" nzAlign="left">Tên biến thể</th>
+              <th scope="col" nzWidth="90px" nzAlign="center">Nhãn Size</th>
+              <th scope="col" nzWidth="120px" nzAlign="right">Lệch giá</th>
+              <th scope="col" nzWidth="130px" nzAlign="right">Giá bán dự kiến</th>
+              <th scope="col" nzWidth="80px" nzAlign="center">Thứ tự</th>
+              <th scope="col" nzWidth="120px" nzAlign="center">Trạng thái</th>
+              <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (v of filteredVariants(); track v.id; let idx = $index) {
+                <tr>
+                  <td nzAlign="center" class="font-mono text-muted">{{ idx + 1 }}</td>
+                  <td nzAlign="left">
+                    <span class="variant-code font-mono font-semibold">{{ v.variantCode }}</span>
+                  </td>
+                  <td nzAlign="left">
+                    <span class="variant-name font-medium">{{ v.variantName }}</span>
+                  </td>
+                  <td nzAlign="center">
+                    <span class="size-pill font-mono font-semibold">{{ v.sizeLabel }}</span>
+                  </td>
+                  <td nzAlign="right" class="font-mono font-semibold">
+                    @if (v.priceDelta > 0) {
+                      <span class="delta-positive">+{{ v.priceDelta | number: '1.0-0' }} ₫</span>
+                    } @else if (v.priceDelta < 0) {
+                      <span class="delta-negative">{{ v.priceDelta | number: '1.0-0' }}
+                        ₫</span>
+                    } @else {
+                      <span class="delta-zero">0 ₫ (Gốc)</span>
+                    }
+                  </td>
+                  <td nzAlign="right" class="font-mono font-bold final-price-cell">
+                    {{ (prod.basePrice + v.priceDelta) | number: '1.0-0' }} ₫
+                  </td>
+                  <td nzAlign="center" class="font-mono text-muted">
+                    {{ v.displayOrder }}
+                  </td>
+                  <td nzAlign="center">
+                    @if ((v.status || 'ACTIVE') === 'ACTIVE') {
+                      <span class="tbl-badge tbl-badge--success">Đang bán</span>
+                    } @else {
+                      <span class="tbl-badge tbl-badge--danger">Tạm dừng</span>
+                    }
+                  </td>
+                  <td nzAlign="center">
+                    <div class="tbl-actions">
+                      <app-button variant="ghost" iconOnly="edit" nz-tooltip nzTooltipTitle="Chỉnh sửa biến thể"
+                                  (click)="openEditModal(v)"
+                                  *erpUTTHasSomeAuthority="ROLE.BIEN_THE_SAN_PHAM.UPDATE"></app-button>
+                      <app-button variant="ghost"
+                                  [iconOnly]="(v.status || 'ACTIVE') === 'ACTIVE' ? 'stop' : 'check-circle'"
+                                  nz-tooltip
+                                  [nzTooltipTitle]="(v.status || 'ACTIVE') === 'ACTIVE' ? 'Tạm dừng áp dụng' : 'Kích hoạt áp dụng'"
+                                  (click)="onToggleStatus(v)"
+                                  *erpUTTHasSomeAuthority="ROLE.BIEN_THE_SAN_PHAM.UPDATE"></app-button>
+                      <app-button variant="ghost" iconOnly="delete" nz-tooltip nzTooltipTitle="Xóa biến thể"
+                                  (click)="onDeleteVariant(v)"
+                                  *erpUTTHasSomeAuthority="ROLE.BIEN_THE_SAN_PHAM.DELETE"></app-button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        </nz-card>
+      } @else {
+        <nz-card class="no-selection-card" [nzBordered]="false">
+          <nz-empty nzNotFoundImage="simple"
+                    nzNotFoundContent="Vui lòng chọn một sản phẩm bên trái để xem và quản lý các biến thể"></nz-empty>
+        </nz-card>
+      }
+    </div>
+  </div>
+
+  <!-- ── 4. Add / Edit Variant Modal ────────────────────────────────── -->
+  <app-modal [visible]="isFormModalVisible()" (visibleChange)="isFormModalVisible.set($event)"
+             [title]="(modalMode() === 'add' ? 'Thêm biến thể kích cỡ mới' : 'Chỉnh sửa biến thể') + (selectedProduct() ? ' - ' + selectedProduct()!.name : '')"
+             size="md" [footer]="formModalFooter" (cancelEmit)="closeFormModal()">
+    <form [formGroup]="variantForm" (ngSubmit)="onSubmitForm()" class="variant-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="12">
+          <label class="form-label form-label--required" for="var-code">Mã biến thể / Size</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="tag"/>
+            <input id="var-code" nz-input formControlName="variantCode" placeholder="VD: S, M, L, XL"
+                   style="text-transform: uppercase" maxlength="50"/>
+          </nz-input-wrapper>
+          @if (variantForm.get('variantCode')?.dirty || variantForm.get('variantCode')?.touched) {
+            @if (variantForm.get('variantCode')?.hasError('required')) {
+              <span class="form-error">Mã biến thể không được để trống.</span>
+            } @else if (variantForm.get('variantCode')?.hasError('pattern')) {
+              <span class="form-error">Mã chỉ gồm chữ cái, số, gạch nối hoặc gạch dưới.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="12">
+          <label class="form-label form-label--required" for="var-size">Nhãn hiển thị ngắn</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="font-size"/>
+            <input id="var-size" nz-input formControlName="sizeLabel" placeholder="VD: S, M, L" maxlength="30"/>
+          </nz-input-wrapper>
+          @if (variantForm.get('sizeLabel')?.dirty || variantForm.get('sizeLabel')?.touched) {
+            @if (variantForm.get('sizeLabel')?.hasError('required')) {
+              <span class="form-error">Nhãn kích cỡ không được để trống.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24">
+          <label class="form-label form-label--required" for="var-name">Tên hiển thị biến thể</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="edit"/>
+            <input id="var-name" nz-input formControlName="variantName" placeholder="VD: Size L (Lớn)"
+                   maxlength="100"/>
+          </nz-input-wrapper>
+          @if (variantForm.get('variantName')?.dirty || variantForm.get('variantName')?.touched) {
+            @if (variantForm.get('variantName')?.hasError('required')) {
+              <span class="form-error">Tên biến thể không được để trống.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="12">
+          <label class="form-label form-label--required" for="var-delta">Lệch giá so với giá gốc (₫)</label>
+          <nz-input-number id="var-delta" formControlName="priceDelta" [nzStep]="1000" [nzFormatter]="currencyFormatter"
+                           style="width: 100%"></nz-input-number>
+          <span class="form-hint">Nhập 0 nếu bằng giá gốc, số dương nếu cộng thêm.</span>
+        </div>
+
+        <div nz-col [nzSpan]="12">
+          <label class="form-label" for="var-order">Thứ tự hiển thị</label>
+          <nz-input-number id="var-order" formControlName="displayOrder" [nzMin]="0" [nzStep]="1"
+                           style="width: 100%"></nz-input-number>
+        </div>
+
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="var-status">Trạng thái áp dụng</label>
+          <nz-select id="var-status" formControlName="status" style="width: 100%">
+            <nz-option nzValue="ACTIVE" nzLabel="Đang áp dụng (Hiển thị bán)"></nz-option>
+            <nz-option nzValue="INACTIVE" nzLabel="Tạm dừng áp dụng"></nz-option>
+          </nz-select>
+        </div>
+
+        <!-- Calculated Live Preview -->
+        <div nz-col [nzSpan]="24">
+          <div class="calculated-box">
+            <span class="calc-label">Giá bán dự kiến cho khách:</span>
+            <span class="calc-val font-mono">
+              {{
+                ((selectedProduct()?.basePrice || 0) + (variantForm.get('priceDelta')?.value || 0)) | number: '1.0-0'
+              }} ₫
+            </span>
+            <span class="calc-formula text-muted text-xs">
+              ({{ selectedProduct()?.basePrice | number: '1.0-0' }} ₫ giá gốc
+              {{ (variantForm.get('priceDelta')?.value || 0) >= 0 ? '+' : '' }}
+              {{ variantForm.get('priceDelta')?.value || 0 | number: '1.0-0' }} ₫ chênh lệch)
+            </span>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSavingVariant()" (click)="closeFormModal()">
+          Hủy bỏ
+        </app-button>
+        <app-button variant="primary" [leftIcon]="modalMode() === 'add' ? 'plus' : 'check'"
+                    [loading]="isSavingVariant()" (click)="onSubmitForm()">
+          {{ modalMode() === 'add' ? 'Tạo biến thể' : 'Lưu thay đổi' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 5. Preset Size Modal ──────────────────────────────────────── -->
+  <app-modal [visible]="isPresetModalVisible()" (visibleChange)="isPresetModalVisible.set($event)"
+             [title]="'Áp dụng bộ kích cỡ chuẩn (Size Preset)' + (selectedProduct() ? ' - ' + selectedProduct()!.name : '')"
+             size="md" [footer]="presetModalFooter" (cancelEmit)="closePresetModal()">
+    <div class="presets-container">
+      <p class="preset-intro text-muted">
+        Chọn mẫu thiết lập kích cỡ chuẩn để áp dụng tự động cho món ăn / đồ uống này. Hệ thống sẽ đồng bộ toàn bộ biến
+        thể tương ứng thông qua API đồng bộ hàng loạt.
+      </p>
+
+      <div class="preset-card-list">
+        @for (preset of standardSizePresets; track preset.label) {
+          <div class="preset-item-card">
+            <div class="preset-item-header">
+              <div class="preset-icon">
+                <nz-icon nzType="thunderbolt" nzTheme="fill"/>
+              </div>
+              <div class="preset-titles">
+                <h4 class="preset-name">{{ preset.label }}</h4>
+                <p class="preset-desc text-muted text-xs">{{ preset.description }}</p>
+              </div>
+              <app-button variant="primary" leftIcon="check" [loading]="loadingVariants()"
+                          (click)="applyPreset(preset)">
+                Áp dụng
+              </app-button>
+            </div>
+
+            <div class="preset-pill-group">
+              @for (item of preset.items; track item.variantCode) {
+                <span class="preset-pill">
+              <strong>{{ item.sizeLabel }}</strong>:
+                  {{ item.priceDelta > 0 ? '+' + (item.priceDelta | number: '1.0-0') + '₫' : 'Giá gốc' }}
+            </span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <ng-template #presetModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" (click)="closePresetModal()"> Đóng</app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>
