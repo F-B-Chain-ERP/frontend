@@ -107,22 +107,37 @@
   <!-- ── 3. Section: Món Mới Nhất (NEW ARRIVALS) ─────────────────────── -->
   <section id="new-arrivals" class="section-block">
     <h2 class="section-title">MÓN MỚI NHẤT</h2>
+
     <div class="drinks-grid">
-      @for (drink of newArrivals; track drink.id) {
-        <app-drink-card
-          [item]="drink"
-          (selectItem)="openCustomizeModal($event)"
-          (addToCart)="quickAddToCart($event)"
-        />
+      @if (isLoadingProducts()) {
+        @for (item of [1, 2, 3, 4]; track item) {
+          <div class="drink-skeleton-card">
+            <div class="drink-skeleton-card__img skeleton-shimmer"></div>
+            <div class="drink-skeleton-card__body">
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--title skeleton-shimmer"></div>
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--rating skeleton-shimmer"></div>
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--price skeleton-shimmer"></div>
+            </div>
+          </div>
+        }
+      } @else {
+        @for (drink of newArrivals(); track drink.id) {
+          <app-drink-card
+            [item]="drink"
+            (selectItem)="openCustomizeModal($event)"
+            (addToCart)="quickAddToCart($event)"
+          />
+        }
       }
     </div>
+
     <div class="section-action">
       <button
         type="button"
         class="section-btn-outline"
         (click)="onSelectCategory('all'); scrollToSection('all-drinks')"
       >
-        Xem Tất Cả
+        Xem Tất Cả Món Mới
       </button>
     </div>
   </section>
@@ -132,50 +147,71 @@
   <!-- ── 4. Section: Món Bán Chạy (TOP SELLING) ─────────────────────── -->
   <section id="top-selling" class="section-block">
     <h2 class="section-title">MÓN BÁN CHẠY NHẤT</h2>
+
     <div class="drinks-grid">
-      @for (drink of topSelling; track drink.id) {
-        <app-drink-card
-          [item]="drink"
-          (selectItem)="openCustomizeModal($event)"
-          (addToCart)="quickAddToCart($event)"
-        />
+      @if (isLoadingProducts()) {
+        @for (item of [1, 2, 3, 4]; track item) {
+          <div class="drink-skeleton-card">
+            <div class="drink-skeleton-card__img skeleton-shimmer"></div>
+            <div class="drink-skeleton-card__body">
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--title skeleton-shimmer"></div>
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--rating skeleton-shimmer"></div>
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--price skeleton-shimmer"></div>
+            </div>
+          </div>
+        }
+      } @else {
+        @for (drink of topSelling(); track drink.id) {
+          <app-drink-card
+            [item]="drink"
+            (selectItem)="openCustomizeModal($event)"
+            (addToCart)="quickAddToCart($event)"
+          />
+        }
       }
     </div>
+
     <div class="section-action">
       <button
         type="button"
         class="section-btn-outline"
         (click)="onSelectCategory('all'); scrollToSection('all-drinks')"
       >
-        Xem Tất Cả
+        Xem Tất Cả Món Bán Chạy
       </button>
     </div>
   </section>
 
-  <!-- ── 5. Section: Khám Phá Theo Gu (BENTO - NỘI DUNG OVERLAY NHƯ CŨ) ── -->
+  <!-- ── 5. Section: Khám Phá Theo Gu (BENTO OVERLAY) ────────────────── -->
   <section id="browse-style" class="section-block">
     <div class="browse-style-card">
       <h2 class="section-title section-title--inner">KHÁM PHÁ THEO GU THƯỞNG THỨC</h2>
 
       <div class="style-grid">
-        @for (style of styleCategories(); track style.id) {
-          <div
-            class="style-item"
-            (click)="selectStyleCategory(style.id)"
-            tabindex="0"
-            role="button"
-            (keydown.enter)="selectStyleCategory(style.id)"
-            (keydown.space)="selectStyleCategory(style.id)"
-          >
-            <img [src]="style.imageUrl" [alt]="style.name" class="style-item__bg"/>
-            <div class="style-item__content">
-              <h3 class="style-item__title">{{ style.name }}</h3>
-              <span class="style-item__sub">{{ style.subtitle }}</span>
+        @if (isLoadingCategories()) {
+          @for (item of [1, 2, 3, 4]; track item) {
+            <div class="style-item style-item--skeleton skeleton-shimmer"></div>
+          }
+        } @else {
+          @for (style of styleCategories(); track style.id) {
+            <div
+              class="style-item"
+              (click)="selectStyleCategory(style.id)"
+              tabindex="0"
+              role="button"
+              (keydown.enter)="selectStyleCategory(style.id)"
+              (keydown.space)="selectStyleCategory(style.id)"
+            >
+              <img [src]="style.imageUrl" [alt]="style.name" class="style-item__bg"/>
+              <div class="style-item__content">
+                <h3 class="style-item__title">{{ style.name }}</h3>
+                <span class="style-item__sub">{{ style.subtitle }}</span>
+              </div>
+              <div class="style-item__arrow" aria-hidden="true">
+                <nz-icon nzType="arrow-right"/>
+              </div>
             </div>
-            <div class="style-item__arrow" aria-hidden="true">
-              <nz-icon nzType="arrow-right"/>
-            </div>
-          </div>
+          }
         }
       </div>
     </div>
@@ -187,16 +223,22 @@
 
     <!-- Category Pills -->
     <div class="category-bar">
-      @for (cat of categories(); track cat.id) {
-        <button
-          type="button"
-          class="category-bar__pill"
-          [class.category-bar__pill--active]="selectedCategoryId() === cat.id"
-          (click)="onSelectCategory(cat.id)"
-        >
-          <span>{{ cat.name }}</span>
-          <span class="category-bar__count">{{ cat.count }}</span>
-        </button>
+      @if (isLoadingCategories()) {
+        @for (item of [1, 2, 3, 4, 5]; track item) {
+          <div class="category-bar__pill category-bar__pill--skeleton skeleton-shimmer"></div>
+        }
+      } @else {
+        @for (cat of categories(); track cat.id) {
+          <button
+            type="button"
+            class="category-bar__pill"
+            [class.category-bar__pill--active]="selectedCategoryId() === cat.id"
+            (click)="onSelectCategory(cat.id)"
+          >
+            <span>{{ cat.name }}</span>
+            <span class="category-bar__count">{{ cat.count }}</span>
+          </button>
+        }
       }
     </div>
 
@@ -207,7 +249,7 @@
           <nz-icon nzInputPrefix nzType="search" class="store-filter-search-icon"/>
           <input
             nz-input
-            placeholder="Tìm kiếm cà phê, trà đào, macchiato theo tên hoặc mô tả..."
+            placeholder="Tìm kiếm cà phê, trà trái cây, macchiato theo tên hoặc mô tả..."
             [(ngModel)]="searchQuery"
             (ngModelChange)="onFilterChange()"
             class="store-filter-search-input"
@@ -224,31 +266,45 @@
           <nz-option nzValue="featured" nzLabel="Sắp xếp: Phổ biến nhất"></nz-option>
           <nz-option nzValue="price-asc" nzLabel="Giá: Thấp đến Cao"></nz-option>
           <nz-option nzValue="price-desc" nzLabel="Giá: Cao đến Thấp"></nz-option>
+          <nz-option nzValue="newest" nzLabel="Mới nhất"></nz-option>
         </nz-select>
       </div>
     </div>
 
     <!-- Drink Cards Grid -->
     <div class="drinks-grid">
-      @for (drink of filteredDrinks(); track drink.id) {
-        <app-drink-card
-          [item]="drink"
-          (selectItem)="openCustomizeModal($event)"
-          (addToCart)="quickAddToCart($event)"
-        />
-      } @empty {
-        <div class="drinks-empty">
-          <nz-icon nzType="inbox" class="drinks-empty__icon"/>
-          <h3>Không tìm thấy món nào phù hợp</h3>
-          <p>Vui lòng thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác nhé.</p>
-          <button
-            type="button"
-            class="section-btn-outline"
-            (click)="onSelectCategory('all'); searchQuery = ''; onFilterChange()"
-          >
-            Đặt lại bộ lọc
-          </button>
-        </div>
+      @if (isLoadingProducts()) {
+        @for (item of [1, 2, 3, 4, 5, 6, 7, 8]; track item) {
+          <div class="drink-skeleton-card">
+            <div class="drink-skeleton-card__img skeleton-shimmer"></div>
+            <div class="drink-skeleton-card__body">
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--title skeleton-shimmer"></div>
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--rating skeleton-shimmer"></div>
+              <div class="drink-skeleton-card__line drink-skeleton-card__line--price skeleton-shimmer"></div>
+            </div>
+          </div>
+        }
+      } @else {
+        @for (drink of filteredDrinks(); track drink.id) {
+          <app-drink-card
+            [item]="drink"
+            (selectItem)="openCustomizeModal($event)"
+            (addToCart)="quickAddToCart($event)"
+          />
+        } @empty {
+          <div class="drinks-empty">
+            <nz-icon nzType="inbox" class="drinks-empty__icon"/>
+            <h3>Không tìm thấy món nào phù hợp</h3>
+            <p>Vui lòng thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác nhé.</p>
+            <button
+              type="button"
+              class="section-btn-outline"
+              (click)="onSelectCategory('all'); searchQuery = ''; onFilterChange()"
+            >
+              Đặt lại bộ lọc
+            </button>
+          </div>
+        }
       }
     </div>
   </section>
@@ -322,7 +378,7 @@
     </div>
   </section>
 
-  <!-- ── Modal Tùy Chỉnh Món (Size, Đường, Đá, Topping) ─────────────── -->
+  <!-- ── Modal Tùy Chỉnh Món (Size, Đường, Đá, Topping, Số Lượng, Ghi Chú) ── -->
   <app-modal
     [visible]="isModalVisible()"
     (visibleChange)="isModalVisible.set($event)"
@@ -334,93 +390,145 @@
       <div class="custom-modal-body">
         <!-- Image & Basic info -->
         <div class="custom-modal-body__img-col">
-          <img [src]="drink.imageUrl" [alt]="drink.name" class="custom-modal-body__img"/>
+          <div class="custom-modal-body__img-wrap">
+            <img [src]="drink.imageUrl" [alt]="drink.name" class="custom-modal-body__img"/>
+            <span class="custom-modal-body__cat-tag">{{ drink.categoryName }}</span>
+          </div>
+
+          <div class="custom-modal-body__prep-badge">
+            <nz-icon nzType="clock-circle" class="clock-icon"/>
+            <span>~{{ selectedProductDetail()?.preparationMinutes || 10 }} phút pha chế</span>
+          </div>
+
           <p class="custom-modal-body__desc">{{ drink.description }}</p>
         </div>
 
         <!-- Custom Options -->
         <div class="custom-modal-body__options-col">
-          <!-- Size Selector -->
-          <div class="option-group">
-            <span class="option-group__label">1. Kích cỡ (Size)</span>
-            <div class="option-group__items">
-              @for (size of sizeOptions; track size.id) {
-                <label class="cb cb--pill" [for]="'size-' + size.id">
-                  <input
-                    [id]="'size-' + size.id"
-                    type="radio"
-                    name="drink-size"
-                    [value]="size.id"
-                    [checked]="selectedSize() === size.id"
-                    (change)="selectedSize.set(size.id)"
-                  />
-                  <span class="cb__box"></span>
-                  <span>{{ size.label }} (+{{ formatPrice(size.extraPrice) }})</span>
-                </label>
-              }
+          @if (isLoadingVariants()) {
+            <div class="modal-loading-box">
+              <nz-icon nzType="loading" class="modal-loading-icon"/>
+              <span>Đang tải kích cỡ &amp; tùy chọn...</span>
             </div>
-          </div>
+          } @else {
+            <!-- 1. Size Selector -->
+            <div class="option-group">
+              <span class="option-group__label">1. Kích cỡ (Size)</span>
+              <div class="option-group__items">
+                @for (size of availableSizes(); track size.id) {
+                  <label class="cb cb--pill" [for]="'size-' + size.id">
+                    <input
+                      [id]="'size-' + size.id"
+                      type="radio"
+                      name="drink-size"
+                      [value]="size.id"
+                      [checked]="selectedSize() === size.id"
+                      (change)="selectedSize.set(size.id)"
+                    />
+                    <span class="cb__box"></span>
+                    <span>
+                      {{ size.label }}
+                      @if (size.extraPrice > 0) {
+                        (+{{ formatPrice(size.extraPrice) }})
+                      }
+                    </span>
+                  </label>
+                }
+              </div>
+            </div>
 
-          <!-- Sugar Selector -->
-          <div class="option-group">
-            <span class="option-group__label">2. Lượng đường</span>
-            <div class="option-group__items">
-              @for (s of sugarOptions; track s) {
-                <label class="cb cb--pill" [for]="'sugar-' + s">
-                  <input
-                    [id]="'sugar-' + s"
-                    type="radio"
-                    name="drink-sugar"
-                    [value]="s"
-                    [checked]="selectedSugar() === s"
-                    (change)="selectedSugar.set(s)"
-                  />
-                  <span class="cb__box"></span>
-                  <span>{{ s }}</span>
-                </label>
-              }
-            </div>
-          </div>
+            <!-- 2. Sugar Selector -->
+            @if (availableSugarOptions().length > 0) {
+              <div class="option-group">
+                <span class="option-group__label">2. Lượng đường</span>
+                <div class="option-group__items">
+                  @for (s of availableSugarOptions(); track s) {
+                    <label class="cb cb--pill" [for]="'sugar-' + s">
+                      <input
+                        [id]="'sugar-' + s"
+                        type="radio"
+                        name="drink-sugar"
+                        [value]="s"
+                        [checked]="selectedSugar() === s"
+                        (change)="selectedSugar.set(s)"
+                      />
+                      <span class="cb__box"></span>
+                      <span>{{ s }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
 
-          <!-- Ice Selector -->
-          <div class="option-group">
-            <span class="option-group__label">3. Lượng đá</span>
-            <div class="option-group__items">
-              @for (ice of iceOptions; track ice) {
-                <label class="cb cb--pill" [for]="'ice-' + ice">
-                  <input
-                    [id]="'ice-' + ice"
-                    type="radio"
-                    name="drink-ice"
-                    [value]="ice"
-                    [checked]="selectedIce() === ice"
-                    (change)="selectedIce.set(ice)"
-                  />
-                  <span class="cb__box"></span>
-                  <span>{{ ice }}</span>
-                </label>
-              }
-            </div>
-          </div>
+            <!-- 3. Ice Selector -->
+            @if (availableIceOptions().length > 0) {
+              <div class="option-group">
+                <span class="option-group__label">3. Lượng đá</span>
+                <div class="option-group__items">
+                  @for (ice of availableIceOptions(); track ice) {
+                    <label class="cb cb--pill" [for]="'ice-' + ice">
+                      <input
+                        [id]="'ice-' + ice"
+                        type="radio"
+                        name="drink-ice"
+                        [value]="ice"
+                        [checked]="selectedIce() === ice"
+                        (change)="selectedIce.set(ice)"
+                      />
+                      <span class="cb__box"></span>
+                      <span>{{ ice }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
 
-          <!-- Topping Options -->
-          <div class="option-group">
-            <span class="option-group__label">4. Thêm Topping</span>
-            <div class="option-group__items">
-              @for (t of toppingOptions; track t.id) {
-                <label class="cb" [for]="'top-' + t.id">
-                  <input
-                    [id]="'top-' + t.id"
-                    type="checkbox"
-                    [checked]="selectedToppingIds().has(t.id)"
-                    (change)="toggleTopping(t.id)"
-                  />
-                  <span class="cb__box"></span>
-                  <span>{{ t.label }} (+{{ formatPrice(t.price) }})</span>
-                </label>
-              }
+            <!-- 4. Topping Options -->
+            <div class="option-group">
+              <span class="option-group__label">4. Thêm Topping</span>
+              <div class="option-group__items">
+                @for (t of toppingOptions; track t.id) {
+                  <label class="cb" [for]="'top-' + t.id">
+                    <input
+                      [id]="'top-' + t.id"
+                      type="checkbox"
+                      [checked]="selectedToppingIds().has(t.id)"
+                      (change)="toggleTopping(t.id)"
+                    />
+                    <span class="cb__box"></span>
+                    <span>{{ t.label }} (+{{ formatPrice(t.price) }})</span>
+                  </label>
+                }
+              </div>
             </div>
-          </div>
+
+            <!-- 5. Quantity Stepper -->
+            <div class="option-group">
+              <span class="option-group__label">5. Số lượng ly / phần</span>
+              <div class="option-group__stepper-row">
+                <app-quantity-stepper
+                  [value]="modalQuantity()"
+                  [min]="1"
+                  [max]="50"
+                  (valueChange)="onQuantityChange($event)"
+                />
+                <span class="stepper-helper-text">Chọn số lượng bạn muốn đặt</span>
+              </div>
+            </div>
+
+            <!-- 6. Special Note -->
+            <div class="option-group">
+              <span class="option-group__label">6. Ghi chú cho quán (tuỳ chọn)</span>
+              <input
+                nz-input
+                type="text"
+                placeholder="Ví dụ: Ít ngọt, nhiều đá, để riêng đá mang về..."
+                [(ngModel)]="modalNote"
+                class="modal-note-input"
+                maxlength="150"
+              />
+            </div>
+          }
         </div>
       </div>
     }
@@ -430,7 +538,7 @@
   <ng-template #customFooterTemplate>
     <div class="modal-price-footer">
       <div class="modal-price-footer__total">
-        <span class="modal-price-footer__label">Tổng cộng:</span>
+        <span class="modal-price-footer__label">Tổng cộng ({{ modalQuantity() }} ly):</span>
         <span class="modal-price-footer__amount">{{ formatPrice(computeCurrentModalTotal()) }}</span>
       </div>
       <div class="modal-price-footer__btns">

@@ -8,10 +8,13 @@ import {NzOptionComponent, NzSelectComponent} from 'ng-zorro-antd/select';
 import {AppButtonComponent} from '../../shared/app-button/app-button.component';
 import {AppModalComponent} from '../../shared/app-modal/app-modal.component';
 import {AppDrinkCardComponent, DrinkItem} from '../../shared/app-drink-card/app-drink-card.component';
+import {AppQuantityStepperComponent} from '../../shared/app-quantity-stepper/app-quantity-stepper.component';
 import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
 import {CartService} from '../../shared/services/cart.service';
 import {CategoryService} from '../menu/categories/category.service';
 import {Category} from '../menu/categories/category.model';
+import {ProductService} from '../menu/products/product.service';
+import {Product, ProductDetail} from '../menu/products/product.model';
 
 export interface CategoryTab {
   id: string;
@@ -21,6 +24,7 @@ export interface CategoryTab {
 
 export interface SizeOption {
   id: string;
+  variantCode: string;
   label: string;
   extraPrice: number;
 }
@@ -46,18 +50,8 @@ export interface StyleCategory {
   imageUrl: string;
 }
 
-/**
- * Cầu nối TẠM THỜI: slug mock của drinksList -> mã category seed BA-02.
- * Cần vì drinks mock chưa có categoryId UUID, còn tabs load từ API thật.
- * XÓA toàn bộ khi Product API thật lên (drinks khi đó mang categoryId BE).
- */
-const MOCK_SLUG_TO_CATEGORY_CODE: Record<string, string> = {
-  'traditional-coffee': 'CAFE-TT',
-  'espresso-machine': 'CAFE-MAY',
-  'fruit-tea': 'TRA-TRAICAY',
-  'milk-tea': 'TRASUA-MACCHIATO',
-  'juice-pastry': 'NUOCEP-BANHNGOT',
-};
+const DEFAULT_BEVERAGE_IMAGE =
+  'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=600&q=80';
 
 const FALLBACK_STYLE_IMAGE =
   'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80';
@@ -79,6 +73,7 @@ const FALLBACK_STYLE_IMAGE =
     AppButtonComponent,
     AppModalComponent,
     AppDrinkCardComponent,
+    AppQuantityStepperComponent,
   ],
   standalone: true,
 })
@@ -87,29 +82,45 @@ export class StoreComponent implements OnInit {
   private readonly toast = inject(AppNotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly categoryService = inject(CategoryService);
+  private readonly productService = inject(ProductService);
 
+  // Filter & Search states
   searchQuery = '';
   sortBy = 'featured';
-  readonly selectedCategoryId = signal('all');
+  readonly selectedCategoryId = signal<string>('all');
   newsletterEmail = '';
+
+  // Loading signals for Skeleton UI
+  readonly isLoadingProducts = signal<boolean>(true);
+  readonly isLoadingCategories = signal<boolean>(true);
+  readonly isLoadingVariants = signal<boolean>(false);
+
+  // Real data signals
+  readonly rawProducts = signal<Product[]>([]);
+  readonly drinksList = signal<DrinkItem[]>([]);
+  readonly filteredDrinks = signal<DrinkItem[]>([]);
+  readonly newArrivals = signal<DrinkItem[]>([]);
+  readonly topSelling = signal<DrinkItem[]>([]);
+
+  // Category Tabs & Style Categories
+  readonly categories = signal<CategoryTab[]>([{id: 'all', name: 'Tất cả món', count: 0}]);
+  readonly styleCategories = signal<StyleCategory[]>([]);
 
   // Modal customization state
   readonly isModalVisible = signal(false);
   readonly selectedDrink = signal<DrinkItem | null>(null);
-  readonly selectedSize = signal<string>('M');
-  readonly selectedSugar = signal<string>('100%');
-  readonly selectedIce = signal<string>('100% đá');
+  readonly selectedProductDetail = signal<ProductDetail | null>(null);
+  readonly availableSizes = signal<SizeOption[]>([]);
+  readonly selectedSize = signal<string>('');
+  readonly availableSugarOptions = signal<string[]>([]);
+  readonly selectedSugar = signal<string>('');
+  readonly availableIceOptions = signal<string[]>([]);
+  readonly selectedIce = signal<string>('');
   readonly selectedToppingIds = signal<Set<string>>(new Set());
+  readonly modalQuantity = signal<number>(1);
+  modalNote = '';
 
-  readonly sizeOptions: SizeOption[] = [
-    {id: 'S', label: 'Nhỏ (S)', extraPrice: 0},
-    {id: 'M', label: 'Vừa (M)', extraPrice: 6000},
-    {id: 'L', label: 'Lớn (L)', extraPrice: 12000},
-  ];
-
-  readonly sugarOptions = ['100% (Chuẩn)', '70%', '50%', 'Không đường'];
-  readonly iceOptions = ['100% đá', '70% đá', '50% đá', 'Không đá', 'Uống nóng'];
-
+  // Topping Options (Standard cafe addons)
   readonly toppingOptions: ToppingOption[] = [
     {id: 'pearl', label: 'Trân châu hoàng kim', price: 8000},
     {id: 'peach', label: 'Thạch đào giòn', price: 10000},
@@ -117,44 +128,7 @@ export class StoreComponent implements OnInit {
     {id: 'lotus', label: 'Hạt sen Huế nấu đường phèn', price: 12000},
   ];
 
-  // Tabs fallback cứng: dùng khi API Category rỗng/lỗi để store vẫn bán hàng được.
-  // Khi API có dữ liệu sẽ bị thay bằng tabs thật trong applyRealCategories().
-  readonly categories = signal<CategoryTab[]>([
-    {id: 'all', name: 'Tất cả món', count: 12},
-    {id: 'traditional-coffee', name: 'Cà phê truyền thống', count: 3},
-    {id: 'espresso-machine', name: 'Cà phê pha máy', count: 3},
-    {id: 'fruit-tea', name: 'Trà trái cây tươi', count: 2},
-    {id: 'milk-tea', name: 'Trà sữa & Macchiato', count: 2},
-    {id: 'juice-pastry', name: 'Nước ép & Bánh ngọt', count: 2},
-  ]);
-
-  readonly styleCategories = signal<StyleCategory[]>([
-    {
-      id: 'traditional-coffee',
-      name: 'Cà Phê Truyền Thống',
-      subtitle: 'Phin rang mộc & Bạc xỉu béo ngậy',
-      imageUrl: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 'espresso-machine',
-      name: 'Espresso & Cold Brew',
-      subtitle: 'Arabica Cầu Đất & Ủ lạnh 18h thơm lừng',
-      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 'fruit-tea',
-      name: 'Trà Trái Cây Thanh Mát',
-      subtitle: 'Đào cam sả & Trái cây nhiệt đới sảng khoái',
-      imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      id: 'milk-tea',
-      name: 'Trà Sữa & Đá Xay',
-      subtitle: 'Oolong nướng than & Matcha kem cheese',
-      imageUrl: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=800&q=80',
-    },
-  ]);
-
+  // Verified Customer Reviews
   readonly customerReviews: CustomerReview[] = [
     {
       name: 'Sarah M.',
@@ -182,147 +156,6 @@ export class StoreComponent implements OnInit {
     },
   ];
 
-  readonly drinksList: DrinkItem[] = [
-    {
-      id: 'c-1',
-      name: 'Cà Phê Phin Sữa Đá Truyền Thống',
-      category: 'traditional-coffee',
-      categoryName: 'Cà phê truyền thống',
-      price: 29000,
-      originalPrice: 35000,
-      imageUrl: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=600&q=80',
-      description: 'Hạt Robusta Buôn Ma Thuột rang mộc đậm đà kết hợp sữa đặc ngọt béo thơm lừng.',
-      badge: 'Best Seller',
-      badgeType: 'bestseller',
-    },
-    {
-      id: 'c-2',
-      name: 'Cà Phê Muối Đặc Sản Xứ Huế',
-      category: 'traditional-coffee',
-      categoryName: 'Cà phê truyền thống',
-      price: 38000,
-      originalPrice: 42000,
-      imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=600&q=80',
-      description: 'Lớp kem béo mằn mặn bồng bềnh hòa quyện cùng vị cà phê đắng êm dịu độc đáo.',
-      badge: 'Signature',
-      badgeType: 'signature',
-    },
-    {
-      id: 'c-3',
-      name: 'Bạc Xỉu 3 Tầng Sữa Tươi',
-      category: 'traditional-coffee',
-      categoryName: 'Cà phê truyền thống',
-      price: 32000,
-      imageUrl: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=600&q=80',
-      description: 'Vị béo ngậy ngọt lành từ sữa tươi thanh trùng kết hợp một chút hương cà phê nhẹ nhàng.',
-    },
-    {
-      id: 'e-1',
-      name: 'Caramel Macchiato Đá Xay',
-      category: 'espresso-machine',
-      categoryName: 'Cà phê pha máy',
-      price: 49000,
-      originalPrice: 55000,
-      imageUrl: 'https://images.unsplash.com/photo-1534778101976-62847782c213?auto=format&fit=crop&w=600&q=80',
-      description: 'Espresso 100% Arabica Cầu Đất cùng sốt Caramel thủ công và sữa tươi sủi bọt mịn.',
-      badge: 'Mới',
-      badgeType: 'new',
-    },
-    {
-      id: 'e-2',
-      name: 'Espresso Double Shot Đậm Vị',
-      category: 'espresso-machine',
-      categoryName: 'Cà phê pha máy',
-      price: 35000,
-      imageUrl: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&w=600&q=80',
-      description: 'Chiết xuất nguyên chất với lớp crema vàng óng ánh, vị chua thanh và hậu vị ngọt sâu.',
-    },
-    {
-      id: 'e-3',
-      name: 'Cold Brew Cam Vàng Sả Tươi',
-      category: 'espresso-machine',
-      categoryName: 'Cà phê pha máy',
-      price: 48000,
-      imageUrl: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?auto=format&fit=crop&w=600&q=80',
-      description: 'Cà phê ủ lạnh 18 tiếng mượt mà kết hợp tép cam vàng tươi mọng nước và sả thơm ngát.',
-      badge: 'Signature',
-      badgeType: 'signature',
-    },
-    {
-      id: 't-1',
-      name: 'Trà Đào Cam Sả Tươi Mát',
-      category: 'fruit-tea',
-      categoryName: 'Trà trái cây tươi',
-      price: 45000,
-      originalPrice: 50000,
-      imageUrl: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=600&q=80',
-      description: 'Nước cốt trà đen Bảo Lộc thơm ngát cùng miếng đào giòn ngọt và tinh dầu sả tươi sảng khoái.',
-      badge: 'Best Seller',
-      badgeType: 'bestseller',
-    },
-    {
-      id: 't-2',
-      name: 'Trà Hoa Quả Nhiệt Đới Tươi Rót',
-      category: 'fruit-tea',
-      categoryName: 'Trà trái cây tươi',
-      price: 49000,
-      imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80',
-      description: 'Thanh mát với chanh leo, táo, dưa hấu tươi và hạt chia giòn rụm bổ dưỡng.',
-    },
-    {
-      id: 'm-1',
-      name: 'Trà Sữa Oolong Nướng Than Củi',
-      category: 'milk-tea',
-      categoryName: 'Trà sữa & Macchiato',
-      price: 42000,
-      imageUrl: 'https://images.unsplash.com/photo-1558857563-b37cfb4226a2?auto=format&fit=crop&w=600&q=80',
-      description: 'Lá trà Oolong sấy than củi đậm đà hòa quyện cùng trân châu hoàng kim dai giòn.',
-      badge: 'Best Seller',
-      badgeType: 'bestseller',
-    },
-    {
-      id: 'm-2',
-      name: 'Matcha Latte Nhật Bản Kem Cheese',
-      category: 'milk-tea',
-      categoryName: 'Trà sữa & Macchiato',
-      price: 48000,
-      imageUrl: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80',
-      description: 'Bột trà xanh Uji Kyoto thơm dịu kết hợp lớp phô mai béo ngậy mằn mặn.',
-    },
-    {
-      id: 'j-1',
-      name: 'Nước Ép Cam Tươi Nguyên Chất 100%',
-      category: 'juice-pastry',
-      categoryName: 'Nước ép & Bánh ngọt',
-      price: 39000,
-      imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=600&q=80',
-      description: 'Vắt tươi từ những quả cam sành mọng nước, không thêm đường hóa học, giàu Vitamin C.',
-    },
-    {
-      id: 'j-2',
-      name: 'Bánh Croissant Bơ Tỏi Pháp Nướng Nóng',
-      category: 'juice-pastry',
-      categoryName: 'Nước ép & Bánh ngọt',
-      price: 35000,
-      originalPrice: 40000,
-      imageUrl: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=600&q=80',
-      description: 'Bánh sừng bò nghìn lớp giòn rụm thơm lừng bơ Pháp hảo hạng, ăn kèm tuyệt hảo cùng cà phê.',
-      badge: 'Mới',
-      badgeType: 'new',
-    },
-  ];
-
-  // Slices for New Arrivals & Top Selling sections
-  get newArrivals(): DrinkItem[] {
-    return [this.drinksList[3], this.drinksList[5], this.drinksList[9], this.drinksList[11]];
-  }
-
-  get topSelling(): DrinkItem[] {
-    return [this.drinksList[0], this.drinksList[1], this.drinksList[6], this.drinksList[8]];
-  }
-
-  readonly filteredDrinks = signal<DrinkItem[]>(this.drinksList);
-
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
       if (params['q']) {
@@ -331,58 +164,156 @@ export class StoreComponent implements OnInit {
         this.scrollToSection('all-drinks');
       }
     });
+
     this.loadStoreCategories();
+    this.loadStoreProducts();
   }
 
   /**
-   * Tabs danh mục từ API thật (PRODUCT + ACTIVE, đã sort displayOrder ở BE).
-   * API rỗng/lỗi -> giữ tabs fallback cứng để store vẫn hoạt động.
+   * Tải danh mục thực tế từ API CategoryService (categoryType: 'PRODUCT', status: 'ACTIVE')
    */
   loadStoreCategories(): void {
+    this.isLoadingCategories.set(true);
     this.categoryService
       .getCategories({categoryType: 'PRODUCT', status: 'ACTIVE', pageIndex: 1, pageSize: 100})
       .subscribe({
         next: res => {
-          if (res.items.length > 0) {
-            this.applyRealCategories(res.items);
-          }
+          this.isLoadingCategories.set(false);
+          const activeCats = res.items || [];
+          this.applyCategories(activeCats);
+        },
+        error: () => {
+          this.isLoadingCategories.set(false);
         },
       });
   }
 
-  private applyRealCategories(cats: Category[]): void {
-    const byCode = new Map(cats.map(c => [c.code, c]));
-    // Gắn drinks mock vào UUID thật theo mã seed; món không khớp chỉ hiện ở tab "Tất cả".
-    for (const d of this.drinksList) {
-      const real = byCode.get(MOCK_SLUG_TO_CATEGORY_CODE[d.category]);
-      if (real) {
-        d.category = real.id;
-        d.categoryName = real.name;
-      }
-    }
+  /**
+   * Tải danh sách sản phẩm thực tế từ API ProductService (status: 'ACTIVE')
+   */
+  loadStoreProducts(): void {
+    this.isLoadingProducts.set(true);
+    this.productService
+      .getProducts({status: 'ACTIVE', pageIndex: 1, pageSize: 100})
+      .subscribe({
+        next: res => {
+          this.isLoadingProducts.set(false);
+          const products = res.items || [];
+          this.rawProducts.set(products);
+          this.processProducts(products);
+        },
+        error: () => {
+          this.isLoadingProducts.set(false);
+          this.toast.error('Không thể tải thực đơn đồ uống. Vui lòng thử lại sau!', '');
+        },
+      });
+  }
+
+  /**
+   * Xử lý danh sách Category và xây dựng Tab danh mục, khối Gu thưởng thức
+   */
+  private applyCategories(cats: Category[]): void {
+    const products = this.drinksList();
     const tabs: CategoryTab[] = [
-      {id: 'all', name: 'Tất cả món', count: this.drinksList.length},
+      {id: 'all', name: 'Tất cả món', count: products.length},
       ...cats.map(c => ({
         id: c.id,
         name: c.name,
-        count: this.drinksList.filter(d => d.category === c.id).length,
+        count: products.filter(p => p.category === c.id).length,
       })),
     ];
     this.categories.set(tabs);
-    // Thẻ "Khám phá theo gu" lấy ảnh + mô tả thật của danh mục (BA-02 imageUrl/description).
+
+    // Khối "Khám phá theo gu" lấy trực tiếp ảnh và mô tả thật của danh mục
     this.styleCategories.set(
       cats.slice(0, 4).map(c => ({
         id: c.id,
         name: c.name,
-        subtitle: c.description || c.name,
+        subtitle: c.description || 'Thưởng thức phong vị hảo hạng mỗi ngày',
         imageUrl: c.imageUrl || FALLBACK_STYLE_IMAGE,
-      })),
+      }))
     );
-    // Tab đang chọn (slug cũ) không còn tồn tại -> về "Tất cả" để khỏi lọc ra danh sách rỗng.
-    if (this.selectedCategoryId() !== 'all' && !tabs.some(t => t.id === this.selectedCategoryId())) {
-      this.selectedCategoryId.set('all');
-    }
+  }
+
+  /**
+   * Xử lý danh sách Product thật từ BE:
+   * - Chuyển sang format DrinkItem
+   * - Cập nhật số lượng cho tab danh mục
+   * - Phân bổ New Arrivals và Top Selling
+   */
+  private processProducts(products: Product[]): void {
+    const items: DrinkItem[] = products.map(p => this.mapProductToDrinkItem(p));
+    this.drinksList.set(items);
+
+    // Cập nhật lại số lượng sản phẩm trong từng tab danh mục
+    const currentTabs = this.categories();
+    const updatedTabs = currentTabs.map(tab => {
+      if (tab.id === 'all') {
+        return {...tab, count: items.length};
+      }
+      return {
+        ...tab,
+        count: items.filter(d => d.category === tab.id).length,
+      };
+    });
+    this.categories.set(updatedTabs);
+
+    // Phân luồng: Món mới nhất (New Arrivals: 4 món mới nhất theo ngày tạo)
+    const sortedByDate = [...items].sort((a, b) => {
+      const prodA = products.find(p => p.id === a.id);
+      const prodB = products.find(p => p.id === b.id);
+      const dateA = prodA?.createdAt ? new Date(prodA.createdAt).getTime() : 0;
+      const dateB = prodB?.createdAt ? new Date(prodB.createdAt).getTime() : 0;
+      return dateB - dateA;
+    });
+    this.newArrivals.set(sortedByDate.slice(0, 4));
+
+    // Phân luồng: Món bán chạy nhất (Top Selling: các món có isBestSeller = true hoặc isFeatured = true)
+    const topItems = items.filter(d => {
+      const raw = products.find(p => p.id === d.id);
+      return raw?.isBestSeller || raw?.isFeatured;
+    });
+    this.topSelling.set(topItems.length > 0 ? topItems.slice(0, 4) : items.slice(0, 4));
+
     this.onFilterChange();
+  }
+
+  /**
+   * Chuyển đổi Product entity thành DrinkItem cho DrinkCard và Cart
+   */
+  private mapProductToDrinkItem(p: Product): DrinkItem {
+    let badge: string | undefined;
+    let badgeType: 'signature' | 'bestseller' | 'new' | undefined;
+
+    if (p.isBestSeller) {
+      badge = 'Best Seller';
+      badgeType = 'bestseller';
+    } else if (p.isFeatured) {
+      badge = 'Signature';
+      badgeType = 'signature';
+    } else if (this.isRecentProduct(p.createdAt)) {
+      badge = 'Mới';
+      badgeType = 'new';
+    }
+
+    return {
+      id: p.id,
+      name: p.name,
+      category: p.categoryId,
+      categoryName: p.categoryName || 'Đồ uống',
+      price: Number(p.basePrice) || 0,
+      imageUrl: p.imageUrl || DEFAULT_BEVERAGE_IMAGE,
+      description: p.description || 'Thức uống thủ công tươi mới từ nguyên liệu tự nhiên chọn lọc.',
+      badge,
+      badgeType,
+    };
+  }
+
+  private isRecentProduct(createdAt?: string | null): boolean {
+    if (!createdAt) return false;
+    const createdTime = new Date(createdAt).getTime();
+    const daysDiff = (Date.now() - createdTime) / (1000 * 3600 * 24);
+    return daysDiff <= 30; // Món được tạo trong 30 ngày gần nhất
   }
 
   formatPrice(amount: number): string {
@@ -394,11 +325,6 @@ export class StoreComponent implements OnInit {
     if (el) {
       el.scrollIntoView({behavior: 'smooth', block: 'start'});
     }
-  }
-
-  getStyleCount(styleId: string): number {
-    const cat = this.categories().find(c => c.id === styleId);
-    return cat ? cat.count : 0;
   }
 
   selectStyleCategory(catId: string): void {
@@ -423,41 +349,141 @@ export class StoreComponent implements OnInit {
     this.onFilterChange();
   }
 
+  /**
+   * Lọc và sắp xếp sản phẩm linh hoạt
+   */
   onFilterChange(): void {
-    let list = [...this.drinksList];
+    let list = [...this.drinksList()];
 
-    // Filter by Category
+    // Lọc theo Danh mục
     if (this.selectedCategoryId() !== 'all') {
       list = list.filter(d => d.category === this.selectedCategoryId());
     }
 
-    // Filter by Search Keyword
+    // Lọc theo Từ khóa tìm kiếm
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
-      list = list.filter(d => d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q));
+      list = list.filter(
+        d =>
+          d.name.toLowerCase().includes(q) ||
+          d.description.toLowerCase().includes(q) ||
+          d.categoryName.toLowerCase().includes(q)
+      );
     }
 
-    // Sort
+    // Sắp xếp
     if (this.sortBy === 'price-asc') {
       list.sort((a, b) => a.price - b.price);
     } else if (this.sortBy === 'price-desc') {
       list.sort((a, b) => b.price - a.price);
+    } else if (this.sortBy === 'newest') {
+      const rawMap = new Map(this.rawProducts().map(p => [p.id, p]));
+      list.sort((a, b) => {
+        const dateA = rawMap.get(a.id)?.createdAt ? new Date(rawMap.get(a.id)!.createdAt!).getTime() : 0;
+        const dateB = rawMap.get(b.id)?.createdAt ? new Date(rawMap.get(b.id)!.createdAt!).getTime() : 0;
+        return dateB - dateA;
+      });
     }
 
     this.filteredDrinks.set(list);
   }
 
+  /**
+   * Mở Modal Tùy chỉnh: Lấy chi tiết sản phẩm và danh sách biến thể / kích cỡ thực tế từ BE
+   */
   openCustomizeModal(drink: DrinkItem): void {
     this.selectedDrink.set(drink);
-    this.selectedSize.set('M');
-    this.selectedSugar.set('100%');
-    this.selectedIce.set('100% đá');
+    this.modalQuantity.set(1);
+    this.modalNote = '';
     this.selectedToppingIds.set(new Set());
+    this.isLoadingVariants.set(true);
     this.isModalVisible.set(true);
+
+    // Gọi API lấy thông tin chi tiết (kèm danh sách variants thật)
+    this.productService.getProduct(drink.id).subscribe({
+      next: detail => {
+        this.selectedProductDetail.set(detail);
+        this.isLoadingVariants.set(false);
+
+        // 1. Cấu hình Size thực tế từ variants
+        if (detail.variants && detail.variants.length > 0) {
+          const sizes: SizeOption[] = detail.variants
+            .filter(v => !v.status || v.status === 'ACTIVE')
+            .map(v => ({
+              id: v.id,
+              variantCode: v.variantCode,
+              label: v.variantName ? `${v.variantName} (${v.sizeLabel})` : `Size ${v.sizeLabel}`,
+              extraPrice: Number(v.priceDelta) || 0,
+            }));
+          this.availableSizes.set(sizes);
+          // Mặc định chọn size đầu tiên hoặc size có giá gốc extraPrice = 0
+          const defaultSize = sizes.find(s => s.extraPrice === 0) || sizes[0];
+          this.selectedSize.set(defaultSize ? defaultSize.id : '');
+        } else {
+          // Sản phẩm không có biến thể size (ví dụ bánh ngọt hoặc đồ uống 1 size)
+          this.availableSizes.set([
+            {id: 'default', variantCode: 'STD', label: 'Tiêu chuẩn (Mặc định)', extraPrice: 0},
+          ]);
+          this.selectedSize.set('default');
+        }
+
+        // 2. Cấu hình Mức đường từ availableSugarLevels
+        const sugarOpts = this.parseSugarOptions(detail.availableSugarLevels);
+        this.availableSugarOptions.set(sugarOpts);
+        this.selectedSugar.set(sugarOpts[0] || '100% (Chuẩn)');
+
+        // 3. Cấu hình Mức đá từ availableIceLevels
+        const iceOpts = this.parseIceOptions(detail.availableIceLevels);
+        this.availableIceOptions.set(iceOpts);
+        this.selectedIce.set(iceOpts[0] || '100% đá');
+      },
+      error: () => {
+        this.isLoadingVariants.set(false);
+        // Fallback kích cỡ tiêu chuẩn nếu có lỗi mạng
+        this.availableSizes.set([
+          {id: 'default', variantCode: 'STD', label: 'Tiêu chuẩn', extraPrice: 0},
+        ]);
+        this.selectedSize.set('default');
+        this.availableSugarOptions.set(['100% (Chuẩn)', '70%', '50%', 'Không đường']);
+        this.selectedSugar.set('100% (Chuẩn)');
+        this.availableIceOptions.set(['100% đá', '70% đá', '50% đá', 'Không đá', 'Uống nóng']);
+        this.selectedIce.set('100% đá');
+      },
+    });
   }
 
   quickAddToCart(drink: DrinkItem): void {
     this.openCustomizeModal(drink);
+  }
+
+  private parseSugarOptions(csvStr?: string | null): string[] {
+    if (!csvStr || !csvStr.trim()) {
+      return ['100% (Chuẩn)', '70%', '50%', 'Không đường'];
+    }
+    const levels = csvStr.split(',').map(s => s.trim()).filter(Boolean);
+    const mapLevel = (lvl: string) => {
+      if (lvl === '100') return '100% (Chuẩn)';
+      if (lvl === '0') return 'Không đường (0%)';
+      return `${lvl}% đường`;
+    };
+    return levels.map(mapLevel);
+  }
+
+  private parseIceOptions(csvStr?: string | null): string[] {
+    if (!csvStr || !csvStr.trim()) {
+      return ['100% đá', '70% đá', '50% đá', 'Không đá', 'Uống nóng'];
+    }
+    const levels = csvStr.split(',').map(s => s.trim()).filter(Boolean);
+    const mapLevel = (lvl: string) => {
+      if (lvl === '100') return '100% đá (Chuẩn)';
+      if (lvl === '0') return 'Không đá (0%)';
+      return `${lvl}% đá`;
+    };
+    const parsed = levels.map(mapLevel);
+    if (!parsed.includes('Uống nóng')) {
+      parsed.push('Uống nóng');
+    }
+    return parsed;
   }
 
   toggleTopping(id: string): void {
@@ -470,45 +496,53 @@ export class StoreComponent implements OnInit {
     this.selectedToppingIds.set(current);
   }
 
+  onQuantityChange(qty: number): void {
+    this.modalQuantity.set(Math.max(1, qty));
+  }
+
   computeCurrentModalTotal(): number {
     const drink = this.selectedDrink();
     if (!drink) return 0;
 
-    let total = drink.price;
-    const size = this.sizeOptions.find(s => s.id === this.selectedSize());
-    if (size) total += size.extraPrice;
+    let unitPrice = drink.price;
+    const size = this.availableSizes().find(s => s.id === this.selectedSize());
+    if (size) {
+      unitPrice += size.extraPrice;
+    }
 
     for (const topId of this.selectedToppingIds()) {
       const top = this.toppingOptions.find(t => t.id === topId);
-      if (top) total += top.price;
+      if (top) unitPrice += top.price;
     }
 
-    return total;
+    return unitPrice * this.modalQuantity();
   }
 
   confirmAddToCart(): void {
     const drink = this.selectedDrink();
     if (!drink) return;
 
-    const sizeOpt = this.sizeOptions.find(s => s.id === this.selectedSize());
+    const sizeOpt = this.availableSizes().find(s => s.id === this.selectedSize());
     const selectedToppings = this.toppingOptions.filter(t => this.selectedToppingIds().has(t.id));
+    const qty = this.modalQuantity();
+    const note = this.modalNote.trim();
 
     this.cartService.addItem(
       drink,
       {
-        size: this.selectedSize(),
+        size: sizeOpt?.label || this.selectedSize(),
         sizeExtra: sizeOpt?.extraPrice || 0,
         sugar: this.selectedSugar(),
         ice: this.selectedIce(),
         toppings: selectedToppings,
       },
-      1
+      qty
     );
 
     this.isModalVisible.set(false);
     this.toast.success(
-      `Đã thêm "${drink.name}" (${this.selectedSize()}) vào giỏ hàng!`,
-      `Nhấn vào biểu tượng giỏ hàng ở thanh tiêu đề để xem chi tiết hoặc thanh toán.`
+      `Đã thêm ${qty}x "${drink.name}" vào giỏ hàng!`,
+      note ? `Ghi chú: "${note}"` : 'Nhấn vào biểu tượng giỏ hàng để xem chi tiết hoặc thanh toán.'
     );
   }
 

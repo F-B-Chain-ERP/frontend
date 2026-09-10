@@ -12,6 +12,16 @@ function isExternalApiRequest(url: string): boolean {
   return EXTERNAL_API_PATH_PREFIXES.some(prefix => url.startsWith(prefix));
 }
 
+function isPublicApiRequest(url: string, method: string): boolean {
+  if (url.includes('api/v1/auth/')) return true;
+  if (url.includes('api/v1/sales/')) return true;
+  // Cho phép kênh bán hàng đọc danh mục và sản phẩm công khai mà không bắt buộc đăng nhập
+  if (method === 'GET' && (url.includes('api/v1/menu/categories') || url.includes('api/v1/menu/products'))) {
+    return true;
+  }
+  return false;
+}
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const stateStorageService = inject(StateStorageService);
   const applicationConfigService = inject(ApplicationConfigService);
@@ -25,10 +35,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   if (isExternalApiRequest(req.url)) {
     return next(req);
   }
-  const isAuthUrl = req.url.includes('api/v1/auth/');
+  const isPublic = isPublicApiRequest(req.url, req.method);
   const token = stateStorageService.getAuthenticationToken();
 
-  if (!token && !isAuthUrl) {
+  if (!token && !isPublic) {
     loginService.logout().subscribe();
     return EMPTY;
   }
@@ -43,7 +53,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && !isAuthUrl) {
+      if (error.status === 401 && !isPublic) {
         loginService.logout().subscribe();
       }
       return throwError(() => error);
