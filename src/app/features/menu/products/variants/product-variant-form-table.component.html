@@ -41,7 +41,7 @@
       </tr>
       </thead>
       <tbody>
-        @for (vGroup of variantsArray.controls; track $index; let i = $index) {
+        @for (vGroup of variantsArray.controls; track vGroup; let i = $index) {
           <tr [formGroup]="$any(vGroup)">
             <td class="col-stt">{{ i + 1 }}</td>
             <td class="col-code">

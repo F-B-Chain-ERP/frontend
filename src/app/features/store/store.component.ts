@@ -311,19 +311,22 @@ export class StoreComponent implements OnInit {
     });
     this.categories.set(updatedTabs);
 
+    // Tra cứu O(1) qua Map thay vì find() trong comparator/filter (trước đây O(n² log n)).
+    const byId = new Map(products.map(p => [p.id, p] as const));
+
     // Phân luồng: Món mới nhất (New Arrivals: 4 món mới nhất theo ngày tạo)
     const sortedByDate = [...items].sort((a, b) => {
-      const prodA = products.find(p => p.id === a.id);
-      const prodB = products.find(p => p.id === b.id);
-      const dateA = prodA?.createdAt ? new Date(prodA.createdAt).getTime() : 0;
-      const dateB = prodB?.createdAt ? new Date(prodB.createdAt).getTime() : 0;
+      const createdA = byId.get(a.id)?.createdAt;
+      const createdB = byId.get(b.id)?.createdAt;
+      const dateA = createdA ? new Date(createdA).getTime() : 0;
+      const dateB = createdB ? new Date(createdB).getTime() : 0;
       return dateB - dateA;
     });
     this.newArrivals.set(sortedByDate.slice(0, 4));
 
     // Phân luồng: Món bán chạy nhất
     const topItems = items.filter(d => {
-      const raw = products.find(p => p.id === d.id);
+      const raw = byId.get(d.id);
       return raw?.isBestSeller || raw?.isFeatured;
     });
     this.topSelling.set(topItems.length > 0 ? topItems.slice(0, 4) : items.slice(0, 4));
@@ -432,8 +435,10 @@ export class StoreComponent implements OnInit {
     } else if (this.sortBy === 'newest') {
       const rawMap = new Map(this.rawProducts().map(p => [p.id, p]));
       list.sort((a, b) => {
-        const dateA = rawMap.get(a.id)?.createdAt ? new Date(rawMap.get(a.id)!.createdAt!).getTime() : 0;
-        const dateB = rawMap.get(b.id)?.createdAt ? new Date(rawMap.get(b.id)!.createdAt!).getTime() : 0;
+        const createdA = rawMap.get(a.id)?.createdAt;
+        const createdB = rawMap.get(b.id)?.createdAt;
+        const dateA = createdA ? new Date(createdA).getTime() : 0;
+        const dateB = createdB ? new Date(createdB).getTime() : 0;
         return dateB - dateA;
       });
     }
