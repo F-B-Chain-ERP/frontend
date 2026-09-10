@@ -36,7 +36,7 @@ import {ProductVariantFormTableComponent} from './variants/product-variant-form-
 import {ProductVariantModalComponent} from './variants/product-variant-modal.component';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
 import {normalizeImageUrl} from '../../../core/util/image.util';
-import {takeUntil} from 'rxjs';
+import {catchError, concatMap, finalize, of, takeUntil} from 'rxjs';
 
 @Component({
   selector: 'app-product-list',
@@ -400,69 +400,65 @@ export class ProductListComponent extends BaseComponent implements OnInit {
 
     if (this.modalMode() === 'edit' && this.editingProductId()) {
       const pId = this.editingProductId()!;
+      // Chuỗi tuần tự update -> sync bằng concatMap (trước đây subscribe lồng nhau,
+      // khó hủy và dễ sót isSubmitting). Thông điệp toast giữ nguyên.
       this.productService
         .update(pId, formData)
-        .pipe(takeUntil(this.destroy$))
+        .pipe(
+          concatMap(updated =>
+            this.productService.syncVariants(pId, variantPayload).pipe(
+              catchError(vErr => {
+                this.toastService.warning(`Đã cập nhật sản phẩm nhưng đồng bộ biến thể gặp lỗi: ${vErr.message}`);
+                return of(null);
+              }),
+              concatMap(syncResult => of({updated, syncOk: syncResult !== null}))
+            )
+          ),
+          finalize(() => this.isSubmitting.set(false)),
+          takeUntil(this.destroy$)
+        )
         .subscribe({
-          next: updated => {
-            // Sau khi cập nhật sản phẩm thành công, đồng bộ danh sách biến thể
-            this.productService
-              .syncVariants(pId, variantPayload)
-              .pipe(takeUntil(this.destroy$))
-              .subscribe({
-                next: () => {
-                  this.isSubmitting.set(false);
-                  this.toastService.success(`Cập nhật sản phẩm "${updated.name}" và biến thể thành công!`);
-                  this.closeCreateModal();
-                  this.loadProducts();
-                },
-                error: vErr => {
-                  this.isSubmitting.set(false);
-                  this.toastService.warning(`Đã cập nhật sản phẩm nhưng đồng bộ biến thể gặp lỗi: ${vErr.message}`);
-                  this.closeCreateModal();
-                  this.loadProducts();
-                },
-              });
+          next: ({updated, syncOk}) => {
+            if (syncOk) {
+              this.toastService.success(`Cập nhật sản phẩm "${updated.name}" và biến thể thành công!`);
+            }
+            this.closeCreateModal();
+            this.loadProducts();
           },
           error: err => {
-            this.isSubmitting.set(false);
             this.toastService.error(err.message || 'Không thể cập nhật sản phẩm');
           },
         });
     } else {
       this.productService
         .create(formData)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: created => {
+        .pipe(
+          concatMap(created => {
             if (variantPayload.length > 0 && created.id) {
               // Đồng bộ biến thể cho sản phẩm vừa tạo
-              this.productService
-                .syncVariants(created.id, variantPayload)
-                .pipe(takeUntil(this.destroy$))
-                .subscribe({
-                  next: () => {
-                    this.isSubmitting.set(false);
-                    this.toastService.success(`Tạo sản phẩm "${created.name}" kèm biến thể thành công!`);
-                    this.closeCreateModal();
-                    this.loadProducts();
-                  },
-                  error: vErr => {
-                    this.isSubmitting.set(false);
-                    this.toastService.warning(`Đã tạo sản phẩm nhưng đồng bộ biến thể gặp lỗi: ${vErr.message}`);
-                    this.closeCreateModal();
-                    this.loadProducts();
-                  },
-                });
-            } else {
-              this.isSubmitting.set(false);
-              this.toastService.success(`Tạo sản phẩm "${created.name}" thành công!`);
-              this.closeCreateModal();
-              this.loadProducts();
+              return this.productService.syncVariants(created.id, variantPayload).pipe(
+                catchError(vErr => {
+                  this.toastService.warning(`Đã tạo sản phẩm nhưng đồng bộ biến thể gặp lỗi: ${vErr.message}`);
+                  return of(null);
+                }),
+                concatMap(syncResult => of({created, syncOk: syncResult !== null, skipped: false}))
+              );
             }
+            return of({created, syncOk: true, skipped: true});
+          }),
+          finalize(() => this.isSubmitting.set(false)),
+          takeUntil(this.destroy$)
+        )
+        .subscribe({
+          next: ({created, syncOk, skipped}) => {
+            if (skipped || syncOk) {
+              const suffix = skipped ? '' : ' kèm biến thể';
+              this.toastService.success(`Tạo sản phẩm "${created.name}"${suffix} thành công!`);
+            }
+            this.closeCreateModal();
+            this.loadProducts();
           },
           error: err => {
-            this.isSubmitting.set(false);
             this.toastService.error(err.message || 'Không thể tạo sản phẩm');
           },
         });
