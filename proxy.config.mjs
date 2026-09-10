@@ -11,4 +11,9 @@ export default {
     target: `http://${backendHost}:${backendPort}`,
     xfwd: true,
   },
+  '^/storage': {
+    target: 'http://163.61.72.183:9000',
+    rewrite: (path) => path.replace(/^\/storage/, ''),
+    changeOrigin: true,
+  },
 };
