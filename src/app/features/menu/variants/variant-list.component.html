@@ -63,7 +63,7 @@
                    (click)="onSelectProduct(item)">
                 <div class="product-item__thumb">
                   @if (item.imageUrl) {
-                    <img [src]="item.imageUrl" [alt]="item.name"/>
+                    <img [src]="normalizeImageUrl(item.imageUrl)" [alt]="item.name" (error)="onImageError($event)"/>
                   } @else {
                     <div class="thumb-placeholder">
                       <nz-icon nzType="coffee"/>
@@ -102,7 +102,7 @@
           <div class="banner-content">
             <div class="banner-media">
               @if (prod.imageUrl) {
-                <img [src]="prod.imageUrl" [alt]="prod.name" class="banner-thumb"/>
+                <img [src]="normalizeImageUrl(prod.imageUrl)" [alt]="prod.name" class="banner-thumb" (error)="onImageError($event)"/>
               } @else {
                 <div class="banner-thumb-placeholder">
                   <nz-icon nzType="coffee"/>

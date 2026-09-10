@@ -140,7 +140,7 @@
             <td nzAlign="left">
               <div class="product-name-cell">
                 @if (item.imageUrl) {
-                  <img [src]="item.imageUrl" [alt]="item.name" class="product-thumb"/>
+                  <img [src]="normalizeImageUrl(item.imageUrl)" [alt]="item.name" class="product-thumb" (error)="onImageError($event)"/>
                 } @else {
                   <div class="product-thumb-placeholder">
                     <nz-icon nzType="coffee"/>
@@ -265,7 +265,7 @@
         <div class="product-detail-header">
           <div class="detail-image-container">
             @if (p.imageUrl) {
-              <img [src]="p.imageUrl" [alt]="p.name" class="detail-image"/>
+              <img [src]="normalizeImageUrl(p.imageUrl)" [alt]="p.name" class="detail-image" (error)="onImageError($event)"/>
             } @else {
               <div class="detail-image-placeholder">
                 <nz-icon nzType="coffee"/>
@@ -673,8 +673,8 @@
             <div class="image-upload-wrapper">
               @if (imagePreviewUrl() || createForm.controls.imageUrl.value) {
                 <div class="image-preview-card">
-                  <img [src]="imagePreviewUrl() || createForm.controls.imageUrl.value" alt="Preview"
-                       class="preview-img"/>
+                  <img [src]="normalizeImageUrl(imagePreviewUrl() || createForm.controls.imageUrl.value)" alt="Preview"
+                       class="preview-img" (error)="onImageError($event)"/>
                   <div class="image-preview-overlay">
                     <button type="button" class="btn-remove-img" (click)="removeSelectedImage()" title="Xoá ảnh">
                       <nz-icon nzType="delete"/>

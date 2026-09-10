@@ -4,6 +4,7 @@ import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {ApiResponse} from '../../login/login.model';
 import {ApplicationConfigService} from '../../../core/config/application-config.service';
+import {normalizeImageUrl} from '../../../core/util/image.util';
 import {ProductVariantService} from './variants/variant.service';
 import {
   CreateProductFormData,
@@ -72,7 +73,11 @@ export class ProductService {
     return this.http.get<ApiResponse<BackendPageResponse>>(this.baseUrl, {params}).pipe(
       map(res => {
         const page = res.data;
-        const content = page?.content ?? [];
+        const rawContent = page?.content ?? [];
+        const content = rawContent.map(p => ({
+          ...p,
+          imageUrl: p.imageUrl ? normalizeImageUrl(p.imageUrl) : null,
+        }));
         return {
           items: content,
           total: page?.totalElements ?? 0,
@@ -87,7 +92,13 @@ export class ProductService {
   /** Lấy thông tin chi tiết một sản phẩm theo ID */
   getProduct(id: string): Observable<ProductDetail> {
     return this.http.get<ApiResponse<ProductDetail>>(`${this.baseUrl}/${id}`).pipe(
-      map(res => res.data),
+      map(res => {
+        const prod = res.data;
+        if (prod && prod.imageUrl) {
+          prod.imageUrl = normalizeImageUrl(prod.imageUrl);
+        }
+        return prod;
+      }),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
@@ -146,7 +157,13 @@ export class ProductService {
     return this.http
       .put<ApiResponse<Product>>(`${this.baseUrl}/${id}`, fd)
       .pipe(
-        map(res => res.data),
+        map(res => {
+          const prod = res.data;
+          if (prod && prod.imageUrl) {
+            prod.imageUrl = normalizeImageUrl(prod.imageUrl);
+          }
+          return prod;
+        }),
         catchError(err => throwError(() => new Error(this.errorMessage(err)))),
       );
   }
@@ -156,7 +173,13 @@ export class ProductService {
     return this.http
       .put<ApiResponse<Product>>(`${this.baseUrl}/${id}`, data)
       .pipe(
-        map(res => res.data),
+        map(res => {
+          const prod = res.data;
+          if (prod && prod.imageUrl) {
+            prod.imageUrl = normalizeImageUrl(prod.imageUrl);
+          }
+          return prod;
+        }),
         catchError(err => throwError(() => new Error(this.errorMessage(err)))),
       );
   }
@@ -178,7 +201,7 @@ export class ProductService {
     return this.http
       .post<ApiResponse<{ imageUrl: string }>>(`${this.baseUrl}/upload-image`, fd)
       .pipe(
-        map(res => res.data.imageUrl),
+        map(res => normalizeImageUrl(res.data.imageUrl)),
         catchError(err => throwError(() => new Error(this.errorMessage(err)))),
       );
   }

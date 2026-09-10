@@ -35,6 +35,7 @@ import {
 import {ProductVariantFormTableComponent} from './variants/product-variant-form-table.component';
 import {ProductVariantModalComponent} from './variants/product-variant-modal.component';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
+import {normalizeImageUrl} from '../../../core/util/image.util';
 import {takeUntil} from 'rxjs';
 
 @Component({
@@ -70,6 +71,7 @@ import {takeUntil} from 'rxjs';
 export class ProductListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
   readonly getProductStatusMeta = getProductStatusMeta;
+  readonly normalizeImageUrl = normalizeImageUrl;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
   readonly statusOptions = PRODUCT_STATUS_OPTIONS;
 
@@ -508,5 +510,19 @@ export class ProductListComponent extends BaseComponent implements OnInit {
           });
       },
     });
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target) {
+      target.style.display = 'none';
+      const parent = target.parentElement;
+      if (parent && !parent.querySelector('.thumb-fallback-icon')) {
+        const fallback = document.createElement('div');
+        fallback.className = 'product-thumb-placeholder thumb-fallback-icon';
+        fallback.innerHTML = '<span nz-icon nzType="coffee" class="anticon anticon-coffee"></span>';
+        parent.insertBefore(fallback, target);
+      }
+    }
   }
 }

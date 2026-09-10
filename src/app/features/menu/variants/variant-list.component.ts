@@ -43,6 +43,7 @@ import {
 } from '../products/variants/variant.model';
 import {CategoryService} from '../categories/category.service';
 import {Category} from '../categories/category.model';
+import {normalizeImageUrl} from '../../../core/util/image.util';
 
 @Component({
   selector: 'app-variant-list',
@@ -74,6 +75,7 @@ import {Category} from '../categories/category.model';
 export class VariantListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
   readonly getProductStatusMeta = getProductStatusMeta;
+  readonly normalizeImageUrl = normalizeImageUrl;
   readonly standardSizePresets = STANDARD_BEVERAGE_SIZE_PRESETS;
 
   private readonly route = inject(ActivatedRoute);
@@ -526,6 +528,20 @@ export class VariantListComponent extends BaseComponent implements OnInit {
     const prod = this.selectedProduct();
     if (prod) {
       this.loadVariants(prod.id);
+    }
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target) {
+      target.style.display = 'none';
+      const parent = target.parentElement;
+      if (parent && !parent.querySelector('.thumb-fallback-icon')) {
+        const fallback = document.createElement('div');
+        fallback.className = 'thumb-placeholder thumb-fallback-icon';
+        fallback.innerHTML = '<span class="anticon anticon-coffee"></span>';
+        parent.appendChild(fallback);
+      }
     }
   }
 }
