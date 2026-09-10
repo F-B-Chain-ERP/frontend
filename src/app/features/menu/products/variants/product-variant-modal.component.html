@@ -29,13 +29,20 @@
               {{ preset.label }}
             </app-button>
           }
+          <app-button
+            variant="secondary"
+            leftIcon="arrow-right"
+            (click)="goToFullManagement(prod.id)"
+          >
+            Quản lý trực quan toàn trang
+          </app-button>
         </div>
       </div>
 
       <!-- Section: Add / Edit Variant Form Card -->
       <div class="variant-form-card">
         <div class="variant-form-card__title">
-          <nz-icon [nzType]="editingVariantId() ? 'edit' : 'plus-circle'" />
+          <nz-icon [nzType]="editingVariantId() ? 'edit' : 'plus-circle'"/>
           <span>{{ editingVariantId() ? 'Chỉnh sửa biến thể' : 'Thêm biến thể mới' }}</span>
         </div>
         <form [formGroup]="variantForm" (ngSubmit)="submitVariantQuick()">
@@ -115,7 +122,8 @@
       <div class="variant-list-card">
         <div class="variant-list-card__header">
           <h4 class="variant-list-card__title">
-            <nz-icon nzType="unordered-list" /> Danh sách biến thể hiện có ({{ variantList().length }})
+            <nz-icon nzType="unordered-list"/>
+            Danh sách biến thể hiện có ({{ variantList().length }})
           </h4>
         </div>
 
@@ -127,16 +135,16 @@
           <div class="variant-table-wrapper">
             <table class="variants-table">
               <thead>
-                <tr>
-                  <th>STT</th>
-                  <th>Kích cỡ</th>
-                  <th>Mã Size</th>
-                  <th>Tên phiên bản</th>
-                  <th class="text-right">Chênh lệch giá</th>
-                  <th class="text-right">Giá bán dự kiến</th>
-                  <th class="text-center">Trạng thái</th>
-                  <th class="text-center">Thao tác</th>
-                </tr>
+              <tr>
+                <th>STT</th>
+                <th>Kích cỡ</th>
+                <th>Mã Size</th>
+                <th>Tên phiên bản</th>
+                <th class="text-right">Chênh lệch giá</th>
+                <th class="text-right">Giá bán dự kiến</th>
+                <th class="text-center">Trạng thái</th>
+                <th class="text-center">Thao tác</th>
+              </tr>
               </thead>
               <tbody>
                 @for (v of variantList(); track v.id || v.variantCode; let idx = $index) {
@@ -188,7 +196,7 @@
                 } @empty {
                   <tr>
                     <td colspan="8" class="variants-empty">
-                      <nz-icon nzType="inbox" class="empty-icon" />
+                      <nz-icon nzType="inbox" class="empty-icon"/>
                       <span>Sản phẩm chưa có biến thể kích cỡ nào. Dùng form phía trên để thêm mới.</span>
                     </td>
                   </tr>

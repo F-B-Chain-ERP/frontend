@@ -45,6 +45,7 @@
       .prod-base-price {
         font-size: 13px;
         color: var(--text-secondary);
+
         strong {
           color: var(--primary-color, #1890ff);
           font-family: var(--font-mono, monospace);
@@ -145,9 +146,11 @@
       tbody {
         tr {
           border-bottom: 1px solid var(--border-subtle);
+
           &:last-child {
             border-bottom: none;
           }
+
           &:hover {
             background-color: var(--surface-hover, rgba(0, 0, 0, 0.02));
           }

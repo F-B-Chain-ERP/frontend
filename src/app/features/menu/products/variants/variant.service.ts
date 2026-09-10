@@ -1,9 +1,9 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
-import { ApiResponse } from '../../../login/login.model';
-import { ApplicationConfigService } from '../../../../core/config/application-config.service';
+import {HttpClient} from '@angular/common/http';
+import {Injectable, inject} from '@angular/core';
+import {Observable, throwError} from 'rxjs';
+import {catchError, map} from 'rxjs/operators';
+import {ApiResponse} from '../../../login/login.model';
+import {ApplicationConfigService} from '../../../../core/config/application-config.service';
 import {
   CreateProductVariantRequest,
   ProductVariant,
@@ -73,7 +73,7 @@ export class ProductVariantService {
   /** Đồng bộ toàn bộ danh sách biến thể của sản phẩm (hỗ trợ tạo mới, cập nhật, xóa theo danh sách) */
   syncVariants(productId: string, variants: SyncProductVariantItem[]): Observable<ProductVariant[]> {
     return this.http
-      .put<ApiResponse<ProductVariant[]>>(`${this.getProductVariantsUrl(productId)}/sync`, { variants })
+      .put<ApiResponse<ProductVariant[]>>(`${this.getProductVariantsUrl(productId)}/sync`, {variants})
       .pipe(
         map(res => res.data ?? []),
         catchError(err => throwError(() => new Error(this.errorMessage(err)))),

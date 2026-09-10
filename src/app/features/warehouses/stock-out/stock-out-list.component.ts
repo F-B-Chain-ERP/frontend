@@ -21,7 +21,6 @@ import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagin
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
 import { AppTableSearchInputComponent } from '../../../shared/app-table-search-input/app-table-search-input.component';
-import { AppSelectionBarComponent } from '../../../shared/app-selection-bar/app-selection-bar.component';
 import { ColumnTextFilter } from '../../../shared/utils/column-text-filter';
 import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
 import { ROLE } from '../../../core/config/functions.constants';
@@ -65,7 +64,6 @@ import { StockBalanceService } from '../stock-balance/stock-balance.service';
     AppPaginationComponent,
     AppModalComponent,
     AppTableSearchInputComponent,
-    AppSelectionBarComponent,
     HasSomeAuthorityDirective,
   ],
   templateUrl: './stock-out-list.component.html',

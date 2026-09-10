@@ -2,7 +2,7 @@
   <div class="variant-form-items__head">
     <div class="variant-form-items__title-group">
       <span class="variant-form-items__title">
-        <nz-icon nzType="appstore" /> Biến thể / Kích cỡ ({{ variantsArray.length }})
+        <nz-icon nzType="appstore"/> Biến thể / Kích cỡ ({{ variantsArray.length }})
       </span>
       <span class="variant-form-items__hint text-muted text-xs">
         (Ví dụ: Size S, M, L... Chênh lệch giá sẽ cộng/trừ so với giá bán cơ bản)
@@ -29,16 +29,16 @@
   <div class="variant-form-items__scroll" [class.is-scroll]="variantsArray.length > 3">
     <table class="variant-form-table">
       <thead>
-        <tr>
-          <th class="col-stt">#</th>
-          <th class="col-code">Mã Size *</th>
-          <th class="col-name">Tên hiển thị *</th>
-          <th class="col-label">Nhãn *</th>
-          <th class="col-delta text-right">Chênh lệch (₫) *</th>
-          <th class="col-price text-right">Giá bán dự kiến</th>
-          <th class="col-order text-center">Thứ tự</th>
-          <th class="col-action"></th>
-        </tr>
+      <tr>
+        <th class="col-stt">#</th>
+        <th class="col-code">Mã Size *</th>
+        <th class="col-name">Tên hiển thị *</th>
+        <th class="col-label">Nhãn *</th>
+        <th class="col-delta text-right">Chênh lệch (₫) *</th>
+        <th class="col-price text-right">Giá bán dự kiến</th>
+        <th class="col-order text-center">Thứ tự</th>
+        <th class="col-action"></th>
+      </tr>
       </thead>
       <tbody>
         @for (vGroup of variantsArray.controls; track $index; let i = $index) {
@@ -98,7 +98,7 @@
         } @empty {
           <tr>
             <td colspan="8" class="variant-form-empty">
-              <nz-icon nzType="inbox" />
+              <nz-icon nzType="inbox"/>
               <span>Chưa có biến thể nào. Sản phẩm sẽ áp dụng một kích cỡ mặc định theo giá bán cơ bản. Nhấn "Thêm kích cỡ" hoặc chọn "Bộ 3 Size Tiêu chuẩn" để thêm nhanh.</span>
             </td>
           </tr>

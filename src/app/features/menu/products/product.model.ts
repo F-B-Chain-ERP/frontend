@@ -21,8 +21,9 @@ export interface Product {
   updatedBy?: string | null;
   updatedAt?: string | null;
 }
+
 export * from './variants/variant.model';
-import { ProductVariant } from './variants/variant.model';
+import {ProductVariant} from './variants/variant.model';
 
 export interface ProductDetail extends Product {
   variants: ProductVariant[];
@@ -108,18 +109,18 @@ export interface CreateProductResponse {
 }
 
 export const PRODUCT_STATUS_OPTIONS = [
-  { value: 'ACTIVE', label: 'Đang bán', badgeClass: 'tbl-badge--success' },
-  { value: 'INACTIVE', label: 'Ngừng bán', badgeClass: 'tbl-badge--danger' },
+  {value: 'ACTIVE', label: 'Đang bán', badgeClass: 'tbl-badge--success'},
+  {value: 'INACTIVE', label: 'Ngừng bán', badgeClass: 'tbl-badge--danger'},
 ];
 
 export function getProductStatusMeta(status: string): { label: string; badgeClass: string } {
   const s = String(status || '').toUpperCase();
   if (s === 'ACTIVE') {
-    return { label: 'Đang bán', badgeClass: 'tbl-badge tbl-badge--success' };
+    return {label: 'Đang bán', badgeClass: 'tbl-badge tbl-badge--success'};
   }
   if (s === 'DELETED') {
-    return { label: 'Đã xóa', badgeClass: 'tbl-badge tbl-badge--default' };
+    return {label: 'Đã xóa', badgeClass: 'tbl-badge tbl-badge--default'};
   }
-  return { label: 'Ngừng bán', badgeClass: 'tbl-badge tbl-badge--danger' };
+  return {label: 'Ngừng bán', badgeClass: 'tbl-badge tbl-badge--danger'};
 }
 

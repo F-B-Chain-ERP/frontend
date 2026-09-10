@@ -24,7 +24,7 @@
       <div class="filter-item filter-item--grow">
         <label class="form-label" for="product-search-input">Tìm kiếm</label>
         <nz-input-wrapper [nzAllowClear]="true">
-          <nz-icon nzInputPrefix nzType="search" />
+          <nz-icon nzInputPrefix nzType="search"/>
           <input
             id="product-search-input"
             nz-input
@@ -101,8 +101,8 @@
 
       <!-- Filter Actions -->
       <div class="page__filter-box__actions">
-        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
-        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới</app-button>
       </div>
     </div>
   </nz-card>
@@ -119,16 +119,16 @@
       [nzScroll]="{ x: '1350px' }"
     >
       <thead>
-        <tr>
-          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
-          <th scope="col" nzWidth="150px" nzAlign="left">Mã sản phẩm</th>
-          <th scope="col" nzWidth="280px" nzAlign="left">Tên sản phẩm</th>
-          <th scope="col" nzWidth="180px" nzAlign="left">Danh mục</th>
-          <th scope="col" nzWidth="140px" nzAlign="right">Giá bán</th>
-          <th scope="col" nzWidth="180px" nzAlign="center">Đặc điểm</th>
-          <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
-          <th scope="col" nzWidth="130px" nzAlign="center">Thao tác</th>
-        </tr>
+      <tr>
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+        <th scope="col" nzWidth="150px" nzAlign="left">Mã sản phẩm</th>
+        <th scope="col" nzWidth="280px" nzAlign="left">Tên sản phẩm</th>
+        <th scope="col" nzWidth="180px" nzAlign="left">Danh mục</th>
+        <th scope="col" nzWidth="140px" nzAlign="right">Giá bán</th>
+        <th scope="col" nzWidth="180px" nzAlign="center">Đặc điểm</th>
+        <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
+        <th scope="col" nzWidth="130px" nzAlign="center">Thao tác</th>
+      </tr>
       </thead>
       <tbody>
         @for (item of products(); track item.id; let idx = $index) {
@@ -140,10 +140,10 @@
             <td nzAlign="left">
               <div class="product-name-cell">
                 @if (item.imageUrl) {
-                  <img [src]="item.imageUrl" [alt]="item.name" class="product-thumb" />
+                  <img [src]="item.imageUrl" [alt]="item.name" class="product-thumb"/>
                 } @else {
                   <div class="product-thumb-placeholder">
-                    <nz-icon nzType="coffee" />
+                    <nz-icon nzType="coffee"/>
                   </div>
                 }
                 <span
@@ -157,7 +157,7 @@
             </td>
             <td nzAlign="left">
               <span class="category-tag">
-                <nz-icon nzType="folder" style="margin-right: 6px; color: var(--brand);" />
+                <nz-icon nzType="folder" style="margin-right: 6px; color: var(--brand);"/>
                 {{ item.categoryName || '—' }}
               </span>
             </td>
@@ -168,12 +168,12 @@
               <div class="tag-group">
                 @if (item.isFeatured) {
                   <span class="custom-badge custom-badge--featured" nz-tooltip nzTooltipTitle="Sản phẩm nổi bật">
-                    <nz-icon nzType="star" nzTheme="fill" /> Nổi bật
+                    <nz-icon nzType="star" nzTheme="fill"/> Nổi bật
                   </span>
                 }
                 @if (item.isBestSeller) {
                   <span class="custom-badge custom-badge--bestseller" nz-tooltip nzTooltipTitle="Sản phẩm bán chạy">
-                    <nz-icon nzType="fire" nzTheme="fill" /> Bán chạy
+                    <nz-icon nzType="fire" nzTheme="fill"/> Bán chạy
                   </span>
                 }
                 @if (item.isCombo) {
@@ -265,10 +265,10 @@
         <div class="product-detail-header">
           <div class="detail-image-container">
             @if (p.imageUrl) {
-              <img [src]="p.imageUrl" [alt]="p.name" class="detail-image" />
+              <img [src]="p.imageUrl" [alt]="p.name" class="detail-image"/>
             } @else {
               <div class="detail-image-placeholder">
-                <nz-icon nzType="coffee" />
+                <nz-icon nzType="coffee"/>
               </div>
             }
           </div>
@@ -279,10 +279,11 @@
                 {{ getProductStatusMeta(p.status).label }}
               </span>
               @if (p.isFeatured) {
-                <span class="custom-badge custom-badge--featured"><nz-icon nzType="star" nzTheme="fill" /> Nổi bật</span>
+                <span class="custom-badge custom-badge--featured"><nz-icon nzType="star" nzTheme="fill"/> Nổi bật</span>
               }
               @if (p.isBestSeller) {
-                <span class="custom-badge custom-badge--bestseller"><nz-icon nzType="fire" nzTheme="fill" /> Bán chạy</span>
+                <span class="custom-badge custom-badge--bestseller"><nz-icon nzType="fire"
+                                                                             nzTheme="fill"/> Bán chạy</span>
               }
               @if (p.isCombo) {
                 <span class="custom-badge custom-badge--combo">Combo</span>
@@ -299,7 +300,8 @@
         <!-- Thông tin tổng quan -->
         <div class="detail-section">
           <h4 class="detail-section__title">
-            <nz-icon nzType="info-circle" /> Thông tin sản phẩm
+            <nz-icon nzType="info-circle"/>
+            Thông tin sản phẩm
           </h4>
           <div class="detail-grid" nz-row [nzGutter]="[16, 16]">
             <div nz-col [nzSpan]="12">
@@ -313,7 +315,7 @@
               <div class="detail-field">
                 <label class="detail-field__label">Thời gian chuẩn bị</label>
                 <div class="detail-field__value font-medium">
-                  <nz-icon nzType="clock-circle" class="mr-1 text-muted" />
+                  <nz-icon nzType="clock-circle" class="mr-1 text-muted"/>
                   {{ p.preparationMinutes ? p.preparationMinutes + ' phút' : '10 phút' }}
                 </div>
               </div>
@@ -344,7 +346,8 @@
                 <div class="detail-field__value levels-list">
                   @for (ice of parseLevels(p.availableIceLevels); track ice) {
                     <span class="level-pill level-pill--ice">
-                      <nz-icon nzType="cloud" /> {{ ice }}% đá
+                      <nz-icon nzType="cloud"/>
+                      {{ ice }}% đá
                     </span>
                   } @empty {
                     <span class="text-muted">Mặc định</span>
@@ -360,7 +363,8 @@
                 <div class="detail-field__value levels-list">
                   @for (sugar of parseLevels(p.availableSugarLevels); track sugar) {
                     <span class="level-pill level-pill--sugar">
-                      <nz-icon nzType="heart" /> {{ sugar }}% đường
+                      <nz-icon nzType="heart"/>
+                      {{ sugar }}% đường
                     </span>
                   } @empty {
                     <span class="text-muted">Mặc định</span>
@@ -384,7 +388,8 @@
         <div class="detail-section">
           <div class="detail-section__header">
             <h4 class="detail-section__title">
-              <nz-icon nzType="appstore" /> Danh sách phiên bản / Kích cỡ (Variants)
+              <nz-icon nzType="appstore"/>
+              Danh sách phiên bản / Kích cỡ (Variants)
             </h4>
             <div class="detail-section__header-actions">
               <span class="variants-count-badge">{{ p.variants ? p.variants.length : 0 }} phiên bản</span>
@@ -403,15 +408,15 @@
             <div class="variants-table-container">
               <table class="variants-table">
                 <thead>
-                  <tr>
-                    <th>STT</th>
-                    <th>Kích cỡ</th>
-                    <th>Tên phiên bản</th>
-                    <th>Mã Size</th>
-                    <th class="text-right">Chênh lệch giá</th>
-                    <th class="text-right">Giá bán dự kiến</th>
-                    <th class="text-center">Trạng thái</th>
-                  </tr>
+                <tr>
+                  <th>STT</th>
+                  <th>Kích cỡ</th>
+                  <th>Tên phiên bản</th>
+                  <th>Mã Size</th>
+                  <th class="text-right">Chênh lệch giá</th>
+                  <th class="text-right">Giá bán dự kiến</th>
+                  <th class="text-center">Trạng thái</th>
+                </tr>
                 </thead>
                 <tbody>
                   @for (v of p.variants; track v.id || v.variantCode; let idx = $index) {
@@ -448,7 +453,7 @@
             </div>
           } @else {
             <div class="variants-empty">
-              <nz-icon nzType="inbox" class="empty-icon" />
+              <nz-icon nzType="inbox" class="empty-icon"/>
               <span>Chưa có cấu hình phiên bản / size cho sản phẩm này (áp dụng giá bán cơ bản)</span>
             </div>
           }
@@ -640,21 +645,21 @@
             <div class="flag-item">
               <nz-switch formControlName="isFeatured" id="switch-featured"></nz-switch>
               <label for="switch-featured" class="flag-label">
-                <nz-icon nzType="star" nzTheme="fill" class="text-gold" />
+                <nz-icon nzType="star" nzTheme="fill" class="text-gold"/>
                 <span>Sản phẩm nổi bật (Featured)</span>
               </label>
             </div>
             <div class="flag-item">
               <nz-switch formControlName="isBestSeller" id="switch-bestseller"></nz-switch>
               <label for="switch-bestseller" class="flag-label">
-                <nz-icon nzType="fire" nzTheme="fill" class="text-danger" />
+                <nz-icon nzType="fire" nzTheme="fill" class="text-danger"/>
                 <span>Sản phẩm bán chạy (Best Seller)</span>
               </label>
             </div>
             <div class="flag-item">
               <nz-switch formControlName="isCombo" id="switch-combo"></nz-switch>
               <label for="switch-combo" class="flag-label">
-                <nz-icon nzType="appstore" />
+                <nz-icon nzType="appstore"/>
                 <span>Sản phẩm Combo</span>
               </label>
             </div>
@@ -668,15 +673,17 @@
             <div class="image-upload-wrapper">
               @if (imagePreviewUrl() || createForm.controls.imageUrl.value) {
                 <div class="image-preview-card">
-                  <img [src]="imagePreviewUrl() || createForm.controls.imageUrl.value" alt="Preview" class="preview-img" />
+                  <img [src]="imagePreviewUrl() || createForm.controls.imageUrl.value" alt="Preview"
+                       class="preview-img"/>
                   <div class="image-preview-overlay">
                     <button type="button" class="btn-remove-img" (click)="removeSelectedImage()" title="Xoá ảnh">
-                      <nz-icon nzType="delete" />
+                      <nz-icon nzType="delete"/>
                     </button>
                   </div>
                   @if (selectedImageFile(); as f) {
                     <div class="image-file-info">
-                      <nz-icon nzType="cloud-upload" /> {{ f.name }} ({{ (f.size / 1024).toFixed(0) }} KB)
+                      <nz-icon nzType="cloud-upload"/>
+                      {{ f.name }} ({{ (f.size / 1024).toFixed(0) }} KB)
                     </div>
                   }
                 </div>
@@ -691,7 +698,7 @@
                   />
                   <div class="dropzone-content">
                     <div class="dropzone-icon">
-                      <nz-icon nzType="cloud-upload" />
+                      <nz-icon nzType="cloud-upload"/>
                     </div>
                     <div class="dropzone-text">
                       <span class="dropzone-main">Nhấn để tải lên ảnh sản phẩm</span>

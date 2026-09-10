@@ -58,22 +58,22 @@ export const STANDARD_BEVERAGE_SIZE_PRESETS: VariantPreset[] = [
     label: 'Bộ 3 Size Tiêu chuẩn (S, M, L)',
     description: 'Size S (gốc), Size M (+5.000đ), Size L (+10.000đ)',
     items: [
-      { variantCode: 'S', variantName: 'Size S (Nhỏ)', sizeLabel: 'S', priceDelta: 0, displayOrder: 1 },
-      { variantCode: 'M', variantName: 'Size M (Vừa)', sizeLabel: 'M', priceDelta: 5000, displayOrder: 2 },
-      { variantCode: 'L', variantName: 'Size L (Lớn)', sizeLabel: 'L', priceDelta: 10000, displayOrder: 3 },
+      {variantCode: 'S', variantName: 'Size S (Nhỏ)', sizeLabel: 'S', priceDelta: 0, displayOrder: 1},
+      {variantCode: 'M', variantName: 'Size M (Vừa)', sizeLabel: 'M', priceDelta: 5000, displayOrder: 2},
+      {variantCode: 'L', variantName: 'Size L (Lớn)', sizeLabel: 'L', priceDelta: 10000, displayOrder: 3},
     ],
   },
   {
     label: 'Bộ 2 Size Cà phê (M, L)',
     description: 'Size M (gốc), Size L (+6.000đ)',
     items: [
-      { variantCode: 'M', variantName: 'Size Vừa', sizeLabel: 'M', priceDelta: 0, displayOrder: 1 },
-      { variantCode: 'L', variantName: 'Size Lớn', sizeLabel: 'L', priceDelta: 6000, displayOrder: 2 },
+      {variantCode: 'M', variantName: 'Size Vừa', sizeLabel: 'M', priceDelta: 0, displayOrder: 1},
+      {variantCode: 'L', variantName: 'Size Lớn', sizeLabel: 'L', priceDelta: 6000, displayOrder: 2},
     ],
   },
 ];
 
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 
 /** Helper dựng một FormGroup dòng biến thể chuẩn hóa dùng chung cho cả FormTable và ProductList */
 export function buildVariantFormGroup(

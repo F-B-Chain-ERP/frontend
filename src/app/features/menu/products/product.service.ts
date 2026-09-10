@@ -1,10 +1,10 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
-import { ApiResponse } from '../../login/login.model';
-import { ApplicationConfigService } from '../../../core/config/application-config.service';
-import { ProductVariantService } from './variants/variant.service';
+import {HttpClient, HttpParams} from '@angular/common/http';
+import {Injectable, inject} from '@angular/core';
+import {Observable, throwError} from 'rxjs';
+import {catchError, map} from 'rxjs/operators';
+import {ApiResponse} from '../../login/login.model';
+import {ApplicationConfigService} from '../../../core/config/application-config.service';
+import {ProductVariantService} from './variants/variant.service';
 import {
   CreateProductFormData,
   CreateProductRequestDto,
@@ -69,7 +69,7 @@ export class ProductService {
       params = params.set('isBestSeller', String(filter.isBestSeller));
     }
 
-    return this.http.get<ApiResponse<BackendPageResponse>>(this.baseUrl, { params }).pipe(
+    return this.http.get<ApiResponse<BackendPageResponse>>(this.baseUrl, {params}).pipe(
       map(res => {
         const page = res.data;
         const content = page?.content ?? [];

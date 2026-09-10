@@ -1,12 +1,12 @@
-import { Component, Input, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { AppButtonComponent } from '../../../../shared/app-button/app-button.component';
-import { AppNotificationService } from '../../../../shared/app-notification/app-notification.service';
+import {Component, Input, inject} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {NzInputModule} from 'ng-zorro-antd/input';
+import {NzInputNumberModule} from 'ng-zorro-antd/input-number';
+import {NzIconModule} from 'ng-zorro-antd/icon';
+import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
+import {AppButtonComponent} from '../../../../shared/app-button/app-button.component';
+import {AppNotificationService} from '../../../../shared/app-notification/app-notification.service';
 import {
   STANDARD_BEVERAGE_SIZE_PRESETS,
   SyncProductVariantItem,
@@ -31,7 +31,7 @@ import {
   styleUrls: ['./product-variant-form-table.component.scss'],
 })
 export class ProductVariantFormTableComponent {
-  @Input({ required: true }) variantsArray!: FormArray<FormGroup>;
+  @Input({required: true}) variantsArray!: FormArray<FormGroup>;
   @Input() basePrice: number | null | undefined = 0;
 
   readonly standardSizePresets = STANDARD_BEVERAGE_SIZE_PRESETS;
@@ -47,7 +47,7 @@ export class ProductVariantFormTableComponent {
 
   addVariantLine(): void {
     const nextOrder = this.variantsArray.length + 1;
-    this.variantsArray.push(this.createVariantGroup({ displayOrder: nextOrder }));
+    this.variantsArray.push(this.createVariantGroup({displayOrder: nextOrder}));
   }
 
   removeVariantLine(index: number): void {

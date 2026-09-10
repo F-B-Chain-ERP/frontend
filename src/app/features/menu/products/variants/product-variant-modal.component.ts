@@ -8,18 +8,18 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NzGridModule } from 'ng-zorro-antd/grid';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { BaseComponent } from '../../../../shared/base-component/base.component';
-import { AppButtonComponent } from '../../../../shared/app-button/app-button.component';
-import { AppModalComponent } from '../../../../shared/app-modal/app-modal.component';
-import { Product, ProductDetail, getProductStatusMeta } from '../product.model';
+import {CommonModule} from '@angular/common';
+import {FormBuilder, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import {NzGridModule} from 'ng-zorro-antd/grid';
+import {NzIconModule} from 'ng-zorro-antd/icon';
+import {NzInputModule} from 'ng-zorro-antd/input';
+import {NzInputNumberModule} from 'ng-zorro-antd/input-number';
+import {NzSpinModule} from 'ng-zorro-antd/spin';
+import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
+import {BaseComponent} from '../../../../shared/base-component/base.component';
+import {AppButtonComponent} from '../../../../shared/app-button/app-button.component';
+import {AppModalComponent} from '../../../../shared/app-modal/app-modal.component';
+import {Product, ProductDetail, getProductStatusMeta} from '../product.model';
 import {
   CreateProductVariantRequest,
   ProductVariant,
@@ -28,8 +28,8 @@ import {
   UpdateProductVariantRequest,
   VariantPreset,
 } from './variant.model';
-import { ProductVariantService } from './variant.service';
-import { takeUntil } from 'rxjs';
+import {ProductVariantService} from './variant.service';
+import {takeUntil} from 'rxjs';
 
 @Component({
   selector: 'app-product-variant-modal',
@@ -113,7 +113,7 @@ export class ProductVariantModalComponent extends BaseComponent implements OnCha
           this.variantList.set(list || []);
           this.loadingVariants.set(false);
           const nextOrder = (list ? list.length : 0) + 1;
-          this.variantForm.patchValue({ displayOrder: nextOrder });
+          this.variantForm.patchValue({displayOrder: nextOrder});
         },
         error: (err: { message?: string }) => {
           this.loadingVariants.set(false);
@@ -276,6 +276,11 @@ export class ProductVariantModalComponent extends BaseComponent implements OnCha
   onVisibleChange(value: boolean): void {
     this.visible = value;
     this.visibleChange.emit(value);
+  }
+
+  goToFullManagement(productId: string): void {
+    this.closeModal();
+    this.router.navigate(['/admin/menu/variants'], { queryParams: { productId } });
   }
 
   closeModal(): void {

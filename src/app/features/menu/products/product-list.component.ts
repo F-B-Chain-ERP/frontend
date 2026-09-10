@@ -1,28 +1,28 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormArray, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NzTableModule } from 'ng-zorro-antd/table';
-import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { NzGridModule } from 'ng-zorro-antd/grid';
-import { NzTagModule } from 'ng-zorro-antd/tag';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { NzSwitchModule } from 'ng-zorro-antd/switch';
-import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { NzDividerModule } from 'ng-zorro-antd/divider';
-import { BaseComponent } from '../../../shared/base-component/base.component';
-import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
-import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
-import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
-import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
-import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
-import { ROLE } from '../../../core/config/functions.constants';
-import { ProductService } from './product.service';
-import { CategoryService } from '../categories/category.service';
-import { Category } from '../categories/category.model';
+import {Component, OnInit, inject, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormArray, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import {NzTableModule} from 'ng-zorro-antd/table';
+import {NzCardModule} from 'ng-zorro-antd/card';
+import {NzInputModule} from 'ng-zorro-antd/input';
+import {NzSelectModule} from 'ng-zorro-antd/select';
+import {NzIconModule} from 'ng-zorro-antd/icon';
+import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
+import {NzGridModule} from 'ng-zorro-antd/grid';
+import {NzTagModule} from 'ng-zorro-antd/tag';
+import {NzInputNumberModule} from 'ng-zorro-antd/input-number';
+import {NzSwitchModule} from 'ng-zorro-antd/switch';
+import {NzSpinModule} from 'ng-zorro-antd/spin';
+import {NzDividerModule} from 'ng-zorro-antd/divider';
+import {BaseComponent} from '../../../shared/base-component/base.component';
+import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
+import {AppPaginationComponent} from '../../../shared/app-pagination/app-pagination.component';
+import {AppBreadcrumbsComponent} from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import {AppModalComponent} from '../../../shared/app-modal/app-modal.component';
+import {HasSomeAuthorityDirective} from '../../../core/auth/has-some-authority.directive';
+import {ROLE} from '../../../core/config/functions.constants';
+import {ProductService} from './product.service';
+import {CategoryService} from '../categories/category.service';
+import {Category} from '../categories/category.model';
 import {
   Product,
   ProductDetail,
@@ -32,10 +32,10 @@ import {
   SyncProductVariantItem,
   buildVariantFormGroup,
 } from './product.model';
-import { ProductVariantFormTableComponent } from './variants/product-variant-form-table.component';
-import { ProductVariantModalComponent } from './variants/product-variant-modal.component';
-import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
-import { takeUntil } from 'rxjs';
+import {ProductVariantFormTableComponent} from './variants/product-variant-form-table.component';
+import {ProductVariantModalComponent} from './variants/product-variant-modal.component';
+import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
+import {takeUntil} from 'rxjs';
 
 @Component({
   selector: 'app-product-list',
@@ -74,9 +74,9 @@ export class ProductListComponent extends BaseComponent implements OnInit {
   readonly statusOptions = PRODUCT_STATUS_OPTIONS;
 
   readonly booleanFilterOptions = [
-    { label: 'Tất cả', value: null },
-    { label: 'Có', value: true },
-    { label: 'Không', value: false },
+    {label: 'Tất cả', value: null},
+    {label: 'Có', value: true},
+    {label: 'Không', value: false},
   ];
 
   readonly currencyFormatter = (value: number | string): string =>
@@ -142,9 +142,9 @@ export class ProductListComponent extends BaseComponent implements OnInit {
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
-      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
-      { label: 'Thực đơn', url: '/admin/menu/products/list' },
-      { label: 'Sản phẩm', url: '/admin/menu/products/list' },
+      {label: 'Trang chủ', url: '/admin/home', icon: 'home'},
+      {label: 'Thực đơn', url: '/admin/menu/products/list'},
+      {label: 'Sản phẩm', url: '/admin/menu/products/list'},
     ]);
     this.loadCategories();
     this.loadProducts();
@@ -152,7 +152,7 @@ export class ProductListComponent extends BaseComponent implements OnInit {
 
   loadCategories(): void {
     this.categoryService
-      .getCategories({ pageIndex: 1, pageSize: 100, status: 'ACTIVE' })
+      .getCategories({pageIndex: 1, pageSize: 100, status: 'ACTIVE'})
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => this.categories.set(res.items || []),
