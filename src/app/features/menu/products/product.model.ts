@@ -35,6 +35,8 @@ export interface ProductFilter {
   status?: string | null;
   isFeatured?: boolean | null;
   isBestSeller?: boolean | null;
+  sortBy?: string;
+  sortDirection?: string;
   pageIndex: number;
   pageSize: number;
 }

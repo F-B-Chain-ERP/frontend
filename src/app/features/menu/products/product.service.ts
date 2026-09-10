@@ -69,6 +69,12 @@ export class ProductService {
     if (filter.isBestSeller !== undefined && filter.isBestSeller !== null) {
       params = params.set('isBestSeller', String(filter.isBestSeller));
     }
+    if (filter.sortBy?.trim()) {
+      params = params.set('sortBy', filter.sortBy.trim());
+    }
+    if (filter.sortDirection?.trim()) {
+      params = params.set('sortDirection', filter.sortDirection.trim());
+    }
 
     return this.http.get<ApiResponse<BackendPageResponse>>(this.baseUrl, {params}).pipe(
       map(res => {

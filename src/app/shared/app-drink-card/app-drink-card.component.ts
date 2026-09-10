@@ -1,4 +1,5 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output} from '@angular/core';
+import {NzIconDirective} from 'ng-zorro-antd/icon';
 import {AppButtonComponent} from '../app-button/app-button.component';
 
 export interface DrinkItem {
@@ -20,13 +21,14 @@ export interface DrinkItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app-drink-card.component.html',
   styleUrls: ['./app-drink-card.component.scss'],
-  imports: [AppButtonComponent],
+  imports: [AppButtonComponent, NzIconDirective],
   standalone: true,
 })
 export class AppDrinkCardComponent {
   @Input({required: true}) item!: DrinkItem;
 
   @Output() selectItem = new EventEmitter<DrinkItem>();
+  @Output() viewDetail = new EventEmitter<DrinkItem>();
   @Output() addToCart = new EventEmitter<DrinkItem>();
 
   formatPrice(amount: number): string {
@@ -34,6 +36,7 @@ export class AppDrinkCardComponent {
   }
 
   onCardClick(): void {
+    this.viewDetail.emit(this.item);
     this.selectItem.emit(this.item);
   }
 

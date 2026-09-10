@@ -69,6 +69,30 @@
     }
   }
 
+  &__quick-view {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: rgba(20, 20, 20, 0.78);
+    backdrop-filter: blur(8px);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: var(--radius-pill);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  &:hover &__quick-view {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   // ── Info Body ──
   &__body {
     display: flex;

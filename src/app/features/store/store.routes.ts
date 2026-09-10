@@ -12,6 +12,11 @@ export const routes: Routes = [
     title: 'Thanh toán',
   },
   {
+    path: 'product/:id',
+    loadComponent: () => import('./product-detail/product-detail.component'),
+    title: 'Chi tiết món',
+  },
+  {
     path: '',
     loadComponent: () => import('./store.component'),
     title: 'Cửa hàng & Bán hàng trực tuyến',
