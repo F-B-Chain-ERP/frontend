@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, Input, OnInit, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, Input, OnDestroy, OnInit, inject, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute, Router, RouterLink} from '@angular/router';
@@ -11,6 +11,7 @@ import {DrinkItem} from '../../../shared/app-drink-card/app-drink-card.component
 import {ProductDetail} from '../../menu/products/product.model';
 import {ProductVariant} from '../../menu/products/variants/variant.model';
 import {SalesService} from '../services/sales.service';
+import {Subject, distinctUntilChanged, map, skip, takeUntil} from 'rxjs';
 
 export interface DetailSizeOption {
   id: string;
@@ -75,9 +76,10 @@ function parseSizeOption(v: ProductVariant, basePrice: number): DetailSizeOption
   ],
   standalone: true,
 })
-export class ProductDetailComponent implements OnInit {
+export class ProductDetailComponent implements OnInit, OnDestroy {
   @Input() id!: string;
 
+  private readonly destroy$ = new Subject<void>();
   private readonly salesService = inject(SalesService);
   private readonly cartService = inject(CartService);
   private readonly toast = inject(AppNotificationService);
@@ -118,11 +120,30 @@ export class ProductDetailComponent implements OnInit {
     if (routeId) {
       this.loadProductDetail(routeId);
     }
+    // Đi từ món này sang món khác mà component không hủy: param đổi thì load lại.
+    // skip(1) để bỏ emission hiện tại (đã load ở trên), tránh gọi API 2 lần lúc mở trang.
+    this.route.paramMap
+      .pipe(
+        map(p => p.get('id')),
+        distinctUntilChanged(),
+        skip(1),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(id => {
+        if (id) {
+          this.loadProductDetail(id);
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   loadProductDetail(productId: string): void {
     this.isLoading.set(true);
-    this.salesService.getProductDetail(productId).subscribe({
+    this.salesService.getProductDetail(productId).pipe(takeUntil(this.destroy$)).subscribe({
       next: detail => {
         this.product.set(detail);
         this.isLoading.set(false);

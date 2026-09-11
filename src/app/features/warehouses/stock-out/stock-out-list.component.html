@@ -318,6 +318,19 @@
                 >
                 </app-button>
 
+                <!-- Ghi sổ (chỉ phiếu Nháp) -->
+                @if (item.status === 'DRAFT') {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.XUAT_KHO.UPDATE]"
+                    variant="ghost"
+                    iconOnly="check"
+                    nz-tooltip
+                    nzTooltipTitle="Ghi sổ"
+                    (click)="onPost(item)"
+                  >
+                  </app-button>
+                }
+
                 <!-- Xóa -->
                 <app-button
                   *erpUTTHasSomeAuthority="[ROLE.XUAT_KHO.DELETE]"
@@ -370,23 +383,25 @@
   >
     <form [formGroup]="stockOutForm" class="stock-out-form" (ngSubmit)="submitForm()">
       <div nz-row [nzGutter]="[16, 16]">
-        <!-- Mã phiếu xuất kho -->
+        <!-- Mã phiếu xuất kho: hệ thống tự sinh, không cho nhập tay.
+             Lúc tạo hiện "Mới", lưu xong mới có mã thật. -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
-          <label class="form-label required" for="sout-code">Mã phiếu xuất</label>
-          <nz-input-wrapper>
-            <input
-              id="sout-code"
-              type="text"
-              nz-input
-              formControlName="code"
-              placeholder="VD: SO-202608-0001"
-              style="text-transform: uppercase;"
-            />
-          </nz-input-wrapper>
-          @if (stockOutForm.get('code')?.touched || stockOutForm.get('code')?.dirty) {
-            @if (stockOutForm.get('code')?.hasError('required')) {
-              <span class="form-error">Vui lòng nhập mã phiếu xuất.</span>
-            }
+          <label class="form-label" for="sout-code">Mã phiếu xuất</label>
+          @if (modalMode() === 'create') {
+            <nz-input-wrapper>
+              <input id="sout-code" type="text" nz-input value="Mới — tự sinh khi lưu" readonly />
+            </nz-input-wrapper>
+          } @else {
+            <nz-input-wrapper>
+              <input
+                id="sout-code"
+                type="text"
+                nz-input
+                formControlName="code"
+                style="text-transform: uppercase;"
+                readonly
+              />
+            </nz-input-wrapper>
           }
         </div>
 
@@ -550,7 +565,7 @@
                         style="width: 100%"
                       >
                         @for (opt of materialOptions(); track opt.value) {
-                          <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+                          <nz-option [nzValue]="opt.value" [nzLabel]="opt.label" [nzDisabled]="opt.disabled"></nz-option>
                         }
                       </nz-select>
                       @if (availableFor(i) !== null) {

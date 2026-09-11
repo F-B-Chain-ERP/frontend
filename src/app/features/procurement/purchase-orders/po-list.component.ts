@@ -12,8 +12,8 @@ import {
   FormControl,
 } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, forkJoin, of } from 'rxjs';
-import { catchError, switchMap, tap, takeUntil } from 'rxjs/operators';
+import { Observable, Subject, forkJoin, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, tap, takeUntil } from 'rxjs/operators';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -43,6 +43,10 @@ import { ROLE } from '../../../core/config/functions.constants';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import { PurchaseOrderService } from './po.service';
 import { UnitService } from '../../menu/units/unit.service';
+import { SupplierService } from '../suppliers/supplier.service';
+import { Supplier, SupplierStatus } from '../suppliers/supplier.model';
+import { WarehouseMaterialService } from '../../warehouses/materials/material.service';
+import { Material } from '../../warehouses/materials/material.model';
 import {
   PoOption,
   PurchaseOrder,
@@ -61,6 +65,14 @@ interface NameCodeBE {
   code?: string;
   name?: string;
   status?: string;
+}
+
+function supplierLabel(s: Supplier): string {
+  return `${s.code || ''} ${s.name || ''}`.trim();
+}
+
+function materialLabel(m: Material): string {
+  return `${m.code || ''} ${m.name || ''}`.trim();
 }
 
 @Component({
@@ -124,6 +136,24 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   readonly warehouseOptions = signal<PoOption[]>([]);
   readonly unitOptions = signal<PoOption[]>([]);
 
+  // ── Dropdown NCC/NVL tìm kiếm server (chịu được data lớn, không bò từng trang) ──
+  readonly isLoadingSuppliers = signal(false);
+  readonly isLoadingMaterials = signal(false);
+  private supplierSearchText = '';
+  private materialSearchText = '';
+  private supplierPageIndex = 1;
+  private materialPageIndex = 1;
+  private readonly supplierPageSize = 10;
+  private readonly materialPageSize = 20;
+  private supplierTotal = 0;
+  private materialTotal = 0;
+  private supplierRequestSeq = 0;
+  private materialRequestSeq = 0;
+  private readonly supplierSearch$ = new Subject<string>();
+  private readonly materialSearch$ = new Subject<string>();
+  private selectedSupplierCache: Supplier | null = null;
+  private readonly pinnedMaterials = new Map<string, PoOption>();
+
   selectedPoId: string | number | null = null;
   readonly modalDetail = signal<PurchaseOrderDetail | null>(null);
 
@@ -157,6 +187,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   private readonly purchaseOrderService = inject(PurchaseOrderService);
   private readonly unitService = inject(UnitService);
+  private readonly supplierService = inject(SupplierService);
+  private readonly materialService = inject(WarehouseMaterialService);
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(ApplicationConfigService);
   private readonly appRef = inject(ApplicationRef);
@@ -206,6 +238,26 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
     this.poForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcTotals());
     this.receiveForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcReceiveTotals());
+
+    // Gõ tìm NCC/NVL -> debounce rồi mới gọi API (không spam mỗi ký tự).
+    this.supplierSearch$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(text => {
+        this.supplierSearchText = text;
+        this.loadSuppliers(true);
+      });
+    this.materialSearch$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(text => {
+        this.materialSearchText = text;
+        this.loadMaterials(true);
+      });
+
+    // Lookup nạp 1 lần khi vào trang (modal mở sau dùng lại, không gọi lại).
+    this.loadSuppliers();
+    this.loadMaterials();
+    this.loadWarehouses().pipe(takeUntil(this.destroy$)).subscribe();
+    this.loadUnits().pipe(takeUntil(this.destroy$)).subscribe();
 
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const code = (params['code'] || params['search'] || '').trim();
@@ -451,6 +503,16 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   onReceivePO(po: PurchaseOrder): void {
     this.openReceiveModal(po);
+  }
+
+  /**
+   * Sang form Nhập kho với PO đã chọn sẵn (đổ dòng + link tự động).
+   * Luồng chuẩn để tăng tồn: PO.receive modal chỉ ghi sổ đơn, không tăng tồn kho.
+   */
+  goToStockIn(po: PurchaseOrder): void {
+    this.router.navigate(['/admin/inventory/stock-in/list'], {
+      queryParams: { poId: po.id },
+    });
   }
 
   // ── Receive modal (nhập số lượng nhận thực tế) ───────────────────
@@ -771,23 +833,23 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   private loadPoIntoModal(po: PurchaseOrder): void {
     this.selectedPoId = po.id;
-    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses(), this.loadUnits()])
+    this.ensureLookupOptions();
+    this.purchaseOrderService
+      .getPurchaseOrderById(po.id)
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.purchaseOrderService
-          .getPurchaseOrderById(po.id)
-          .pipe(takeUntil(this.destroy$))
-          .subscribe(detail => {
-            if (detail) {
-              this.modalDetail.set(detail);
-              this.patchForm(detail);
-              if (this.modalMode() === 'view') {
-                this.poForm.disable();
-              } else {
-                this.poForm.enable();
-              }
-            }
-          });
+      .subscribe(detail => {
+        if (detail) {
+          this.modalDetail.set(detail);
+          this.patchForm(detail);
+          // Ghim NCC + NVL của phiếu vào list (kẻo search đang lọc cái khác).
+          this.ensureSupplierVisible(detail.supplierId);
+          this.ensureMaterialsVisible((detail.items || []).map(i => i.materialId));
+          if (this.modalMode() === 'view') {
+            this.poForm.disable();
+          } else {
+            this.poForm.enable();
+          }
+        }
       });
     this.isModalVisible.set(true);
   }
@@ -815,6 +877,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   onMaterialTextInput(index: number): void {
     this.itemsArray.at(index).get('materialId')?.setValue(null);
+    const text = this.itemsArray.at(index).get('materialText')?.value as string;
+    this.materialSearch$.next((text ?? '').trim());
   }
 
   onMatSelect(index: number, option: { nzValue?: string } | null): void {
@@ -868,9 +932,10 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
 
   // ── Private helpers ────────────────────────────────────────────────
   private loadLookupOptions(): void {
-    forkJoin([this.loadSuppliers(), this.loadMaterials(), this.loadWarehouses(), this.loadUnits()])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({ error: () => this.toastService.error('Lỗi', 'Không thể tải dữ liệu chọn (NCC/NVL/Kho/ĐVT).') });
+    // Lookup đã nạp 1 lần ở ngOnInit; ở đây chỉ vá chỗ thiếu + reset tìm NCC.
+    this.ensureLookupOptions();
+    this.supplierSearchText = '';
+    this.loadSuppliers(true);
   }
 
   private resetForm(): void {
@@ -931,29 +996,182 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     return arr.length > 0 ? null : { atLeastOne: true };
   }
 
-  private loadSuppliers(): Observable<unknown> {
-    return this.fetchAllPages('api/v1/proc/suppliers').pipe(
-      tap(list => {
-        const active = list.filter(s => s.status === 'ACTIVE');
-        this.supplierOptions.set(active.map(s => ({ label: `${s.code || ''} ${s.name || ''}`.trim(), value: s.id })));
-      }),
-      catchError(() => {
-        this.supplierOptions.set([]);
-        return of(null);
-      }),
-    );
+  // ── Dropdown NCC: tìm kiếm server (debounce) + cuộn tải thêm ─────────
+  // Thay thế kiểu cũ bò từng trang (NCC 60 dòng = 6 request nối tiếp).
+  onSupplierSearch(value: string): void {
+    this.supplierSearch$.next((value ?? '').trim());
   }
 
-  private loadMaterials(): Observable<unknown> {
-    return this.fetchAllPages('api/v1/inv/materials').pipe(
-      tap(list => {
-        this.materialOptions.set(list.map(m => ({ label: `${m.code || ''} ${m.name || ''}`.trim(), value: m.id })));
-      }),
-      catchError(() => {
-        this.materialOptions.set([]);
-        return of(null);
-      }),
+  onSupplierScrollBottom(): void {
+    if (this.isLoadingSuppliers() || this.supplierOptions().length >= this.supplierTotal) {
+      return;
+    }
+    this.supplierPageIndex += 1;
+    this.loadSuppliers(false);
+  }
+
+  private loadSuppliers(reset = true): void {
+    if (reset) {
+      this.supplierPageIndex = 1;
+    }
+    const requestId = ++this.supplierRequestSeq;
+    this.isLoadingSuppliers.set(true);
+    this.supplierService
+      .getSuppliers({
+        query: this.supplierSearchText,
+        status: SupplierStatus.ACTIVE,
+        pageIndex: this.supplierPageIndex,
+        pageSize: this.supplierPageSize,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          if (requestId !== this.supplierRequestSeq) {
+            return;
+          }
+          const page = (res.items || []).map(s => ({ label: supplierLabel(s), value: String(s.id) }));
+          const base = reset ? page : [...this.supplierOptions(), ...page];
+          this.supplierOptions.set(this.withSelectedSupplier(base));
+          this.supplierTotal = res.total;
+          this.isLoadingSuppliers.set(false);
+        },
+        error: err => {
+          if (requestId !== this.supplierRequestSeq) {
+            return;
+          }
+          this.isLoadingSuppliers.set(false);
+          this.toastService.error('Lỗi', err?.message || 'Không thể tải danh sách nhà cung cấp.');
+        },
+      });
+  }
+
+  /** Giữ NCC đang chọn trong list để không mất label khi search/cuộn. */
+  private withSelectedSupplier(items: PoOption[]): PoOption[] {
+    const selectedId = this.poForm.get('supplierId')?.value as string | null;
+    if (!selectedId || items.some(o => String(o.value) === String(selectedId))) {
+      return items;
+    }
+    const cached = this.selectedSupplierCache;
+    if (cached && String(cached.id) === String(selectedId)) {
+      return [{ label: supplierLabel(cached), value: String(cached.id) }, ...items];
+    }
+    return items;
+  }
+
+  /** Đảm bảo NCC đang chọn có mặt trong list (tải riêng 1 bản ghi nếu thiếu). */
+  private ensureSupplierVisible(supplierId: string | null | undefined): void {
+    if (!supplierId || this.supplierOptions().some(o => String(o.value) === String(supplierId))) {
+      return;
+    }
+    const cached = this.selectedSupplierCache;
+    if (cached && String(cached.id) === String(supplierId)) {
+      this.supplierOptions.update(list => [{ label: supplierLabel(cached), value: String(cached.id) }, ...list]);
+      return;
+    }
+    this.supplierService
+      .getSupplierById(supplierId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: s => {
+          if (!s || this.supplierOptions().some(o => String(o.value) === String(s.id))) {
+            return;
+          }
+          this.selectedSupplierCache = s;
+          this.supplierOptions.update(list => [{ label: supplierLabel(s), value: String(s.id) }, ...list]);
+        },
+        error: () => undefined,
+      });
+  }
+
+  // ── Dropdown NVL (dòng phiếu): 1 list dùng chung, tìm kiếm server ──────
+  onMaterialSearch(value: string): void {
+    this.materialSearch$.next((value ?? '').trim());
+  }
+
+  private loadMaterials(reset = true): void {
+    if (reset) {
+      this.materialPageIndex = 1;
+    }
+    const requestId = ++this.materialRequestSeq;
+    this.isLoadingMaterials.set(true);
+    this.materialService
+      .getMaterials({
+        query: this.materialSearchText,
+        status: 'ACTIVE',
+        pageIndex: this.materialPageIndex,
+        pageSize: this.materialPageSize,
+      })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          if (requestId !== this.materialRequestSeq) {
+            return;
+          }
+          const page = (res.items || []).map(m => ({ label: materialLabel(m), value: m.id }));
+          const base = reset ? page : [...this.materialOptions(), ...page];
+          this.materialOptions.set(this.withPinnedMaterials(base));
+          this.materialTotal = res.total;
+          this.isLoadingMaterials.set(false);
+        },
+        error: err => {
+          if (requestId !== this.materialRequestSeq) {
+            return;
+          }
+          this.isLoadingMaterials.set(false);
+          this.toastService.error('Lỗi', err?.message || 'Không thể tải danh sách nguyên vật liệu.');
+        },
+      });
+  }
+
+  /** Ghim NVL các dòng đang chọn để không mất label khi search (edit nhiều dòng). */
+  private withPinnedMaterials(items: PoOption[]): PoOption[] {
+    const seen = new Set(items.map(o => String(o.value)));
+    const pinned = [...this.pinnedMaterials.values()].filter(o => !seen.has(String(o.value)));
+    return [...pinned, ...items];
+  }
+
+  /** Đảm bảo NVL các dòng hiện tại có mặt trong list (gọi sau patchForm edit). */
+  private ensureMaterialsVisible(ids: (string | null | undefined)[]): void {
+    const missing = [...new Set(ids.filter((id): id is string => !!id))].filter(
+      id => !this.pinnedMaterials.has(String(id)) && !this.materialOptions().some(o => String(o.value) === String(id)),
     );
+    if (missing.length === 0) {
+      return;
+    }
+    forkJoin(
+      missing.map(id =>
+        this.materialService.getMaterialById(id).pipe(catchError(() => of(null))),
+      ),
+    )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(list => {
+        let changed = false;
+        for (const m of list) {
+          if (m && !this.pinnedMaterials.has(String(m.id))) {
+            this.pinnedMaterials.set(String(m.id), {
+              label: `${m.code || ''} ${m.name || ''}`.trim(),
+              value: m.id,
+            });
+            changed = true;
+          }
+        }
+        if (changed) {
+          this.materialOptions.set(this.withPinnedMaterials(this.materialOptions()));
+        }
+      });
+  }
+
+  // ── Lookup nạp 1 lần khi vào trang; modal mở sau dùng lại, không gọi lại ──
+  private ensureLookupOptions(): void {
+    if (this.warehouseOptions().length === 0) {
+      this.loadWarehouses().pipe(takeUntil(this.destroy$)).subscribe();
+    }
+    if (this.unitOptions().length === 0) {
+      this.loadUnits().pipe(takeUntil(this.destroy$)).subscribe();
+    }
+    if (this.materialOptions().length === 0 && this.pinnedMaterials.size === 0) {
+      this.loadMaterials();
+    }
   }
 
   // Đơn vị tính từ Unit API thật (chỉ ACTIVE); lỗi -> dropdown rỗng, không mock.
@@ -983,21 +1201,6 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       catchError(() => {
         this.warehouseOptions.set([]);
         return of(null);
-      }),
-    );
-  }
-
-  private fetchAllPages(path: string, page = 0, acc: NameCodeBE[] = []): Observable<NameCodeBE[]> {
-    const url = this.appConfig.getEndpointFor(path);
-    const params = new HttpParams().set('page', String(page)).set('size', '10');
-    return this.http.get<{ data: { content: NameCodeBE[]; totalPages?: number } }>(url, { params }).pipe(
-      switchMap(res => {
-        const all = acc.concat(res?.data?.content ?? []);
-        const totalPages = res?.data?.totalPages ?? 0;
-        if (page + 1 < totalPages) {
-          return this.fetchAllPages(path, page + 1, all);
-        }
-        return of(all);
       }),
     );
   }
