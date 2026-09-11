@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
 import { takeUntil } from 'rxjs/operators';
+import { catchError, forkJoin, map, of } from 'rxjs';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -129,7 +130,11 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
   ];
 
   // NVL từ Material API thật (không còn mock mat-00x).
-  readonly materialOptions = signal<{ value: string; label: string; name: string }[]>([]);
+  // Mỗi option mang sẵn tồn khả dụng ở kho đang chọn + cờ disabled để user
+  // biết ngay món nào hết tồn, khỏi chọn rồi mới báo lỗi lúc Ghi sổ.
+  readonly materialOptions = signal<
+    { value: string; label: string; baseLabel: string; name: string; available: number | null; disabled: boolean }[]
+  >([]);
 
   // Tồn khả dụng theo dòng: key = materialId (theo kho đang chọn ở form)
   readonly availableMap = signal<Record<string, number | null>>({});
@@ -184,6 +189,9 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
 
   onWarehouseChange(): void {
     this.availableMap.set({});
+    // Dựng lại label gốc trước khi nạp tồn kho mới (tránh dồn suffix "(tồn:..)").
+    this.materialOptions.set(this.materialOptions().map(o => ({ ...o, label: o.baseLabel, disabled: false })));
+    this.refreshAllAvailabilities();
     for (let i = 0; i < this.itemsArray.length; i++) {
       this.refreshAvailableFor(i);
     }
@@ -210,9 +218,7 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
     this.stockBalanceService.getBalance(warehouseId, matId).subscribe({
       next: b => {
         // StockBalanceService đã normalize về `availableQuantity`; giữ fallback cho response thô cũ.
-        const raw = b as unknown as Record<string, unknown> | null;
-        const avail = b ? Number(raw?.['availableQuantity'] ?? raw?.['quantityAvailable'] ?? raw?.['available'] ?? 0) : 0;
-        this.availableMap.update(m => ({ ...m, [matId]: Number.isFinite(avail) ? avail : 0 }));
+        this.availableMap.update(m => ({ ...m, [matId]: this.extractAvailable(b) }));
       },
       error: () => {
         this.availableMap.update(m => ({ ...m, [matId]: null }));
@@ -276,15 +282,68 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
       .getMaterials({ status: 'ACTIVE', pageIndex: 1, pageSize: 100 })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: res =>
+        next: res => {
           this.materialOptions.set(
-            res.items.map(m => ({ value: m.id, label: `${m.code} - ${m.name}`, name: m.name })),
-          ),
+            res.items.map(m => ({
+              value: m.id,
+              label: `${m.code} - ${m.name}`,
+              baseLabel: `${m.code} - ${m.name}`,
+              name: m.name,
+              available: null,
+              disabled: false,
+            })),
+          );
+          this.refreshAllAvailabilities();
+        },
         error: (err: Error) => {
           this.materialOptions.set([]);
           this.toastService.error(err.message || 'Không thể tải danh sách nguyên vật liệu.');
         },
       });
+  }
+
+  /**
+   * Nạp tồn khả dụng của TOÀN BỘ options ở kho đang chọn (1 lần khi đổi kho /
+   * khi NVL vừa tải xong). NVL nào hết tồn (404 = chưa có số dư) thì disable
+   * ngay trên dropdown + hiện "hết tồn" để khỏi chọn rồi mới lỗi lúc Ghi sổ.
+   */
+  private refreshAllAvailabilities(): void {
+    const warehouseId = this.stockOutForm.get('warehouseId')?.value as string | null;
+    const opts = this.materialOptions();
+    if (!warehouseId || opts.length === 0) return;
+    forkJoin(
+      opts.map(o =>
+        this.stockBalanceService.getBalance(warehouseId, o.value).pipe(
+          map(b => ({ id: o.value, available: this.extractAvailable(b) })),
+          // 404 = chưa có số dư ở kho này -> coi như hết tồn; lỗi khác giữ unknown.
+          catchError((err: { status?: number }) =>
+            of({ id: o.value, available: err?.status === 404 ? 0 : (null as number | null) })
+          ),
+        ),
+      ),
+    )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(results => {
+        const availMap: Record<string, number | null> = {};
+        results.forEach(r => {
+          availMap[r.id] = r.available;
+        });
+        this.availableMap.set(availMap);
+        this.materialOptions.set(
+          opts.map(o => {
+            const avail = availMap[o.value];
+            const suffix = avail === null ? '' : avail <= 0 ? ' (hết tồn)' : ` (tồn: ${avail})`;
+            return { ...o, label: `${o.baseLabel}${suffix}`, available: avail, disabled: avail === 0 };
+          }),
+        );
+      });
+  }
+
+  private extractAvailable(b: { availableQuantity?: unknown } | null): number | null {
+    if (!b) return 0;
+    const raw = b as unknown as Record<string, unknown>;
+    const v = Number(raw['availableQuantity'] ?? raw['quantityAvailable'] ?? raw['available'] ?? 0);
+    return Number.isFinite(v) ? v : 0;
   }
 
   // ── Data loading ───────────────────────────────────────────────────

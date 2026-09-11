@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, OnInit, inject, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {CommonModule} from '@angular/common';
 import {ActivatedRoute, Router} from '@angular/router';
@@ -15,6 +15,7 @@ import {Category} from '../menu/categories/category.model';
 import {Product, ProductDetail} from '../menu/products/product.model';
 import {ProductVariant} from '../menu/products/variants/variant.model';
 import {SalesService} from './services/sales.service';
+import {Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap, takeUntil} from 'rxjs';
 
 export interface CategoryTab {
   id: string;
@@ -124,12 +125,15 @@ function parseSizeOption(v: ProductVariant, basePrice: number): SizeOption {
   ],
   standalone: true,
 })
-export class StoreComponent implements OnInit {
+export class StoreComponent implements OnInit, OnDestroy {
   readonly cartService = inject(CartService);
   private readonly toast = inject(AppNotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly salesService = inject(SalesService);
+  private readonly destroy$ = new Subject<void>();
+  private readonly search$ = new Subject<string>();
+  private readonly detailRequest$ = new Subject<DrinkItem>();
 
   // Filter & Search states
   searchQuery = '';
@@ -213,7 +217,7 @@ export class StoreComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       if (params['q']) {
         this.searchQuery = params['q'];
         this.onFilterChange();
@@ -221,8 +225,44 @@ export class StoreComponent implements OnInit {
       }
     });
 
+    // Gõ search debounce 300ms thay vì lọc mỗi ký tự
+    this.search$
+      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(() => this.onFilterChange());
+
+    // Chi tiết modal đi qua switchMap: bấm món khác khi request cũ chưa về
+    // thì hủy request cũ, response cũ không ghi đè modal mới (hết race).
+    this.detailRequest$
+      .pipe(
+        switchMap(drink =>
+          this.salesService.getProductDetail(drink.id).pipe(
+            map(detail => ({drink, detail: detail as ProductDetail | null})),
+            catchError(() => of({drink, detail: null as ProductDetail | null}))
+          )
+        ),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(({drink, detail}) => {
+        this.isLoadingVariants.set(false);
+        if (detail) {
+          this.applyProductDetail(detail);
+        } else {
+          this.applyProductDetailFallback(drink);
+        }
+      });
+
     this.loadStoreCategories();
     this.loadStoreProducts();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  onSearchInput(query: string): void {
+    this.searchQuery = query ?? '';
+    this.search$.next(this.searchQuery);
   }
 
   /**
@@ -230,7 +270,7 @@ export class StoreComponent implements OnInit {
    */
   loadStoreCategories(): void {
     this.isLoadingCategories.set(true);
-    this.salesService.getCategories().subscribe({
+    this.salesService.getCategories().pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.isLoadingCategories.set(false);
         const activeCats = res.items || [];
@@ -247,7 +287,7 @@ export class StoreComponent implements OnInit {
    */
   loadStoreProducts(): void {
     this.isLoadingProducts.set(true);
-    this.salesService.getProducts({pageSize: 100}).subscribe({
+    this.salesService.getProducts({pageSize: 100}).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.isLoadingProducts.set(false);
         const products = res.items || [];
@@ -499,66 +539,66 @@ export class StoreComponent implements OnInit {
     this.isLoadingVariants.set(true);
     this.onModalVisibleChange(true);
 
-    this.salesService.getProductDetail(drink.id).subscribe({
-      next: detail => {
-        this.selectedProductDetail.set(detail);
-        this.isLoadingVariants.set(false);
+    // Đi qua detailRequest$ (switchMap): tự hủy request cũ nếu bấm món khác
+    this.detailRequest$.next(drink);
+  }
 
-        // 1. Cấu hình Size thực tế từ variants
-        if (detail.variants && detail.variants.length > 0) {
-          const sizes: SizeOption[] = detail.variants
-            .filter(v => !v.status || v.status === 'ACTIVE')
-            .map(v => parseSizeOption(v, Number(detail.basePrice) || 0));
-          this.availableSizes.set(sizes);
-          // Mặc định chọn size đầu tiên hoặc size có giá gốc extraPrice = 0
-          const defaultSize = sizes.find(s => s.extraPrice === 0) || sizes[0];
-          this.selectedSize.set(defaultSize ? defaultSize.id : '');
-        } else {
-          // Sản phẩm không có biến thể size (bánh ngọt hoặc đồ uống 1 size)
-          this.availableSizes.set([
-            {
-              id: 'default',
-              variantCode: 'STD',
-              name: 'Tiêu chuẩn',
-              sizeLabel: 'STD',
-              volume: 'Chuẩn',
-              extraPrice: 0,
-              finalPrice: Number(detail.basePrice) || 0,
-            },
-          ]);
-          this.selectedSize.set('default');
-        }
+  private applyProductDetail(detail: ProductDetail): void {
+    this.selectedProductDetail.set(detail);
 
-        // 2. Cấu hình Mức đường
-        const sugarOpts = this.parseSugarOptions(detail.availableSugarLevels);
-        this.availableSugarOptions.set(sugarOpts);
-        this.selectedSugar.set(sugarOpts.includes('100% (Chuẩn)') ? '100% (Chuẩn)' : sugarOpts[0] || '');
+    // 1. Cấu hình Size thực tế từ variants
+    if (detail.variants && detail.variants.length > 0) {
+      const sizes: SizeOption[] = detail.variants
+        .filter(v => !v.status || v.status === 'ACTIVE')
+        .map(v => parseSizeOption(v, Number(detail.basePrice) || 0));
+      this.availableSizes.set(sizes);
+      // Mặc định chọn size đầu tiên hoặc size có giá gốc extraPrice = 0
+      const defaultSize = sizes.find(s => s.extraPrice === 0) || sizes[0];
+      this.selectedSize.set(defaultSize ? defaultSize.id : '');
+    } else {
+      // Sản phẩm không có biến thể size (bánh ngọt hoặc đồ uống 1 size)
+      this.availableSizes.set([
+        {
+          id: 'default',
+          variantCode: 'STD',
+          name: 'Tiêu chuẩn',
+          sizeLabel: 'STD',
+          volume: 'Chuẩn',
+          extraPrice: 0,
+          finalPrice: Number(detail.basePrice) || 0,
+        },
+      ]);
+      this.selectedSize.set('default');
+    }
 
-        // 3. Cấu hình Mức đá
-        const iceOpts = this.parseIceOptions(detail.availableIceLevels);
-        this.availableIceOptions.set(iceOpts);
-        this.selectedIce.set(iceOpts.includes('100% đá (Chuẩn)') ? '100% đá (Chuẩn)' : iceOpts[0] || '');
+    // 2. Cấu hình Mức đường
+    const sugarOpts = this.parseSugarOptions(detail.availableSugarLevels);
+    this.availableSugarOptions.set(sugarOpts);
+    this.selectedSugar.set(sugarOpts.includes('100% (Chuẩn)') ? '100% (Chuẩn)' : sugarOpts[0] || '');
+
+    // 3. Cấu hình Mức đá
+    const iceOpts = this.parseIceOptions(detail.availableIceLevels);
+    this.availableIceOptions.set(iceOpts);
+    this.selectedIce.set(iceOpts.includes('100% đá (Chuẩn)') ? '100% đá (Chuẩn)' : iceOpts[0] || '');
+  }
+
+  private applyProductDetailFallback(drink: DrinkItem): void {
+    this.availableSizes.set([
+      {
+        id: 'default',
+        variantCode: 'STD',
+        name: 'Tiêu chuẩn',
+        sizeLabel: 'STD',
+        volume: 'Chuẩn',
+        extraPrice: 0,
+        finalPrice: drink.price,
       },
-      error: () => {
-        this.isLoadingVariants.set(false);
-        this.availableSizes.set([
-          {
-            id: 'default',
-            variantCode: 'STD',
-            name: 'Tiêu chuẩn',
-            sizeLabel: 'STD',
-            volume: 'Chuẩn',
-            extraPrice: 0,
-            finalPrice: drink.price,
-          },
-        ]);
-        this.selectedSize.set('default');
-        this.availableSugarOptions.set(['100% (Chuẩn)', '70%', '50%', 'Không đường (0%)']);
-        this.selectedSugar.set('100% (Chuẩn)');
-        this.availableIceOptions.set(['100% đá (Chuẩn)', '70% đá', '50% đá', 'Không đá (0%)', 'Uống nóng']);
-        this.selectedIce.set('100% đá (Chuẩn)');
-      },
-    });
+    ]);
+    this.selectedSize.set('default');
+    this.availableSugarOptions.set(['100% (Chuẩn)', '70%', '50%', 'Không đường (0%)']);
+    this.selectedSugar.set('100% (Chuẩn)');
+    this.availableIceOptions.set(['100% đá (Chuẩn)', '70% đá', '50% đá', 'Không đá (0%)', 'Uống nóng']);
+    this.selectedIce.set('100% đá (Chuẩn)');
   }
 
   quickAddToCart(drink: DrinkItem): void {

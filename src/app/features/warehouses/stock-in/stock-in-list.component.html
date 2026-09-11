@@ -318,6 +318,19 @@
                 >
                 </app-button>
 
+                <!-- Ghi sổ (chỉ phiếu Nháp) -->
+                @if (item.status === 'DRAFT') {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.NHAP_KHO.UPDATE]"
+                    variant="ghost"
+                    iconOnly="check"
+                    nz-tooltip
+                    nzTooltipTitle="Ghi sổ"
+                    (click)="onPost(item)"
+                  >
+                  </app-button>
+                }
+
                 <!-- Xóa -->
                 <app-button
                   *erpUTTHasSomeAuthority="[ROLE.NHAP_KHO.DELETE]"
@@ -370,23 +383,25 @@
   >
     <form [formGroup]="stockInForm" class="stock-in-form" (ngSubmit)="submitForm()">
       <div nz-row [nzGutter]="[16, 16]">
-        <!-- Mã phiếu nhập kho -->
+        <!-- Mã phiếu nhập kho: hệ thống tự sinh, không cho nhập tay.
+             Lúc tạo hiện "Mới", lưu xong mới có mã thật. -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
-          <label class="form-label required" for="sin-code">Mã phiếu nhập</label>
-          <nz-input-wrapper>
-            <input
-              id="sin-code"
-              type="text"
-              nz-input
-              formControlName="code"
-              placeholder="VD: SI-202608-0001"
-              style="text-transform: uppercase;"
-            />
-          </nz-input-wrapper>
-          @if (stockInForm.get('code')?.touched || stockInForm.get('code')?.dirty) {
-            @if (stockInForm.get('code')?.hasError('required')) {
-              <span class="form-error">Vui lòng nhập mã phiếu nhập.</span>
-            }
+          <label class="form-label" for="sin-code">Mã phiếu nhập</label>
+          @if (modalMode() === 'create') {
+            <nz-input-wrapper>
+              <input id="sin-code" type="text" nz-input value="Mới — tự sinh khi lưu" readonly />
+            </nz-input-wrapper>
+          } @else {
+            <nz-input-wrapper>
+              <input
+                id="sin-code"
+                type="text"
+                nz-input
+                formControlName="code"
+                style="text-transform: uppercase;"
+                readonly
+              />
+            </nz-input-wrapper>
           }
         </div>
 
@@ -426,19 +441,39 @@
           </nz-select>
         </div>
 
-        <!-- Mã chứng từ liên kết -->
-        <div nz-col [nzSpan]="24" [nzMd]="8">
-          <label class="form-label" for="sin-ref">Mã chứng từ gốc (Số PO / Đơn chuyển)</label>
-          <nz-input-wrapper>
-            <input
-              id="sin-ref"
-              type="text"
-              nz-input
-              formControlName="sourceReferenceCode"
-              placeholder="VD: PO-202608-0012"
-            />
-          </nz-input-wrapper>
-        </div>
+        <!-- Liên kết PO: chọn từ dropdown (cách duy nhất set được ID mà BE yêu cầu) -->
+        @if (stockInForm.get('sourceType')?.value === 'PURCHASE') {
+          <div nz-col [nzSpan]="24" [nzMd]="8">
+            <label class="form-label required" for="sin-po">Đơn mua hàng</label>
+            <nz-select
+              id="sin-po"
+              formControlName="sourceReferenceId"
+              (ngModelChange)="onPoSelect($event)"
+              nzPlaceHolder="Chọn đơn (Đã duyệt / Đang nhận)"
+              nzShowSearch
+              style="width: 100%"
+              [nzLoading]="loadingPos() || loadingPoDetail()"
+            >
+              @for (po of poOptions(); track po.value) {
+                <nz-option [nzValue]="po.value" [nzLabel]="po.label"></nz-option>
+              }
+            </nz-select>
+          </div>
+        } @else {
+          <!-- Mã chứng từ liên kết -->
+          <div nz-col [nzSpan]="24" [nzMd]="8">
+            <label class="form-label" for="sin-ref">Mã chứng từ gốc (Số PO / Đơn chuyển)</label>
+            <nz-input-wrapper>
+              <input
+                id="sin-ref"
+                type="text"
+                nz-input
+                formControlName="sourceReferenceCode"
+                placeholder="VD: PO-202608-0012"
+              />
+            </nz-input-wrapper>
+          </div>
+        }
 
         <!-- Ngày nhập kho -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
@@ -563,6 +598,11 @@
                   </td>
                   <td class="col-qty">
                     <input nz-input type="number" formControlName="quantity" min="0.01" step="any" />
+                    @if (remainingFor(i) !== null) {
+                      <div class="text-muted" style="font-size: 12px; margin-top: 4px">
+                        Còn lại: {{ remainingFor(i) | number }}
+                      </div>
+                    }
                   </td>
                   <td class="col-price">
                     <input nz-input type="number" formControlName="unitPrice" min="0" step="1000" />
