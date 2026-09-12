@@ -1,15 +1,20 @@
 import { Routes } from '@angular/router';
-import { BomListComponent } from './bom-list.component';
 
-export default [
+export const BOM_ROUTES: Routes = [
   {
     path: '',
-    component: BomListComponent,
-    title: 'Định lượng (BOM) & Food Cost',
+    redirectTo: 'list',
+    pathMatch: 'full',
   },
   {
     path: 'list',
-    redirectTo: '',
-    pathMatch: 'full',
+    loadComponent: () => import('./bom-list.component').then((m) => m.BomListComponent),
+    title: 'Định lượng pha chế (BOM)',
+    data: {
+      breadcrumb: 'Định lượng (BOM)',
+      breadcrumbIcon: 'experiment',
+    },
   },
-] as Routes;
+];
+
+export default BOM_ROUTES;
