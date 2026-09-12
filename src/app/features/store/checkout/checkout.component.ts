@@ -8,6 +8,7 @@ import {NzInputDirective, NzInputWrapperComponent} from 'ng-zorro-antd/input';
 import {CartService} from '../../../shared/services/cart.service';
 import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
 import {AppNotificationService} from '../../../shared/app-notification/app-notification.service';
+import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../../core/util/image.util';
 
 @Component({
   selector: 'app-checkout',
@@ -21,6 +22,9 @@ export class CheckoutComponent {
   readonly cartService = inject(CartService);
   private readonly router = inject(Router);
   private readonly toast = inject(AppNotificationService);
+
+  readonly normalizeImageUrl = normalizeImageUrl;
+  readonly fallbackImage = DEFAULT_BEVERAGE_IMAGE;
 
   readonly items = this.cartService.items;
   readonly totalAmount = this.cartService.totalAmount;
@@ -71,6 +75,13 @@ export class CheckoutComponent {
     );
     this.cartService.clearCart();
     this.router.navigate(['/store']);
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target && target.src !== this.fallbackImage) {
+      target.src = this.fallbackImage;
+    }
   }
 }
 

@@ -3,6 +3,7 @@ import {Injectable, inject} from '@angular/core';
 import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {ApplicationConfigService} from '../../../core/config/application-config.service';
+import {normalizeImageUrl} from '../../../core/util/image.util';
 import {ApiResponse} from '../../login/login.model';
 import {Category} from '../../menu/categories/category.model';
 import {Product, ProductDetail} from '../../menu/products/product.model';
@@ -63,7 +64,10 @@ export class SalesService {
 
     return this.http.get<ApiResponse<BackendPageResponse<Category>>>(url, {params}).pipe(
       map(res => ({
-        items: res.data?.content || [],
+        items: (res.data?.content || []).map(c => ({
+          ...c,
+          imageUrl: c.imageUrl ? normalizeImageUrl(c.imageUrl) : null,
+        })),
         total: res.data?.totalElements || 0,
       })),
       catchError(err => {
@@ -76,7 +80,10 @@ export class SalesService {
           .set('status', 'ACTIVE');
         return this.http.get<ApiResponse<BackendPageResponse<Category>>>(fallbackUrl, {params: fallbackParams}).pipe(
           map(fallbackRes => ({
-            items: fallbackRes.data?.content || [],
+            items: (fallbackRes.data?.content || []).map(c => ({
+              ...c,
+              imageUrl: c.imageUrl ? normalizeImageUrl(c.imageUrl) : null,
+            })),
             total: fallbackRes.data?.totalElements || 0,
           })),
           catchError(() => throwError(() => err))
@@ -112,7 +119,10 @@ export class SalesService {
 
     return this.http.get<ApiResponse<BackendPageResponse<Product>>>(url, {params}).pipe(
       map(res => ({
-        items: res.data?.content || [],
+        items: (res.data?.content || []).map(p => ({
+          ...p,
+          imageUrl: p.imageUrl ? normalizeImageUrl(p.imageUrl) : null,
+        })),
         total: res.data?.totalElements || 0,
         pageIndex: (res.data?.pageNumber ?? 0) + 1,
         pageSize: res.data?.pageSize ?? 100,
@@ -128,7 +138,10 @@ export class SalesService {
         if (filter?.categoryId && filter.categoryId !== 'all') fbParams = fbParams.set('categoryId', filter.categoryId);
         return this.http.get<ApiResponse<BackendPageResponse<Product>>>(fallbackUrl, {params: fbParams}).pipe(
           map(fbRes => ({
-            items: fbRes.data?.content || [],
+            items: (fbRes.data?.content || []).map(p => ({
+              ...p,
+              imageUrl: p.imageUrl ? normalizeImageUrl(p.imageUrl) : null,
+            })),
             total: fbRes.data?.totalElements || 0,
             pageIndex: (fbRes.data?.pageNumber ?? 0) + 1,
             pageSize: fbRes.data?.pageSize ?? 100,
@@ -147,7 +160,11 @@ export class SalesService {
     return this.http.get<ApiResponse<ProductDetail>>(url).pipe(
       map(res => {
         if (!res.data) throw new Error('Không tìm thấy thông tin sản phẩm');
-        return res.data;
+        const detail = res.data;
+        if (detail.imageUrl) {
+          detail.imageUrl = normalizeImageUrl(detail.imageUrl);
+        }
+        return detail;
       }),
       catchError(err => {
         // Fallback sang menu getProduct nếu cần
@@ -155,7 +172,11 @@ export class SalesService {
         return this.http.get<ApiResponse<ProductDetail>>(fallbackUrl).pipe(
           map(fbRes => {
             if (!fbRes.data) throw new Error('Không tìm thấy thông tin sản phẩm');
-            return fbRes.data;
+            const detail = fbRes.data;
+            if (detail.imageUrl) {
+              detail.imageUrl = normalizeImageUrl(detail.imageUrl);
+            }
+            return detail;
           }),
           catchError(() => throwError(() => err))
         );

@@ -204,7 +204,8 @@
               (keydown.enter)="selectStyleCategory(style.id)"
               (keydown.space)="selectStyleCategory(style.id)"
             >
-              <img [src]="style.imageUrl" [alt]="style.name" class="style-item__bg"/>
+              <img [src]="normalizeImageUrl(style.imageUrl)" [alt]="style.name" class="style-item__bg"
+                   (error)="onImageError($event)"/>
               <div class="style-item__content">
                 <h3 class="style-item__title">{{ style.name }}</h3>
                 <span class="style-item__sub">{{ style.subtitle }}</span>
@@ -396,7 +397,8 @@
         <!-- Cột trái: Hero Preview Thông tin sản phẩm & Tạm tính -->
         <div class="custom-modal-layout__preview-col">
           <div class="preview-img-card">
-            <img [src]="drink.imageUrl" [alt]="drink.name" class="preview-img"/>
+            <img [src]="normalizeImageUrl(drink.imageUrl)" [alt]="drink.name" class="preview-img"
+                 (error)="onImageError($event)"/>
             <span class="preview-cat-tag">{{ drink.categoryName }}</span>
             @if (drink.badge) {
               <span class="preview-badge preview-badge--{{ drink.badgeType || 'signature' }}">

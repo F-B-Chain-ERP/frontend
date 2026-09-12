@@ -207,7 +207,12 @@
         <div class="checkout-summary__items">
           @for (item of items(); track item.id) {
             <div class="summary-item">
-              <img [src]="item.drink.imageUrl" [alt]="item.drink.name" class="summary-item__thumb"/>
+              <img
+                [src]="normalizeImageUrl(item.drink.imageUrl) || fallbackImage"
+                [alt]="item.drink.name"
+                class="summary-item__thumb"
+                (error)="onImageError($event)"
+              />
               <div class="summary-item__info">
                 <span class="summary-item__name">{{ item.drink.name }}</span>
                 @if (item.optionsSummary) {

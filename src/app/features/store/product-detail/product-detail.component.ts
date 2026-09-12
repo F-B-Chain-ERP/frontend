@@ -12,6 +12,7 @@ import {ProductDetail} from '../../menu/products/product.model';
 import {ProductVariant} from '../../menu/products/variants/variant.model';
 import {SalesService} from '../services/sales.service';
 import {Subject, distinctUntilChanged, map, skip, takeUntil} from 'rxjs';
+import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../../core/util/image.util';
 
 export interface DetailSizeOption {
   id: string;
@@ -89,6 +90,9 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   readonly isLoading = signal<boolean>(true);
   readonly product = signal<ProductDetail | null>(null);
 
+  readonly normalizeImageUrl = normalizeImageUrl;
+  readonly fallbackImage = DEFAULT_BEVERAGE_IMAGE;
+
   // Customization state for direct ordering
   readonly availableSizes = signal<DetailSizeOption[]>([]);
   readonly selectedSize = signal<string>('');
@@ -145,6 +149,9 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     this.isLoading.set(true);
     this.salesService.getProductDetail(productId).pipe(takeUntil(this.destroy$)).subscribe({
       next: detail => {
+        if (detail.imageUrl) {
+          detail.imageUrl = normalizeImageUrl(detail.imageUrl);
+        }
         this.product.set(detail);
         this.isLoading.set(false);
 
@@ -279,7 +286,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
       category: p.categoryId,
       categoryName: p.categoryName || 'Đồ uống',
       price: Number(p.basePrice) || 0,
-      imageUrl: p.imageUrl || 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=600&q=80',
+      imageUrl: normalizeImageUrl(p.imageUrl) || DEFAULT_BEVERAGE_IMAGE,
       description: p.description || '',
     };
 
@@ -313,6 +320,13 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
 
   goBack(): void {
     this.router.navigate(['/store']);
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target && target.src !== this.fallbackImage) {
+      target.src = this.fallbackImage;
+    }
   }
 }
 

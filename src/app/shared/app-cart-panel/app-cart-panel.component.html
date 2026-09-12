@@ -52,7 +52,12 @@
             <!-- Thumbnail -->
             <div class="cart-item-card__thumb">
               @if (item.drink.imageUrl) {
-                <img [src]="item.drink.imageUrl" [alt]="item.drink.name" loading="lazy"/>
+                <img
+                  [src]="normalizeImageUrl(item.drink.imageUrl)"
+                  [alt]="item.drink.name"
+                  loading="lazy"
+                  (error)="onImageError($event)"
+                />
               } @else {
                 <div class="cart-item-card__thumb-placeholder">
                   <nz-icon nzType="coffee"/>

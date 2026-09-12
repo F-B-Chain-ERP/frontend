@@ -1,18 +1,6 @@
-<nz-modal
-  [nzVisible]="visible"
-  [nzTitle]="title"
-  [nzFooter]="footer"
-  [nzWidth]="width"
-  [nzCentered]="centered"
-  [nzClosable]="closable"
-  [nzMaskClosable]="maskClosable"
-  [nzOkLoading]="okLoading"
-  [nzOkText]="okText"
-  [nzCancelText]="cancelText"
-  (nzOnOk)="handleOk()"
-  (nzOnCancel)="handleCancel()"
-  appModalMaskClick
-  [visible]="visible"
+<nz-modal [nzVisible]="visible" [nzTitle]="title" [nzFooter]="footer" [nzWidth]="width" [nzCentered]="centered"
+  [nzClosable]="closable" [nzMaskClosable]="maskClosable" [nzOkLoading]="okLoading" [nzOkText]="okText"
+  [nzCancelText]="cancelText" (nzOnOk)="handleOk()" (nzOnCancel)="handleCancel()" appModalMaskClick [visible]="visible"
   (maskClick)="overlayBlockCloseModal()">
   <ng-container *nzModalContent>
     <ng-content></ng-content>

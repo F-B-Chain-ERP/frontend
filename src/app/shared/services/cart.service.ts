@@ -1,5 +1,6 @@
 import {Injectable, computed, signal} from '@angular/core';
 import {DrinkItem} from '../app-drink-card/app-drink-card.component';
+import {normalizeImageUrl} from '../../core/util/image.util';
 
 export interface CartItemOption {
   size?: string;
@@ -47,7 +48,12 @@ export class CartService {
     options: CartItemOption = {},
     quantity = 1
   ): CartItem {
-    let unitPrice = drink.price;
+    const normalizedDrink: DrinkItem = {
+      ...drink,
+      imageUrl: normalizeImageUrl(drink.imageUrl),
+    };
+
+    let unitPrice = normalizedDrink.price;
     if (options.sizeExtra) {
       unitPrice += options.sizeExtra;
     }
@@ -66,7 +72,7 @@ export class CartService {
 
     // Unique ID based on drink ID + serialized options
     const optionKey = `${options.size || ''}-${options.sugar || ''}-${options.ice || ''}-${(options.toppings || []).map(t => t.id).sort().join(',')}`;
-    const cartItemId = `${drink.id}::${optionKey}`;
+    const cartItemId = `${normalizedDrink.id}::${optionKey}`;
 
     let resultingItem: CartItem | null = null;
 
@@ -77,6 +83,7 @@ export class CartService {
         const updatedQty = existing.quantity + quantity;
         const updatedItem: CartItem = {
           ...existing,
+          drink: normalizedDrink,
           quantity: updatedQty,
           totalPrice: updatedQty * existing.unitPrice,
         };
@@ -87,7 +94,7 @@ export class CartService {
       } else {
         const newItem: CartItem = {
           id: cartItemId,
-          drink,
+          drink: normalizedDrink,
           quantity,
           unitPrice,
           totalPrice: quantity * unitPrice,

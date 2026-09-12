@@ -15,6 +15,7 @@ import {Category} from '../menu/categories/category.model';
 import {Product, ProductDetail} from '../menu/products/product.model';
 import {ProductVariant} from '../menu/products/variants/variant.model';
 import {SalesService} from './services/sales.service';
+import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE, DEFAULT_STYLE_IMAGE} from '../../core/util/image.util';
 import {Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap, takeUntil} from 'rxjs';
 
 export interface CategoryTab {
@@ -55,11 +56,7 @@ export interface StyleCategory {
   imageUrl: string;
 }
 
-const DEFAULT_BEVERAGE_IMAGE =
-  'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=600&q=80';
-
-const FALLBACK_STYLE_IMAGE =
-  'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=800&q=80';
+const FALLBACK_STYLE_IMAGE = DEFAULT_STYLE_IMAGE;
 
 function getCategoryIcon(name: string): string {
   const lower = (name || '').toLowerCase();
@@ -134,6 +131,8 @@ export class StoreComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly search$ = new Subject<string>();
   private readonly detailRequest$ = new Subject<DrinkItem>();
+
+  readonly normalizeImageUrl = normalizeImageUrl;
 
   // Filter & Search states
   searchQuery = '';
@@ -323,7 +322,7 @@ export class StoreComponent implements OnInit, OnDestroy {
         id: c.id,
         name: c.name,
         subtitle: c.description || 'Thưởng thức phong vị hảo hạng mỗi ngày',
-        imageUrl: c.imageUrl || FALLBACK_STYLE_IMAGE,
+        imageUrl: normalizeImageUrl(c.imageUrl) || FALLBACK_STYLE_IMAGE,
       }))
     );
   }
@@ -398,7 +397,7 @@ export class StoreComponent implements OnInit, OnDestroy {
       category: p.categoryId,
       categoryName: p.categoryName || 'Đồ uống',
       price: Number(p.basePrice) || 0,
-      imageUrl: p.imageUrl || DEFAULT_BEVERAGE_IMAGE,
+      imageUrl: normalizeImageUrl(p.imageUrl) || DEFAULT_BEVERAGE_IMAGE,
       description: p.description || 'Thức uống thủ công tươi mới từ nguyên liệu tự nhiên chọn lọc.',
       badge,
       badgeType,
@@ -705,6 +704,13 @@ export class StoreComponent implements OnInit, OnDestroy {
 
   openCartSummary(): void {
     this.cartService.openCart();
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target && target.src !== DEFAULT_BEVERAGE_IMAGE) {
+      target.src = DEFAULT_BEVERAGE_IMAGE;
+    }
   }
 }
 
