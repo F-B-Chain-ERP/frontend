@@ -182,8 +182,16 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
             id: 'menu-topping',
             title: 'Topping',
             route: '/admin/menu/toppings/list',
-            activePrefix: '/admin/menu/toppings',
+            activePrefix: '/admin/menu/toppings/list',
             authorities: [ROLE.TOPPING.VIEW],
+          },
+          {
+            kind: 'child',
+            id: 'menu-topping-assign',
+            title: 'Topping theo Sản phẩm',
+            route: '/admin/menu/toppings/assign',
+            activePrefix: '/admin/menu/toppings/assign',
+            authorities: [ROLE.SAN_PHAM_TOPPING.VIEW],
           },
           {
             kind: 'child',

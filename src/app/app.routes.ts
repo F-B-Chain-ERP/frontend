@@ -270,11 +270,15 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
-        path: 'menu/toppings/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Topping',
+        path: 'menu/toppings',
+        loadChildren: () => import('./features/menu/toppings/topping.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.TOPPING.VIEW] },
+      },
+      {
+        path: 'menu/toppings/list',
+        redirectTo: 'menu/toppings',
+        pathMatch: 'full',
       },
       {
         path: 'menu/combos/list',

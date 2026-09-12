@@ -1,0 +1,305 @@
+<div class="assign-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Gán Topping cho Sản phẩm</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">Chọn sản phẩm bên trái, sau đó gán / quản lý topping bên phải.</p>
+    </div>
+  </div>
+
+  <!-- ── 2. Two-Column Layout ───────────────────────────────────────── -->
+  <div class="assign-layout">
+    <!-- LEFT COLUMN: Product Selector -->
+    <div class="assign-layout__left">
+      <nz-card class="product-panel" [nzBordered]="false">
+        <div class="product-panel__header">
+          <h3 class="product-panel__title">Danh sách sản phẩm</h3>
+        </div>
+
+        <!-- Product Search -->
+        <div class="product-panel__search">
+          <nz-input-wrapper [nzAllowClear]="true">
+            <nz-icon nzInputPrefix nzType="search" />
+            <input
+              nz-input
+              [(ngModel)]="productSearchQuery"
+              (keyup.enter)="onProductSearch()"
+              placeholder="Tìm sản phẩm..."
+            />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Product List -->
+        <nz-spin [nzSpinning]="isLoadingProducts()">
+          <div class="product-panel__list">
+            @for (product of products(); track product.id) {
+              <div
+                class="product-item"
+                [class.product-item--active]="selectedProduct()?.id === product.id"
+                (click)="selectProduct(product)"
+              >
+                <div class="product-item__info">
+                  <span class="product-item__code">{{ product.code }}</span>
+                  <span class="product-item__name">{{ product.name }}</span>
+                  <span class="product-item__price">{{ product.basePrice | number:'1.0-0' }} &#8363;</span>
+                </div>
+                <span class="product-item__category">{{ product.categoryName }}</span>
+              </div>
+            } @empty {
+              <nz-empty [nzNotFoundContent]="'Không tìm thấy sản phẩm'" nzNotFoundSimple></nz-empty>
+            }
+          </div>
+        </nz-spin>
+
+        <!-- Product Pagination -->
+        @if (productTotal() > productPageSize) {
+          <div class="product-panel__pagination">
+            <app-pagination
+              [total]="productTotal()"
+              [pageIndex]="productPageIndex"
+              [pageSize]="productPageSize"
+              [pageSizeOptions]="[10, 20, 50]"
+              (pageIndexChange)="onProductPageIndexChange($event)"
+            >
+            </app-pagination>
+          </div>
+        }
+      </nz-card>
+    </div>
+
+    <!-- RIGHT COLUMN: Topping Assignment -->
+    <div class="assign-layout__right">
+      @if (selectedProduct(); as product) {
+        <nz-card class="product-detail-card" [nzBordered]="false">
+          <div class="product-detail-card__header">
+            <div class="product-detail-card__info">
+              <span class="product-detail-card__code">{{ product.code }}</span>
+              <h3 class="product-detail-card__name">{{ product.name }}</h3>
+              <span class="product-detail-card__price">Giá gốc: {{ product.basePrice | number:'1.0-0' }} &#8363;</span>
+            </div>
+            <div class="product-detail-card__actions">
+              <app-button
+                *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.CREATE]"
+                variant="primary"
+                leftIcon="plus"
+                (click)="openAddModal()"
+              >
+                Thêm topping
+              </app-button>
+            </div>
+          </div>
+        </nz-card>
+
+        <nz-card class="topping-table-card" [nzBordered]="false">
+          <nz-spin [nzSpinning]="isLoadingToppings()">
+            <nz-table
+              #toppingTable
+              [nzData]="assignedToppings()"
+              [nzShowPagination]="false"
+              [nzFrontPagination]="false"
+              nzSize="middle"
+            >
+              <thead>
+                <tr>
+                  <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+                  <th scope="col" nzWidth="120px" nzAlign="left">Mã topping</th>
+                  <th scope="col" nzWidth="200px" nzAlign="left">Tên topping</th>
+                  <th scope="col" nzWidth="130px" nzAlign="left">Nhóm</th>
+                  <th scope="col" nzWidth="120px" nzAlign="right">Đơn giá</th>
+                  <th scope="col" nzWidth="120px" nzAlign="center">Mặc định</th>
+                  <th scope="col" nzWidth="120px" nzAlign="center">SL tối đa</th>
+                  <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of assignedToppings(); track item.id; let idx = $index) {
+                  <tr>
+                    <td nzAlign="center" class="font-mono text-muted">{{ idx + 1 }}</td>
+                    <td nzAlign="left"><span class="topping-code">{{ item.toppingCode }}</span></td>
+                    <td nzAlign="left">{{ item.toppingName }}</td>
+                    <td nzAlign="left">{{ item.groupName || '—' }}</td>
+                    <td nzAlign="right" class="topping-price">{{ item.toppingPrice | number:'1.0-0' }} &#8363;</td>
+                    <td nzAlign="center">
+                      @if (item.isDefault) {
+                        <span class="tbl-badge tbl-badge--success">Mặc định</span>
+                      } @else {
+                        <span class="tbl-badge tbl-badge--default">Tùy chọn</span>
+                      }
+                    </td>
+                    <td nzAlign="center" class="font-mono">{{ item.maxQuantity }}</td>
+                    <td nzAlign="center">
+                      <div class="tbl-actions">
+                        <app-button
+                          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.UPDATE]"
+                          variant="ghost"
+                          iconOnly="edit"
+                          nz-tooltip
+                          nzTooltipTitle="Sửa cấu hình"
+                          (click)="openEditModal(item)"
+                        >
+                        </app-button>
+                        <app-button
+                          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.DELETE]"
+                          variant="ghost"
+                          iconOnly="delete"
+                          nz-tooltip
+                          nzTooltipTitle="Gỡ topping"
+                          (click)="onDelete(item)"
+                        >
+                        </app-button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+
+            @if (assignedToppings().length === 0 && !isLoadingToppings()) {
+              <nz-empty [nzNotFoundContent]="'Chưa gán topping nào cho sản phẩm này'" nzNotFoundSimple></nz-empty>
+            }
+          </nz-spin>
+        </nz-card>
+      } @else {
+        <nz-card class="empty-state-card" [nzBordered]="false">
+          <nz-empty [nzNotFoundContent]="'Vui lòng chọn sản phẩm bên trái để quản lý topping'" nzNotFoundSimple></nz-empty>
+        </nz-card>
+      }
+    </div>
+  </div>
+
+  <!-- ── 3. Add Topping Modal ───────────────────────────────────────── -->
+  <app-modal
+    [visible]="isAddModalVisible()"
+    (visibleChange)="isAddModalVisible.set($event)"
+    title="Thêm topping cho sản phẩm"
+    size="md"
+    [maskClosable]="false"
+    [footer]="addModalFooter"
+    (cancelEmit)="isAddModalVisible.set(false)"
+  >
+    <nz-spin [nzSpinning]="isLoadingToppingsList()">
+      <form [formGroup]="addForm" class="topping-assign-form">
+        <div nz-row [nzGutter]="[16, 16]">
+          <div nz-col [nzSpan]="24">
+            <label class="form-label required" for="add-topping">Chọn topping</label>
+            <nz-select
+              id="add-topping"
+              formControlName="toppingId"
+              nzPlaceHolder="Chọn topping..."
+              nzShowSearch
+              [nzServerSearch]="true"
+              style="width: 100%"
+            >
+              @for (topping of availableToppings(); track topping.id) {
+                <nz-option
+                  [nzValue]="topping.id"
+                  [nzLabel]="topping.code + ' - ' + topping.name + ' (' + (topping.price | number:'1.0-0') + ' &#8363;)'"
+                >
+                </nz-option>
+              }
+            </nz-select>
+            @if (addForm.get('toppingId')?.dirty || addForm.get('toppingId')?.touched) {
+              @if (addForm.get('toppingId')?.hasError('required')) {
+                <span class="form-error">Vui lòng chọn topping.</span>
+              }
+            }
+          </div>
+
+          <div nz-col [nzSpan]="12">
+            <label class="form-label" for="add-isDefault">Mặc định</label>
+            <nz-switch id="add-isDefault" formControlName="isDefault"></nz-switch>
+            <span class="form-hint">Topping mặc định được chọn sẵn khi khách hàng đặt món.</span>
+          </div>
+
+          <div nz-col [nzSpan]="12">
+            <label class="form-label required" for="add-maxQuantity">Số lượng tối đa</label>
+            <nz-input-number
+              id="add-maxQuantity"
+              formControlName="maxQuantity"
+              [nzMin]="1"
+              [nzMax]="99"
+              style="width: 100%"
+            ></nz-input-number>
+            @if (addForm.get('maxQuantity')?.dirty || addForm.get('maxQuantity')?.touched) {
+              @if (addForm.get('maxQuantity')?.hasError('required')) {
+                <span class="form-error">Số lượng tối đa không được để trống.</span>
+              } @else if (addForm.get('maxQuantity')?.hasError('min')) {
+                <span class="form-error">Số lượng tối đa phải lớn hơn hoặc bằng 1.</span>
+              }
+            }
+          </div>
+        </div>
+      </form>
+    </nz-spin>
+
+    <ng-template #addModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="isAddModalVisible.set(false)"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.CREATE]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitAdd()"
+        >
+          Gán topping
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 4. Edit Topping Config Modal ────────────────────────────────── -->
+  <app-modal
+    [visible]="isEditModalVisible()"
+    (visibleChange)="isEditModalVisible.set($event)"
+    [title]="'Cấu hình topping: ' + (editingRecord?.toppingName || '')"
+    size="sm"
+    [maskClosable]="false"
+    [footer]="editModalFooter"
+    (cancelEmit)="isEditModalVisible.set(false)"
+  >
+    <form [formGroup]="editForm" class="topping-assign-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="12">
+          <label class="form-label" for="edit-isDefault">Mặc định</label>
+          <nz-switch id="edit-isDefault" formControlName="isDefault"></nz-switch>
+          <span class="form-hint">Topping mặc định được chọn sẵn khi khách hàng đặt món.</span>
+        </div>
+
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required" for="edit-maxQuantity">Số lượng tối đa</label>
+          <nz-input-number
+            id="edit-maxQuantity"
+            formControlName="maxQuantity"
+            [nzMin]="1"
+            [nzMax]="99"
+            style="width: 100%"
+          ></nz-input-number>
+          @if (editForm.get('maxQuantity')?.dirty || editForm.get('maxQuantity')?.touched) {
+            @if (editForm.get('maxQuantity')?.hasError('required')) {
+              <span class="form-error">Số lượng tối đa không được để trống.</span>
+            } @else if (editForm.get('maxQuantity')?.hasError('min')) {
+              <span class="form-error">Số lượng tối đa phải lớn hơn hoặc bằng 1.</span>
+            }
+          }
+        </div>
+      </div>
+    </form>
+
+    <ng-template #editModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="isEditModalVisible.set(false)"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.UPDATE]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitEdit()"
+        >
+          Lưu thay đổi
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>
