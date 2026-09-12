@@ -12,8 +12,6 @@ import {
   UserFormDTO,
   UserListResponse,
   UserStatus,
-  RoleAssignmentResponseBE,
-  RoleResponseBE,
   backendStatusToUserStatus,
   formatInstant,
 } from './user.model';
@@ -25,21 +23,8 @@ export class UserService {
   private readonly http = inject(HttpClient);
   private readonly applicationConfigService = inject(ApplicationConfigService);
 
-  // Lấy toàn bộ tài khoản (BE list chỉ hỗ trợ tìm kiếm tự do + phân trang,
-  // không hỗ trợ lọc trạng thái / sort) -> ta fetch hết rồi lọc/sort/trang trên client
-  // để giữ nguyên toàn bộ hành vi UI hiện tại.
-  private static readonly FETCH_SIZE = 1000;
-
   private get accountApi(): string {
     return this.applicationConfigService.getEndpointFor('api/v1/accounts');
-  }
-
-  private get roleApi(): string {
-    return this.applicationConfigService.getEndpointFor('api/v1/roles');
-  }
-
-  private get roleAssignmentApi(): string {
-    return this.applicationConfigService.getEndpointFor('api/v1/role-assignments');
   }
 
   private toUser(a: AccountResponseBE): User {
@@ -63,93 +48,50 @@ export class UserService {
     };
   }
 
-  private fetchAll(): Observable<User[]> {
-    const params = new HttpParams().set('page', '0').set('size', String(UserService.FETCH_SIZE));
-    return this.http.get<ApiResponseBE<PageResponseBE<AccountResponseBE>>>(this.accountApi, { params }).pipe(
-      switchMap(res => {
-        const users = (res.data?.content ?? []).map(a => this.toUser(a));
-        if (!users.length) return of(users);
-
-        const roles$ = this.http.get<ApiResponseBE<PageResponseBE<RoleResponseBE>>>(this.roleApi, {
-          params: { page: '0', size: '1000' },
-        });
-        const assignments$ = users.map(user =>
-          this.http.get<ApiResponseBE<RoleAssignmentResponseBE[]>>(`${this.roleAssignmentApi}/account/${user.id}`),
-        );
-
-        return forkJoin({ roles: roles$, assignments: forkJoin(assignments$) }).pipe(
-          map(({ roles, assignments }) => {
-            const roleMap = new Map((roles.data?.content ?? []).map(role => [role.id, role.name]));
-            return users.map((user, index) => {
-              const roleAssignments = assignments[index]?.data ?? [];
-              const activeAssignments = roleAssignments.filter(
-                assignment =>
-                  assignment.status === 'ACTIVE' && (!assignment.expiresAt || new Date(assignment.expiresAt).getTime() > Date.now()),
-              );
-              const roleIds = [...new Set(activeAssignments.map(assignment => assignment.roleId))];
-              const roleNames = roleIds.map(roleId => roleMap.get(roleId) ?? roleId);
-              return { ...user, roleIds, roles: roleNames };
-            });
-          }),
-        );
-      }),
-    );
-  }
-
   /**
-   * Lấy danh sách người dùng có phân trang, tìm kiếm và lọc.
-   * Dữ liệu từ BE được lọc/sort/phân trang trên client để đồng bộ với UI cũ.
+   * Fix 2+3: phân trang + search + lọc status/branch HOÀN TOÀN phía server.
+   * - Chỉ 1 HTTP request / lần load (trước đây: 1 accounts + 1 roles + N assignments).
+   * - Dùng luôn roles/roleIds/assignedBranches BE đã enrich sẵn trong AccountResponse,
+   *   không gọi lại /role-assignments/account/{id} từng user nữa.
    */
   getUsers(filter: UserFilter): Observable<UserListResponse> {
-    return this.fetchAll().pipe(
-      map(all => this.applyFilter(all, filter)),
+    const pageIndex = filter.pageIndex && filter.pageIndex > 0 ? filter.pageIndex : 1;
+    // Màn account cố định 10 dòng/trang: luôn xin đúng 10 record/lần.
+    const pageSize = 10;
+    let params = new HttpParams().set('page', String(pageIndex - 1)).set('size', String(pageSize));
+    if (filter.query?.trim()) {
+      params = params.set('search', filter.query.trim());
+    }
+    if (filter.branchId) {
+      params = params.set('branchId', filter.branchId);
+    }
+    if (filter.status !== null && filter.status !== undefined) {
+      params = params.set('status', Number(filter.status) === UserStatus.ACTIVE ? 'ACTIVE' : 'INACTIVE');
+    }
+
+    return this.http.get<ApiResponseBE<PageResponseBE<AccountResponseBE>>>(this.accountApi, { params }).pipe(
+      map(res => {
+        let items = (res.data?.content ?? []).map(a => this.toUser(a));
+        // Sort chỉ trên items của trang hiện tại (pageSize dòng) — rẻ, giữ hành vi sort UI.
+        // Sort toàn cục theo ngày tạo đã do BE đảm nhận (ORDER BY createdAt DESC).
+        if (filter.sortField) {
+          const key = filter.sortField as keyof User;
+          const isAsc = filter.sortOrder === 'ascend';
+          items = [...items].sort((a, b) => {
+            const valA = String(a[key] ?? '');
+            const valB = String(b[key] ?? '');
+            return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+          });
+        }
+        return {
+          items,
+          total: res.data?.totalElements ?? 0,
+          pageIndex,
+          pageSize,
+        };
+      }),
       catchError(err => throwError(() => err)),
     );
-  }
-
-  private applyFilter(all: User[], filter: UserFilter): UserListResponse {
-    let result = [...all];
-
-    if (filter.query?.trim()) {
-      const q = filter.query.trim().toLowerCase();
-      result = result.filter(
-        u =>
-          (u.fullName && u.fullName.toLowerCase().includes(q)) ||
-          (u.email && u.email.toLowerCase().includes(q)) ||
-          (u.username && u.username.toLowerCase().includes(q)) ||
-          u.phoneNumber?.includes(q) ||
-          u.primaryBranchName?.toLowerCase().includes(q) ||
-          u.department?.toLowerCase().includes(q),
-      );
-    }
-
-    if (filter.status !== null && filter.status !== undefined) {
-      result = result.filter(u => u.status === Number(filter.status));
-    }
-
-    if (filter.branchId) {
-      result = result.filter(u => u.primaryBranchId === filter.branchId);
-    }
-
-    if (filter.sortField) {
-      const key = filter.sortField as keyof User;
-      const isAsc = filter.sortOrder === 'ascend';
-      result.sort((a, b) => {
-        const valA = String(a[key] ?? '');
-        const valB = String(b[key] ?? '');
-        return isAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-      });
-    } else {
-      result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-    }
-
-    const total = result.length;
-    const pageIndex = filter.pageIndex && filter.pageIndex > 0 ? filter.pageIndex : 1;
-    const pageSize = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 10;
-    const startIndex = (pageIndex - 1) * pageSize;
-    const items = result.slice(startIndex, startIndex + pageSize);
-
-    return { items, total, pageIndex, pageSize };
   }
 
   /**

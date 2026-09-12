@@ -35,7 +35,7 @@ import { BranchService } from '../../../core/auth/branch.service';
 import { AccountService } from '../../../core/auth/account.service';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import { User, UserFilter, UserFormDTO, UserStatus, USER_STATUS_OPTIONS, getUserStatusMeta } from './user.model';
-import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
+import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from '../../../shared/constants/constant';
 import { createSortFn } from '../../../shared/helpers/table.helper';
 import { takeUntil } from 'rxjs/operators';
 
@@ -85,7 +85,8 @@ export class UserListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
   readonly UserStatus = UserStatus;
   readonly statusOptions = USER_STATUS_OPTIONS;
-  readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
+  // Màn account cố định 10 dòng/trang — không cho đổi pageSize.
+  readonly pageSizeOptions = [10];
 
   // Branch & Role state
   readonly branchOptions = signal<{ label: string; value: string }[]>([]);
@@ -337,10 +338,10 @@ export class UserListComponent extends BaseComponent implements OnInit {
   }
 
   /**
-   * Thay đổi kích thước trang
+   * Thay đổi kích thước trang — màn account khóa cứng 10 dòng/trang.
    */
-  onPageSizeChange(size: number): void {
-    this.pageSize = size;
+  onPageSizeChange(_size: number): void {
+    this.pageSize = 10;
     this.pageIndex = DEFAULT_PAGE_INDEX;
     this.loadData();
   }
