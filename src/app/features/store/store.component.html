@@ -255,7 +255,7 @@
             nz-input
             placeholder="Tìm kiếm cà phê, trà trái cây, macchiato theo tên hoặc mô tả..."
             [(ngModel)]="searchQuery"
-            (ngModelChange)="onFilterChange()"
+            (ngModelChange)="onSearchInput($event)"
             class="store-filter-search-input"
           />
         </nz-input-wrapper>

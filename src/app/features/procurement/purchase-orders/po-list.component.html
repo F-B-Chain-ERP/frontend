@@ -334,6 +334,23 @@
                   >
                   </app-button>
                 }
+
+                <!-- APPROVED/PARTIALLY_RECEIVED: sang phiếu Nhập kho (tăng tồn thật) -->
+                @if (
+                  po.status === PurchaseOrderStatus.APPROVED ||
+                  po.status === PurchaseOrderStatus.PARTIALLY_RECEIVED ||
+                  po.status === '2'
+                ) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.NHAP_KHO.CREATE]"
+                    variant="ghost"
+                    iconOnly="import"
+                    nz-tooltip
+                    nzTooltipTitle="Tạo phiếu nhập kho"
+                    (click)="goToStockIn(po)"
+                  >
+                  </app-button>
+                }
               </div>
             </td>
           </tr>
@@ -371,12 +388,19 @@
   >
     <form [formGroup]="poForm" class="po-form" (ngSubmit)="submitForm()">
       <div nz-row [nzGutter]="[16, 16]">
-        <!-- Mã PO -->
+        <!-- Mã PO: hệ thống tự sinh, không cho nhập tay.
+             Lúc tạo hiện "Mới" (kiểu Odoo), lưu xong mới có mã thật. -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
           <label class="form-label" for="po-poCode">Mã PO</label>
-          <nz-input-wrapper>
-            <input id="po-poCode" type="text" nz-input formControlName="poCode" placeholder="Để trống để tự sinh" />
-          </nz-input-wrapper>
+          @if (modalMode() === 'create') {
+            <nz-input-wrapper>
+              <input id="po-poCode" type="text" nz-input value="Mới — tự sinh khi lưu" readonly />
+            </nz-input-wrapper>
+          } @else {
+            <nz-input-wrapper>
+              <input id="po-poCode" type="text" nz-input formControlName="poCode" readonly />
+            </nz-input-wrapper>
+          }
         </div>
 
         <!-- Nhà cung cấp -->
@@ -385,9 +409,12 @@
           <nz-select
             id="po-supplier"
             formControlName="supplierId"
-            nzPlaceHolder="Chọn nhà cung cấp"
+            nzPlaceHolder="Gõ để tìm nhà cung cấp"
             nzShowSearch
-            [nzFilterOption]="filterByLabel"
+            [nzServerSearch]="true"
+            [nzLoading]="isLoadingSuppliers()"
+            (nzOnSearch)="onSupplierSearch($event)"
+            (nzScrollToBottom)="onSupplierScrollBottom()"
           >
             @for (opt of supplierOptions(); track opt.value) {
               <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>

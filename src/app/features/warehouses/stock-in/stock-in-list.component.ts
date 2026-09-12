@@ -1,7 +1,9 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
-import { takeUntil } from 'rxjs/operators';
+import { ActivatedRoute } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError, map, takeUntil } from 'rxjs/operators';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -39,6 +41,11 @@ import { StockInService } from './stock-in.service';
 import { WarehouseMaterialService } from '../materials/material.service';
 import { WarehouseService } from '../warehouse-list/warehouse.service';
 import { Warehouse } from '../warehouse-list/warehouse.model';
+import { PurchaseOrderService } from '../../procurement/purchase-orders/po.service';
+import {
+  PurchaseOrderDetail,
+  PurchaseOrderStatus,
+} from '../../procurement/purchase-orders/po.model';
 
 @Component({
   selector: 'app-stock-in-list',
@@ -130,6 +137,15 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   // NVL từ Material API thật (không còn mock mat-00x).
   readonly materialOptions = signal<{ value: string; label: string; name: string }[]>([]);
 
+  // PO đủ điều kiện nhập (APPROVED/PARTIALLY_RECEIVED) + PO đang link.
+  // Chọn PO từ dropdown là cách DUY NHẤT set được sourceReferenceId mà BE yêu cầu
+  // (trước đây chỉ có ô text mã PO nên mọi phiếu PURCHASE đều rớt validate).
+  readonly poOptions = signal<{ value: string; label: string; warehouseId: string; status: string }[]>([]);
+  readonly selectedPo = signal<PurchaseOrderDetail | null>(null);
+  readonly loadingPos = signal(false);
+  readonly loadingPoDetail = signal(false);
+  private poParamHandled = false;
+
   // Form (code/status do BE quản lý: code tự sinh, create luôn DRAFT)
   readonly stockInForm = this.fb.group({
     id: [''],
@@ -150,21 +166,25 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     return this.stockInForm.get('items') as FormArray;
   }
 
-  createItemGroup(item?: Partial<StockInItem>) {
+  createItemGroup(item?: Partial<StockInItem>, maxQty?: number | null) {
+    const qtyValidators = [Validators.required, Validators.min(0.01)];
+    if (maxQty !== undefined && maxQty !== null && Number.isFinite(maxQty)) {
+      qtyValidators.push(Validators.max(maxQty));
+    }
     return this.fb.group({
       id: [item?.id || ''],
       purchaseOrderItemId: [item?.purchaseOrderItemId || ''],
       materialId: [item?.materialId || null, [Validators.required]],
       materialName: [item?.materialName || '', [Validators.required]],
-      quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(0.01)]],
+      quantity: [item?.quantity ?? 1, qtyValidators],
       unitPrice: [item?.unitPrice ?? 0, [Validators.required, Validators.min(0)]],
       batchNo: [item?.batchNo || ''],
       expiryDate: [item?.expiryDate || ''],
     });
   }
 
-  addItem(item?: Partial<StockInItem>): void {
-    this.itemsArray.push(this.createItemGroup(item));
+  addItem(item?: Partial<StockInItem>, maxQty?: number | null): void {
+    this.itemsArray.push(this.createItemGroup(item, maxQty));
   }
 
   removeItem(index: number): void {
@@ -177,6 +197,24 @@ export class StockInListComponent extends BaseComponent implements OnInit {
       // NVL thật không có giá mặc định: chỉ điền tên, giá nhập thực tế do user nhập.
       this.itemsArray.at(index).patchValue({ materialName: opt.name });
     }
+    // Đổi NVL khác với dòng PO đã link -> rớt link để BE báo rõ thay vì lệch ngầm.
+    const group = this.itemsArray.at(index);
+    const linkId = group.get('purchaseOrderItemId')?.value as string;
+    if (linkId) {
+      const line = this.selectedPo()?.items?.find(i => String(i.id) === String(linkId));
+      if (!line || String(line.materialId) !== String(matId)) {
+        group.patchValue({ purchaseOrderItemId: '' });
+      }
+    }
+  }
+
+  /** SL còn lại của dòng PO đang link ở dòng phiếu (null = dòng nhập tay). */
+  remainingFor(index: number): number | null {
+    const linkId = this.itemsArray.at(index)?.get('purchaseOrderItemId')?.value as string;
+    if (!linkId) return null;
+    const line = this.selectedPo()?.items?.find(i => String(i.id) === String(linkId));
+    if (!line) return null;
+    return Math.max(0, (Number(line.quantity) || 0) - (Number(line.receivedQuantity) || 0));
   }
 
   getItemTotal(index: number): number {
@@ -194,6 +232,8 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   private readonly stockInService = inject(StockInService);
   private readonly materialService = inject(WarehouseMaterialService);
   private readonly warehouseService = inject(WarehouseService);
+  private readonly poService = inject(PurchaseOrderService);
+  private readonly route = inject(ActivatedRoute);
 
   get modalTitle(): string {
     const mode = this.modalMode();
@@ -212,6 +252,36 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     this.loadMaterialOptions();
     this.loadWarehouses();
     this.loadData();
+
+    // Đổi kho -> nạp lại PO nhận được của kho đó + rớt link PO cũ (khác kho là BE từ chối).
+    this.stockInForm
+      .get('warehouseId')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.clearPoLink();
+        this.loadReceivablePOs(this.stockInForm.get('warehouseId')?.value as string | null);
+      });
+
+    // Rời nguồn PURCHASE -> rớt link PO (các nguồn khác không cần PO).
+    this.stockInForm
+      .get('sourceType')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(sourceType => {
+        if (sourceType !== 'PURCHASE') {
+          this.clearPoLink();
+        } else {
+          this.loadReceivablePOs(this.stockInForm.get('warehouseId')?.value as string | null);
+        }
+      });
+
+    // Vào từ nút "Nhập kho" ở chi tiết PO (?poId=...): mở form đã chọn sẵn PO.
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const poId = params['poId'] as string | undefined;
+      if (poId && !this.poParamHandled) {
+        this.poParamHandled = true;
+        this.openCreateWithPo(poId);
+      }
+    });
   }
 
   private loadWarehouses(): void {
@@ -379,7 +449,133 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     this.stockInForm.enable();
     this.stockInForm.get('code')?.disable();
     this.stockInForm.get('status')?.disable();
+    this.selectedPo.set(null);
+    this.loadReceivablePOs(null);
     this.isModalVisible.set(true);
+  }
+
+  /** Mở form tạo mới đã chọn sẵn PO (từ nút "Nhập kho" ở chi tiết PO hoặc ?poId=). */
+  openCreateWithPo(poId: string): void {
+    this.openCreateModal();
+    this.onPoSelect(poId);
+  }
+
+  /** Nạp PO đủ điều kiện nhập (APPROVED/PARTIALLY_RECEIVED), lọc theo kho nếu đã chọn. */
+  private loadReceivablePOs(warehouseId?: string | null): void {
+    this.loadingPos.set(true);
+    const base = { pageIndex: 1, pageSize: 100, warehouseId: warehouseId ?? null };
+    forkJoin([
+      this.poService.getPurchaseOrders({ ...base, status: PurchaseOrderStatus.APPROVED }),
+      this.poService.getPurchaseOrders({ ...base, status: PurchaseOrderStatus.PARTIALLY_RECEIVED }),
+    ])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: ([approved, partial]) => {
+          const all = [...(approved.items || []), ...(partial.items || [])];
+          this.poOptions.set(
+            all.map(p => ({
+              value: String(p.id),
+              label: `${p.code} — ${p.supplierName || ''} (${p.status === PurchaseOrderStatus.APPROVED ? 'Đã duyệt' : 'Đang nhận'})`,
+              warehouseId: String(p.warehouseId || ''),
+              status: String(p.status),
+            })),
+          );
+          this.loadingPos.set(false);
+        },
+        error: () => {
+          this.poOptions.set([]);
+          this.loadingPos.set(false);
+        },
+      });
+  }
+
+  /** Chọn PO -> tự đổ dòng (NVL + SL còn lại + giá + link dòng PO), khỏi nhập tay. */
+  onPoSelect(poId: string | null): void {
+    if (!poId) {
+      this.clearPoLink();
+      return;
+    }
+    this.loadingPoDetail.set(true);
+    this.poService
+      .getPurchaseOrderById(poId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: detail => {
+          this.loadingPoDetail.set(false);
+          if (!detail) {
+            this.toastService.error('Không tải được đơn mua hàng.');
+            this.clearPoLink();
+            return;
+          }
+          if (
+            detail.status !== PurchaseOrderStatus.APPROVED &&
+            detail.status !== PurchaseOrderStatus.PARTIALLY_RECEIVED
+          ) {
+            this.toastService.warning(`Đơn ${detail.poCode} không ở trạng thái cho phép nhập kho.`);
+            this.clearPoLink();
+            return;
+          }
+          this.applyPoDetail(detail);
+        },
+        error: (err: Error) => {
+          this.loadingPoDetail.set(false);
+          this.toastService.error(err.message || 'Không tải được đơn mua hàng.');
+          this.clearPoLink();
+        },
+      });
+  }
+
+  private applyPoDetail(detail: PurchaseOrderDetail): void {
+    // Kho ăn theo PO để khớp validate BE (khác kho là từ chối).
+    if (detail.warehouseId) {
+      this.stockInForm.patchValue({ warehouseId: detail.warehouseId }, { emitEvent: false });
+    }
+    this.stockInForm.patchValue(
+      { sourceReferenceId: detail.id, sourceReferenceCode: detail.poCode },
+      { emitEvent: false },
+    );
+    this.selectedPo.set(detail);
+    if (!this.poOptions().some(o => o.value === String(detail.id))) {
+      this.poOptions.update(list => [
+        ...list,
+        {
+          value: String(detail.id),
+          label: `${detail.poCode} — ${detail.supplierName || ''}`,
+          warehouseId: String(detail.warehouseId || ''),
+          status: String(detail.status),
+        },
+      ]);
+    }
+    this.itemsArray.clear();
+    let skipped = 0;
+    for (const line of detail.items || []) {
+      const remaining = Math.max(0, (Number(line.quantity) || 0) - (Number(line.receivedQuantity) || 0));
+      if (remaining <= 0) {
+        skipped++;
+        continue;
+      }
+      this.addItem(
+        {
+          purchaseOrderItemId: String(line.id ?? ''),
+          materialId: line.materialId,
+          materialName: line.materialName || '',
+          quantity: remaining,
+          unitPrice: Number(line.unitPrice) || 0,
+        },
+        remaining,
+      );
+    }
+    if (skipped > 0 && this.itemsArray.length === 0) {
+      this.toastService.warning(`Đơn ${detail.poCode} đã nhận đủ, không còn gì để nhập.`);
+      this.clearPoLink();
+    }
+  }
+
+  /** Rớt link PO (đổi kho/nguồn/PO): giữ dòng nhập tay, BE sẽ không check link nữa. */
+  private clearPoLink(): void {
+    this.selectedPo.set(null);
+    this.stockInForm.patchValue({ sourceReferenceId: '', sourceReferenceCode: '' }, { emitEvent: false });
+    this.itemsArray.controls.forEach(c => c.patchValue({ purchaseOrderItemId: '' }, { emitEvent: false }));
   }
 
   openViewModal(item: StockIn): void {
@@ -442,6 +638,18 @@ export class StockInListComponent extends BaseComponent implements OnInit {
         this.stockInForm.enable();
         this.stockInForm.get('code')?.disable();
         this.stockInForm.get('status')?.disable();
+        // Phiếu link PO: nạp lại PO để hiện SL còn lại từng dòng (không đổ lại dòng).
+        if (d.sourceType === 'PURCHASE' && d.sourceReferenceId) {
+          this.poService
+            .getPurchaseOrderById(d.sourceReferenceId)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: detail => this.selectedPo.set(detail),
+              error: () => this.selectedPo.set(null),
+            });
+        } else {
+          this.selectedPo.set(null);
+        }
       });
   }
 
@@ -449,6 +657,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     this.isModalVisible.set(false);
     this.stockInForm.reset();
     this.itemsArray.clear();
+    this.selectedPo.set(null);
   }
 
   submitForm(): void {
@@ -459,6 +668,22 @@ export class StockInListComponent extends BaseComponent implements OnInit {
 
     if (!this.validateAndFocusFirstInvalid(this.stockInForm)) {
       return;
+    }
+
+    // Phiếu PURCHASE không dòng nào = thiếu link PO, BE chắc chắn từ chối.
+    if (this.stockInForm.get('sourceType')?.value === 'PURCHASE' && this.itemsArray.length === 0) {
+      this.toastService.warning('Phiếu nhập từ PO chưa có dòng nguyên vật liệu nào. Hãy chọn đơn mua hàng trước.');
+      return;
+    }
+    // Dòng chưa gắn dòng PO thì BE từ chối: báo rõ ngay, khỏi chờ lỗi chung chung.
+    if (this.stockInForm.get('sourceType')?.value === 'PURCHASE') {
+      const missingLink = this.itemsArray.controls.some(
+        c => !(c.get('purchaseOrderItemId')?.value as string),
+      );
+      if (missingLink) {
+        this.toastService.warning('Còn dòng chưa gắn với dòng đơn mua hàng. Hãy chọn lại đơn hoặc xóa dòng đó.');
+        return;
+      }
     }
 
     this.isSaving.set(true);
@@ -484,8 +709,8 @@ export class StockInListComponent extends BaseComponent implements OnInit {
             this.closeModal();
             this.loadData();
           },
-          error: () => {
-            this.toastService.error('Có lỗi xảy ra khi tạo phiếu nhập kho.');
+          error: (err: unknown) => {
+            this.toastService.error(this.extractBeMessage(err) || 'Có lỗi xảy ra khi tạo phiếu nhập kho.');
             this.isSaving.set(false);
           },
         });
@@ -501,12 +726,18 @@ export class StockInListComponent extends BaseComponent implements OnInit {
             this.closeModal();
             this.loadData();
           },
-          error: () => {
-            this.toastService.error('Có lỗi xảy ra khi cập nhật phiếu nhập kho.');
+          error: (err: unknown) => {
+            this.toastService.error(this.extractBeMessage(err) || 'Có lỗi xảy ra khi cập nhật phiếu nhập kho.');
             this.isSaving.set(false);
           },
         });
     }
+  }
+
+  /** Lấy message thật của BE (mã lỗi INV_/PROC_) thay vì câu chung chung. */
+  private extractBeMessage(err: unknown): string | null {
+    const e = err as { error?: { message?: string }; message?: string };
+    return e?.error?.message || e?.message || null;
   }
 
   // ── Post / Cancel (BE chỉ hỗ trợ PATCH /status, không có DELETE) ──
