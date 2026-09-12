@@ -74,9 +74,11 @@ export class RoleService {
   }
 
   private fetchAllRoles(): Observable<Role[]> {
+    // BE kẹp size tối đa 100 (RoleServiceImpl.MAX_PAGE_SIZE) — xin đúng 100,
+    // không xin 1000 gây payload lớn vô ích.
     return this.http
       .get<{ data: PageResponseBE<RoleResponseBE> }>(this.roleApi, {
-        params: new HttpParams().set('page', '0').set('size', '1000'),
+        params: new HttpParams().set('page', '0').set('size', '100'),
       })
       .pipe(
         map((res) => res.data?.content ?? []),
