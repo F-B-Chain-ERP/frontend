@@ -6,6 +6,7 @@ import {AppButtonComponent} from '../app-button/app-button.component';
 import {AppQuantityStepperComponent} from '../app-quantity-stepper/app-quantity-stepper.component';
 import {CartService, CartItem} from '../services/cart.service';
 import {AppNotificationService} from '../app-notification/app-notification.service';
+import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../core/util/image.util';
 
 @Component({
   selector: 'app-cart-panel',
@@ -19,10 +20,20 @@ export class AppCartPanelComponent {
   readonly cartService = inject(CartService);
   private readonly toast = inject(AppNotificationService);
 
+  readonly normalizeImageUrl = normalizeImageUrl;
+  readonly fallbackImage = DEFAULT_BEVERAGE_IMAGE;
+
   @Output() checkout = new EventEmitter<CartItem[]>();
 
   formatPrice(amount: number): string {
     return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target && target.src !== this.fallbackImage) {
+      target.src = this.fallbackImage;
+    }
   }
 
   onClose(): void {

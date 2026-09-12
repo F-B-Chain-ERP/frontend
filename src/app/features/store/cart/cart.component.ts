@@ -6,6 +6,7 @@ import {NzIconDirective} from 'ng-zorro-antd/icon';
 import {CartService} from '../../../shared/services/cart.service';
 import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
 import {AppQuantityStepperComponent} from '../../../shared/app-quantity-stepper/app-quantity-stepper.component';
+import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../../core/util/image.util';
 
 @Component({
   selector: 'app-cart-page',
@@ -18,6 +19,9 @@ import {AppQuantityStepperComponent} from '../../../shared/app-quantity-stepper/
 export class CartPageComponent {
   readonly cartService = inject(CartService);
   private readonly router = inject(Router);
+
+  readonly normalizeImageUrl = normalizeImageUrl;
+  readonly fallbackImage = DEFAULT_BEVERAGE_IMAGE;
 
   readonly items = this.cartService.items;
   readonly totalCount = this.cartService.totalCount;
@@ -48,6 +52,13 @@ export class CartPageComponent {
   onCheckout(): void {
     if (this.isEmpty()) return;
     this.router.navigate(['/store/checkout']);
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target && target.src !== this.fallbackImage) {
+      target.src = this.fallbackImage;
+    }
   }
 }
 

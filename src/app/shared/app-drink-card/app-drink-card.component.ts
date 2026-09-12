@@ -1,6 +1,7 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output} from '@angular/core';
 import {NzIconDirective} from 'ng-zorro-antd/icon';
 import {AppButtonComponent} from '../app-button/app-button.component';
+import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../core/util/image.util';
 
 export interface DrinkItem {
   id: string;
@@ -31,6 +32,9 @@ export class AppDrinkCardComponent {
   @Output() viewDetail = new EventEmitter<DrinkItem>();
   @Output() addToCart = new EventEmitter<DrinkItem>();
 
+  readonly normalizeImageUrl = normalizeImageUrl;
+  readonly defaultImage = DEFAULT_BEVERAGE_IMAGE;
+
   formatPrice(amount: number): string {
     return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
   }
@@ -42,6 +46,13 @@ export class AppDrinkCardComponent {
 
   onAddClick(): void {
     this.addToCart.emit(this.item);
+  }
+
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target && target.src !== this.defaultImage) {
+      target.src = this.defaultImage;
+    }
   }
 }
 

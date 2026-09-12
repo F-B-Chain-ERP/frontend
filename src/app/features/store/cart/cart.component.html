@@ -51,7 +51,11 @@
           <div class="cart-item">
             <div class="cart-item__main">
               <div class="cart-item__thumb">
-                <img [src]="item.drink.imageUrl" [alt]="item.drink.name"/>
+                <img
+                  [src]="normalizeImageUrl(item.drink.imageUrl) || fallbackImage"
+                  [alt]="item.drink.name"
+                  (error)="onImageError($event)"
+                />
               </div>
               <div class="cart-item__info">
                 <h4 class="cart-item__name">{{ item.drink.name }}</h4>
