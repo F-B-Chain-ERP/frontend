@@ -119,6 +119,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     code: 'contains',
     name: 'contains',
     categoryName: 'contains',
+
     baseUnitName: 'contains',
     status: 'contains',
   });
