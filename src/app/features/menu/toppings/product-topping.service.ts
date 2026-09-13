@@ -55,12 +55,15 @@ export class ProductToppingService {
 
   // ── Products ─────────────────────────────────────────────────
 
-  getProducts(search?: string, page = 0, size = 20): Observable<ProductListResponse> {
+  getProducts(search?: string, page = 0, size = 20, categoryId?: string | null): Observable<ProductListResponse> {
     let params = new HttpParams()
       .set('page', String(page))
       .set('size', String(size));
     if (search?.trim()) {
       params = params.set('search', search.trim());
+    }
+    if (categoryId) {
+      params = params.set('categoryId', categoryId);
     }
     return this.http.get<ApiResponse<BackendPageResponse>>(this.productsUrl, { params }).pipe(
       map(res => {

@@ -17,8 +17,8 @@
           <h3 class="product-panel__title">Danh sách sản phẩm</h3>
         </div>
 
-        <!-- Product Search -->
-        <div class="product-panel__search">
+        <!-- Product Search + Category Filter -->
+        <div class="product-panel__filters">
           <nz-input-wrapper [nzAllowClear]="true">
             <nz-icon nzInputPrefix nzType="search" />
             <input
@@ -28,6 +28,17 @@
               placeholder="Tìm sản phẩm..."
             />
           </nz-input-wrapper>
+          <nz-select
+            [(ngModel)]="selectedCategoryId"
+            (ngModelChange)="onProductSearch()"
+            nzPlaceHolder="Tất cả danh mục"
+            [nzAllowClear]="true"
+            style="width: 100%"
+          >
+            @for (cat of categories(); track cat.id) {
+              <nz-option [nzValue]="cat.id" [nzLabel]="cat.name"></nz-option>
+            }
+          </nz-select>
         </div>
 
         <!-- Product List -->

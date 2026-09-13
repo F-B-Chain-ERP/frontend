@@ -21,6 +21,8 @@ import { AppModalComponent } from '../../../shared/app-modal/app-modal.component
 import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
 import { ROLE } from '../../../core/config/functions.constants';
 import { ProductToppingService } from './product-topping.service';
+import { CategoryService } from '../categories/category.service';
+import { Category } from '../categories/category.model';
 import {
   AddProductToppingRequest,
   ProductItem,
@@ -68,7 +70,9 @@ export class ProductToppingListComponent extends BaseComponent implements OnInit
   readonly productTotal = signal(0);
   readonly isLoadingProducts = signal(false);
   readonly selectedProduct = signal<ProductItem | null>(null);
+  readonly categories = signal<Category[]>([]);
   productSearchQuery = '';
+  selectedCategoryId: string | null = null;
   productPageIndex = DEFAULT_PAGE_INDEX;
   productPageSize = 12;
 
@@ -96,6 +100,7 @@ export class ProductToppingListComponent extends BaseComponent implements OnInit
   });
 
   private readonly service = inject(ProductToppingService);
+  private readonly categoryService = inject(CategoryService);
 
   // ── Lifecycle ───────────────────────────────────────────────
 
@@ -106,14 +111,25 @@ export class ProductToppingListComponent extends BaseComponent implements OnInit
       { label: 'Gán Topping cho Sản phẩm', url: '/admin/menu/toppings/assign' },
     ]);
     this.loadProducts();
+    this.loadCategories();
   }
 
   // ── Product selector ────────────────────────────────────────
 
+  loadCategories(): void {
+    this.categoryService
+      .getCategories({ pageIndex: 1, pageSize: 100, status: 'ACTIVE', categoryType: 'PRODUCT' })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => this.categories.set(res.items || []),
+        error: () => {},
+      });
+  }
+
   loadProducts(): void {
     this.isLoadingProducts.set(true);
     this.service
-      .getProducts(this.productSearchQuery, this.productPageIndex - 1, this.productPageSize)
+      .getProducts(this.productSearchQuery, this.productPageIndex - 1, this.productPageSize, this.selectedCategoryId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
