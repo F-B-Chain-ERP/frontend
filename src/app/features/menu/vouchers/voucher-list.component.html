@@ -1,0 +1,694 @@
+﻿<div class="voucher-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý voucher</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.VOUCHER.CREATE]" variant="primary" leftIcon="plus" (click)="openCreateModal()">
+        Thêm mới voucher
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="voucher-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="voucher-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập mã voucher, tên voucher, mô tả..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="filter-item filter-item--status">
+        <label class="form-label" for="voucher-status-select">Trạng thái</label>
+        <nz-select
+          id="voucher-status-select"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of VOUCHER_STATUS_OPTIONS; track opt.label) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Bulk Selection Actions Bar ──────────────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+    <app-selection-bar
+      [selectedCount]="setOfCheckedKeys.size"
+      [totalCount]="total()"
+      itemLabel="voucher"
+      (clearSelection)="clearSelection()"
+    >
+      <app-button *erpUTTHasSomeAuthority="[ROLE.VOUCHER.UPDATE]" variant="secondary" leftIcon="check" (click)="onBatchChangeStatus(true)">
+        Kích hoạt
+      </app-button>
+      <app-button *erpUTTHasSomeAuthority="[ROLE.VOUCHER.UPDATE]" variant="secondary" leftIcon="stop" (click)="onBatchChangeStatus(false)">
+        Ngừng hoạt động
+      </app-button>
+      <app-button *erpUTTHasSomeAuthority="[ROLE.VOUCHER.DELETE]" variant="danger" leftIcon="delete" (click)="onBatchDelete()">
+        Xóa nhanh
+      </app-button>
+    </app-selection-bar>
+  }
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #voucherTable
+      [nzData]="vouchers()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1600px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="48px" nzAlign="center">
+            <label class="cb" for="cb-check-all-vouchers">
+              <input
+                id="cb-check-all-vouchers"
+                #checkAllInput
+                type="checkbox"
+                [checked]="allChecked"
+                [indeterminate]="indeterminate"
+                (change)="onCheckAll(checkAllInput.checked)"
+              />
+              <span class="cb__box"></span>
+            </label>
+          </th>
+
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortCodeFn" nzWidth="120px" nzAlign="left">Mã voucher</th>
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortNameFn" nzWidth="220px" nzAlign="left">Tên voucher</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Loại giảm giá</th>
+          <th scope="col" nzWidth="180px" nzAlign="left">Giá trị giảm</th>
+          <th scope="col" nzWidth="130px" nzAlign="right">Đơn tối thiểu</th>
+          <th scope="col" nzWidth="150px" nzAlign="center">Đã dùng/Giới hạn</th>
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortStartAtFn" nzWidth="230px" nzAlign="left">Thời gian hiệu lực</th>
+          <th scope="col" [nzShowSort]="true" [nzSortFn]="sortStatusFn" nzWidth="130px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Thao tác</th>
+        </tr>
+
+        <tr class="thead-search">
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnValue('code')"
+              (valueChange)="searchByField('code', $event)"
+              placeholder="Tìm mã"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnValue('name')"
+              (valueChange)="searchByField('name', $event)"
+              placeholder="Tìm tên"
+            ></app-table-search-input>
+          </th>
+          <th>
+            <app-table-search-input
+              [value]="columnValue('discountType')"
+              (valueChange)="searchByField('discountType', $event)"
+              placeholder="Loại giảm giá"
+              type="option"
+              labelField="label"
+              valueField="value"
+              [options]="discountTypeFilterOptions"
+            ></app-table-search-input>
+          </th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th>
+            <app-table-search-input
+              [value]="columnValue('status')"
+              (valueChange)="searchByField('status', $event)"
+              placeholder="Trạng thái"
+              type="option"
+              labelField="label"
+              valueField="value"
+              [options]="statusFilterOptions"
+            ></app-table-search-input>
+          </th>
+          <th nzAlign="center">
+            <app-button
+              iconOnly="reload"
+              nz-tooltip
+              nzTooltipTitle="Đặt lại bộ lọc cột"
+              (click)="resetAllFieldFilter()"
+              variant="ghost"
+            ></app-button>
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        @for (data of vouchers(); track data.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center">
+              <label class="cb" [for]="'cb-voucher-' + data.id">
+                <input
+                  [id]="'cb-voucher-' + data.id"
+                  #rowInput
+                  type="checkbox"
+                  [checked]="isChecked(data.id)"
+                  (change)="onCheckRow(data.id, rowInput.checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </td>
+
+            <td nzAlign="center" class="font-mono text-muted">
+              {{ (pageIndex - 1) * pageSize + idx + 1 }}
+            </td>
+
+            <td nzAlign="left">
+              <div class="voucher-cell" (click)="openDetailDrawer(data)">
+                <div class="voucher-cell__info">
+                  <span class="voucher-cell__code">{{ data.code }}</span>
+                  <span class="voucher-cell__name">{{ data.name }}</span>
+                </div>
+              </div>
+            </td>
+
+            <td nzAlign="left">
+              <span class="voucher-name">{{ data.name }}</span>
+            </td>
+
+            <td nzAlign="center">
+              <nz-tag [nzColor]="data.discountType === 'PERCENT' ? 'orange' : 'blue'">
+                {{ getDiscountTypeLabel(data.discountType) }}
+              </nz-tag>
+            </td>
+
+            <td nzAlign="left">
+              <span class="font-semibold">{{ getDiscountLabel(data) }}</span>
+            </td>
+
+            <td nzAlign="right">
+              <span class="font-mono">{{ data.minOrderAmount | number: '1.0-2' }} ₫</span>
+            </td>
+
+            <td nzAlign="center">
+              <span class="usage-cell">
+                <span class="font-mono">{{ data.usedCount }}</span>
+                <span class="text-muted">/</span>
+                <span class="font-mono">{{ data.usageLimit ?? '∞' }}</span>
+              </span>
+            </td>
+
+            <td nzAlign="left">
+              <div class="date-range">
+                <span class="font-mono text-muted">{{ formatInstant(data.startAt) }}</span>
+                <span class="date-range__arrow">→</span>
+                <span class="font-mono text-muted">{{ formatInstant(data.endAt) }}</span>
+              </div>
+            </td>
+
+            <td nzAlign="center">
+              <span [class]="getVoucherStatusMeta(data.status).badgeClass">
+                {{ getVoucherStatusMeta(data.status).label }}
+              </span>
+            </td>
+
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.VOUCHER.VIEW]"
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết"
+                  (click)="openDetailDrawer(data)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.VOUCHER.UPDATE]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa"
+                  (click)="openEditModal(data)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.VOUCHER.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa voucher"
+                  (click)="onDelete(data)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="11" class="text-center table-empty">
+              <div class="empty-state">
+                <nz-icon nzType="gift" class="empty-state__icon" />
+                <p class="empty-state__text">Không tìm thấy voucher nào phù hợp</p>
+                <app-button variant="secondary" leftIcon="plus" (click)="openCreateModal()">Thêm mới voucher</app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 6. Form Modal ──────────────────────────────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="formModalTitle"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="voucherForm" class="voucher-modal-form" enterAsTabContainer>
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-code">Mã voucher</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="tag" />
+            <input
+              id="modal-code"
+              type="text"
+              nz-input
+              formControlName="code"
+              placeholder="VD: SALE10"
+              maxlength="80"
+              (keydown)="blockSpace($event)"
+            />
+          </nz-input-wrapper>
+          @if (voucherForm.get('code')?.dirty || voucherForm.get('code')?.touched) {
+            @if (voucherForm.get('code')?.hasError('required')) {
+              <span class="form-error">Mã voucher không được để trống.</span>
+            }
+            @if (voucherForm.get('code')?.hasError('maxlength')) {
+              <span class="form-error">Mã voucher tối đa 80 ký tự.</span>
+            }
+            @if (voucherForm.get('code')?.hasError('pattern')) {
+              <span class="form-error">Mã voucher chỉ gồm chữ in hoa, số, dấu '-' và '_'.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-name">Tên voucher</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="gift" />
+            <input id="modal-name" type="text" nz-input formControlName="name" placeholder="VD: Giảm 10% toàn cửa hàng" maxlength="150" />
+          </nz-input-wrapper>
+          @if (voucherForm.get('name')?.dirty || voucherForm.get('name')?.touched) {
+            @if (voucherForm.get('name')?.hasError('required')) {
+              <span class="form-error">Tên voucher không được để trống.</span>
+            }
+            @if (voucherForm.get('name')?.hasError('maxlength')) {
+              <span class="form-error">Tên voucher tối đa 150 ký tự.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-discount-type">Loại giảm giá</label>
+          <nz-select id="modal-discount-type" formControlName="discountType" style="width: 100%">
+            <nz-option nzLabel="Phần trăm (%)" nzValue="PERCENT"></nz-option>
+            <nz-option nzLabel="Số tiền cố định" nzValue="FIXED"></nz-option>
+          </nz-select>
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-discount-value">Giá trị giảm</label>
+          <nz-input-number
+            id="modal-discount-value"
+            formControlName="discountValue"
+            [nzMin]="0"
+            [nzMax]="999999999"
+            [nzPrecision]="2"
+            [nzStep]="voucherForm.controls.discountType.value === 'PERCENT' ? 1 : 1000"
+            [nzAddonAfter]="voucherForm.controls.discountType.value === 'PERCENT' ? '%' : '₫'"
+            style="width: 100%"
+          />
+          @if (voucherForm.get('discountValue')?.dirty || voucherForm.get('discountValue')?.touched) {
+            @if (voucherForm.get('discountValue')?.hasError('required')) {
+              <span class="form-error">Giá trị giảm không được để trống.</span>
+            }
+            @if (voucherForm.get('discountValue')?.hasError('max')) {
+              <span class="form-error">Giá trị phần trăm không được vượt quá 100.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-max-discount">Giới hạn giảm tối đa (₫)</label>
+          <nz-input-number
+            id="modal-max-discount"
+            formControlName="maxDiscountAmount"
+            [nzMin]="0"
+            [nzMax]="999999999"
+            [nzPrecision]="2"
+            [nzStep]="1000"
+            nzAddonAfter="₫"
+            style="width: 100%"
+          />
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-min-order">Đơn hàng tối thiểu (₫)</label>
+          <nz-input-number
+            id="modal-min-order"
+            formControlName="minOrderAmount"
+            [nzMin]="0"
+            [nzMax]="999999999"
+            [nzPrecision]="2"
+            [nzStep]="1000"
+            nzAddonAfter="₫"
+            style="width: 100%"
+          />
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-usage-limit">Tổng lượt dùng tối đa</label>
+          <nz-input-number
+            id="modal-usage-limit"
+            formControlName="usageLimit"
+            [nzMin]="0"
+            [nzMax]="999999999"
+            [nzPrecision]="0"
+            [nzStep]="1"
+            nzAddonAfter="lần"
+            style="width: 100%"
+          />
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-usage-per-customer">Lượt dùng tối đa mỗi khách</label>
+          <nz-input-number
+            id="modal-usage-per-customer"
+            formControlName="usageLimitPerCustomer"
+            [nzMin]="0"
+            [nzMax]="999999999"
+            [nzPrecision]="0"
+            [nzStep]="1"
+            nzAddonAfter="lần"
+            style="width: 100%"
+          />
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-start-at">Bắt đầu</label>
+          <nz-date-picker
+            id="modal-start-at"
+            style="width: 100%"
+            nzShowTime
+            nzFormat="dd/MM/yyyy HH:mm"
+            formControlName="startAt"
+            nzPlaceHolder="Chọn thời điểm bắt đầu"
+          ></nz-date-picker>
+          @if (voucherForm.get('startAt')?.dirty || voucherForm.get('startAt')?.touched) {
+            @if (voucherForm.get('startAt')?.hasError('required')) {
+              <span class="form-error">Chọn thời điểm bắt đầu.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-end-at">Kết thúc</label>
+          <nz-date-picker
+            id="modal-end-at"
+            style="width: 100%"
+            [nzDisabledDate]="disabledEndDate"
+            nzShowTime
+            nzFormat="dd/MM/yyyy HH:mm"
+            formControlName="endAt"
+            nzPlaceHolder="Chọn thời điểm kết thúc"
+          ></nz-date-picker>
+          @if (voucherForm.get('endAt')?.dirty || voucherForm.get('endAt')?.touched) {
+            @if (voucherForm.get('endAt')?.hasError('required')) {
+              <span class="form-error">Chọn thời điểm kết thúc.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24">
+          <label class="form-label" for="modal-description">Mô tả</label>
+          <textarea
+            id="modal-description"
+            nz-input
+            formControlName="description"
+            rows="2"
+            placeholder="Mô tả ngắn gọn về voucher..."
+            maxlength="500"
+          ></textarea>
+        </div>
+
+        <div nz-col [nzSpan]="24">
+          <span class="form-label required">Trạng thái</span>
+          <div class="status-radio-options">
+            <label class="rb" for="rb-voucher-active">
+              <input id="rb-voucher-active" type="radio" [value]="'ACTIVE'" formControlName="status" />
+              <span class="rb__box"></span>
+              <span class="tbl-badge tbl-badge--success">Đang hoạt động</span>
+            </label>
+            <label class="rb" for="rb-voucher-inactive">
+              <input id="rb-voucher-inactive" type="radio" [value]="'INACTIVE'" formControlName="status" />
+              <span class="rb__box"></span>
+              <span class="tbl-badge tbl-badge--danger">Ngừng hoạt động</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()">Hủy bỏ</app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[isEditMode ? ROLE.VOUCHER.UPDATE : ROLE.VOUCHER.CREATE]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitForm()"
+        >
+          {{ isEditMode ? 'Lưu thay đổi' : 'Thêm voucher' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 7. Detail Drawer ────────────────────────────────────────────── -->
+  <nz-drawer [nzVisible]="isDrawerVisible()" [nzWidth]="760" [nzTitle]="drawerTitleTpl" (nzOnClose)="closeDetailDrawer()">
+    <ng-container *nzDrawerContent>
+      @if (detailVoucher; as v) {
+        <div class="drawer-body">
+          <nz-descriptions [nzColumn]="2" nzSize="small" [nzBordered]="true">
+            <nz-descriptions-item nzTitle="Mã voucher">
+              <span class="font-semibold font-mono">{{ v.code }}</span>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Tên voucher">{{ v.name }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Loại giảm giá" [nzSpan]="1">
+              {{ getDiscountTypeLabel(v.discountType) }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Giá trị giảm">
+              <span class="font-semibold">{{ getDiscountLabel(v) }}</span>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Đơn hàng tối thiểu">
+              <span class="font-mono">{{ v.minOrderAmount | number: '1.0-2' }} ₫</span>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Đã dùng / Giới hạn">
+              <span class="font-mono">{{ getUsageLabel(v) }}</span>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Lượt dùng / khách">
+              <span class="font-mono">{{ v.usageLimitPerCustomer ?? 'Không giới hạn' }}</span>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Trạng thái">
+              <span [class]="getVoucherStatusMeta(v.status).badgeClass">
+                {{ getVoucherStatusMeta(v.status).label }}
+              </span>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Thời gian hiệu lực" [nzSpan]="2">
+              <div class="date-range">
+                <span class="font-mono">{{ formatInstant(v.startAt) }}</span>
+                <span class="date-range__arrow">→</span>
+                <span class="font-mono">{{ formatInstant(v.endAt) }}</span>
+              </div>
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Mô tả" [nzSpan]="2">
+              {{ v.description || '—' }}
+            </nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Người tạo">{{ v.createdBy || '—' }}</nz-descriptions-item>
+            <nz-descriptions-item nzTitle="Ngày tạo">
+              <span class="font-mono">{{ formatInstant(v.createdAt) }}</span>
+            </nz-descriptions-item>
+          </nz-descriptions>
+
+          <div class="drawer-card">
+            <div class="drawer-card__header">
+              <span class="drawer-card__title">Chi nhánh áp dụng</span>
+              <nz-tag [nzColor]="detailBranches().length ? 'success' : 'warning'"> {{ detailBranches().length }} chi nhánh </nz-tag>
+            </div>
+
+            @if (detailBranches(); as branches) {
+              @if (branches.length) {
+                <div class="branch-chip-list">
+                  @for (b of branches; track b.id) {
+                    <div class="branch-chip">
+                      <span class="branch-chip__name">{{ b.branchName || b.branchId }}</span>
+                      <app-button
+                        *erpUTTHasSomeAuthority="[ROLE.VOUCHER_CHI_NHANH.DELETE]"
+                        variant="ghost"
+                        iconOnly="close"
+                        nz-tooltip
+                        nzTooltipTitle="Gỡ chi nhánh"
+                        (click)="onRemoveBranch(b)"
+                      >
+                      </app-button>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="drawer-card__empty">Chưa gán chi nhánh nào. Voucher chưa thể áp dụng cho bất kỳ đơn hàng nào.</p>
+              }
+            }
+
+            <div class="branch-assign__form" *erpUTTHasSomeAuthority="[ROLE.VOUCHER_CHI_NHANH.CREATE]">
+              <nz-select [(ngModel)]="selectedBranchToAdd" nzPlaceHolder="Chọn chi nhánh để gán" [nzAllowClear]="true" style="flex: 1">
+                @for (opt of detailBranchOptions(); track opt.value) {
+                  <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+                }
+              </nz-select>
+              <app-button variant="secondary" leftIcon="plus" [disabled]="!selectedBranchToAdd || isSaving()" (click)="onAssignBranches()">
+                Gán chi nhánh
+              </app-button>
+            </div>
+          </div>
+
+          <div class="drawer-card">
+            <div class="drawer-card__header">
+              <span class="drawer-card__title">Lịch sử sử dụng</span>
+            </div>
+            <nz-table
+              #usageTable
+              [nzData]="usageItems()"
+              [nzLoading]="usageLoading()"
+              [nzShowPagination]="false"
+              [nzFrontPagination]="false"
+              nzSize="middle"
+            >
+              <thead>
+                <tr>
+                  <th scope="col" nzWidth="140px">Thời điểm</th>
+                  <th scope="col" nzWidth="130px">Mã đơn hàng</th>
+                  <th scope="col" nzWidth="130px">Mã khách hàng</th>
+                  <th scope="col" nzAlign="right">Số tiền giảm</th>
+                  <th scope="col" nzWidth="100px" nzAlign="center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of usageItems(); track item.id) {
+                  <tr>
+                    <td class="font-mono">{{ formatInstant(item.usedAt) }}</td>
+                    <td>
+                      <span class="font-mono" nz-tooltip [nzTooltipTitle]="item.orderId">{{ item.orderId.slice(0, 8) }}…</span>
+                    </td>
+                    <td>
+                      <span class="font-mono" nz-tooltip [nzTooltipTitle]="item.customerId">{{ item.customerId?.slice(0, 8) || '—' }}</span>
+                    </td>
+                    <td nzAlign="right">
+                      <span class="font-mono font-semibold text-success">{{ item.discountAmount | number: '1.0-2' }} ₫</span>
+                    </td>
+                    <td nzAlign="center">
+                      <nz-tag [nzColor]="item.status === 'ACTIVE' ? 'success' : 'default'">
+                        {{ item.status === 'ACTIVE' ? 'Đã dùng' : item.status }}
+                      </nz-tag>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="text-center text-secondary table-empty-small">Voucher chưa được sử dụng</td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+            <div class="drawer-pagination">
+              <app-pagination
+                [total]="usageTotal()"
+                [pageIndex]="usagePageIndex"
+                [pageSize]="usagePageSize"
+                [pageSizeOptions]="[10]"
+                (pageIndexChange)="onUsagePageIndexChange($event)"
+              >
+              </app-pagination>
+            </div>
+          </div>
+
+          <div class="drawer-footer">
+            <app-button variant="ghost" leftIcon="close" (click)="closeDetailDrawer()">Đóng</app-button>
+            <div class="drawer-footer__spacer"></div>
+            @if (v.status === 'ACTIVE') {
+              <app-button *erpUTTHasSomeAuthority="[ROLE.VOUCHER.UPDATE]" variant="danger" leftIcon="stop" (click)="onToggleStatus()">
+                Ngừng hoạt động
+              </app-button>
+            } @else {
+              <app-button *erpUTTHasSomeAuthority="[ROLE.VOUCHER.UPDATE]" variant="primary" leftIcon="check" (click)="onToggleStatus()">
+                Kích hoạt
+              </app-button>
+            }
+            <app-button *erpUTTHasSomeAuthority="[ROLE.VOUCHER.UPDATE]" variant="secondary" leftIcon="edit" (click)="onEditFromDrawer()">
+              Chỉnh sửa
+            </app-button>
+          </div>
+        </div>
+      }
+    </ng-container>
+  </nz-drawer>
+
+  <ng-template #drawerTitleTpl>
+    @if (detailVoucher; as v) {
+      <div class="drawer-title">
+        <span class="drawer-title__name">Chi tiết voucher: {{ v.code }}</span>
+        <nz-tag [nzColor]="getVoucherStatusMeta(v.status).tagColor">{{ getVoucherStatusMeta(v.status).label }}</nz-tag>
+      </div>
+    }
+  </ng-template>
+</div>

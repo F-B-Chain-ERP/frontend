@@ -288,11 +288,15 @@ export const routes: Routes = [
         data: { authorities: [ROLE.COMBO.VIEW] },
       },
       {
-        path: 'menu/vouchers/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Voucher',
+        path: 'menu/vouchers',
+        loadChildren: () => import('./features/menu/vouchers/vouchers.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.VOUCHER.VIEW] },
+      },
+      {
+        path: 'menu/vouchers/list',
+        redirectTo: 'menu/vouchers',
+        pathMatch: 'full',
       },
       {
         path: 'menu/bom',
