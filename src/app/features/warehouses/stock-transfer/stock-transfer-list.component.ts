@@ -10,6 +10,9 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 import { BaseComponent } from '../../../shared/base-component/base.component';
+import { finiteNumberValidator, maxFractionDigitsValidator } from '../../../shared/validators/safe-text.validator';
+import { StockBalanceService } from '../stock-balance/stock-balance.service';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
@@ -113,6 +116,10 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
   private readonly stockTransferService = inject(StockTransferService);
   private readonly warehouseService = inject(WarehouseService);
   private readonly materialService = inject(WarehouseMaterialService);
+  private readonly stockBalanceService = inject(StockBalanceService);
+
+  /** Tồn khả dụng ở kho đi theo materialId — dùng để hiện "(tồn:X)" và chặn vượt tồn. */
+  readonly availableMap = signal<Record<string, number | null>>({});
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
@@ -123,6 +130,11 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
     this.loadWarehouses();
     this.loadMaterials();
     this.loadData();
+    // Đổi kho đi -> nạp lại tồn khả dụng để hiện "(tồn:X)" và chặn vượt tồn.
+    this.form
+      .get('fromWarehouseId')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(warehouseId => this.refreshAllAvailabilities(warehouseId));
   }
 
   loadData(): void {
@@ -203,6 +215,7 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
     this.editingId = null;
     this.form.reset({ fromWarehouseId: null, toWarehouseId: null, transferDate: this.todayStr(), note: null });
     this.itemsArray.clear();
+    this.availableMap.set({});
     this.addItemLine();
     this.isFormModalVisible.set(true);
   }
@@ -226,11 +239,12 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
             this.itemsArray.push(
               this.fb.group({
                 materialId: this.fb.control(item.materialId, [Validators.required]),
-                quantity: this.fb.control(item.quantity, [Validators.required, Validators.min(0.001)]),
-                unitPrice: this.fb.control(item.unitPrice ?? 0, [Validators.required, Validators.min(0)]),
+                quantity: this.fb.control(item.quantity, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]),
+                unitPrice: this.fb.control(item.unitPrice ?? 0, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(2)]),
               }),
             );
           }
+          this.refreshAllAvailabilities(detail.fromWarehouseId);
           this.isFormModalVisible.set(true);
         },
         error: err => this.toastService.error('Lỗi', err.message || 'Không thể tải chi tiết phiếu.'),
@@ -245,8 +259,8 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
     this.itemsArray.push(
       this.fb.group({
         materialId: this.fb.control<string | null>(null, [Validators.required]),
-        quantity: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.001)]),
-        unitPrice: this.fb.control<number | null>(0, [Validators.required, Validators.min(0)]),
+        quantity: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]),
+        unitPrice: this.fb.control<number | null>(0, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(2)]),
       }),
     );
   }
@@ -269,6 +283,18 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
     const materialIds = (raw.items as { materialId: string | null }[]).map(i => i.materialId);
     if (new Set(materialIds).size !== materialIds.length) {
       this.toastService.error('Lỗi', 'Một nguyên vật liệu không được xuất hiện nhiều lần trong cùng một phiếu.');
+      return;
+    }
+    // Chặn vượt tồn kho nguồn ngay từ form (BE sẽ báo INSUFFICIENT_STOCK lúc dispatch).
+    const over = (raw.items as { materialId: string; quantity: number | string }[]).findIndex(
+      i => {
+        const avail = this.availableMap()[i.materialId];
+        return avail !== null && avail !== undefined && Number(i.quantity) > avail;
+      },
+    );
+    if (over >= 0) {
+      const avail = this.availableMap()[(raw.items as { materialId: string }[])[over].materialId];
+      this.toastService.error('Lỗi', `Dòng ${over + 1} vượt tồn kho nguồn (khả dụng: ${avail}). Giảm SL hoặc chọn NVL khác.`);
       return;
     }
     const payload: CreateTransferPayload = {
@@ -336,7 +362,7 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
                 itemId: this.fb.control(item.id),
                 materialLabel: this.fb.control(`${item.materialCode ?? ''} - ${item.materialName ?? ''}`),
                 remaining: this.fb.control(item.remainingQuantity),
-                receivedQuantity: this.fb.control<number | null>(null, [Validators.min(0)]),
+                receivedQuantity: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]),
               }),
             );
           }
@@ -355,6 +381,26 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
     if (!detail) {
       return;
     }
+    // Validate từng dòng CÓ nhập (bỏ trống = không nhận đợt này, vẫn hợp lệ).
+    // Không validate cả form vì dòng trống có Validators.required sẽ chặn oan.
+    for (let i = 0; i < this.linesArray.length; i++) {
+      const ctrl = this.linesArray.at(i).get('receivedQuantity');
+      const val = ctrl?.value as number | string | null;
+      if (val === null || val === undefined || val === '') continue;
+      ctrl?.markAsTouched();
+      if (ctrl?.invalid) {
+        if (ctrl?.hasError('min')) {
+          this.toastService.error('Lỗi', `Dòng ${i + 1}: SL nhận phải > 0.`);
+        } else if (ctrl?.hasError('notANumber')) {
+          this.toastService.error('Lỗi', `Dòng ${i + 1}: SL nhận phải là số hợp lệ (không nhập chữ).`);
+        } else if (ctrl?.hasError('maxFraction')) {
+          this.toastService.error('Lỗi', `Dòng ${i + 1}: SL nhận tối đa 3 số lẻ.`);
+        } else {
+          this.toastService.error('Lỗi', `Dòng ${i + 1}: SL nhận không hợp lệ.`);
+        }
+        return;
+      }
+    }
     const lines = this.linesArray.getRawValue() as {
       itemId: string;
       remaining: number | string;
@@ -370,7 +416,7 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
     for (const line of payload) {
       const remaining = lines.find(l => l.itemId === line.itemId)?.remaining ?? 0;
       if (line.receivedQuantity > Number(remaining)) {
-        this.toastService.error('Lỗi', 'Số lượng nhận vượt quá số lượng còn thiếu của dòng hàng.');
+        this.toastService.error('Lỗi', `SL nhận ${line.receivedQuantity} vượt số còn thiếu ${remaining} của dòng hàng.`);
         return;
       }
     }
@@ -453,6 +499,7 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
       .subscribe({
         next: res => {
           this.materials = res.items;
+          this.refreshAllAvailabilities(this.form.get('fromWarehouseId')?.value as string | null);
         },
         error: err => this.toastService.error('Lỗi', err.message || 'Không thể tải danh sách nguyên vật liệu.'),
       });
@@ -470,5 +517,61 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
 
   get linesArray(): FormArray {
     return this.receiveForm.get('lines') as FormArray;
+  }
+
+  /** Tồn khả dụng ở kho đi cho 1 dòng (null = chưa chọn kho/NVL). */
+  availableFor(index: number): number | null {
+    const matId = this.itemsArray.at(index)?.get('materialId')?.value as string | null;
+    if (!matId) return null;
+    return this.availableMap()[matId] ?? null;
+  }
+
+  isOverAvailable(index: number): boolean {
+    const avail = this.availableFor(index);
+    if (avail === null) return false;
+    const qty = Number(this.itemsArray.at(index)?.get('quantity')?.value) || 0;
+    return qty > avail;
+  }
+
+  onMaterialSelect(index: number): void {
+    this.refreshAvailableFor(index);
+  }
+
+  private refreshAvailableFor(index: number): void {
+    const warehouseId = this.form.get('fromWarehouseId')?.value as string | null;
+    const matId = this.itemsArray.at(index)?.get('materialId')?.value as string | null;
+    if (!warehouseId || !matId) return;
+    this.stockBalanceService.getBalance(warehouseId, matId).subscribe({
+      next: b => this.availableMap.update(m => ({ ...m, [matId]: this.extractAvailable(b) })),
+      error: () => this.availableMap.update(m => ({ ...m, [matId]: null })),
+    });
+  }
+
+  /** Nạp tồn khả dụng toàn bộ NVL ở kho đi (hiện suffix + disable hết tồn). */
+  private refreshAllAvailabilities(warehouseId: string | null): void {
+    if (!warehouseId || this.materials.length === 0) return;
+    forkJoin(
+      this.materials.map(m =>
+        this.stockBalanceService.getBalance(warehouseId, m.id).pipe(
+          map(b => ({ id: m.id, available: this.extractAvailable(b) })),
+          catchError((err: { status?: number }) => of({ id: m.id, available: err?.status === 404 ? 0 : (null as number | null) })),
+        ),
+      ),
+    )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(results => {
+        const mapResult: Record<string, number | null> = {};
+        results.forEach(r => {
+          mapResult[r.id] = r.available;
+        });
+        this.availableMap.set(mapResult);
+      });
+  }
+
+  private extractAvailable(b: { availableQuantity?: unknown } | null): number | null {
+    if (!b) return 0;
+    const raw = b as unknown as Record<string, unknown>;
+    const v = Number(raw['availableQuantity'] ?? raw['quantityAvailable'] ?? raw['available'] ?? 0);
+    return Number.isFinite(v) ? v : 0;
   }
 }

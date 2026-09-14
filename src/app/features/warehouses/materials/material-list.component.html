@@ -437,6 +437,10 @@
               <span class="form-error">Vui lòng nhập định mức tồn tối thiểu.</span>
             } @else if (materialForm.get('minStockAlert')?.hasError('min')) {
               <span class="form-error">Định mức tồn không được nhỏ hơn 0.</span>
+            } @else if (materialForm.get('minStockAlert')?.hasError('notANumber')) {
+              <span class="form-error">Định mức tồn phải là số hợp lệ.</span>
+            } @else if (materialForm.get('minStockAlert')?.hasError('maxFraction')) {
+              <span class="form-error">Tối đa 2 số lẻ.</span>
             }
           }
         </div>
@@ -453,6 +457,17 @@
             nzPlaceHolder="VD: 7 (ngày)"
             style="width: 100%"
           ></nz-input-number>
+          @if (materialForm.get('shelfLifeDays')?.touched && materialForm.get('shelfLifeDays')?.invalid) {
+            @if (materialForm.get('shelfLifeDays')?.hasError('min')) {
+              <span class="form-error">Hạn dùng phải ≥ 1 ngày.</span>
+            }
+            @if (materialForm.get('shelfLifeDays')?.hasError('pattern')) {
+              <span class="form-error">Hạn dùng phải là số nguyên.</span>
+            }
+            @if (materialForm.get('shelfLifeDays')?.hasError('notANumber')) {
+              <span class="form-error">Hạn dùng phải là số hợp lệ.</span>
+            }
+          }
         </div>
 
         <!-- Trạng thái (chỉ khi xem/sửa: BE create luôn ACTIVE) -->

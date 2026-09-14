@@ -759,7 +759,7 @@
                   [formControl]="receiveQtyControl(i)"
                   [nzMin]="0.001"
                   [nzStep]="1"
-                  [nzMax]="receiveQuantityValue(i)"
+                  [nzMax]="receiveRemaining(i)"
                   style="width: 100%"
                 ></nz-input-number>
                 @if (item.get('receivedQuantity')?.touched || item.get('receivedQuantity')?.dirty) {
@@ -768,7 +768,7 @@
                   } @else if (item.get('receivedQuantity')?.hasError('min')) {
                     <span class="form-error">Số lượng nhận phải lớn hơn 0.</span>
                   } @else if (item.get('receivedQuantity')?.hasError('max')) {
-                    <span class="form-error">Số lượng nhận không được vượt quá số lượng đặt ({{ item.get('quantity')?.value }}).</span>
+                    <span class="form-error">Không vượt SL còn thiếu ({{ receiveRemaining(i) }}).</span>
                   }
                 }
               </td>

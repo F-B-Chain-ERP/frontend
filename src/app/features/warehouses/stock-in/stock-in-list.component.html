@@ -597,7 +597,24 @@
                     <input nz-input type="date" formControlName="expiryDate" />
                   </td>
                   <td class="col-qty">
-                    <input nz-input type="number" formControlName="quantity" min="0.01" step="any" />
+                    <input nz-input type="number" formControlName="quantity" min="0.001" step="0.001" />
+                    @if (ctrl.get('quantity')?.touched && ctrl.get('quantity')?.invalid) {
+                      @if (ctrl.get('quantity')?.hasError('required')) {
+                        <span class="form-error">Vui lòng nhập số lượng.</span>
+                      }
+                      @if (ctrl.get('quantity')?.hasError('min')) {
+                        <span class="form-error">Số lượng phải &gt; 0.</span>
+                      }
+                      @if (ctrl.get('quantity')?.hasError('max')) {
+                        <span class="form-error">Vượt SL còn lại của PO ({{ remainingFor(i) }}).</span>
+                      }
+                      @if (ctrl.get('quantity')?.hasError('notANumber')) {
+                        <span class="form-error">Số lượng phải là số hợp lệ.</span>
+                      }
+                      @if (ctrl.get('quantity')?.hasError('maxFraction')) {
+                        <span class="form-error">Tối đa 3 số lẻ.</span>
+                      }
+                    }
                     @if (remainingFor(i) !== null) {
                       <div class="text-muted" style="font-size: 12px; margin-top: 4px">
                         Còn lại: {{ remainingFor(i) | number }}
@@ -606,6 +623,20 @@
                   </td>
                   <td class="col-price">
                     <input nz-input type="number" formControlName="unitPrice" min="0" step="1000" />
+                    @if (ctrl.get('unitPrice')?.touched && ctrl.get('unitPrice')?.invalid) {
+                      @if (ctrl.get('unitPrice')?.hasError('required')) {
+                        <span class="form-error">Vui lòng nhập đơn giá.</span>
+                      }
+                      @if (ctrl.get('unitPrice')?.hasError('min')) {
+                        <span class="form-error">Đơn giá không được âm.</span>
+                      }
+                      @if (ctrl.get('unitPrice')?.hasError('notANumber')) {
+                        <span class="form-error">Đơn giá phải là số hợp lệ.</span>
+                      }
+                      @if (ctrl.get('unitPrice')?.hasError('maxFraction')) {
+                        <span class="form-error">Tối đa 2 số lẻ.</span>
+                      }
+                    }
                   </td>
                   <td class="col-total font-mono font-semibold">
                     {{ getItemTotal(i) | number: '1.0-0' }} ₫
