@@ -31,6 +31,7 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 
 import { BaseComponent } from '../../../shared/base-component/base.component';
+import { finiteNumberValidator, maxFractionDigitsValidator } from '../../../shared/validators/safe-text.validator';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
@@ -534,6 +535,13 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     return Number(ctrl.get('quantity')?.value) || 0;
   }
 
+  /** SL còn thiếu = đặt − đã nhận (dùng cho nzMax + message, tránh OVER_RECEIPT). */
+  receiveRemaining(index: number): number {
+    const item = this.receiveItems()[index];
+    if (!item) return this.receiveQuantityValue(index);
+    return Math.max(0, (Number(item.quantity) || 0) - (Number(item.receivedQuantity) || 0));
+  }
+
   openReceiveModal(po: PurchaseOrder): void {
     this.receiveTarget.set(po);
     this.getReceiveItems(po.id);
@@ -559,7 +567,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
               purchaseOrderItemId: [String(it.id ?? ''), [Validators.required]],
               materialName: [it.materialName ?? ''],
               quantity: [max],
-              receivedQuantity: [remaining, [Validators.required, Validators.min(0.001), Validators.max(max || Number.MAX_VALUE)]],
+              receivedQuantity: [remaining, [Validators.required, Validators.min(0.001), Validators.max(remaining)]],
             });
           });
           this.receiveForm.clear();
@@ -614,13 +622,16 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       .subscribe({
         next: () => {
           this.isSaving.set(false);
-          this.toastService.success('Thành công', `Đã ghi nhận nhập kho cho đơn ${po.code}`);
+          this.toastService.success('Thành công', `Đã ghi nhận nhận hàng PO ${po.code} (chưa tăng tồn). Cần tạo phiếu nhập kho để tăng tồn thật.`);
           this.closeReceiveModal();
           this.loadData();
         },
         error: err => {
           this.isSaving.set(false);
-          this.toastService.error('Lỗi', err?.message || 'Không thể ghi nhận nhập kho.');
+          const msg = (err as { error?: { message?: string }; message?: string })?.error?.message
+            || (err as { message?: string })?.message
+            || 'Không thể ghi nhận nhập kho.';
+          this.toastService.error('Lỗi', msg);
         },
       });
   }
@@ -970,8 +981,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
           materialId: [it.materialId, [Validators.required]],
           materialText: [matLabel, [Validators.required]],
           unitId: [it.unitId, [Validators.required]],
-          quantity: [it.quantity, [Validators.required, Validators.min(0.001)]],
-          unitPrice: [it.unitPrice, [Validators.required, Validators.min(0.001)]],
+          quantity: [it.quantity, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]],
+          unitPrice: [it.unitPrice, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(2)]],
         }),
       );
     });
@@ -986,8 +997,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       materialId: [null as string | null, [Validators.required]],
       materialText: ['', [Validators.required]],
       unitId: [null as string | null, [Validators.required]],
-      quantity: [null as number | null, [Validators.required, Validators.min(0.001)]],
-      unitPrice: [null as number | null, [Validators.required, Validators.min(0.001)]],
+      quantity: [null as number | null, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]],
+      unitPrice: [null as number | null, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(2)]],
     });
   }
 

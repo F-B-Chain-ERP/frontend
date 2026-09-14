@@ -11,6 +11,9 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { BaseComponent } from '../../../shared/base-component/base.component';
+import { finiteNumberValidator, maxFractionDigitsValidator } from '../../../shared/validators/safe-text.validator';
+import { StockBalanceService } from '../stock-balance/stock-balance.service';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
@@ -100,6 +103,10 @@ export class StockCountListComponent extends BaseComponent implements OnInit {
   private readonly stockCountService = inject(StockCountService);
   private readonly warehouseService = inject(WarehouseService);
   private readonly materialService = inject(WarehouseMaterialService);
+  private readonly stockBalanceService = inject(StockBalanceService);
+
+  /** Tồn hệ thống ở kho đang kiểm theo materialId — hiện để đối chiếu khi nhập số đếm. */
+  readonly systemMap = signal<Record<string, number | null>>({});
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
@@ -110,6 +117,11 @@ export class StockCountListComponent extends BaseComponent implements OnInit {
     this.loadWarehouses();
     this.loadMaterials();
     this.loadData();
+    // Đổi kho kiểm -> nạp lại tồn hệ thống để hiện đối chiếu.
+    this.form
+      .get('warehouseId')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(warehouseId => this.refreshAllSystem(warehouseId));
   }
 
   loadData(): void {
@@ -242,7 +254,7 @@ export class StockCountListComponent extends BaseComponent implements OnInit {
             this.itemsArray.push(
               this.fb.group({
                 materialId: this.fb.control(item.materialId, [Validators.required]),
-                countedQuantity: this.fb.control(item.countedQuantity, [Validators.required, Validators.min(0)]),
+                countedQuantity: this.fb.control(item.countedQuantity, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(3)]),
                 note: this.fb.control(item.note),
               }),
             );
@@ -261,7 +273,7 @@ export class StockCountListComponent extends BaseComponent implements OnInit {
     this.itemsArray.push(
       this.fb.group({
         materialId: this.fb.control<string | null>(null, [Validators.required]),
-        countedQuantity: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
+        countedQuantity: this.fb.control<number | null>(null, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(3)]),
         note: this.fb.control<string | null>(null, [Validators.maxLength(255)]),
       }),
     );
@@ -283,6 +295,11 @@ export class StockCountListComponent extends BaseComponent implements OnInit {
       countedQuantity: Number(i.countedQuantity),
       note: i.note?.trim() || null,
     }));
+    // Chặn NaN/Infinity lọt thành 0 âm thầm (Number(null)=0).
+    if (items.some(i => !Number.isFinite(i.countedQuantity) || i.countedQuantity < 0)) {
+      this.toastService.error('Lỗi', 'Số đếm phải là số hợp lệ và không được âm.');
+      return;
+    }
     const materialIds = items.map(i => i.materialId);
     if (new Set(materialIds).size !== materialIds.length) {
       this.toastService.error('Lỗi', 'Một nguyên vật liệu không được xuất hiện nhiều lần trong cùng một phiếu.');
@@ -424,6 +441,58 @@ export class StockCountListComponent extends BaseComponent implements OnInit {
     return this.form.get('items') as FormArray;
   }
 
+  /** Tồn hệ thống của 1 dòng để đối chiếu (null = chưa chọn kho/NVL). */
+  systemFor(index: number): number | null {
+    const matId = this.itemsArray.at(index)?.get('materialId')?.value as string | null;
+    if (!matId) return null;
+    return this.systemMap()[matId] ?? null;
+  }
+
+  variancePreview(index: number): number | null {
+    const sys = this.systemFor(index);
+    if (sys === null) return null;
+    const counted = Number(this.itemsArray.at(index)?.get('countedQuantity')?.value);
+    if (!Number.isFinite(counted)) return null;
+    return counted - sys;
+  }
+
+  onMaterialSelect(index: number): void {
+    const warehouseId = this.form.get('warehouseId')?.value as string | null;
+    const matId = this.itemsArray.at(index)?.get('materialId')?.value as string | null;
+    if (!warehouseId || !matId) return;
+    this.stockBalanceService.getBalance(warehouseId, matId).subscribe({
+      next: b => this.systemMap.update(m => ({ ...m, [matId]: this.extractAvailable(b) })),
+      error: () => this.systemMap.update(m => ({ ...m, [matId]: null })),
+    });
+  }
+
+  private refreshAllSystem(warehouseId: string | null): void {
+    if (!warehouseId || this.materials.length === 0) return;
+    forkJoin(
+      this.materials.map(m =>
+        this.stockBalanceService.getBalance(warehouseId, m.id).pipe(
+          map(b => ({ id: m.id, available: this.extractAvailable(b) })),
+          catchError((err: { status?: number }) => of({ id: m.id, available: err?.status === 404 ? 0 : (null as number | null) })),
+        ),
+      ),
+    )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(results => {
+        const mapResult: Record<string, number | null> = {};
+        results.forEach(r => {
+          mapResult[r.id] = r.available;
+        });
+        this.systemMap.set(mapResult);
+      });
+  }
+
+  private extractAvailable(b: { availableQuantity?: unknown } | null): number | null {
+    if (!b) return 0;
+    const raw = b as unknown as Record<string, unknown>;
+    const v = Number(raw['availableQuantity'] ?? raw['quantityAvailable'] ?? raw['available'] ?? raw['quantityOnHand'] ?? 0);
+    return Number.isFinite(v) ? v : 0;
+  }
+
   private loadWarehouses(): void {
     this.warehouseService
       .getAllWarehouses('ACTIVE')
@@ -443,6 +512,7 @@ export class StockCountListComponent extends BaseComponent implements OnInit {
       .subscribe({
         next: res => {
           this.materials = res.items;
+          this.refreshAllSystem(this.form.get('warehouseId')?.value as string | null);
         },
         error: err => this.toastService.error('Lỗi', err.message || 'Không thể tải danh sách nguyên vật liệu.'),
       });

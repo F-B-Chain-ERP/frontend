@@ -106,50 +106,83 @@ export class PurchaseOrderService {
           pageSize: filter.pageSize,
         };
       }),
-      catchError((err: unknown) => throwError(() => err)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
 
   getPurchaseOrderById(id: string | number): Observable<PurchaseOrderDetail | null> {
-    return this.http.get<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}`).pipe(map(res => (res.data ? this.toDetail(res.data) : null)));
+    return this.http.get<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}`).pipe(
+      map(res => (res.data ? this.toDetail(res.data) : null)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   createPurchaseOrder(payload: PurchaseOrderPayload): Observable<PurchaseOrderDetail> {
-    return this.http.post<ApiEnvelope<PoResponseBE>>(this.poApi, payload).pipe(map(res => this.toDetail(res.data)));
+    return this.http.post<ApiEnvelope<PoResponseBE>>(this.poApi, payload).pipe(
+      map(res => this.toDetail(res.data)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   updatePurchaseOrder(id: string | number, payload: PurchaseOrderPayload): Observable<PurchaseOrderDetail> {
-    return this.http.put<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}`, payload).pipe(map(res => this.toDetail(res.data)));
+    return this.http.put<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}`, payload).pipe(
+      map(res => this.toDetail(res.data)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   deletePurchaseOrder(id: string | number): Observable<boolean> {
-    return this.http.delete<ApiEnvelope<void>>(`${this.poApi}/${id}`).pipe(map(() => true));
+    return this.http.delete<ApiEnvelope<void>>(`${this.poApi}/${id}`).pipe(
+      map(() => true),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   submit(id: string | number): Observable<PurchaseOrderDetail> {
-    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/submit`, {}).pipe(map(res => this.toDetail(res.data)));
+    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/submit`, {}).pipe(
+      map(res => this.toDetail(res.data)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   approve(id: string | number): Observable<PurchaseOrderDetail> {
-    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/approve`, {}).pipe(map(res => this.toDetail(res.data)));
+    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/approve`, {}).pipe(
+      map(res => this.toDetail(res.data)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
   }
 
   cancel(id: string | number, reason?: string): Observable<PurchaseOrderDetail> {
     const params = reason ? new HttpParams().set('reason', reason) : undefined;
     return this.http
       .post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/cancel`, {}, { params })
-      .pipe(map(res => this.toDetail(res.data)));
+      .pipe(
+        map(res => this.toDetail(res.data)),
+        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      );
   }
 
   reject(id: string | number, reason?: string): Observable<PurchaseOrderDetail> {
     const params = reason ? new HttpParams().set('reason', reason) : undefined;
     return this.http
       .post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/reject`, {}, { params })
-      .pipe(map(res => this.toDetail(res.data)));
+      .pipe(
+        map(res => this.toDetail(res.data)),
+        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      );
   }
 
   receive(id: string | number, items: { purchaseOrderItemId: string; receivedQuantity: number }[]): Observable<PurchaseOrderDetail> {
-    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/receive`, { items }).pipe(map(res => this.toDetail(res.data)));
+    return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/receive`, { items }).pipe(
+      map(res => this.toDetail(res.data)),
+      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+    );
+  }
+
+  /** Giữ message nghiệp vụ BE (PROC_/INV_) thay vì "Http failure..." để toast hiển rõ. */
+  private errorMessage(err: unknown): string {
+    const e = err as { error?: { message?: string }; message?: string };
+    return e?.error?.message || e?.message || 'Đã xảy ra lỗi không xác định.';
   }
 
   private toListPo(r: PoResponseBE): PurchaseOrder {

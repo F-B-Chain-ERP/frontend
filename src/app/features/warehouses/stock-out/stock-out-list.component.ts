@@ -17,6 +17,7 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 
 import { BaseComponent } from '../../../shared/base-component/base.component';
+import { finiteNumberValidator, maxFractionDigitsValidator } from '../../../shared/validators/safe-text.validator';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
@@ -164,8 +165,8 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
       id: [item?.id || ''],
       materialId: [item?.materialId || null, [Validators.required]],
       materialName: [item?.materialName || '', [Validators.required]],
-      quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(0.01)]],
-      unitPrice: [item?.unitPrice ?? 0, [Validators.required, Validators.min(0)]],
+      quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]],
+      unitPrice: [item?.unitPrice ?? 0, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(2)]],
       batchNo: [item?.batchNo || ''],
     });
   }
@@ -566,6 +567,14 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
       return;
     }
 
+    // Chặn vượt tồn khả dụng ngay từ form, khỏi chờ BE báo INSUFFICIENT_STOCK lúc Ghi sổ.
+    for (let i = 0; i < this.itemsArray.length; i++) {
+      if (this.isOverAvailable(i)) {
+        this.toastService.error(`Dòng ${i + 1} vượt tồn khả dụng (${this.availableFor(i)}). Giảm SL hoặc chọn NVL khác.`);
+        return;
+      }
+    }
+
     this.isSaving.set(true);
     const formRaw = this.stockOutForm.getRawValue();
     const payload: Partial<StockOut> = {
@@ -584,13 +593,13 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
-            this.toastService.success('Tạo phiếu xuất kho thành công.');
+            this.toastService.success('Đã tạo phiếu nháp. Cần Ghi sổ để trừ tồn kho thật.');
             this.isSaving.set(false);
             this.closeModal();
             this.loadData();
           },
-          error: () => {
-            this.toastService.error('Có lỗi xảy ra khi tạo phiếu xuất kho.');
+          error: (err: unknown) => {
+            this.toastService.error(this.extractBeMessage(err) || 'Có lỗi xảy ra khi tạo phiếu xuất kho.');
             this.isSaving.set(false);
           },
         });
@@ -606,12 +615,18 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
             this.closeModal();
             this.loadData();
           },
-          error: () => {
-            this.toastService.error('Có lỗi xảy ra khi cập nhật phiếu xuất kho.');
+          error: (err: unknown) => {
+            this.toastService.error(this.extractBeMessage(err) || 'Có lỗi xảy ra khi cập nhật phiếu xuất kho.');
             this.isSaving.set(false);
           },
         });
     }
+  }
+
+  /** Lấy message thật của BE (INV_/PROC_) thay vì câu chung chung. */
+  private extractBeMessage(err: unknown): string | null {
+    const e = err as { error?: { message?: string }; message?: string };
+    return e?.error?.message || e?.message || null;
   }
 
   // ── Post / Cancel (BE chỉ hỗ trợ PATCH /status, không có DELETE) ──
@@ -670,8 +685,8 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
               this.setOfCheckedKeys.delete(item.id);
               this.loadData();
             },
-            error: () => {
-              this.toastService.error('Không thể hủy phiếu xuất kho.');
+            error: (err: unknown) => {
+              this.toastService.error(this.extractBeMessage(err) || 'Không thể hủy phiếu xuất kho.');
             },
           });
       },
