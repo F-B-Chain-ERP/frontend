@@ -1,0 +1,503 @@
+<div class="combo-page">
+  <!-- ════════════════════════════════════════════════════════════
+       SECTION 1: PAGE HEADER
+       ════════════════════════════════════════════════════════════ -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý Combo</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.COMBO.CREATE]"
+        variant="primary"
+        leftIcon="plus"
+        routerLink="/admin/menu/products/list"
+        [queryParams]="{ createCombo: true }"
+      >Tạo combo mới</app-button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       SECTION 2: COMBO LIST VIEW (hiển thị khi chưa chọn combo)
+       ════════════════════════════════════════════════════════════ -->
+  @if (!selectedCombo()) {
+    <!-- Filter Box -->
+    <nz-card class="page__filter-box" [nzBordered]="false">
+      <div class="page__filter-box__row">
+        <nz-input-group
+          [nzPrefix]="searchIconTpl"
+          class="page__filter-box__search"
+        >
+          <input
+            nz-input
+            placeholder="Tìm theo mã, tên combo..."
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+          />
+        </nz-input-group>
+        <ng-template #searchIconTpl><nz-icon nzType="search"></nz-icon></ng-template>
+
+        <nz-select
+          class="page__filter-box__select"
+          [(ngModel)]="selectedCategoryId"
+          nzAllowClear
+          nzPlaceHolder="Danh mục"
+        >
+          @for (cat of categories(); track cat.id) {
+            <nz-option [nzValue]="cat.id" [nzLabel]="cat.name"></nz-option>
+          }
+        </nz-select>
+
+        <nz-select
+          class="page__filter-box__select"
+          [(ngModel)]="selectedStatus"
+          nzAllowClear
+          nzPlaceHolder="Trạng thái"
+        >
+          <nz-option nzValue="ACTIVE" nzLabel="Đang bán"></nz-option>
+          <nz-option nzValue="INACTIVE" nzLabel="Ngừng bán"></nz-option>
+        </nz-select>
+
+        <div class="page__filter-box__actions">
+          <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+          <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+        </div>
+      </div>
+    </nz-card>
+
+    <!-- Data Table -->
+    <nz-card class="page__list" [nzBordered]="false">
+      <nz-table
+        #comboTable
+        [nzData]="pagedData()"
+        [nzLoading]="isLoading()"
+        [nzFrontPagination]="false"
+        [nzShowPagination]="false"
+        [nzScroll]="{ x: '786px' }"
+        nzSize="middle"
+      >
+        <thead>
+          <tr>
+            <th nzWidth="56px" nzAlign="center">STT</th>
+            <th nzWidth="140px" nzAlign="left">Mã combo</th>
+            <th nzWidth="260px" nzAlign="left">Tên combo</th>
+            <th nzWidth="140px" nzAlign="right">Giá bán</th>
+            <th nzWidth="110px" nzAlign="center">Trạng thái</th>
+            <th nzWidth="80px" nzAlign="center" class="tbl-actions-th">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (combo of pagedData(); track combo.id; let i = $index) {
+            <tr (click)="selectCombo(combo)" class="combo-row">
+              <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+              <td nzAlign="left">
+                <span class="product-code">{{ combo.code }}</span>
+              </td>
+              <td nzAlign="left">{{ combo.name }}</td>
+              <td nzAlign="right">{{ formatCurrency(combo.basePrice) }}</td>
+              <td nzAlign="center">
+                <span class="tbl-badge" [ngClass]="getStatusMeta(combo.status).badgeClass">
+                  {{ getStatusMeta(combo.status).label }}
+                </span>
+              </td>
+              <td nzAlign="center">
+                <div class="tbl-actions">
+                  <app-button
+                    variant="ghost"
+                    iconOnly="eye"
+                    nz-tooltip="Xem chi tiết"
+                    (click)="selectCombo(combo); $event.stopPropagation()"
+                  ></app-button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6">
+                <div class="empty-state">
+                  <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Chưa có combo nào'">
+                    <div class="empty-state__actions">
+                      <a routerLink="/admin/menu/products" class="empty-state__link">
+                        <app-button variant="primary" leftIcon="plus">Tạo combo mới</app-button>
+                      </a>
+                    </div>
+                  </nz-empty>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+
+      <div class="page__pagination">
+        <app-pagination
+          [total]="total()"
+          [pageIndex]="pageIndex"
+          [pageSize]="pageSize"
+          [pageSizeOptions]="pageSizeOptions"
+          (pageIndexChange)="onPageIndexChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)"
+        ></app-pagination>
+      </div>
+    </nz-card>
+  }
+
+  <!-- ════════════════════════════════════════════════════════════
+       SECTION 3: COMBO DETAIL VIEW (2 cột khi đã chọn combo)
+       ════════════════════════════════════════════════════════════ -->
+  @if (selectedCombo()) {
+    <div class="combo-detail-layout">
+      <!-- LEFT: Mini combo list -->
+      <div class="combo-detail-layout__left">
+        <nz-card class="combo-mini-list" [nzBordered]="false">
+          <div class="combo-mini-list__header">
+            <h3>Danh sách Combo</h3>
+            <app-button variant="ghost" iconOnly="arrow-left" nz-tooltip="Quay lại danh sách" (click)="clearSelection()"></app-button>
+          </div>
+          <div class="combo-mini-list__items">
+            @for (combo of combos(); track combo.id) {
+              <div
+                class="combo-mini-item"
+                [class.combo-mini-item--active]="combo.id === selectedCombo()?.id"
+                (click)="selectCombo(combo)"
+              >
+                <span class="combo-mini-item__name">{{ combo.name }}</span>
+                <span class="combo-mini-item__price">{{ formatCurrency(combo.basePrice) }}</span>
+              </div>
+            }
+          </div>
+          <div class="combo-mini-list__pagination">
+            <app-pagination
+              [total]="total()"
+              [pageIndex]="pageIndex"
+              [pageSize]="pageSize"
+              [pageSizeOptions]="pageSizeOptions"
+              (pageIndexChange)="onPageIndexChange($event)"
+              (pageSizeChange)="onPageSizeChange($event)"
+            ></app-pagination>
+          </div>
+        </nz-card>
+      </div>
+
+      <!-- RIGHT: Combo detail + items -->
+      <div class="combo-detail-layout__right">
+        @if (isDetailLoading()) {
+          <div class="combo-detail-loading">
+            <nz-spin nzSimple nzSize="large"></nz-spin>
+          </div>
+        } @else if (comboDetail()) {
+          <!-- Combo Info Header -->
+          <nz-card class="combo-info" [nzBordered]="false">
+            <div class="combo-info__header">
+              <div class="combo-info__title">
+                <h2>{{ comboDetail()?.name }}</h2>
+                <span class="product-code">{{ comboDetail()?.code }}</span>
+              </div>
+              <div class="combo-info__actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.COMBO.CREATE]"
+                  variant="primary"
+                  leftIcon="plus"
+                  (click)="openAddItemModal()"
+                >Thêm thành phần</app-button>
+              </div>
+            </div>
+            <div class="combo-info__stats">
+              <div class="combo-info__stat combo-info__stat--editable">
+                <span class="combo-info__stat-label">Giá bán combo</span>
+                @if (isEditingPrice()) {
+                  <div class="combo-info__price-edit">
+                    <nz-input-number
+                      [(ngModel)]="editingPriceValue"
+                      [nzMin]="0"
+                      [nzStep]="1000"
+                      class="combo-info__price-input"
+                    ></nz-input-number>
+                    <div class="combo-info__price-actions">
+                      <app-button variant="primary" size="sm" [loading]="isSavingPrice()" (click)="saveComboPrice()">Lưu</app-button>
+                      <app-button variant="secondary" size="sm" (click)="cancelEditPrice()">Hủy</app-button>
+                    </div>
+                    @if (priceDiff() !== 0) {
+                      <span class="combo-info__price-hint" [class.text-danger]="priceDiff() > 0" [class.text-success]="priceDiff() < 0">
+                        {{ priceDiff() > 0 ? '+' : '' }}{{ formatCurrency(priceDiff()) }} so với tổng giá trị items
+                      </span>
+                    }
+                  </div>
+                } @else {
+                  <div class="combo-info__price-view">
+                    <span class="combo-info__stat-value">{{ formatCurrency(comboDetail()?.basePrice || 0) }}</span>
+                    <app-button
+                      *erpUTTHasSomeAuthority="[ROLE.COMBO.UPDATE]"
+                      variant="ghost"
+                      iconOnly="edit"
+                      size="sm"
+                      nz-tooltip="Chỉnh sửa giá bán"
+                      (click)="startEditPrice()"
+                    ></app-button>
+                  </div>
+                }
+              </div>
+              <div class="combo-info__stat">
+                <span class="combo-info__stat-label">Tổng giá trị items</span>
+                <span class="combo-info__stat-value combo-info__stat-value--highlight">{{ formatCurrency(calculatedPrice()) }}</span>
+              </div>
+              <div class="combo-info__stat">
+                <span class="combo-info__stat-label">Số thành phần</span>
+                <span class="combo-info__stat-value">{{ comboDetail()?.items?.length || 0 }}</span>
+              </div>
+            </div>
+          </nz-card>
+
+          <!-- Items Table -->
+          <nz-card class="page__list" [nzBordered]="false">
+            <nz-table
+              #itemTable
+              [nzData]="comboDetail()?.items || []"
+              [nzFrontPagination]="false"
+              [nzShowPagination]="false"
+              [nzScroll]="{ x: '914px' }"
+              nzSize="middle"
+            >
+              <thead>
+                <tr>
+                  <th nzWidth="48px" nzAlign="center">STT</th>
+                  <th nzWidth="110px" nzAlign="left">Mã SP</th>
+                  <th nzWidth="220px" nzAlign="left">Tên sản phẩm</th>
+                  <th nzWidth="80px" nzAlign="center">Size</th>
+                  <th nzWidth="110px" nzAlign="right">Đơn giá</th>
+                  <th nzWidth="56px" nzAlign="center">SL</th>
+                  <th nzWidth="110px" nzAlign="right">Thành tiền</th>
+                  <th nzWidth="90px" nzAlign="center">Thay thế</th>
+                  <th nzWidth="90px" nzAlign="center" class="tbl-actions-th">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of comboDetail()?.items || []; track item.comboItemId; let i = $index) {
+                  <tr>
+                    <td nzAlign="center">{{ i + 1 }}</td>
+                    <td nzAlign="left">
+                      <span class="product-code">{{ item.productCode }}</span>
+                    </td>
+                    <td nzAlign="left">{{ item.productName }}</td>
+                    <td nzAlign="center">
+                      <nz-tag>{{ item.sizeLabel }}</nz-tag>
+                    </td>
+                    <td nzAlign="right">{{ formatCurrency(item.variantPrice) }}</td>
+                    <td nzAlign="center">{{ item.quantity }}</td>
+                    <td nzAlign="right">{{ formatCurrency(item.lineTotal) }}</td>
+                    <td nzAlign="center">
+                      @if (item.isSubstitutable) {
+                        <nz-tag nzColor="green">Cho phép</nz-tag>
+                      } @else {
+                        <nz-tag nzColor="default">Không</nz-tag>
+                      }
+                    </td>
+                    <td nzAlign="center">
+                      <div class="tbl-actions">
+                        <app-button
+                          *erpUTTHasSomeAuthority="[ROLE.COMBO.UPDATE]"
+                          variant="ghost"
+                          iconOnly="swap"
+                          nz-tooltip="Đổi biến thể"
+                          (click)="openSwapModal(item)"
+                        ></app-button>
+                        <app-button
+                          *erpUTTHasSomeAuthority="[ROLE.COMBO.UPDATE]"
+                          variant="ghost"
+                          iconOnly="delete"
+                          nz-tooltip="Xóa thành phần"
+                          (click)="confirmRemoveItem(item)"
+                        ></app-button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="9">
+                      <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Chưa có thành phần nào'"></nz-empty>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          </nz-card>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ════════════════════════════════════════════════════════════
+       MODAL: THÊM THÀNH PHẦN COMBO
+       ════════════════════════════════════════════════════════════ -->
+  <app-modal
+    [visible]="isAddItemModalVisible()"
+    [title]="addModalTitle"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="modalFooter"
+    (visibleChange)="isAddItemModalVisible.set($event)"
+    (cancelEmit)="closeAddItemModal()"
+  >
+    <div class="add-item-form">
+      <!-- Chọn sản phẩm -->
+      <div class="form-group">
+        <label class="form-label">Sản phẩm <span class="required">*</span></label>
+        <nz-select
+          class="form-control"
+          [(ngModel)]="addFormItemProductId"
+          (ngModelChange)="onProductSelect($event)"
+          nzAllowClear
+          nzPlaceHolder="Chọn sản phẩm"
+        >
+          @for (product of products(); track product.id) {
+            <nz-option [nzValue]="product.id" [nzLabel]="product.name + ' (' + product.code + ')'"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Chọn variant -->
+      <div class="form-group">
+        <label class="form-label">Biến thể (Size) <span class="required">*</span></label>
+        <nz-select
+          class="form-control"
+          [(ngModel)]="addFormItemVariantId"
+          nzAllowClear
+          nzPlaceHolder="Chọn biến thể"
+          [nzDisabled]="!addFormItemProductId"
+        >
+          @for (variant of selectedVariants(); track variant.id) {
+            <nz-option
+              [nzValue]="variant.id"
+              [nzLabel]="variant.variantName + ' (' + variant.sizeLabel + ') — +' + (variant.priceDelta || 0) + 'đ'"
+            ></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Số lượng -->
+      <div class="form-group">
+        <label class="form-label">Số lượng <span class="required">*</span></label>
+        <nz-input-number
+          class="form-control"
+          [(ngModel)]="addFormItemQuantity"
+          [nzMin]="1"
+          [nzMax]="99"
+        ></nz-input-number>
+      </div>
+
+      <!-- Cho phép thay thế -->
+      <div class="form-group form-group--inline">
+        <label class="form-label">Cho phép khách đổi size</label>
+        <nz-switch [(ngModel)]="addFormItemIsSubstitutable"></nz-switch>
+      </div>
+    </div>
+
+    <ng-template #modalFooter>
+      <app-button variant="secondary" (click)="closeAddItemModal()">Hủy</app-button>
+      <app-button
+        variant="primary"
+        [loading]="isModalLoading()"
+        (click)="confirmAddItem()"
+      >Thêm vào Combo</app-button>
+    </ng-template>
+  </app-modal>
+
+  <!-- ════════════════════════════════════════════════════════════
+       MODAL: ĐỔI BIẾN THỂ (FLEX PRICING)
+       ════════════════════════════════════════════════════════════ -->
+  <app-modal
+    [visible]="isSwapModalVisible()"
+    [title]="swapModalTitle"
+    size="lg"
+    [maskClosable]="false"
+    [footer]="swapModalFooter"
+    (visibleChange)="isSwapModalVisible.set($event)"
+    (cancelEmit)="closeSwapModal()"
+  >
+    @if (swapItem(); as item) {
+      <div class="swap-modal">
+        <!-- Thông tin hiện tại -->
+        <div class="swap-modal__current">
+          <h4>Biến thể hiện tại</h4>
+          <div class="swap-modal__current-info">
+            <nz-tag>{{ item.sizeLabel }}</nz-tag>
+            <span>{{ item.productName }} — {{ item.variantName }}</span>
+            <span class="swap-modal__price">{{ formatCurrency(item.variantPrice) }}</span>
+            <span class="swap-modal__qty">× {{ item.quantity }}</span>
+            <span class="swap-modal__total">= {{ formatCurrency(item.lineTotal) }}</span>
+          </div>
+        </div>
+
+        <!-- Chọn biến thể mới -->
+        <div class="swap-modal__form">
+          <div class="form-group">
+            <label class="form-label">Biến thể mới <span class="required">*</span></label>
+            <nz-select
+              class="form-control"
+              [(ngModel)]="swapNewVariantId"
+              (ngModelChange)="onSwapVariantChange($event)"
+              nzPlaceHolder="Chọn biến thể"
+            >
+              @for (variant of swapVariants(); track variant.id) {
+                <nz-option
+                  [nzValue]="variant.id"
+                  [nzLabel]="variant.variantName + ' (' + variant.sizeLabel + ') — +' + (variant.priceDelta || 0) + 'đ'"
+                ></nz-option>
+              }
+            </nz-select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Số lượng</label>
+            <nz-input-number
+              class="form-control"
+              [(ngModel)]="swapNewQuantity"
+              [nzMin]="1"
+              [nzMax]="99"
+            ></nz-input-number>
+          </div>
+        </div>
+
+        <!-- Xem giá -->
+        <div class="swap-modal__preview">
+          <app-button
+            variant="secondary"
+            leftIcon="calculator"
+            [loading]="isSwapCalculating()"
+            (click)="previewSwapPrice()"
+          >Xem giá mới</app-button>
+
+          @if (swapPricePreview(); as preview) {
+            <div class="swap-modal__price-result">
+              <div class="swap-modal__price-row">
+                <span>Giá gốc combo:</span>
+                <span>{{ formatCurrency(preview.originalComboPrice) }}</span>
+              </div>
+              <div class="swap-modal__price-row">
+                <span>Giá mới combo:</span>
+                <span class="swap-modal__price-new">{{ formatCurrency(preview.adjustedComboPrice) }}</span>
+              </div>
+              <div class="swap-modal__price-row swap-modal__price-row--diff">
+                <span>Chênh lệch:</span>
+                <span [class]="preview.adjustedComboPrice > preview.originalComboPrice ? 'text-danger' : 'text-success'">
+                  {{ preview.adjustedComboPrice >= preview.originalComboPrice ? '+' : '' }}{{ formatCurrency(preview.adjustedComboPrice - preview.originalComboPrice) }}
+                </span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <ng-template #swapModalFooter>
+      <app-button variant="secondary" (click)="closeSwapModal()">Hủy</app-button>
+      <app-button
+        variant="primary"
+        [disabled]="!swapPricePreview()"
+        [loading]="isSwapCalculating()"
+        (click)="confirmSwap()"
+      >Xác nhận</app-button>
+    </ng-template>
+  </app-modal>
+</div>

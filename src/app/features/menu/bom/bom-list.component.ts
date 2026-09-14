@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -101,38 +101,9 @@ export class BomListComponent extends BaseComponent implements OnInit {
   pageSize = DEFAULT_PAGE_SIZE;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
 
-  // Lọc dữ liệu hiển thị phía client
-  readonly filteredList = computed(() => {
-    let result = this.bomList();
-    const q = this.searchQuery.trim().toLowerCase();
-    if (q) {
-      result = result.filter(
-        (item) =>
-          item.productCode?.toLowerCase().includes(q) ||
-          item.productName?.toLowerCase().includes(q) ||
-          item.variantName?.toLowerCase().includes(q) ||
-          item.categoryName?.toLowerCase().includes(q)
-      );
-    }
-    if (this.selectedCategoryId) {
-      const cat = this.categories().find((c) => c.id === this.selectedCategoryId);
-      if (cat) {
-        result = result.filter((item) => item.categoryName === cat.name);
-      }
-    }
-    if (this.selectedBomStatus === 'HAS_BOM') {
-      result = result.filter((item) => item.itemCount > 0);
-    } else if (this.selectedBomStatus === 'NO_BOM') {
-      result = result.filter((item) => item.itemCount === 0);
-    }
-    return result;
-  });
-
-  readonly total = computed(() => this.filteredList().length);
-  readonly pagedData = computed(() => {
-    const start = (this.pageIndex - 1) * this.pageSize;
-    return this.filteredList().slice(start, start + this.pageSize);
-  });
+  // Phân trang server-side
+  totalItems = 0;
+  totalPages = 0;
 
   // Modal cấu hình BOM
   readonly isModalVisible = signal<boolean>(false);
@@ -159,15 +130,29 @@ export class BomListComponent extends BaseComponent implements OnInit {
   loadData(): void {
     this.isLoading.set(true);
     this.bomService
-      .getBomOverview(this.searchQuery)
+      .getBomOverview({
+        page: this.pageIndex - 1,
+        size: this.pageSize,
+        search: this.searchQuery,
+        categoryId: this.selectedCategoryId,
+        bomStatus: this.selectedBomStatus,
+      })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (data) => {
-          this.bomList.set(data || []);
+        next: (res) => {
+          this.bomList.set(res?.content || []);
+          this.totalItems = res?.totalElements ?? 0;
+          this.totalPages = res?.totalPages ?? 0;
           this.isLoading.set(false);
+
+          const lastPage = Math.max(this.totalPages, 1);
+          if (res && !res.content?.length && this.pageIndex > lastPage) {
+            this.pageIndex = lastPage;
+            this.loadData();
+          }
         },
         error: (err) => {
-          this.toastService.error(err?.message || 'Không thể tải danh sách định lượng công thức');
+          this.toastService.error(err?.error?.message || 'Không thể tải danh sách định lượng công thức');
           this.isLoading.set(false);
         },
       });
@@ -203,7 +188,7 @@ export class BomListComponent extends BaseComponent implements OnInit {
   }
 
   onSearch(): void {
-    this.pageIndex = 1;
+    this.pageIndex = DEFAULT_PAGE_INDEX;
     this.loadData();
   }
 
@@ -211,17 +196,19 @@ export class BomListComponent extends BaseComponent implements OnInit {
     this.searchQuery = '';
     this.selectedCategoryId = null;
     this.selectedBomStatus = '';
-    this.pageIndex = 1;
+    this.pageIndex = DEFAULT_PAGE_INDEX;
     this.loadData();
   }
 
   onPageIndexChange(index: number): void {
     this.pageIndex = index;
+    this.loadData();
   }
 
   onPageSizeChange(size: number): void {
     this.pageSize = size;
-    this.pageIndex = 1;
+    this.pageIndex = DEFAULT_PAGE_INDEX;
+    this.loadData();
   }
 
   openRecipeModal(item: ProductBomOverview): void {
@@ -246,6 +233,26 @@ export class BomListComponent extends BaseComponent implements OnInit {
             wastagePercent: it.wastagePercent || 0,
           }));
           this.editingRows.set(rows);
+
+          // Merge NVL/ĐVT đã lưu vào options phòng trường hợp chúng không nằm
+          // trong 100 bản ghi ACTIVE mới nhất mà backend trả về (MAX_PAGE_SIZE).
+          const materialIndex = new Map(this.materials().map((m) => [m.id, m]));
+          const unitIndex = new Map(this.units().map((u) => [u.id, u]));
+          const missingMaterials = rows.filter((r) => r.materialId && !materialIndex.has(r.materialId));
+          const missingUnits = rows.filter((r) => r.unitId && !unitIndex.has(r.unitId));
+          if (missingMaterials.length) {
+            this.materials.update((list) => [
+              ...list,
+              ...missingMaterials.map((r) => ({ id: r.materialId, code: r.materialCode, name: r.materialName })),
+            ]);
+          }
+          if (missingUnits.length) {
+            this.units.update((list) => [
+              ...list,
+              ...missingUnits.map((r) => ({ id: r.unitId, code: r.unitCode })),
+            ]);
+          }
+
           this.isModalLoading.set(false);
         },
         error: (err) => {

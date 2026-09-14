@@ -74,7 +74,7 @@
   <nz-card class="page__list" [nzBordered]="false">
     <nz-table
       #bomTable
-      [nzData]="pagedData()"
+      [nzData]="bomList()"
       [nzLoading]="isLoading()"
       [nzShowPagination]="false"
       [nzFrontPagination]="false"
@@ -176,7 +176,7 @@
     <!-- Pagination -->
     <div class="page__pagination">
       <app-pagination
-        [total]="total()"
+        [total]="totalItems"
         [pageIndex]="pageIndex"
         [pageSize]="pageSize"
         [pageSizeOptions]="pageSizeOptions"
@@ -275,6 +275,7 @@
                         <nz-select
                           [(ngModel)]="row.unitId"
                           (ngModelChange)="onUnitChange(row, $event)"
+                          [nzDisabled]="!row.materialId"
                           nzPlaceHolder="ĐVT"
                           style="width: 100%"
                         >

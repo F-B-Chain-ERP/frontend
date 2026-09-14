@@ -6,9 +6,9 @@ import { ApiResponse } from '../../login/login.model';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
 import {
   AddBomItemRequest,
+  BomOverviewPage,
   BomResponse,
   BulkSyncBomRequest,
-  ProductBomOverview,
   ProductRecipeItemResponse,
   UpdateBomItemRequest,
 } from './bom.model';
@@ -34,17 +34,31 @@ export class BomService {
   }
 
   /**
-   * Lấy danh sách tổng quan các món và biến thể kèm số lượng NVL trong BOM.
+   * Lấy danh sách tổng quan các món và biến thể kèm số lượng NVL trong BOM (phân trang server-side).
    */
-  getBomOverview(search?: string): Observable<ProductBomOverview[]> {
-    let params = new HttpParams();
-    if (search?.trim()) {
-      params = params.set('search', search.trim());
+  getBomOverview(params: {
+    page: number;
+    size: number;
+    search?: string;
+    categoryId?: string | null;
+    bomStatus?: string;
+  }): Observable<BomOverviewPage> {
+    let httpParams = new HttpParams()
+      .set('page', params.page.toString())
+      .set('size', params.size.toString());
+    if (params.search?.trim()) {
+      httpParams = httpParams.set('search', params.search.trim());
+    }
+    if (params.categoryId) {
+      httpParams = httpParams.set('categoryId', params.categoryId);
+    }
+    if (params.bomStatus) {
+      httpParams = httpParams.set('bomStatus', params.bomStatus);
     }
 
     return this.http
-      .get<ApiResponse<ProductBomOverview[]>>(`${this.baseMenuUrl}/bom/overview`, { params })
-      .pipe(map((res) => res.data ?? []));
+      .get<ApiResponse<BomOverviewPage>>(`${this.baseMenuUrl}/bom/overview`, { params: httpParams })
+      .pipe(map((res) => res.data));
   }
 
   /**

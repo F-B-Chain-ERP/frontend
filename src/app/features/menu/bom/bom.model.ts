@@ -83,6 +83,17 @@ export interface BOMFilter {
 }
 
 /**
+ * Phản hồi phân trang danh sách BOM overview từ server.
+ */
+export interface BomOverviewPage {
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  content: ProductBomOverview[];
+}
+
+/**
  * Legacy interfaces phục vụ mock service hoặc tương thích ngược.
  */
 export interface RecipeItem {
