@@ -75,6 +75,7 @@
         [nzFrontPagination]="false"
         [nzShowPagination]="false"
         [nzScroll]="{ x: '786px' }"
+        [nzNoResult]="comboEmptyTpl"
         nzSize="middle"
       >
         <thead>
@@ -109,20 +110,6 @@
                     nz-tooltip="Xem chi tiết"
                     (click)="selectCombo(combo); $event.stopPropagation()"
                   ></app-button>
-                </div>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="6">
-                <div class="empty-state">
-                  <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Chưa có combo nào'">
-                    <div class="empty-state__actions">
-                      <a routerLink="/admin/menu/products" class="empty-state__link">
-                        <app-button variant="primary" leftIcon="plus">Tạo combo mới</app-button>
-                      </a>
-                    </div>
-                  </nz-empty>
                 </div>
               </td>
             </tr>
@@ -257,6 +244,7 @@
               [nzFrontPagination]="false"
               [nzShowPagination]="false"
               [nzScroll]="{ x: '914px' }"
+              [nzNoResult]="itemEmptyTpl"
               nzSize="middle"
             >
               <thead>
@@ -310,12 +298,6 @@
                           (click)="confirmRemoveItem(item)"
                         ></app-button>
                       </div>
-                    </td>
-                  </tr>
-                } @empty {
-                  <tr>
-                    <td colspan="9">
-                      <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Chưa có thành phần nào'"></nz-empty>
                     </td>
                   </tr>
                 }
@@ -501,3 +483,17 @@
     </ng-template>
   </app-modal>
 </div>
+
+<ng-template #comboEmptyTpl>
+  <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Chưa có combo nào'">
+    <div class="empty-state__actions">
+      <a routerLink="/admin/menu/products" class="empty-state__link">
+        <app-button variant="primary" leftIcon="plus">Tạo combo mới</app-button>
+      </a>
+    </div>
+  </nz-empty>
+</ng-template>
+
+<ng-template #itemEmptyTpl>
+  <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Chưa có thành phần nào'"></nz-empty>
+</ng-template>

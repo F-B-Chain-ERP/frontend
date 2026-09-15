@@ -32,6 +32,7 @@
     [nzFrontPagination]="false"
     [nzShowPagination]="false"
     [nzScroll]="{ x: scrollX }"
+    [nzNoResult]="emptyContentTpl"
     nzSize="middle"
   >
     <thead>
@@ -93,12 +94,6 @@
             }
           </td>
         </tr>
-      } @empty {
-        <tr>
-          <td [attr.colspan]="columnCount">
-            <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="emptyText"></nz-empty>
-          </td>
-        </tr>
       }
     </tbody>
   </nz-table>
@@ -129,4 +124,8 @@
       <div class="price-popover__hint">Giá gốc: {{ formatCurrency(row.price) }}</div>
     </div>
   }
+</ng-template>
+
+<ng-template #emptyContentTpl>
+  <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="emptyText"></nz-empty>
 </ng-template>

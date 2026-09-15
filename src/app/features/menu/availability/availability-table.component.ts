@@ -149,10 +149,6 @@ export class AvailabilityTableComponent extends BaseComponent implements OnInit,
     return this.isProduct ? '560px' : '520px';
   }
 
-  get columnCount(): number {
-    return this.isProduct ? 8 : 7;
-  }
-
   private readonly availabilityService = inject(AvailabilityService);
   private readonly categoryService = inject(CategoryService);
 
