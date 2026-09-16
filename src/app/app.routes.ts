@@ -315,10 +315,10 @@ export const routes: Routes = [
       },
       {
         path: 'menu/availability/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
+        loadChildren: () => import('./features/menu/availability/availability.routes'),
         title: 'Khả dụng chi nhánh',
         canActivate: [UserRouteAccessService],
-        data: { authorities: [ROLE.SAN_PHAM_KHA_DUNG.VIEW] },
+        data: { authorities: [ROLE.SAN_PHAM_KHA_DUNG.VIEW, ROLE.TOPPING_KHA_DUNG.VIEW] },
       },
       // ── INVENTORY ────────────────────────────────
       {
