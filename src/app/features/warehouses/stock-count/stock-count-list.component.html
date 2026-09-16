@@ -305,16 +305,38 @@
             @for (group of itemsArray.controls; track $index; let i = $index) {
               <div nz-row [nzGutter]="[8, 8]" [formGroupName]="i" style="margin-bottom: 8px">
                 <div nz-col [nzSpan]="9">
-                  <nz-select formControlName="materialId" nzPlaceHolder="Chọn NVL" nzShowSearch style="width: 100%">
+                  <nz-select formControlName="materialId" nzPlaceHolder="Chọn NVL" nzShowSearch style="width: 100%" (ngModelChange)="onMaterialSelect(i)">
                     @for (m of materials; track m.id) {
-                      <nz-option [nzValue]="m.id" [nzLabel]="m.code + ' - ' + m.name"></nz-option>
+                      <nz-option [nzValue]="m.id" [nzLabel]="m.code + ' - ' + m.name + (systemMap()[m.id] !== null && systemMap()[m.id] !== undefined ? ' (tồn: ' + systemMap()[m.id] + ')' : '')"></nz-option>
                     }
                   </nz-select>
+                  @if (systemFor(i) !== null) {
+                    <div class="text-muted" style="font-size: 12px; margin-top: 4px">
+                      Tồn hệ thống: {{ systemFor(i) | number }}
+                      @if (variancePreview(i) !== null) {
+                        <span> — Chênh lệch dự kiến: {{ variancePreview(i)! > 0 ? '+' : '' }}{{ variancePreview(i) | number }}</span>
+                      }
+                    </div>
+                  }
                 </div>
                 <div nz-col [nzSpan]="5">
                   <nz-input-wrapper>
                     <input type="number" nz-input formControlName="countedQuantity" placeholder="SL đếm" min="0" step="0.001" />
                   </nz-input-wrapper>
+                  @if (group.get('countedQuantity')?.touched && group.get('countedQuantity')?.invalid) {
+                    @if (group.get('countedQuantity')?.hasError('required')) {
+                      <span class="form-error">Nhập SL đếm.</span>
+                    }
+                    @if (group.get('countedQuantity')?.hasError('min')) {
+                      <span class="form-error">SL đếm không âm.</span>
+                    }
+                    @if (group.get('countedQuantity')?.hasError('notANumber')) {
+                      <span class="form-error">SL đếm phải là số.</span>
+                    }
+                    @if (group.get('countedQuantity')?.hasError('maxFraction')) {
+                      <span class="form-error">Tối đa 3 số lẻ.</span>
+                    }
+                  }
                 </div>
                 <div nz-col [nzSpan]="8">
                   <nz-input-wrapper>

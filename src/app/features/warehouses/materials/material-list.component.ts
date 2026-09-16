@@ -19,6 +19,7 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { BaseComponent } from '../../../shared/base-component/base.component';
+import { finiteNumberValidator, maxFractionDigitsValidator } from '../../../shared/validators/safe-text.validator';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
@@ -130,12 +131,12 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   // Form
   readonly materialForm = this.fb.group({
     id: [''],
-    code: ['', [Validators.required, Validators.maxLength(50)]],
+    code: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/^[A-Z0-9_-]+$/i)]],
     name: ['', [Validators.required, Validators.maxLength(150)]],
     categoryId: [null as string | null, [Validators.required]],
     baseUnitId: [null as string | null, [Validators.required]],
-    minStockAlert: [10.0, [Validators.required, Validators.min(0)]],
-    shelfLifeDays: [null as number | null, [Validators.min(0)]],
+    minStockAlert: [10, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(2)]],
+    shelfLifeDays: [null as number | null, [Validators.min(1), Validators.pattern(/^\d+$/), finiteNumberValidator()]],
     isPerishable: [false],
     status: ['ACTIVE', [Validators.required]],
   });
@@ -403,10 +404,16 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       name: formRaw.name?.trim(),
       categoryId: formRaw.categoryId,
       baseUnitId: formRaw.baseUnitId,
-      minStockAlert: formRaw.minStockAlert || 0,
+      minStockAlert: formRaw.minStockAlert ?? 0,
       shelfLifeDays: formRaw.shelfLifeDays ?? null,
       isPerishable: Boolean(formRaw.isPerishable),
     };
+    // NVL dễ hỏng bắt buộc có HSD.
+    if (base.isPerishable && (base.shelfLifeDays === null || base.shelfLifeDays < 1)) {
+      this.toastService.error('NVL dễ hỏng phải nhập hạn sử dụng (≥ 1 ngày).');
+      this.isSaving.set(false);
+      return;
+    }
 
     if (this.modalMode() === 'create') {
       this.materialService

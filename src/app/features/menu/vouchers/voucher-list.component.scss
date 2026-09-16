@@ -1,0 +1,301 @@
+.voucher-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+// ── Filter Box Styling ──────────────────────────────────────────
+.page__filter-box {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+
+    &--grow {
+      flex: 1;
+      min-width: 260px;
+    }
+
+    &--discount-type {
+      width: 220px;
+      flex-shrink: 0;
+    }
+
+    &--status {
+      width: 180px;
+      flex-shrink: 0;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page__filter-box__row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filter-item--discount-type,
+    .filter-item--status {
+      width: 100%;
+    }
+
+    .page__filter-box__actions {
+      justify-content: flex-end;
+      margin-top: var(--space-2);
+    }
+  }
+}
+
+// ── Table Card ──────────────────────────────────────────────────
+.page__list {
+  .ant-card-body {
+    padding: 0;
+  }
+}
+
+// ── Table Cell Styling ──────────────────────────────────────────
+.voucher-cell {
+  cursor: pointer;
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    line-height: var(--lh-tight);
+  }
+
+  &__code {
+    font-family: var(--font-mono, monospace);
+    font-weight: var(--fw-semibold);
+    color: var(--brand);
+    transition: color var(--dur-fast) var(--ease);
+  }
+
+  &__name {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 160px;
+  }
+
+  &:hover &__code {
+    color: var(--brand);
+    text-decoration: underline;
+  }
+}
+
+.voucher-name {
+  color: var(--text-primary);
+}
+
+.usage-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.date-range {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  line-height: var(--lh-snug);
+
+  &__arrow {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-left: var(--space-1);
+  }
+}
+
+// ── Empty State ────────────────────────────────────────────────
+.table-empty {
+  padding: var(--space-12) 0;
+}
+
+.table-empty-small {
+  padding: var(--space-8) 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+
+  &__icon {
+    font-size: 48px;
+    color: var(--text-muted);
+    opacity: 0.5;
+  }
+
+  &__text {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+  }
+}
+
+// ── Modal Styles ───────────────────────────────────────────────
+.voucher-modal-form {
+  padding: var(--space-2) 0;
+}
+
+.status-radio-options {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-top: var(--space-2);
+}
+
+.modal-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+// ── Detail Drawer Styles ───────────────────────────────────────
+.drawer-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  &__name {
+    font-size: var(--text-md);
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+  }
+}
+
+.drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.drawer-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  &__title {
+    font-size: var(--text-sm);
+    font-weight: var(--fw-semibold);
+    color: var(--text-primary);
+  }
+
+  &__empty {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 0;
+  }
+}
+
+.branch-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.branch-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 2px var(--space-2) 2px var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+
+  &__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+
+  .app-button {
+    flex-shrink: 0;
+  }
+}
+
+.branch-assign__form {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-subtle);
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: stretch;
+
+    nz-select {
+      width: 100% !important;
+      flex: none !important;
+    }
+  }
+}
+
+.drawer-pagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.drawer-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+
+  &__spacer {
+    flex: 1;
+  }
+}
+
+// ── Shared helpers ──────────────────────────────────────────────
+.font-mono {
+  font-family: var(--font-mono, monospace);
+}
+
+.font-semibold {
+  font-weight: var(--fw-semibold);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-success {
+  color: var(--success) !important;
+}
+
+.text-center {
+  text-align: center;
+}

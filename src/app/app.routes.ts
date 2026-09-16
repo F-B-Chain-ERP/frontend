@@ -270,11 +270,15 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
-        path: 'menu/toppings/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Topping',
+        path: 'menu/toppings',
+        loadChildren: () => import('./features/menu/toppings/topping.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.TOPPING.VIEW] },
+      },
+      {
+        path: 'menu/toppings/list',
+        redirectTo: 'menu/toppings',
+        pathMatch: 'full',
       },
       {
         path: 'menu/combos',
@@ -283,11 +287,20 @@ export const routes: Routes = [
         data: { authorities: [ROLE.COMBO.VIEW] },
       },
       {
-        path: 'menu/vouchers/list',
+        path: 'menu/combos/list',
         loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Voucher',
+        title: 'Combo',
+      },
+      {
+        path: 'menu/vouchers',
+        loadChildren: () => import('./features/menu/vouchers/vouchers.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.VOUCHER.VIEW] },
+      },
+      {
+        path: 'menu/vouchers/list',
+        redirectTo: 'menu/vouchers',
+        pathMatch: 'full',
       },
       {
         path: 'menu/bom',
@@ -302,10 +315,10 @@ export const routes: Routes = [
       },
       {
         path: 'menu/availability/list',
-        loadChildren: () => import('./features/menu/availability/availability.routes'),
+        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
         title: 'Khả dụng chi nhánh',
         canActivate: [UserRouteAccessService],
-        data: { authorities: [ROLE.SAN_PHAM_KHA_DUNG.VIEW, ROLE.TOPPING_KHA_DUNG.VIEW] },
+        data: { authorities: [ROLE.SAN_PHAM_KHA_DUNG.VIEW] },
       },
       // ── INVENTORY ────────────────────────────────
       {

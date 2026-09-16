@@ -1,0 +1,286 @@
+<div class="topping-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý Topping</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.TOPPING.CREATE]"
+        variant="primary"
+        leftIcon="plus"
+        (click)="openCreateModal()"
+      >
+        Thêm topping
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="topping-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input
+            id="topping-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập mã hoặc tên topping..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="topping-group-input">Nhóm topping</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="folder" />
+          <input
+            id="topping-group-input"
+            nz-input
+            [(ngModel)]="searchGroupName"
+            (keyup.enter)="onSearch()"
+            placeholder="Nhập nhóm topping..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [ngModel]="selectedStatus"
+          (ngModelChange)="selectedStatus = $event; onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (o of statusOptions; track o.value) {
+            <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #toppingTable
+      [nzData]="toppings()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '900px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="140px" nzAlign="left">Mã topping</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Tên topping</th>
+          <th scope="col" nzWidth="160px" nzAlign="left">Nhóm</th>
+          <th scope="col" nzWidth="130px" nzAlign="right">Đơn giá</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of toppings(); track item.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex - 1) * pageSize + idx + 1 }}</td>
+            <td nzAlign="left"><span class="topping-code">{{ item.code }}</span></td>
+            <td nzAlign="left">{{ item.name }}</td>
+            <td nzAlign="left">{{ item.groupName || '—' }}</td>
+            <td nzAlign="right" class="topping-price">{{ item.price | number:'1.0-0' }} &#8363;</td>
+            <td nzAlign="center">
+              <span [class]="getToppingStatusMeta(item.status).badgeClass">
+                {{ getToppingStatusMeta(item.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.TOPPING.UPDATE]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Sửa"
+                  (click)="openEditModal(item)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.TOPPING.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa"
+                  (click)="onDelete(item)"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Form Modal (Thêm / Sửa) ─────────────────────────────────── -->
+  <app-modal
+    [visible]="isFormModalVisible()"
+    (visibleChange)="isFormModalVisible.set($event)"
+    [title]="modalMode() === 'edit' ? 'Sửa topping' : 'Thêm topping'"
+    size="md"
+    [maskClosable]="false"
+    [footer]="formModalFooter"
+    (cancelEmit)="closeFormModal()"
+  >
+    <form [formGroup]="form" class="topping-modal-form">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-code">Mã topping</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="tag" />
+            <input
+              id="modal-code"
+              type="text"
+              nz-input
+              formControlName="code"
+              placeholder="VD: THACH_NGUYEN"
+              maxlength="50"
+            />
+          </nz-input-wrapper>
+          @if (form.get('code')?.dirty || form.get('code')?.touched) {
+            @if (form.get('code')?.hasError('required')) {
+              <span class="form-error">Mã topping không được để trống.</span>
+            } @else if (form.get('code')?.hasError('maxlength')) {
+              <span class="form-error">Mã topping tối đa 50 ký tự.</span>
+            } @else if (form.get('code')?.hasError('pattern')) {
+              <span class="form-error">Mã chỉ gồm chữ, số, gạch ngang hoặc gạch dưới.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-name">Tên topping</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="font-size" />
+            <input
+              id="modal-name"
+              type="text"
+              nz-input
+              formControlName="name"
+              placeholder="VD: Thạch nha đam"
+              maxlength="150"
+            />
+          </nz-input-wrapper>
+          @if (form.get('name')?.dirty || form.get('name')?.touched) {
+            @if (form.get('name')?.hasError('required')) {
+              <span class="form-error">Tên topping không được để trống.</span>
+            } @else if (form.get('name')?.hasError('maxlength')) {
+              <span class="form-error">Tên topping tối đa 150 ký tự.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label required" for="modal-price">Đơn giá (VND)</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="dollar" />
+            <input
+              id="modal-price"
+              type="number"
+              nz-input
+              formControlName="price"
+              placeholder="VD: 5000"
+              min="0"
+            />
+          </nz-input-wrapper>
+          @if (form.get('price')?.dirty || form.get('price')?.touched) {
+            @if (form.get('price')?.hasError('required')) {
+              <span class="form-error">Đơn giá không được để trống.</span>
+            } @else if (form.get('price')?.hasError('min')) {
+              <span class="form-error">Đơn giá phải lớn hơn hoặc bằng 0.</span>
+            }
+          }
+        </div>
+
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-groupName">Nhóm topping</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="folder" />
+            <input
+              id="modal-groupName"
+              type="text"
+              nz-input
+              formControlName="groupName"
+              placeholder="VD: Thạch, Kem, Pudding..."
+              maxlength="100"
+            />
+          </nz-input-wrapper>
+          @if (form.get('groupName')?.dirty || form.get('groupName')?.touched) {
+            @if (form.get('groupName')?.hasError('maxlength')) {
+              <span class="form-error">Nhóm topping tối đa 100 ký tự.</span>
+            }
+          }
+          <span class="form-hint">Phân loại nhóm topping để dễ quản lý (không bắt buộc).</span>
+        </div>
+
+        @if (modalMode() === 'edit') {
+          <div nz-col [nzSpan]="24" [nzMd]="12">
+            <label class="form-label required" for="modal-status">Trạng thái</label>
+            <nz-select
+              id="modal-status"
+              formControlName="status"
+              nzPlaceHolder="Chọn trạng thái"
+              style="width: 100%"
+            >
+              <nz-option [nzValue]="'ACTIVE'" [nzLabel]="'Đang bán'"></nz-option>
+              <nz-option [nzValue]="'INACTIVE'" [nzLabel]="'Tạm ngưng'"></nz-option>
+            </nz-select>
+            @if (form.get('status')?.dirty || form.get('status')?.touched) {
+              @if (form.get('status')?.hasError('required')) {
+                <span class="form-error">Vui lòng chọn trạng thái.</span>
+              }
+            }
+          </div>
+        }
+      </div>
+    </form>
+
+    <ng-template #formModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[modalMode() === 'edit' ? ROLE.TOPPING.UPDATE : ROLE.TOPPING.CREATE]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitForm()"
+        >
+          {{ modalMode() === 'edit' ? 'Lưu thay đổi' : 'Thêm topping' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

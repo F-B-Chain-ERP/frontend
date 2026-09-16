@@ -244,21 +244,53 @@
             @for (group of itemsArray.controls; track $index; let i = $index) {
               <div nz-row [nzGutter]="[8, 8]" [formGroupName]="i" style="margin-bottom: 8px">
                 <div nz-col [nzSpan]="10">
-                  <nz-select formControlName="materialId" nzPlaceHolder="Chọn NVL" nzShowSearch style="width: 100%">
+                  <nz-select formControlName="materialId" nzPlaceHolder="Chọn NVL" nzShowSearch style="width: 100%" (ngModelChange)="onMaterialSelect(i)">
                     @for (m of materials; track m.id) {
-                      <nz-option [nzValue]="m.id" [nzLabel]="m.code + ' - ' + m.name"></nz-option>
+                      <nz-option [nzValue]="m.id" [nzLabel]="m.code + ' - ' + m.name + (availableMap()[m.id] !== null && availableMap()[m.id] !== undefined ? (availableMap()[m.id]! <= 0 ? ' (hết tồn)' : ' (tồn: ' + availableMap()[m.id] + ')') : '')" [nzDisabled]="availableMap()[m.id] === 0"></nz-option>
                     }
                   </nz-select>
+                  @if (!form.get('fromWarehouseId')?.value) {
+                    <span class="form-hint">Chọn kho đi trước để xem tồn khả dụng.</span>
+                  } @else if (availableFor(i) !== null) {
+                    <div class="text-muted" style="font-size: 12px; margin-top: 4px">
+                      Khả dụng: {{ availableFor(i) | number }}
+                      @if (isOverAvailable(i)) {
+                        <span style="color: var(--danger, #ff4d4f); font-weight: 600"> — vượt tồn!</span>
+                      }
+                    </div>
+                  }
                 </div>
                 <div nz-col [nzSpan]="6">
                   <nz-input-wrapper>
-                    <input type="number" nz-input formControlName="quantity" placeholder="SL" min="0" step="0.001" />
+                    <input type="number" nz-input formControlName="quantity" placeholder="SL" min="0.001" step="0.001" />
                   </nz-input-wrapper>
+                  @if (group.get('quantity')?.touched && group.get('quantity')?.invalid) {
+                    @if (group.get('quantity')?.hasError('required')) {
+                      <span class="form-error">Nhập SL.</span>
+                    }
+                    @if (group.get('quantity')?.hasError('min')) {
+                      <span class="form-error">SL phải &gt; 0.</span>
+                    }
+                    @if (group.get('quantity')?.hasError('notANumber')) {
+                      <span class="form-error">SL phải là số.</span>
+                    }
+                    @if (group.get('quantity')?.hasError('maxFraction')) {
+                      <span class="form-error">Tối đa 3 số lẻ.</span>
+                    }
+                  }
                 </div>
                 <div nz-col [nzSpan]="6">
                   <nz-input-wrapper>
                     <input type="number" nz-input formControlName="unitPrice" placeholder="Đơn giá" min="0" step="0.01" />
                   </nz-input-wrapper>
+                  @if (group.get('unitPrice')?.touched && group.get('unitPrice')?.invalid) {
+                    @if (group.get('unitPrice')?.hasError('min')) {
+                      <span class="form-error">Giá không âm.</span>
+                    }
+                    @if (group.get('unitPrice')?.hasError('notANumber')) {
+                      <span class="form-error">Giá phải là số.</span>
+                    }
+                  }
                 </div>
                 <div nz-col [nzSpan]="2">
                   <app-button variant="ghost" iconOnly="delete" (click)="removeItemLine(i)"> </app-button>
@@ -311,8 +343,16 @@
             </div>
             <div nz-col [nzSpan]="6">
               <nz-input-wrapper>
-                <input type="number" nz-input formControlName="receivedQuantity" placeholder="SL nhận" min="0" step="0.001" />
+                <input type="number" nz-input formControlName="receivedQuantity" placeholder="SL nhận" min="0.001" step="0.001" />
               </nz-input-wrapper>
+              @if (group.get('receivedQuantity')?.touched && group.get('receivedQuantity')?.invalid) {
+                @if (group.get('receivedQuantity')?.hasError('min')) {
+                  <span class="form-error">SL nhận phải &gt; 0.</span>
+                }
+                @if (group.get('receivedQuantity')?.hasError('notANumber')) {
+                  <span class="form-error">SL nhận phải là số.</span>
+                }
+              }
             </div>
           </div>
         }

@@ -18,6 +18,7 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 
 import { BaseComponent } from '../../../shared/base-component/base.component';
+import { finiteNumberValidator, maxFractionDigitsValidator } from '../../../shared/validators/safe-text.validator';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
@@ -167,7 +168,12 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   }
 
   createItemGroup(item?: Partial<StockInItem>, maxQty?: number | null) {
-    const qtyValidators = [Validators.required, Validators.min(0.01)];
+    const qtyValidators = [
+      Validators.required,
+      Validators.min(0.001),
+      finiteNumberValidator(),
+      maxFractionDigitsValidator(3),
+    ];
     if (maxQty !== undefined && maxQty !== null && Number.isFinite(maxQty)) {
       qtyValidators.push(Validators.max(maxQty));
     }
@@ -177,7 +183,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
       materialId: [item?.materialId || null, [Validators.required]],
       materialName: [item?.materialName || '', [Validators.required]],
       quantity: [item?.quantity ?? 1, qtyValidators],
-      unitPrice: [item?.unitPrice ?? 0, [Validators.required, Validators.min(0)]],
+      unitPrice: [item?.unitPrice ?? 0, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(2)]],
       batchNo: [item?.batchNo || ''],
       expiryDate: [item?.expiryDate || ''],
     });
@@ -704,7 +710,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
-            this.toastService.success('Tạo phiếu nhập kho thành công.');
+            this.toastService.success('Đã tạo phiếu nháp. Cần Ghi sổ để tăng tồn kho thật.');
             this.isSaving.set(false);
             this.closeModal();
             this.loadData();
@@ -761,8 +767,8 @@ export class StockInListComponent extends BaseComponent implements OnInit {
               this.toastService.success(`Đã ghi sổ phiếu ${item.code}.`);
               this.loadData();
             },
-            error: () => {
-              this.toastService.error('Không thể ghi sổ phiếu nhập kho.');
+            error: (err: unknown) => {
+              this.toastService.error(this.extractBeMessage(err) || 'Không thể ghi sổ phiếu nhập kho.');
             },
           });
       },
@@ -792,8 +798,8 @@ export class StockInListComponent extends BaseComponent implements OnInit {
               this.setOfCheckedKeys.delete(item.id);
               this.loadData();
             },
-            error: () => {
-              this.toastService.error('Không thể hủy phiếu nhập kho.');
+            error: (err: unknown) => {
+              this.toastService.error(this.extractBeMessage(err) || 'Không thể hủy phiếu nhập kho.');
             },
           });
       },
