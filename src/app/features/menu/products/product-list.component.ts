@@ -37,6 +37,7 @@ import {ProductVariantModalComponent} from './variants/product-variant-modal.com
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
 import {normalizeImageUrl} from '../../../core/util/image.util';
 import {catchError, concatMap, finalize, of, takeUntil} from 'rxjs';
+import {ActivatedRoute, Router} from '@angular/router';
 
 @Component({
   selector: 'app-product-list',
@@ -141,6 +142,7 @@ export class ProductListComponent extends BaseComponent implements OnInit {
 
   private readonly productService = inject(ProductService);
   private readonly categoryService = inject(CategoryService);
+  private readonly route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
@@ -150,6 +152,13 @@ export class ProductListComponent extends BaseComponent implements OnInit {
     ]);
     this.loadCategories();
     this.loadProducts();
+
+    const createCombo = this.route.snapshot.queryParamMap.get('createCombo');
+    if (createCombo === 'true') {
+      this.openCreateModal();
+      this.createForm.patchValue({isCombo: true});
+      this.router.navigate([], {relativeTo: this.route, queryParams: {}, replaceUrl: true});
+    }
   }
 
   loadCategories(): void {

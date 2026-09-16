@@ -104,6 +104,7 @@
       [nzFrontPagination]="false"
       nzSize="middle"
       [nzScroll]="{ x: '1320px' }"
+      [nzNoResult]="nzEmptyTpl"
     >
       <thead>
       <tr>
@@ -299,15 +300,6 @@
                   (click)="onDelete(item)"
                 >
                 </app-button>
-              </div>
-            </td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="9" class="text-center tbl-empty">
-              <div class="empty-state">
-                <nz-icon nzType="inbox" class="empty-icon"/>
-                <p class="empty-text">Không tìm thấy nguyên vật liệu nào trong kho</p>
               </div>
             </td>
           </tr>
@@ -516,6 +508,13 @@
           {{ modalMode() === 'create' ? 'Tạo mới' : 'Lưu thay đổi' }}
         </app-button>
       }
+    </div>
+  </ng-template>
+
+  <ng-template #nzEmptyTpl>
+    <div class="empty-state">
+      <nz-icon nzType="inbox" class="empty-icon"/>
+      <p class="empty-text">Không tìm thấy nguyên vật liệu nào trong kho</p>
     </div>
   </ng-template>
 </div>

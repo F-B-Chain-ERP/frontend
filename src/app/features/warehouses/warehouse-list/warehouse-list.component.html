@@ -125,6 +125,7 @@
       [nzFrontPagination]="false"
       nzSize="middle"
       [nzScroll]="{ x: '1240px' }"
+      [nzNoResult]="nzEmptyTpl"
     >
       <thead>
         <tr>
@@ -343,18 +344,6 @@
               </div>
             </td>
           </tr>
-        } @empty {
-          @if (!loading()) {
-            <tr>
-              <td colspan="10" class="table-empty">
-                <div class="empty-state">
-                  <nz-icon nzType="inbox" class="empty-state__icon" />
-                  <p class="empty-state__text">Không có dữ liệu kho hàng nào phù hợp</p>
-                  <app-button variant="secondary" (click)="onResetFilters()">Đặt lại bộ lọc</app-button>
-                </div>
-              </td>
-            </tr>
-          }
         }
       </tbody>
     </nz-table>
@@ -492,5 +481,15 @@
         </app-button>
       }
     </div>
+  </ng-template>
+
+  <ng-template #nzEmptyTpl>
+    @if (!loading()) {
+      <div class="empty-state">
+        <nz-icon nzType="inbox" class="empty-state__icon" />
+        <p class="empty-state__text">Không có dữ liệu kho hàng nào phù hợp</p>
+        <app-button variant="secondary" (click)="onResetFilters()">Đặt lại bộ lọc</app-button>
+      </div>
+    }
   </ng-template>
 </div>

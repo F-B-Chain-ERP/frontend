@@ -281,11 +281,15 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
+        path: 'menu/combos',
+        loadChildren: () => import('./features/menu/combos/combos.routes'),
+        canActivate: [UserRouteAccessService],
+        data: { authorities: [ROLE.COMBO.VIEW] },
+      },
+      {
         path: 'menu/combos/list',
         loadComponent: () => import('./features/coming-soon/coming-soon.component'),
         title: 'Combo',
-        canActivate: [UserRouteAccessService],
-        data: { authorities: [ROLE.COMBO.VIEW] },
       },
       {
         path: 'menu/vouchers',
@@ -311,10 +315,10 @@ export const routes: Routes = [
       },
       {
         path: 'menu/availability/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
+        loadChildren: () => import('./features/menu/availability/availability.routes'),
         title: 'Khả dụng chi nhánh',
         canActivate: [UserRouteAccessService],
-        data: { authorities: [ROLE.SAN_PHAM_KHA_DUNG.VIEW] },
+        data: { authorities: [ROLE.SAN_PHAM_KHA_DUNG.VIEW, ROLE.TOPPING_KHA_DUNG.VIEW] },
       },
       // ── INVENTORY ────────────────────────────────
       {

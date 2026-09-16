@@ -1,0 +1,114 @@
+// ── Shared availability section (dùng chung cho Sản phẩm & Topping) ──
+
+.availability-section {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+
+    h2 {
+      margin: 0;
+      font-size: var(--text-lg);
+      font-weight: var(--fw-bold);
+    }
+  }
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+  }
+}
+
+// ── Toolbar elements ──
+.toolbar-search {
+  width: 260px;
+}
+
+.toolbar-select {
+  min-width: 150px;
+}
+
+// ── Price Cell ──
+.price-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  cursor: pointer;
+  max-width: 100%;
+  white-space: nowrap;
+
+  &__value {
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--fw-medium);
+
+    // Giá CN đã set riêng → tô đậm + màu brand để dễ phân biệt với giá gốc
+    &.has-custom {
+      color: var(--brand);
+      font-weight: var(--fw-bold);
+    }
+  }
+
+  &__edit {
+    opacity: 0.55;
+    transition: opacity var(--dur-fast) var(--ease);
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+// ── Price Popover ──
+.price-popover {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 280px;
+
+  &__input {
+    width: 100%;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  &__hint {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+}
+
+// ── Table Rows ──
+.row-disabled {
+  opacity: 0.55;
+}
+
+// ── Product Code ──
+.product-code {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-semibold);
+  color: var(--brand);
+  font-size: var(--text-sm);
+}
+
+.price-tag {
+  margin-left: var(--space-1);
+}
+
+// ── Pagination ──
+.page__pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}

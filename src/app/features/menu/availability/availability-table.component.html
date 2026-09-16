@@ -1,0 +1,131 @@
+<nz-card class="availability-section" [nzBordered]="false">
+  <div class="availability-section__header">
+    <h2>{{ title }}</h2>
+    @if (total() > 0) {
+      <nz-tag nzColor="blue">{{ total() }}</nz-tag>
+    }
+  </div>
+
+  <div class="availability-section__toolbar">
+    <nz-input-group [nzPrefix]="searchIconTpl" class="toolbar-search">
+      <input nz-input placeholder="Tìm theo mã, tên..." [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" />
+    </nz-input-group>
+    <ng-template #searchIconTpl><nz-icon nzType="search"></nz-icon></ng-template>
+
+    @if (isProduct) {
+      <nz-select class="toolbar-select" [(ngModel)]="selectedCategoryId" nzAllowClear nzPlaceHolder="Danh mục">
+        @for (cat of categories(); track cat.id) {
+          <nz-option [nzValue]="cat.id" [nzLabel]="cat.name"></nz-option>
+        }
+      </nz-select>
+    }
+
+    <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+    <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+  </div>
+
+  <nz-table
+    #availabilityTable
+    class="tbl-auto"
+    [nzData]="rows()"
+    [nzLoading]="isLoading()"
+    [nzFrontPagination]="false"
+    [nzShowPagination]="false"
+    [nzScroll]="{ x: scrollX }"
+    [nzNoResult]="emptyContentTpl"
+    nzSize="middle"
+  >
+    <thead>
+      <tr>
+        <th nzWidth="48px" nzAlign="center">STT</th>
+        <th nzWidth="110px" nzAlign="left">{{ codeHeader }}</th>
+        <th nzWidth="200px" nzAlign="left">{{ nameHeader }}</th>
+        <th nzWidth="140px" nzAlign="left">{{ groupHeader }}</th>
+        <th nzWidth="120px" nzAlign="right">{{ priceHeader }}</th>
+        @if (isProduct) {
+          <th nzWidth="150px" nzAlign="right">Giá tại CN</th>
+        }
+        <th nzWidth="100px" nzAlign="center">Khả dụng</th>
+        <th nzWidth="110px" nzAlign="center">Trạng thái</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.id; let i = $index) {
+        <tr [class.row-disabled]="!row.isAvailable">
+          <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+          <td nzAlign="left">
+            <span class="product-code">{{ row.code }}</span>
+          </td>
+          <td nzAlign="left">{{ row.name }}</td>
+          <td nzAlign="left">{{ row.group || '—' }}</td>
+          <td nzAlign="right">{{ formatCurrency(row.price) }}</td>
+          @if (isProduct) {
+            <td nzAlign="right">
+              <div
+                nz-popover
+                nzPopoverPlacement="bottomRight"
+                nzPopoverTitle="Giá bán tại CN"
+                [nzPopoverVisible]="pricePopoverOpen() && isEditingPrice(row)"
+                [nzPopoverContent]="priceEditTpl"
+                (nzPopoverVisibleChange)="onPricePopoverVisibleChange(row, $event)"
+                (click)="startEditSalePrice(row)"
+                class="price-cell"
+              >
+                <span class="price-cell__value" [class.has-custom]="row.customPrice !== null">
+                  {{ row.customPrice !== null ? formatCurrency(row.customPrice) : formatCurrency(row.price) }}
+                </span>
+                @if (row.customPrice === null) {
+                  <nz-tag nzColor="default" class="price-tag">Gốc</nz-tag>
+                } @else {
+                  <nz-tag nzColor="blue" class="price-tag">CN</nz-tag>
+                }
+                <app-button variant="ghost" iconOnly="edit" size="sm" nz-tooltip="Chỉnh sửa giá"></app-button>
+              </div>
+            </td>
+          }
+          <td nzAlign="center">
+            <nz-switch [ngModel]="row.isAvailable" (ngModelChange)="toggleAvailability(row, $event)"></nz-switch>
+          </td>
+          <td nzAlign="center">
+            @if (row.isAvailable) {
+              <nz-tag nzColor="success">Đang bán</nz-tag>
+            } @else {
+              <nz-tag nzColor="error">Ngừng bán</nz-tag>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </nz-table>
+
+  <div class="page__pagination">
+    <app-pagination
+      [total]="total()"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [pageSizeOptions]="pageSizeOptions"
+      (pageIndexChange)="onPageIndexChange($event)"
+      (pageSizeChange)="onPageSizeChange($event)"
+    ></app-pagination>
+  </div>
+</nz-card>
+
+<ng-template #priceEditTpl>
+  @if (editingRow(); as row) {
+    <div class="price-popover">
+      <nz-input-number [(ngModel)]="editingSalePriceValue" [nzMin]="0" [nzStep]="1000" class="price-popover__input"></nz-input-number>
+      <div class="price-popover__actions">
+        <app-button variant="primary" size="sm" leftIcon="check" (click)="saveSalePrice(row)">Lưu</app-button>
+        @if (row.customPrice !== null) {
+          <app-button variant="secondary" size="sm" leftIcon="rollback" (click)="clearSalePrice(row)">Đưa về Gốc</app-button>
+        }
+        <app-button variant="ghost" size="sm" leftIcon="close" (click)="cancelEditSalePrice()">Hủy</app-button>
+      </div>
+      <div class="price-popover__hint">Giá gốc: {{ formatCurrency(row.price) }}</div>
+    </div>
+  }
+</ng-template>
+
+<ng-template #emptyContentTpl>
+  <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="emptyText"></nz-empty>
+</ng-template>
