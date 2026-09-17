@@ -162,7 +162,7 @@
     </div>
   </nz-card>
 
-  <!-- ── 4. Detail Drawer ───────────────────────────────────────────── -->
+  <!-- ── 4. Detail Drawer ─────────────────────────────────────────────
   <nz-drawer [nzVisible]="isDrawerVisible()" nzTitle="Chi tiết phiếu chuyển kho" nzWidth="720px" (nzOnClose)="onCloseDrawer()">
     <ng-container *nzDrawerContent>
       @if (selectedTransfer(); as detail) {
@@ -196,7 +196,124 @@
         </nz-table>
       }
     </ng-container>
-  </nz-drawer>
+  </nz-drawer> -->
+<!-- ── 4. Detail Modal ───────────────────────────────────────────── -->
+  <app-modal
+    [visible]="isDetailModalVisible()"
+    [title]="'Chi tiết phiếu chuyển kho'"
+    size="lg"
+    [centered]="true"
+    [maskClosable]="true"
+    [footer]="null"
+    (cancelEmit)="onCloseDetailModal()"
+  >
+    @if (selectedTransfer(); as detail) {
+      <div class="transfer-detail-modal">
+        <!-- Thông tin phiếu -->
+        <div class="transfer-detail-modal__info">
+          <div class="transfer-detail-modal__info-item">
+            <span class="transfer-detail-modal__label">Mã phiếu</span>
+            <span class="transfer-detail-modal__value font-mono">
+              {{ detail.code }}
+            </span>
+          </div>
+
+          <div class="transfer-detail-modal__info-item">
+            <span class="transfer-detail-modal__label">Trạng thái</span>
+            <span
+              [class]="getTransferStatusMeta(detail.status).badgeClass"
+            >
+              {{ getTransferStatusMeta(detail.status).label }}
+            </span>
+          </div>
+
+          <div class="transfer-detail-modal__info-item">
+            <span class="transfer-detail-modal__label">Kho đi</span>
+            <span class="transfer-detail-modal__value">
+              {{ detail.fromWarehouseCode }}
+              <span class="transfer-detail-modal__separator">→</span>
+              {{ detail.fromWarehouseName }}
+            </span>
+          </div>
+
+          <div class="transfer-detail-modal__info-item">
+            <span class="transfer-detail-modal__label">Kho đến</span>
+            <span class="transfer-detail-modal__value">
+              {{ detail.toWarehouseCode }}
+              <span class="transfer-detail-modal__separator">→</span>
+              {{ detail.toWarehouseName }}
+            </span>
+          </div>
+
+          <div class="transfer-detail-modal__info-item">
+            <span class="transfer-detail-modal__label">Ngày chuyển</span>
+            <span class="transfer-detail-modal__value">
+              {{ detail.transferDate }}
+            </span>
+          </div>
+
+          <div class="transfer-detail-modal__info-item">
+            <span class="transfer-detail-modal__label">Ghi chú</span>
+            <span class="transfer-detail-modal__value">
+              {{ detail.note || '—' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Danh sách nguyên vật liệu -->
+        <div class="transfer-detail-modal__section">
+          <div class="transfer-detail-modal__section-title">
+            Chi tiết nguyên vật liệu
+          </div>
+
+          <nz-table
+            [nzData]="detail.items"
+            [nzShowPagination]="false"
+            [nzFrontPagination]="false"
+            nzSize="small"
+          >
+            <thead>
+              <tr>
+                <th scope="col">Nguyên vật liệu</th>
+                <th scope="col" nzAlign="right">SL chuyển</th>
+                <th scope="col" nzAlign="right">Đã nhận</th>
+                <th scope="col" nzAlign="right">Còn thiếu</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              @for (line of detail.items; track line.id) {
+                <tr>
+                  <td>
+                    <div class="transfer-detail-modal__material">
+                      <span class="transfer-detail-modal__material-code">
+                        {{ line.materialCode }}
+                      </span>
+                      <span class="transfer-detail-modal__material-name">
+                        {{ line.materialName }}
+                      </span>
+                    </div>
+                  </td>
+
+                  <td nzAlign="right">
+                    {{ line.quantity | number }}
+                  </td>
+
+                  <td nzAlign="right">
+                    {{ line.receivedQuantity | number }}
+                  </td>
+
+                  <td nzAlign="right">
+                    {{ line.remainingQuantity | number }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
+        </div>
+      </div>
+    }
+  </app-modal>
 
   <!-- ── 5. Form Modal (Tạo / Sửa) ──────────────────────────────────── -->
   <app-modal

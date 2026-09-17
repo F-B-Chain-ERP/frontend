@@ -118,7 +118,7 @@
             <td nzAlign="left">{{ o.receiverName }}</td>
             <td nzAlign="right">{{ formatPrice(o.totalAmount) }}</td>
             <td nzAlign="center">
-              <span [class]="getStatusMeta(o.status).badgeClass">{{ getStatusMeta(o.status).label }}</span>
+              <span class="tbl-badge" [class]="getStatusMeta(o.status).badgeClass">{{ getStatusMeta(o.status).label }}</span>
             </td>
             <td nzAlign="center">{{ formatDateTime(o.createdAt) }}</td>
             <td nzAlign="center">

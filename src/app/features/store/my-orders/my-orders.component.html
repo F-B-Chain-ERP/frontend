@@ -48,23 +48,36 @@
         <div class="order-card">
           <div class="order-card__head" (click)="toggleDetail(o)">
             <div class="order-card__meta">
-              <strong>{{ formatDateTime(o.createdAt) }} • {{ o.orderType === 'DELIVERY' ? 'Giao tận nơi' : 'Tự đến lấy' }}</strong>
+              <strong>
+                {{ formatDateTime(o.createdAt) }}
+                •
+                {{ o.orderType === 'DELIVERY' ? 'Giao tận nơi' : 'Tự đến lấy' }}
+              </strong>
             </div>
-            <span [class]="getStatusMeta(o.status).badgeClass">{{ getStatusMeta(o.status).label }}</span>
-            <strong>{{ formatPrice(o.totalAmount) }}</strong>
+
+            <span
+              class="order-card__status"
+              [class]="getStatusMeta(o.status).badgeClass"
+            >
+              {{ getStatusMeta(o.status).label }}
+            </span>
+
+            <strong class="order-card__total">
+              {{ formatPrice(o.totalAmount) }}
+            </strong>
           </div>
           @if (expandedIds().has(o.id)) {
             <div class="order-card__body">
               @if (isDetailLoading(o.id)) {
                 <nz-spin nzTip="Đang tải chi tiết..."></nz-spin>
               } @else if (detailOf(o.id); as d) {
-                @if (orderStepIndex(d.orderType, d.status) >= 0) {
+                <!-- @if (orderStepIndex(d.orderType, d.status) >= 0) {
                   <nz-steps [nzCurrent]="orderStepIndex(d.orderType, d.status)" nzSize="small" class="order-card__steps">
                     @for (step of orderStepTitles(d.orderType); track step) {
                       <nz-step [nzTitle]="step"></nz-step>
                     }
                   </nz-steps>
-                }
+                } -->
 
                 @for (item of d.items; track item.id) {
                   <div class="order-card__item">
@@ -92,24 +105,50 @@
                 }
 
                 <div class="order-card__money">
-                  <span>Tạm tính {{ formatPrice(d.subtotal) }}</span>
-                  <span>Giảm {{ formatPrice(d.discount) }}</span>
-                  <span>Ship {{ formatPrice(d.shippingFee) }}</span>
-                  <strong>Tổng {{ formatPrice(d.totalAmount) }} ({{ paymentLabel(d.paymentStatus) }})</strong>
+                  <!-- <div class="order-card__money-left">
+                    <span>Tạm tính {{ formatPrice(d.subtotal) }}</span>
+                    <span>Giảm {{ formatPrice(d.discount) }}</span>
+                    <span>Ship {{ formatPrice(d.shippingFee) }}</span>
+                  </div> -->
+                  <div class="order-card__money-left">
+                    <span class="order-card__money-item">
+                      <span class="order-card__money-label">Tạm tính</span>
+                      <strong>{{ formatPrice(d.subtotal) }}</strong>
+                    </span>
+
+                    <span class="order-card__money-divider">•</span>
+
+                    <span class="order-card__money-item">
+                      <span class="order-card__money-label">Giảm</span>
+                      <strong>{{ formatPrice(d.discount) }}</strong>
+                    </span>
+
+                    <span class="order-card__money-divider">•</span>
+
+                    <span class="order-card__money-item">
+                      <span class="order-card__money-label">Phí giao hàng</span>
+                      <strong>{{ formatPrice(d.shippingFee) }}</strong>
+                    </span>
+                  </div>
+
+                  <strong class="order-card__money-total">
+                    Tổng {{ formatPrice(d.totalAmount) }}
+                    ({{ paymentLabel(d.paymentStatus) }})
+                  </strong>
                 </div>
 
                 @if (d.shippingAddress) {
                   <div class="text-muted">Giao tới: {{ d.shippingAddress }}</div>
                 }
 
-                <div class="order-card__history">
+                <!-- <div class="order-card__history">
                   @for (h of historyOf(o.id); track h.id) {
                     <div class="order-card__history-row">
                       <span>{{ historyLabel(h.oldStatus) }} → {{ historyLabel(h.newStatus) }}</span>
                       <span>{{ formatDateTime(h.changedAt) }}</span>
                     </div>
                   }
-                </div>
+                </div> -->
 
                 @if (canCancel(d.status)) {
                   @if (cancellingId() === d.id) {

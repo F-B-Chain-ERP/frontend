@@ -8,7 +8,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzGridModule } from 'ng-zorro-antd/grid';
-import { NzDrawerModule } from 'ng-zorro-antd/drawer';
+// import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 import { BaseComponent } from '../../../shared/base-component/base.component';
 import { finiteNumberValidator, maxFractionDigitsValidator } from '../../../shared/validators/safe-text.validator';
 import { StockBalanceService } from '../stock-balance/stock-balance.service';
@@ -52,7 +52,7 @@ import { takeUntil } from 'rxjs';
     NzIconModule,
     NzTooltipModule,
     NzGridModule,
-    NzDrawerModule,
+    // NzDrawerModule,
     AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
@@ -86,7 +86,9 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
   pageIndex = DEFAULT_PAGE_INDEX;
   pageSize = DEFAULT_PAGE_SIZE;
 
-  readonly isDrawerVisible = signal(false);
+  // readonly isDrawerVisible = signal(false);
+  // readonly selectedTransfer = signal<StockTransfer | null>(null);
+  readonly isDetailModalVisible = signal(false);
   readonly selectedTransfer = signal<StockTransfer | null>(null);
 
   readonly isFormModalVisible = signal(false);
@@ -193,20 +195,24 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
   }
 
   onViewDetail(record: StockTransfer): void {
-    this.stockTransferService
-      .getTransferById(record.id)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: detail => {
-          this.selectedTransfer.set(detail);
-          this.isDrawerVisible.set(true);
-        },
-        error: err => this.toastService.error('Lỗi', err.message || 'Không thể tải chi tiết phiếu.'),
-      });
-  }
+  this.stockTransferService
+    .getTransferById(record.id)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: detail => {
+        this.selectedTransfer.set(detail);
+        this.isDetailModalVisible.set(true);
+      },
+      error: err =>
+        this.toastService.error(
+          'Lỗi',
+          err.message || 'Không thể tải chi tiết phiếu.',
+        ),
+    });
+}
 
-  onCloseDrawer(): void {
-    this.isDrawerVisible.set(false);
+  onCloseDetailModal(): void {
+    this.isDetailModalVisible.set(false);
     this.selectedTransfer.set(null);
   }
 
