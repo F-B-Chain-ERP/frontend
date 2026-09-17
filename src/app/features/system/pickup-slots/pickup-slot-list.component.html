@@ -1,0 +1,557 @@
+<div class="pickup-slots-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Quản lý khung giờ Pickup</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_GIO_HOAT_DONG.VIEW]"
+        variant="ghost"
+        leftIcon="clock-circle"
+        (click)="navigateToBranchHours()"
+      >
+        Lịch hoạt động tuần
+      </app-button>
+
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_KHUNG_GIO_PICKUP.CREATE]"
+        variant="secondary"
+        leftIcon="thunderbolt"
+        [disabled]="!selectedBranchId() || loading()"
+        (click)="openGenerateModal()"
+      >
+        Tự động sinh khung giờ
+      </app-button>
+
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_KHUNG_GIO_PICKUP.CREATE]"
+        variant="primary"
+        leftIcon="plus"
+        [disabled]="!selectedBranchId() || loading()"
+        (click)="openCreateModal()"
+      >
+        Thêm khung giờ
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. KPI Summary Cards ───────────────────────────────────────── -->
+  <div class="kpi-grid">
+    <nz-card class="kpi-card" [nzBordered]="false">
+      <div class="kpi-card__inner">
+        <div class="kpi-card__icon kpi-card__icon--primary">
+          <nz-icon nzType="schedule"/>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Tổng khung giờ</span>
+          <span class="kpi-card__value">{{ totalSlotsCount() }}</span>
+        </div>
+      </div>
+    </nz-card>
+
+    <nz-card class="kpi-card" [nzBordered]="false">
+      <div class="kpi-card__inner">
+        <div class="kpi-card__icon kpi-card__icon--success">
+          <nz-icon nzType="check-circle"/>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Khung giờ khả dụng</span>
+          <span class="kpi-card__value kpi-card__value--success">{{ availableSlotsCount() }}</span>
+        </div>
+      </div>
+    </nz-card>
+
+    <nz-card class="kpi-card" [nzBordered]="false">
+      <div class="kpi-card__inner">
+        <div class="kpi-card__icon kpi-card__icon--info">
+          <nz-icon nzType="shopping"/>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Tổng đơn đã đặt</span>
+          <span class="kpi-card__value kpi-card__value--primary">{{ totalBookedOrders() }}</span>
+        </div>
+      </div>
+    </nz-card>
+
+    <nz-card class="kpi-card" [nzBordered]="false">
+      <div class="kpi-card__inner">
+        <div class="kpi-card__icon kpi-card__icon--warning">
+          <nz-icon nzType="fire"/>
+        </div>
+        <div class="kpi-card__info">
+          <span class="kpi-card__label">Khung giờ cao điểm</span>
+          <span class="kpi-card__value kpi-card__value--warning">
+            {{ peakSlot() ? peakSlot()?.slotCode : '—' }}
+          </span>
+        </div>
+      </div>
+    </nz-card>
+  </div>
+
+  <!-- ── 3. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Chọn chi nhánh -->
+      <div class="filter-item filter-item--branch">
+        <label class="form-label" for="slot-branch-select">Chi nhánh</label>
+        <nz-select
+          id="slot-branch-select"
+          [ngModel]="selectedBranchId()"
+          (ngModelChange)="selectBranch($event)"
+          nzPlaceHolder="Chọn chi nhánh"
+          nzShowSearch
+          style="width: 100%"
+        >
+          @for (b of branches(); track b.id) {
+            <nz-option [nzLabel]="b.code + ' - ' + b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Chọn ngày xem tải đơn -->
+      <div class="filter-item filter-item--date">
+        <label class="form-label">Ngày nhận đơn</label>
+        <nz-date-picker
+          id="slot-date-picker"
+          [(ngModel)]="selectedDate"
+          nzFormat="yyyy-MM-dd"
+          [nzAllowClear]="false"
+          (ngModelChange)="loadSlots()"
+          style="width: 100%"
+        ></nz-date-picker>
+      </div>
+
+      <!-- Tìm kiếm mã khung giờ -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="slot-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search"/>
+          <input
+            id="slot-search-input"
+            nz-input
+            [(ngModel)]="searchQuery"
+            (keyup.enter)="onSearch()"
+            placeholder="Tìm theo mã hoặc giờ (VD: 08:00, SLOT-0800)..."
+          />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Lọc Khả dụng -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Khả dụng</label>
+        <nz-select
+          [(ngModel)]="selectedAvailability"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        >
+          <nz-option nzValue="all" nzLabel="Tất cả"></nz-option>
+          <nz-option nzValue="available" nzLabel="Còn nhận đơn"></nz-option>
+          <nz-option nzValue="full" nzLabel="Hết chỗ"></nz-option>
+        </nz-select>
+      </div>
+
+      <!-- Trạng thái -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Bulk Selection Actions Bar ──────────────────────────────── -->
+  @if (setOfCheckedKeys.size > 0) {
+    <app-selection-bar
+      [selectedCount]="setOfCheckedKeys.size"
+      [totalCount]="total()"
+      itemLabel="khung giờ"
+      (clearSelection)="clearSelection()"
+    >
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_KHUNG_GIO_PICKUP.DELETE]"
+        variant="danger"
+        leftIcon="delete"
+        (click)="onBatchDelete()"
+      >
+        Xóa đã chọn
+      </app-button>
+    </app-selection-bar>
+  }
+
+  <!-- ── 5. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #slotTable
+      [nzData]="pagedSlots()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1100px' }"
+    >
+      <thead>
+      <tr>
+        <!-- Checkbox chọn tất cả -->
+        <th scope="col" nzWidth="48px" nzAlign="center">
+          <label class="cb" for="cb-check-all">
+            <input
+              id="cb-check-all"
+              #checkAllInput
+              type="checkbox"
+              [checked]="checked"
+              [indeterminate]="indeterminate"
+              (change)="onAllChecked(checkAllInput.checked)"
+            />
+            <span class="cb__box"></span>
+          </label>
+        </th>
+
+        <!-- STT -->
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+
+        <!-- Mã khung giờ -->
+        <th scope="col" nzWidth="180px">Mã khung giờ</th>
+
+        <!-- Khung thời gian -->
+        <th scope="col" nzWidth="200px">Khung giờ</th>
+
+        <!-- Thời lượng -->
+        <th scope="col" nzWidth="110px" nzAlign="center">Thời lượng</th>
+
+        <!-- Tải đơn / Sức chứa -->
+        <th scope="col" nzWidth="240px">Đơn đặt / Sức chứa</th>
+
+        <!-- Khả dụng -->
+        <th scope="col" nzWidth="140px" nzAlign="center">Khả dụng</th>
+
+        <!-- Trạng thái -->
+        <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
+
+        <!-- Thao tác -->
+        <th scope="col" nzWidth="110px" nzAlign="center">Thao tác</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (item of pagedSlots(); track item.id; let idx = $index) {
+          <tr>
+            <!-- Checkbox -->
+            <td nzAlign="center">
+              <label class="cb" [for]="'cb-row-' + item.id">
+                <input
+                  [id]="'cb-row-' + item.id"
+                  #rowInput
+                  type="checkbox"
+                  [checked]="setOfCheckedKeys.has(item.id)"
+                  (change)="onItemChecked(item.id, rowInput.checked)"
+                />
+                <span class="cb__box"></span>
+              </label>
+            </td>
+
+            <!-- STT -->
+            <td nzAlign="center" class="font-mono text-muted">
+              {{ (pageIndex - 1) * pageSize + idx + 1 }}
+            </td>
+
+            <!-- Mã khung giờ -->
+            <td>
+              <span class="slot-code font-mono">{{ item.slotCode }}</span>
+            </td>
+
+            <!-- Khung thời gian -->
+            <td>
+              <div class="time-range-cell">
+                <nz-icon nzType="clock-circle" class="text-primary"/>
+                <span class="font-mono time-bold">
+                  {{ item.startTime.substring(0, 5) }} - {{ item.endTime.substring(0, 5) }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Thời lượng -->
+            <td nzAlign="center">
+              <span class="tbl-badge tbl-badge--neutral">
+                {{ getSlotDurationLabel(item) }}
+              </span>
+            </td>
+
+            <!-- Tải đơn / Sức chứa -->
+            <td>
+              <div class="occupancy-cell">
+                <div class="occupancy-cell__text">
+                  <span class="occupancy-count">
+                    <strong>{{ item.currentOrders }}</strong> / {{ item.maxOrders || '∞' }} đơn
+                  </span>
+                  <span class="occupancy-percent text-muted">
+                    {{ getOccupancyPercent(item) }}%
+                  </span>
+                </div>
+                <nz-progress
+                  [nzPercent]="getOccupancyPercent(item)"
+                  [nzShowInfo]="false"
+                  [nzStatus]="getOccupancyPercent(item) >= 100 ? 'exception' : getOccupancyPercent(item) >= 70 ? 'active' : 'normal'"
+                  nzSize="small"
+                ></nz-progress>
+              </div>
+            </td>
+
+            <!-- Khả dụng -->
+            <td nzAlign="center">
+              <span [class]="getAvailabilityMeta(item).badgeClass">
+                {{ getAvailabilityMeta(item).label }}
+              </span>
+            </td>
+
+            <!-- Trạng thái -->
+            <td nzAlign="center">
+              <span [class]="getStatusMeta(item.status).badgeClass">
+                {{ getStatusMeta(item.status).label }}
+              </span>
+            </td>
+
+            <!-- Thao tác -->
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_KHUNG_GIO_PICKUP.UPDATE]"
+                  variant="ghost"
+                  iconOnly="edit"
+                  nz-tooltip
+                  nzTooltipTitle="Chỉnh sửa khung giờ"
+                  (click)="openEditModal(item)"
+                ></app-button>
+
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_KHUNG_GIO_PICKUP.DELETE]"
+                  variant="ghost"
+                  iconOnly="delete"
+                  nz-tooltip
+                  nzTooltipTitle="Xóa khung giờ"
+                  (click)="onDeleteSlot(item)"
+                ></app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 6. Modal Tạo / Sửa Khung Giờ ───────────────────────────────── -->
+  <app-modal
+    [visible]="isModalVisible()"
+    (visibleChange)="isModalVisible.set($event)"
+    [title]="modalMode() === 'create' ? 'Thêm mới khung giờ Pickup' : 'Chỉnh sửa khung giờ Pickup'"
+    size="md"
+    [maskClosable]="false"
+    [footer]="slotModalFooter"
+    (cancelEmit)="closeModal()"
+  >
+    <form [formGroup]="slotForm" enterAsTabContainer class="slot-form" (ngSubmit)="submitSlotForm()">
+      <div nz-row [nzGutter]="[16, 16]">
+        <!-- Mã khung giờ -->
+        <div nz-col [nzSpan]="24">
+          <label class="form-label required" for="slot-code">Mã khung giờ</label>
+          <nz-input-wrapper>
+            <input
+              id="slot-code"
+              nz-input
+              formControlName="slotCode"
+              placeholder="VD: SLOT-0800-0830"
+            />
+          </nz-input-wrapper>
+          @if (slotForm.get('slotCode')?.touched && slotForm.get('slotCode')?.hasError('required')) {
+            <span class="form-error">Vui lòng nhập mã khung giờ.</span>
+          }
+        </div>
+
+        <!-- Giờ bắt đầu -->
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required">Giờ bắt đầu</label>
+          <nz-time-picker
+            formControlName="startTime"
+            nzFormat="HH:mm"
+            [nzMinuteStep]="15"
+            nzPlaceHolder="Giờ bắt đầu"
+            (ngModelChange)="onSlotTimesChanged()"
+            style="width: 100%"
+          ></nz-time-picker>
+          @if (slotForm.get('startTime')?.touched && slotForm.get('startTime')?.hasError('required')) {
+            <span class="form-error">Chọn giờ bắt đầu.</span>
+          }
+        </div>
+
+        <!-- Giờ kết thúc -->
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required">Giờ kết thúc</label>
+          <nz-time-picker
+            formControlName="endTime"
+            nzFormat="HH:mm"
+            [nzMinuteStep]="15"
+            nzPlaceHolder="Giờ kết thúc"
+            (ngModelChange)="onSlotTimesChanged()"
+            style="width: 100%"
+          ></nz-time-picker>
+          @if (slotForm.get('endTime')?.touched && slotForm.get('endTime')?.hasError('required')) {
+            <span class="form-error">Chọn giờ kết thúc.</span>
+          }
+        </div>
+
+        <!-- Sức chứa tối đa -->
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required" for="slot-max-orders">Số đơn tối đa / khung giờ</label>
+          <nz-input-number
+            id="slot-max-orders"
+            formControlName="maxOrders"
+            [nzMin]="1"
+            [nzMax]="500"
+            [nzStep]="1"
+            style="width: 100%"
+          ></nz-input-number>
+          @if (slotForm.get('maxOrders')?.touched && slotForm.get('maxOrders')?.hasError('min')) {
+            <span class="form-error">Số đơn tối đa phải >= 1.</span>
+          }
+        </div>
+
+        <!-- Trạng thái -->
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required">Trạng thái</label>
+          <nz-select formControlName="status" style="width: 100%">
+            <nz-option nzValue="ACTIVE" nzLabel="Đang hoạt động"></nz-option>
+            <nz-option nzValue="INACTIVE" nzLabel="Tạm ngừng"></nz-option>
+          </nz-select>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #slotModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeModal()">Hủy bỏ</app-button>
+        <app-button
+          variant="primary"
+          [leftIcon]="modalMode() === 'create' ? 'plus' : 'check'"
+          [loading]="isSaving()"
+          (click)="submitSlotForm()"
+        >
+          {{ modalMode() === 'create' ? 'Tạo khung giờ' : 'Lưu cập nhật' }}
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 7. Modal Tự Động Sinh Hàng Loạt ───────────────────────────── -->
+  <app-modal
+    [visible]="isGenerateModalVisible()"
+    (visibleChange)="isGenerateModalVisible.set($event)"
+    title="Tự động sinh danh sách khung giờ Pickup liên tiếp"
+    size="md"
+    [maskClosable]="false"
+    [footer]="generateModalFooter"
+    (cancelEmit)="closeGenerateModal()"
+  >
+    <form [formGroup]="generateForm" enterAsTabContainer class="generate-form" (ngSubmit)="submitGenerateSlots()">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="24">
+          <nz-alert
+            nzType="info"
+            nzShowIcon
+            [nzMessage]="'Dự kiến tạo: ~' + generatePreviewCount + ' khung giờ liên tiếp'"
+            [nzDescription]="'Hệ thống sẽ tự động sinh các khung giờ từ giờ bắt đầu đến giờ kết thúc theo bước nhảy đã chọn. Các khung giờ đã tồn tại sẽ được tự động bỏ qua.'"
+          ></nz-alert>
+        </div>
+
+        <!-- Giờ bắt đầu ca -->
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required">Giờ bắt đầu ca ngày</label>
+          <nz-time-picker
+            formControlName="startTime"
+            nzFormat="HH:mm"
+            [nzMinuteStep]="15"
+            nzPlaceHolder="VD: 07:00"
+            style="width: 100%"
+          ></nz-time-picker>
+        </div>
+
+        <!-- Giờ kết thúc ca -->
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required">Giờ kết thúc ca ngày</label>
+          <nz-time-picker
+            formControlName="endTime"
+            nzFormat="HH:mm"
+            [nzMinuteStep]="15"
+            nzPlaceHolder="VD: 22:00"
+            style="width: 100%"
+          ></nz-time-picker>
+        </div>
+
+        <!-- Bước nhảy thời gian -->
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required">Bước nhảy mỗi khung giờ (phút)</label>
+          <nz-select formControlName="stepMinutes" style="width: 100%">
+            <nz-option [nzValue]="15" nzLabel="15 phút / khung"></nz-option>
+            <nz-option [nzValue]="30" nzLabel="30 phút / khung (Khuyên dùng)"></nz-option>
+            <nz-option [nzValue]="45" nzLabel="45 phút / khung"></nz-option>
+            <nz-option [nzValue]="60" nzLabel="60 phút / 1 giờ"></nz-option>
+            <nz-option [nzValue]="120" nzLabel="120 phút / 2 giờ"></nz-option>
+          </nz-select>
+        </div>
+
+        <!-- Sức chứa mỗi khung -->
+        <div nz-col [nzSpan]="12">
+          <label class="form-label required">Sức chứa tối đa / khung</label>
+          <nz-input-number
+            formControlName="maxOrders"
+            [nzMin]="1"
+            [nzMax]="500"
+            [nzStep]="1"
+            style="width: 100%"
+          ></nz-input-number>
+        </div>
+      </div>
+    </form>
+
+    <ng-template #generateModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isGenerating()" (click)="closeGenerateModal()">Hủy bỏ</app-button>
+        <app-button
+          variant="primary"
+          leftIcon="thunderbolt"
+          [loading]="isGenerating()"
+          [disabled]="generatePreviewCount <= 0"
+          (click)="submitGenerateSlots()"
+        >
+          Tiến hành sinh tự động
+        </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+</div>

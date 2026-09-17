@@ -1,0 +1,228 @@
+.branch-hours-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+// ── 1. Page Header ───────────────────────────────────────────────
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+
+  &__left {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--text-2xl, 24px);
+    font-weight: var(--fw-bold, 700);
+    color: var(--text-primary);
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+}
+
+// ── 2. Branch Info Card ──────────────────────────────────────────
+.branch-info-card {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  .branch-info-card__content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+
+  .branch-select-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+
+    .form-label {
+      font-size: var(--text-xs, 12px);
+      font-weight: var(--fw-semibold, 600);
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  .branch-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--surface-sunken, #f8fafc);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color, #e2e8f0);
+
+    .meta-item {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-sm, 14px);
+
+      .meta-label {
+        color: var(--text-muted);
+      }
+
+      .meta-value {
+        font-weight: var(--fw-medium, 500);
+        color: var(--text-primary);
+      }
+    }
+  }
+}
+
+// ── 3. Presets & Actions Toolbar ─────────────────────────────────
+.presets-card {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  .presets-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .presets-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: var(--fw-semibold, 600);
+    color: var(--text-primary);
+    font-size: var(--text-sm, 14px);
+
+    .presets-icon {
+      color: var(--brand);
+      font-size: 16px;
+    }
+  }
+
+  .presets-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+}
+
+// ── 4. Weekly Schedule Table ─────────────────────────────────────
+.page__list {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  .ant-card-body {
+    padding: 0;
+  }
+}
+
+.day-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  .day-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: var(--text-xs, 12px);
+    font-weight: var(--fw-bold, 700);
+    background-color: var(--brand-light, #e0f2fe);
+    color: var(--brand, #0284c7);
+
+    &--weekend {
+      background-color: #fee2e2;
+      color: #dc2626;
+    }
+  }
+
+  .day-name {
+    font-weight: var(--fw-semibold, 600);
+    color: var(--text-primary);
+    font-size: var(--text-sm, 14px);
+  }
+}
+
+.status-switch-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closed-label {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.duration-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 10px;
+  background-color: var(--surface-sunken, #f1f5f9);
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--text-xs, 12px);
+  font-weight: var(--fw-medium, 500);
+  color: var(--text-secondary);
+}
+
+tr.is-closed-row {
+  background-color: var(--surface-sunken, #fafafa);
+
+  td {
+    opacity: 0.85;
+  }
+}
+
+tr.is-invalid-row {
+  background-color: #fff1f2;
+}
+
+// ── 5. Hours Footer ──────────────────────────────────────────────
+.hours-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  background-color: var(--surface-card);
+
+  &__info {
+    .dirty-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      color: #d97706;
+      font-size: var(--text-xs, 12px);
+      font-weight: var(--fw-medium);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+}

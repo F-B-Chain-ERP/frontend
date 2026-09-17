@@ -155,6 +155,22 @@ export const routes: Routes = [
           authorities: [ROLE.QUAN_LY_PHAM_VI.VIEW],
         },
       },
+      {
+        path: 'system/branch-hours',
+        loadChildren: () => import('./features/system/branch-hours/branch-hours.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.QUAN_LY_GIO_HOAT_DONG.VIEW],
+        },
+      },
+      {
+        path: 'system/pickup-slots',
+        loadChildren: () => import('./features/system/pickup-slots/pickup-slots.routes'),
+        canActivate: [UserRouteAccessService],
+        data: {
+          authorities: [ROLE.QUAN_LY_KHUNG_GIO_PICKUP.VIEW],
+        },
+      },
       // ── POS (quản đơn + điều giao) ────────────────
       {
         path: 'pos/orders/list',
@@ -546,6 +562,16 @@ export const routes: Routes = [
   {
     path: 'error-pages',
     redirectTo: 'admin/error-pages',
+    pathMatch: 'full',
+  },
+  {
+    path: 'branch-hours',
+    redirectTo: 'admin/system/branch-hours/list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'pickup-slots',
+    redirectTo: 'admin/system/pickup-slots/list',
     pathMatch: 'full',
   },
 

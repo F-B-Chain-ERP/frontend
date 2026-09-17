@@ -1,0 +1,277 @@
+<div class="branch-hours-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Cấu hình giờ hoạt động chi nhánh</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_KHUNG_GIO_PICKUP.VIEW]"
+        variant="secondary"
+        leftIcon="field-time"
+        (click)="navigateToPickupSlots()"
+      >
+        Khung giờ Pickup
+      </app-button>
+
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_GIO_HOAT_DONG.UPDATE]"
+        variant="primary"
+        leftIcon="save"
+        [loading]="isSaving()"
+        [disabled]="loading() || isSaving() || !isDirty()"
+        (click)="saveHours()"
+      >
+        Lưu cấu hình
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Branch Selector & Info Card ────────────────────────────── -->
+  <nz-card class="branch-info-card" [nzBordered]="false">
+    <div class="branch-info-card__content">
+      <div class="branch-select-group">
+        <label class="form-label" for="branch-select">Chi nhánh đang cấu hình</label>
+        <nz-select
+          id="branch-select"
+          [ngModel]="selectedBranchId()"
+          (ngModelChange)="selectBranch($event)"
+          [nzLoading]="branches().length === 0"
+          nzPlaceHolder="Chọn chi nhánh cần cấu hình"
+          nzShowSearch
+          style="width: 320px"
+        >
+          @for (b of branches(); track b.id) {
+            <nz-option [nzLabel]="b.code + ' - ' + b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      @if (selectedBranchInfo(); as b) {
+        <div class="branch-meta">
+          <div class="meta-item">
+            <span class="meta-label">Mã chi nhánh:</span>
+            <span class="meta-value font-mono">{{ b.code }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Địa chỉ:</span>
+            <span class="meta-value">{{ b.address || 'Chưa cập nhật' }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Múi giờ vận hành:</span>
+            <span class="meta-value">Asia/Ho_Chi_Minh (GMT+7)</span>
+          </div>
+        </div>
+      }
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Presets & Quick Action Toolbar ─────────────────────────── -->
+  <nz-card class="presets-card" [nzBordered]="false">
+    <div class="presets-row">
+      <div class="presets-title">
+        <nz-icon nzType="thunderbolt" class="presets-icon"/>
+        <span>Thao tác nhanh:</span>
+      </div>
+      <div class="presets-actions">
+        <app-button
+          variant="secondary"
+          leftIcon="copy"
+          [disabled]="loading() || scheduleRows().length === 0"
+          (click)="copyMondayToAll()"
+          nz-tooltip
+          nzTooltipTitle="Sao chép giờ mở & đóng của Thứ Hai cho cả tuần"
+        >
+          Sao chép Thứ 2 cho cả tuần
+        </app-button>
+
+        <app-button
+          variant="secondary"
+          leftIcon="check-circle"
+          [disabled]="loading() || scheduleRows().length === 0"
+          (click)="setDefaultHours()"
+          nz-tooltip
+          nzTooltipTitle="Đặt toàn bộ 7 ngày mở bán từ 07:00 đến 22:00"
+        >
+          Mở chuẩn (07:00 - 22:00)
+        </app-button>
+
+        <app-button
+          variant="secondary"
+          leftIcon="stop"
+          [disabled]="loading() || scheduleRows().length === 0"
+          (click)="setWeekendClosed()"
+          nz-tooltip
+          nzTooltipTitle="Đánh dấu đóng cửa nghỉ bán Thứ 7 & Chủ Nhật"
+        >
+          Nghỉ bán cuối tuần
+        </app-button>
+
+        @if (isDirty()) {
+          <app-button
+            variant="ghost"
+            leftIcon="reload"
+            [disabled]="loading() || isSaving()"
+            (click)="resetToLoaded()"
+            nz-tooltip
+            nzTooltipTitle="Khôi phục lại giờ hoạt động ban đầu"
+          >
+            Khôi phục
+          </app-button>
+        }
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Weekly Schedule Table Card ─────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #hoursTable
+      [nzData]="scheduleRows()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '960px' }"
+    >
+      <thead>
+      <tr>
+        <th scope="col" nzWidth="160px">Thứ trong tuần</th>
+        <th scope="col" nzWidth="150px" nzAlign="center">Trạng thái ngày</th>
+        <th scope="col" nzWidth="200px">Giờ mở cửa</th>
+        <th scope="col" nzWidth="200px">Giờ đóng cửa</th>
+        <th scope="col" nzWidth="150px" nzAlign="center">Thời lượng mở bán</th>
+        <th scope="col" nzWidth="100px" nzAlign="center">Ca qua đêm</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (row of scheduleRows(); track row.dayOfWeek) {
+          <tr [class.is-closed-row]="row.isClosed" [class.is-invalid-row]="!isRowValid(row)">
+            <!-- 1. Thứ -->
+            <td>
+              <div class="day-cell">
+                <span
+                  class="day-badge"
+                  [class.day-badge--weekend]="row.isWeekend"
+                >
+                  {{ row.shortLabel }}
+                </span>
+                <span class="day-name" [class.text-muted]="row.isClosed">
+                  {{ row.dayName }}
+                </span>
+              </div>
+            </td>
+
+            <!-- 2. Trạng thái ngày (Switch) -->
+            <td nzAlign="center">
+              <div class="status-switch-cell">
+                <nz-switch
+                  [ngModel]="!row.isClosed"
+                  (ngModelChange)="onToggleClosed(row, !$event)"
+                  nzCheckedChildren="Mở cửa"
+                  nzUnCheckedChildren="Nghỉ bán"
+                ></nz-switch>
+              </div>
+            </td>
+
+            <!-- 3. Giờ mở cửa -->
+            <td>
+              @if (!row.isClosed) {
+                <div class="time-picker-wrapper">
+                  <nz-time-picker
+                    [(ngModel)]="row.openDate"
+                    (ngModelChange)="onTimeChange()"
+                    nzFormat="HH:mm"
+                    [nzMinuteStep]="15"
+                    nzPlaceHolder="Chọn giờ mở"
+                    style="width: 100%"
+                  ></nz-time-picker>
+                </div>
+              } @else {
+                <span class="closed-label">—</span>
+              }
+            </td>
+
+            <!-- 4. Giờ đóng cửa -->
+            <td>
+              @if (!row.isClosed) {
+                <div class="time-picker-wrapper">
+                  <nz-time-picker
+                    [(ngModel)]="row.closeDate"
+                    (ngModelChange)="onTimeChange()"
+                    nzFormat="HH:mm"
+                    [nzMinuteStep]="15"
+                    nzPlaceHolder="Chọn giờ đóng"
+                    style="width: 100%"
+                  ></nz-time-picker>
+                </div>
+              } @else {
+                <span class="closed-label">—</span>
+              }
+            </td>
+
+            <!-- 5. Thời lượng bán trong ngày -->
+            <td nzAlign="center">
+              @if (!row.isClosed) {
+                <span class="duration-badge">
+                  <nz-icon nzType="clock-circle"/>
+                  <span>{{ getDurationText(row) }}</span>
+                </span>
+              } @else {
+                <span class="tbl-badge tbl-badge--neutral">Đóng cửa cả ngày</span>
+              }
+            </td>
+
+            <!-- 6. Ca qua đêm (+1 ngày) -->
+            <td nzAlign="center">
+              @if (isOvernight(row)) {
+                <span
+                  class="tbl-badge tbl-badge--info"
+                  nz-tooltip
+                  nzTooltipTitle="Giờ đóng cửa sang sáng ngày hôm sau"
+                >
+                  <nz-icon nzType="moon"/> Qua đêm
+                </span>
+              } @else if (!row.isClosed) {
+                <span class="text-muted text-sm">Trong ngày</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="text-center py-6 text-muted">
+              Không có dữ liệu lịch hoạt động. Vui lòng chọn chi nhánh.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Footer action bar -->
+    <div class="hours-footer">
+      <div class="hours-footer__info">
+        @if (isDirty()) {
+          <span class="dirty-indicator">
+            <nz-icon nzType="info-circle"/> Có thay đổi chưa lưu
+          </span>
+        }
+      </div>
+
+      <div class="hours-footer__actions">
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_GIO_HOAT_DONG.UPDATE]"
+          variant="primary"
+          leftIcon="save"
+          [loading]="isSaving()"
+          [disabled]="loading() || isSaving() || !isDirty()"
+          (click)="saveHours()"
+        >
+          Lưu cấu hình giờ hoạt động
+        </app-button>
+      </div>
+    </div>
+  </nz-card>
+</div>
