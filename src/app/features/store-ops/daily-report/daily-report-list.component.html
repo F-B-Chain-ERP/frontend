@@ -10,6 +10,11 @@
       </p>
     </div>
     <div class="page__header__right">
+      <app-report-export-button
+        endpoint="api/v1/reports/store/daily/export"
+        [payload]="exportPayload"
+        label="Xuất báo cáo"
+      ></app-report-export-button>
       <app-button
         *erpUTTHasSomeAuthority="[ROLE.BAO_CAO_NGAY.CREATE]"
         variant="primary"
