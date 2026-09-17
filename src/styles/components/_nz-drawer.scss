@@ -1,0 +1,78 @@
+// ============================================================
+// COMPONENT: NzDrawer
+// Đồng bộ drawer theo design token và hỗ trợ Dark Mode
+// ============================================================
+
+.ant-drawer {
+  &-content {
+    background: var(--surface-card);
+    color: var(--text-primary);
+  }
+
+  &-header {
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: var(--space-4) var(--space-6);
+
+    .ant-drawer-title {
+      color: var(--text-primary);
+      font-weight: var(--fw-semibold, 600);
+      font-size: var(--text-md, 16px);
+    }
+
+    .ant-drawer-close {
+      color: var(--text-secondary);
+
+      &:hover {
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  &-body {
+    background: var(--surface-card);
+    color: var(--text-primary);
+    padding: var(--space-6);
+  }
+
+  &-footer {
+    background: var(--surface-card);
+    border-top: 1px solid var(--border-subtle);
+    padding: var(--space-4) var(--space-6);
+  }
+}
+
+// ── Dark theme ────────────────────────────────────────────
+[data-theme="dark"] .ant-drawer {
+  &-content {
+    background: var(--surface-card) !important;
+    color: var(--text-primary) !important;
+  }
+
+  &-header {
+    background: var(--surface-card) !important;
+    border-bottom: 1px solid var(--border-subtle) !important;
+
+    .ant-drawer-title {
+      color: var(--text-primary) !important;
+    }
+
+    .ant-drawer-close {
+      color: var(--text-secondary) !important;
+
+      &:hover {
+        color: var(--text-primary) !important;
+      }
+    }
+  }
+
+  &-body {
+    background: var(--surface-card) !important;
+    color: var(--text-primary) !important;
+  }
+
+  &-footer {
+    background: var(--surface-card) !important;
+    border-top: 1px solid var(--border-subtle) !important;
+  }
+}

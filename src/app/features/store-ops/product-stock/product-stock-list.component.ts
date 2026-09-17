@@ -23,7 +23,7 @@ import {AppModalComponent} from '../../../shared/app-modal/app-modal.component';
 import {HasSomeAuthorityDirective} from '../../../core/auth/has-some-authority.directive';
 import {ROLE} from '../../../core/config/functions.constants';
 import {BranchService} from '../../../core/auth/branch.service';
-import {StoreShiftService} from '../shift/shift.service';
+import {StoreShiftService, ShiftServiceError} from '../shift/shift.service';
 import {PosDailyStock} from '../shift/shift.model';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
 
@@ -162,8 +162,17 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
         );
         this.loadData();
       },
-      error: err => {
+      error: (err: ShiftServiceError) => {
         this.isSavingRestock.set(false);
+        if (err?.fieldErrors) {
+          Object.entries(err.fieldErrors).forEach(([field, msg]) => {
+            const control = this.restockForm.get(field);
+            if (control) {
+              control.setErrors({ serverError: msg });
+              control.markAsTouched();
+            }
+          });
+        }
         this.toastService.error('Lỗi chốt tồn', err.message);
       },
     });

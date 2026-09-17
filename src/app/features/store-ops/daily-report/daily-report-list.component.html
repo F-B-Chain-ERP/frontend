@@ -102,33 +102,36 @@
         @for (r of reports(); track r.id; let i = $index) {
           <tr>
             <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
-            <td nzAlign="center"><span class="font-semibold">{{ r.businessDate }}</span></td>
             <td nzAlign="center">
-              <span class="tag-compact">{{ r.totalOrders }} đơn</span>
-            </td>
-            <td nzAlign="right">
-              <span class="font-mono">{{ r.grossRevenue | number: '1.0-0' }} ₫</span>
-            </td>
-            <td nzAlign="right">
-              <span class="font-mono text-danger">-{{ r.discountAmount | number: '1.0-0' }} ₫</span>
-            </td>
-            <td nzAlign="right">
-              <span class="font-mono font-bold text-success">{{ r.netRevenue | number: '1.0-0' }} ₫</span>
-            </td>
-            <td nzAlign="right">
-              <span class="font-mono font-semibold">{{ r.cashAmount | number: '1.0-0' }} ₫</span>
-            </td>
-            <td nzAlign="right">
-              <span class="font-mono text-secondary">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
-            </td>
-            <td nzAlign="right">
-              <span class="font-mono">{{ r.openingCash | number: '1.0-0' }} ₫</span>
-            </td>
-            <td nzAlign="right">
-              <span class="font-mono font-semibold">{{ r.closingCash | number: '1.0-0' }} ₫</span>
+              <span class="font-semibold" nz-tooltip [nzTooltipTitle]="'Ngày kinh doanh: ' + r.businessDate">{{ r.businessDate }}</span>
             </td>
             <td nzAlign="center">
-              <span [class]="getDailyReportStatusMeta(r.status).badgeClass">
+              <span class="tag-compact" nz-tooltip [nzTooltipTitle]="'Tổng số ' + r.totalOrders + ' đơn hàng đã hoàn tất'">{{ r.totalOrders }} đơn</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono" nz-tooltip [nzTooltipTitle]="'Doanh thu gộp: ' + (r.grossRevenue | number: '1.0-0') + ' ₫'">{{ r.grossRevenue | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono text-danger" nz-tooltip [nzTooltipTitle]="'Tổng tiền giảm giá: ' + (r.discountAmount | number: '1.0-0') + ' ₫'">-{{ r.discountAmount | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-bold text-success" nz-tooltip [nzTooltipTitle]="'Doanh thu thuần thực thu: ' + (r.netRevenue | number: '1.0-0') + ' ₫'">{{ r.netRevenue | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-semibold" nz-tooltip [nzTooltipTitle]="'Doanh số tiền mặt qua POS: ' + (r.cashAmount | number: '1.0-0') + ' ₫'">{{ r.cashAmount | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono text-secondary" nz-tooltip [nzTooltipTitle]="'Doanh số chuyển khoản: ' + (r.transferAmount | number: '1.0-0') + ' ₫'">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono" nz-tooltip [nzTooltipTitle]="'Tiền quỹ mở đầu ngày: ' + (r.openingCash | number: '1.0-0') + ' ₫'">{{ r.openingCash | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-semibold" nz-tooltip [nzTooltipTitle]="'Tiền quỹ chốt cuối ngày: ' + (r.closingCash | number: '1.0-0') + ' ₫'">{{ r.closingCash | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="center">
+              <span [class]="getDailyReportStatusMeta(r.status).badgeClass"
+                    nz-tooltip [nzTooltipTitle]="'Trạng thái báo cáo: ' + getDailyReportStatusMeta(r.status).label">
                 {{ getDailyReportStatusMeta(r.status).label }}
               </span>
             </td>
@@ -138,7 +141,7 @@
                   variant="ghost"
                   iconOnly="eye"
                   nz-tooltip
-                  nzTooltipTitle="Xem chi tiết &amp; Khóa sổ"
+                  nzTooltipTitle="Xem chi tiết báo cáo &amp; Khóa sổ ngày"
                   (click)="onViewReport(r)"
                 ></app-button>
               </div>
@@ -168,88 +171,258 @@
     title="Tổng Hợp Báo Cáo Ngày Kinh Doanh"
     size="md"
     [maskClosable]="false"
+    [footer]="generateModalFooter"
     (cancelEmit)="closeGenerateModal()"
   >
     <form [formGroup]="generateForm" (ngSubmit)="submitGenerate()">
       <div class="form-group">
         <label class="form-label" for="gen-branch">Chi nhánh tổng hợp *</label>
-        <nz-select id="gen-branch" formControlName="branchId" style="width: 100%">
+        <nz-select
+          id="gen-branch"
+          formControlName="branchId"
+          [nzStatus]="generateForm.get('branchId')?.invalid && generateForm.get('branchId')?.touched ? 'error' : ''"
+          style="width: 100%"
+        >
           @for (b of branchService.branches(); track b.id) {
             <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
           }
         </nz-select>
+        @if (generateForm.get('branchId')?.invalid && generateForm.get('branchId')?.touched) {
+          <div class="form-error">
+            @if (generateForm.get('branchId')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Vui lòng chọn chi nhánh</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
         <label class="form-label" for="gen-date">Ngày kinh doanh (YYYY-MM-DD) *</label>
         <nz-input-wrapper>
-          <input id="gen-date" type="date" nz-input formControlName="businessDate"/>
+          <input
+            id="gen-date"
+            type="date"
+            nz-input
+            formControlName="businessDate"
+            [nzStatus]="generateForm.get('businessDate')?.invalid && generateForm.get('businessDate')?.touched ? 'error' : ''"
+          />
         </nz-input-wrapper>
+        @if (generateForm.get('businessDate')?.invalid && generateForm.get('businessDate')?.touched) {
+          <div class="form-error">
+            @if (generateForm.get('businessDate')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Ngày kinh doanh không được để trống</span>
+            }
+          </div>
+        }
       </div>
       <p class="form-help-text" style="margin-top: 8px; color: var(--text-secondary); font-size: 13px;">
         <nz-icon nzType="info-circle" style="color: var(--brand);"></nz-icon>
         Hệ thống sẽ tự động tổng hợp toàn bộ các đơn hàng POS và các ca làm việc đã kết ca trong ngày được chọn.
       </p>
     </form>
-    <div slot="footer" class="modal-footer-actions">
-      <app-button variant="secondary" (click)="closeGenerateModal()">Hủy</app-button>
-      <app-button variant="primary" leftIcon="sync" [loading]="isGenerating()" (click)="submitGenerate()">
-        Bắt đầu Tổng hợp
-      </app-button>
-    </div>
+    <ng-template #generateModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="secondary" (click)="closeGenerateModal()">Hủy</app-button>
+        <app-button variant="primary" leftIcon="sync" [loading]="isGenerating()" (click)="submitGenerate()">
+          Bắt đầu Tổng hợp
+        </app-button>
+      </div>
+    </ng-template>
   </app-modal>
 
-  <!-- ── 5. Drawer Chi tiết Báo cáo Ngày & Khóa sổ ──────────────────── -->
-  <nz-drawer
-    [nzVisible]="isDrawerVisible()"
-    [nzWidth]="680"
-    nzTitle="Bảng Tổng Hợp Dòng Tiền &amp; Khóa Sổ Ngày"
-    (nzOnClose)="onCloseDrawer()"
+  <!-- ── 5. Modal Pop-up Chi tiết Báo cáo Ngày & Khóa sổ ─────────────────── -->
+  <app-modal
+    [visible]="isDrawerVisible()"
+    (visibleChange)="isDrawerVisible.set($event)"
+    title="Bảng Tổng Hợp Dòng Tiền &amp; Khóa Sổ Ngày"
+    size="md"
+    [maskClosable]="false"
+    [footer]="null"
+    (cancelEmit)="onCloseDrawer()"
   >
-    <ng-container *nzDrawerContent>
-      @if (selectedReport(); as r) {
-        <div class="report-drawer-body">
-          <div class="summary-card">
-            <div class="summary-card__header">
-              <span class="header-tag">{{ r.businessDate }}</span>
+    @if (isReportLoading()) {
+      <div class="spin-center"><nz-spin nzSimple></nz-spin></div>
+    } @else if (selectedReport(); as r) {
+      <div class="recon-modal-body">
+        <!-- 5.1 Dải thẻ thông tin báo cáo ngày -->
+        <div class="shift-meta-grid">
+          <div class="meta-item">
+            <span class="meta-item__label">
+              <nz-icon nzType="file-text" class="meta-item__icon"></nz-icon>
+              Mã báo cáo
+            </span>
+            <span class="meta-item__val font-mono" [nz-tooltip]="r.id">
+              {{ r.id.substring(0, 8) }}...
+            </span>
+          </div>
+
+          <div class="meta-item">
+            <span class="meta-item__label">
+              <nz-icon nzType="calendar" class="meta-item__icon"></nz-icon>
+              Ngày kinh doanh
+            </span>
+            <span class="meta-item__val font-medium">{{ r.businessDate }}</span>
+          </div>
+
+          <div class="meta-item">
+            <span class="meta-item__label">
+              <nz-icon nzType="shop" class="meta-item__icon"></nz-icon>
+              Chi nhánh
+            </span>
+            <span class="meta-item__val font-medium" [nz-tooltip]="getBranchName(r.branchId)">
+              {{ getBranchName(r.branchId) }}
+            </span>
+          </div>
+
+          <div class="meta-item">
+            <span class="meta-item__label">
+              <nz-icon nzType="audit" class="meta-item__icon"></nz-icon>
+              Trạng thái
+            </span>
+            <span class="meta-item__val">
               <span [class]="getDailyReportStatusMeta(r.status).badgeClass">
                 {{ getDailyReportStatusMeta(r.status).label }}
               </span>
-            </div>
-            <div class="summary-card__net">
-              <span class="net-label">DOANH THU THUẦN TRONG NGÀY:</span>
-              <span class="net-val font-mono font-bold">{{ r.netRevenue | number: '1.0-0' }} ₫</span>
-            </div>
+            </span>
+          </div>
+        </div>
+
+        <!-- 5.2 Thẻ tổng kết doanh thu thuần nổi bật -->
+        <div class="net-revenue-card">
+          <div class="net-revenue-card__left">
+            <span class="net-title">DOANH THU THUẦN TRONG NGÀY</span>
+            <span class="net-desc">Tổng doanh số sau chiết khấu &amp; giảm giá từ toàn bộ đơn hàng</span>
+          </div>
+          <div class="net-revenue-card__right">
+            <span class="net-val font-mono font-bold">{{ r.netRevenue | number: '1.0-0' }} ₫</span>
+            <span class="net-order-badge">
+              <nz-icon nzType="shopping-cart"></nz-icon>
+              {{ r.totalOrders }} đơn hoàn thành
+            </span>
+          </div>
+        </div>
+
+        <!-- 5.3 Cơ cấu doanh thu & Phương thức thanh toán -->
+        <div class="recon-section">
+          <div class="recon-section__header">
+            <span class="recon-section__title">
+              <nz-icon nzType="profile" class="title-icon"></nz-icon>
+              Cơ cấu doanh thu &amp; Phương thức thanh toán
+            </span>
+            <span class="recon-section__hint">Chi tiết các nguồn thu ghi nhận trong ngày</span>
           </div>
 
-          <div class="metrics-grid">
-            <div class="metric-box">
-              <span class="metric-title">Tổng đơn hàng hoàn thành</span>
-              <span class="metric-val font-semibold">{{ r.totalOrders }} đơn</span>
+          <div class="recon-flow-list">
+            <!-- Doanh thu gộp -->
+            <div class="flow-row">
+              <div class="flow-row__left">
+                <div class="flow-icon flow-icon--neutral">
+                  <nz-icon nzType="line-chart"></nz-icon>
+                </div>
+                <div class="flow-texts">
+                  <span class="flow-title">Doanh thu gộp (Gross Revenue)</span>
+                  <span class="flow-desc">Tổng giá trị đơn hàng trước khi áp dụng chiết khấu</span>
+                </div>
+              </div>
+              <div class="flow-row__right font-mono font-semibold">
+                {{ r.grossRevenue | number: '1.0-0' }} ₫
+              </div>
             </div>
-            <div class="metric-box">
-              <span class="metric-title">Doanh thu gộp (Gross)</span>
-              <span class="metric-val font-mono">{{ r.grossRevenue | number: '1.0-0' }} ₫</span>
+
+            <!-- Tiền chiết khấu -->
+            <div class="flow-row">
+              <div class="flow-row__left">
+                <div class="flow-icon flow-icon--danger">
+                  <nz-icon nzType="percentage"></nz-icon>
+                </div>
+                <div class="flow-texts">
+                  <span class="flow-title">Tổng tiền chiết khấu / Giảm giá</span>
+                  <span class="flow-desc">Các chương trình ưu đãi, khuyến mại giảm trừ trực tiếp</span>
+                </div>
+              </div>
+              <div class="flow-row__right font-mono font-semibold text-danger">
+                -{{ r.discountAmount | number: '1.0-0' }} ₫
+              </div>
             </div>
-            <div class="metric-box">
-              <span class="metric-title">Tổng tiền chiết khấu</span>
-              <span class="metric-val font-mono text-danger">-{{ r.discountAmount | number: '1.0-0' }} ₫</span>
+
+            <!-- Doanh thu Tiền mặt POS -->
+            <div class="flow-row">
+              <div class="flow-row__left">
+                <div class="flow-icon flow-icon--success">
+                  <nz-icon nzType="dollar"></nz-icon>
+                </div>
+                <div class="flow-texts">
+                  <span class="flow-title">Doanh thu Tiền mặt tại quầy (POS)</span>
+                  <span class="flow-desc">Thực thu tiền mặt từ khách hàng lưu trữ tại két bán hàng</span>
+                </div>
+              </div>
+              <div class="flow-row__right font-mono font-semibold text-success">
+                +{{ r.cashAmount | number: '1.0-0' }} ₫
+              </div>
             </div>
-            <div class="metric-box">
-              <span class="metric-title">Doanh thu Tiền mặt POS</span>
-              <span class="metric-val font-mono text-success">{{ r.cashAmount | number: '1.0-0' }} ₫</span>
-            </div>
-            <div class="metric-box">
-              <span class="metric-title">Doanh thu Chuyển khoản/QR</span>
-              <span class="metric-val font-mono text-secondary">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
-            </div>
-            <div class="metric-box">
-              <span class="metric-title">Tiền mặt nộp két cuối ngày</span>
-              <span class="metric-val font-mono font-bold text-brand">{{ r.closingCash | number: '1.0-0' }} ₫</span>
+
+            <!-- Doanh thu chuyển khoản -->
+            <div class="flow-noncash-note">
+              <nz-icon nzType="qrcode" class="note-icon"></nz-icon>
+              <div class="note-content">
+                <span class="note-title">Doanh thu Chuyển khoản / Thẻ / VietQR:</span>
+                <span class="note-val font-mono font-semibold">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
+                <span class="note-desc">(Đã chuyển vào tài khoản ngân hàng chi nhánh, không tồn quỹ tiền mặt)</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div class="drawer-footer-actions">
+        <!-- 5.4 Đối soát quỹ tiền mặt tại két cửa hàng -->
+        <div class="recon-section">
+          <div class="recon-section__header">
+            <span class="recon-section__title">
+              <nz-icon nzType="calculator" class="title-icon"></nz-icon>
+              Đối soát quỹ tiền mặt tại két cửa hàng
+            </span>
+            <span class="recon-section__hint">Quản lý quỹ tiền mặt đầu ngày &amp; cuối ngày</span>
+          </div>
+
+          <div class="recon-calc-grid">
+            <div class="calc-card calc-card--opening">
+              <div class="calc-card__top">
+                <span class="calc-card__label">Tiền quỹ mở đầu ngày</span>
+                <nz-icon nzType="wallet" class="calc-card__icon"></nz-icon>
+              </div>
+              <div class="calc-card__val font-mono">
+                {{ r.openingCash | number: '1.0-0' }} ₫
+              </div>
+              <div class="calc-card__formula">
+                (Tiền thối vốn bàn giao lúc bắt đầu ngày)
+              </div>
+            </div>
+
+            <div class="calc-card calc-card--actual">
+              <div class="calc-card__top">
+                <span class="calc-card__label">Tiền mặt nộp két chốt sổ</span>
+                <nz-icon nzType="safety-certificate" class="calc-card__icon text-brand"></nz-icon>
+              </div>
+              <div class="calc-card__val font-mono font-bold text-brand">
+                {{ r.closingCash | number: '1.0-0' }} ₫
+              </div>
+              <div class="calc-card__formula">
+                (Tổng tiền mặt thực tế kiểm đếm chốt sổ)
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5.5 Footer thanh tác vụ -->
+        <div class="modal-footer-wrapper">
+          <div class="footer-info">
+            <nz-icon nzType="safety-certificate" class="footer-info__icon"></nz-icon>
+            <span>Người nộp/tạo: <b>{{ r.submittedByName || 'Hệ thống tự động' }}</b></span>
+          </div>
+          <div class="footer-actions">
             <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
             @if (r.status !== 'RECONCILED') {
               <app-button
@@ -264,7 +437,14 @@
             }
           </div>
         </div>
-      }
-    </ng-container>
-  </nz-drawer>
+      </div>
+    } @else {
+      <div class="drawer-empty" style="text-align: center; padding: 24px; color: var(--text-secondary);">
+        Chưa có dữ liệu báo cáo cho ngày này
+      </div>
+      <div class="modal-footer-wrapper" style="justify-content: flex-end;">
+        <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
+      </div>
+    }
+  </app-modal>
 </div>

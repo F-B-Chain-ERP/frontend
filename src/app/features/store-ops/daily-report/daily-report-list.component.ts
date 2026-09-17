@@ -8,8 +8,6 @@ import {NzInputModule} from 'ng-zorro-antd/input';
 import {NzSelectModule} from 'ng-zorro-antd/select';
 import {NzDatePickerModule} from 'ng-zorro-antd/date-picker';
 import {NzGridModule} from 'ng-zorro-antd/grid';
-import {NzDividerModule} from 'ng-zorro-antd/divider';
-import {NzDrawerModule} from 'ng-zorro-antd/drawer';
 import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
 import {NzIconModule} from 'ng-zorro-antd/icon';
 import {NzSpinModule} from 'ng-zorro-antd/spin';
@@ -23,7 +21,7 @@ import {AppModalComponent} from '../../../shared/app-modal/app-modal.component';
 import {HasSomeAuthorityDirective} from '../../../core/auth/has-some-authority.directive';
 import {ROLE} from '../../../core/config/functions.constants';
 import {BranchService} from '../../../core/auth/branch.service';
-import {StoreShiftService} from '../shift/shift.service';
+import {StoreShiftService, ShiftServiceError} from '../shift/shift.service';
 import {StoreDailyReport, getDailyReportStatusMeta} from '../shift/shift.model';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
 
@@ -40,8 +38,6 @@ import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '
     NzSelectModule,
     NzDatePickerModule,
     NzGridModule,
-    NzDividerModule,
-    NzDrawerModule,
     NzTooltipModule,
     NzIconModule,
     NzSpinModule,
@@ -79,9 +75,10 @@ export class StoreDailyReportListComponent extends BaseComponent implements OnIn
   readonly isGenerating = signal<boolean>(false);
   generateForm!: FormGroup;
 
-  // Drawer Chi tiết báo cáo
+  // Modal Pop-up Chi tiết báo cáo ngày
   readonly isDrawerVisible = signal<boolean>(false);
   readonly selectedReport = signal<StoreDailyReport | null>(null);
+  readonly isReportLoading = signal<boolean>(false);
   readonly isApproving = signal<boolean>(false);
 
   ngOnInit(): void {
@@ -178,22 +175,50 @@ export class StoreDailyReportListComponent extends BaseComponent implements OnIn
         );
         this.loadData();
       },
-      error: err => {
+      error: (err: ShiftServiceError) => {
         this.isGenerating.set(false);
+        if (err?.fieldErrors) {
+          Object.entries(err.fieldErrors).forEach(([field, msg]) => {
+            const control = this.generateForm.get(field);
+            if (control) {
+              control.setErrors({ serverError: msg });
+              control.markAsTouched();
+            }
+          });
+        }
         this.toastService.error('Lỗi tổng hợp báo cáo ngày', err.message);
       },
     });
   }
 
-  // ── Drawer Xem chi tiết & Phê duyệt khóa sổ ───────────────────────
+  // ── Modal Xem chi tiết & Phê duyệt khóa sổ ───────────────────────
   onViewReport(r: StoreDailyReport): void {
     this.selectedReport.set(r);
     this.isDrawerVisible.set(true);
+    this.isReportLoading.set(true);
+
+    this.shiftService.getDailyReportById(r.id).subscribe({
+      next: report => {
+        if (report) {
+          this.selectedReport.set(report);
+        }
+        this.isReportLoading.set(false);
+      },
+      error: () => {
+        this.isReportLoading.set(false);
+      },
+    });
   }
 
   onCloseDrawer(): void {
     this.isDrawerVisible.set(false);
     this.selectedReport.set(null);
+  }
+
+  getBranchName(branchId?: string): string {
+    if (!branchId) return 'Tất cả chi nhánh';
+    const b = this.branchService.branches().find(x => x.id === branchId);
+    return b ? b.name : branchId;
   }
 
   onApproveDailyReport(): void {

@@ -140,25 +140,43 @@
         @for (a of assignments(); track a.id; let i = $index) {
           <tr>
             <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
-            <td><span class="po-code">{{ a.shiftCode }}</span></td>
             <td>
-              <span class="font-semibold">{{ a.shiftName }}</span>
-              <div class="text-xs text-secondary">{{ a.startTime }} - {{ a.endTime }}</div>
+              <span class="po-code" nz-tooltip [nzTooltipTitle]="'Mã ca: ' + a.shiftCode">{{ a.shiftCode }}</span>
             </td>
             <td>
-              <span class="font-medium">{{ a.employeeName }}</span>
-              <div class="text-xs text-muted">{{ a.employeeEmail }}</div>
+              <div class="font-semibold" nz-tooltip [nzTooltipTitle]="'Khung ca: ' + a.shiftName">{{ a.shiftName }}</div>
+              <div class="text-xs text-secondary" nz-tooltip [nzTooltipTitle]="'Thời gian ca: ' + a.startTime + ' - ' + a.endTime">
+                {{ a.startTime }} - {{ a.endTime }}
+              </div>
             </td>
-            <td nzAlign="center">{{ a.workDate }}</td>
-            <td nzAlign="center">
-              <span class="font-mono text-xs">{{ a.checkInAt ? (a.checkInAt | date: 'HH:mm:ss') : '—' }}</span>
+            <td>
+              <div class="font-medium" nz-tooltip [nzTooltipTitle]="'Nhân viên: ' + a.employeeName">{{ a.employeeName }}</div>
+              <div class="text-xs text-muted" nz-tooltip [nzTooltipTitle]="'Email: ' + a.employeeEmail">{{ a.employeeEmail }}</div>
             </td>
             <td nzAlign="center">
-              <span class="font-mono text-xs">{{ a.checkOutAt ? (a.checkOutAt | date: 'HH:mm:ss') : '—' }}</span>
+              <span nz-tooltip [nzTooltipTitle]="'Ngày làm việc: ' + a.workDate">{{ a.workDate }}</span>
             </td>
-            <td><span class="text-xs text-secondary">{{ a.note || '—' }}</span></td>
             <td nzAlign="center">
-              <span [class]="getShiftAssignmentStatusMeta(a.status).badgeClass">
+              <span class="font-mono text-xs" nz-tooltip [nzTooltipTitle]="a.checkInAt ? ('Thời điểm vào ca: ' + (a.checkInAt | date: 'yyyy-MM-dd HH:mm:ss')) : 'Chưa điểm danh vào ca'">
+                {{ a.checkInAt ? (a.checkInAt | date: 'HH:mm:ss') : '—' }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <span class="font-mono text-xs" nz-tooltip [nzTooltipTitle]="a.checkOutAt ? ('Thời điểm ra ca: ' + (a.checkOutAt | date: 'yyyy-MM-dd HH:mm:ss')) : 'Chưa điểm danh ra ca'">
+                {{ a.checkOutAt ? (a.checkOutAt | date: 'HH:mm:ss') : '—' }}
+              </span>
+            </td>
+            <td>
+              <span class="text-xs text-secondary" nz-tooltip [nzTooltipTitle]="a.note ? ('Ghi chú: ' + a.note) : 'Không có ghi chú'">
+                {{ a.note || '—' }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <span
+                [class]="getShiftAssignmentStatusMeta(a.status).badgeClass"
+                nz-tooltip
+                [nzTooltipTitle]="'Trạng thái: ' + getShiftAssignmentStatusMeta(a.status).label"
+              >
                 {{ getShiftAssignmentStatusMeta(a.status).label }}
               </span>
             </td>
@@ -170,7 +188,7 @@
                     variant="ghost"
                     iconOnly="close-circle"
                     nz-tooltip
-                    nzTooltipTitle="Hủy phân ca"
+                    nzTooltipTitle="Hủy phân ca làm việc này"
                     (click)="cancelAssignment(a)"
                   ></app-button>
                 }
@@ -201,44 +219,104 @@
     title="Phân Ca Làm Việc Cho Nhân Viên"
     size="md"
     [maskClosable]="false"
+    [footer]="assignModalFooter"
     (cancelEmit)="closeAssignModal()"
   >
     <form [formGroup]="assignForm" (ngSubmit)="submitAssignForm()">
       <div class="form-group">
         <label class="form-label" for="assign-branch">Chi nhánh *</label>
-        <nz-select id="assign-branch" formControlName="branchId" (ngModelChange)="loadShiftsForBranch($event)"
-                   style="width: 100%">
+        <nz-select
+          id="assign-branch"
+          formControlName="branchId"
+          (ngModelChange)="loadShiftsForBranch($event)"
+          [nzStatus]="assignForm.get('branchId')?.invalid && assignForm.get('branchId')?.touched ? 'error' : ''"
+          style="width: 100%"
+        >
           @for (b of branchService.branches(); track b.id) {
             <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
           }
         </nz-select>
+        @if (assignForm.get('branchId')?.invalid && assignForm.get('branchId')?.touched) {
+          <div class="form-error">
+            @if (assignForm.get('branchId')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Vui lòng chọn chi nhánh</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 12px;">
         <label class="form-label" for="assign-shift">Khung ca làm việc *</label>
-        <nz-select id="assign-shift" formControlName="shiftId" nzPlaceHolder="Chọn khung ca" style="width: 100%">
+        <nz-select
+          id="assign-shift"
+          formControlName="shiftId"
+          nzPlaceHolder="Chọn khung ca"
+          [nzStatus]="assignForm.get('shiftId')?.invalid && assignForm.get('shiftId')?.touched ? 'error' : ''"
+          style="width: 100%"
+        >
           @for (s of availableShifts(); track s.id) {
             <nz-option [nzLabel]="s.shiftName + ' (' + s.startTime + ' - ' + s.endTime + ')'"
                        [nzValue]="s.id"></nz-option>
           }
         </nz-select>
+        @if (assignForm.get('shiftId')?.invalid && assignForm.get('shiftId')?.touched) {
+          <div class="form-error">
+            @if (assignForm.get('shiftId')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Vui lòng chọn khung ca làm việc</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 12px;">
         <label class="form-label" for="assign-employee">Nhân viên *</label>
-        <nz-select id="assign-employee" formControlName="accountId" nzShowSearch nzPlaceHolder="Chọn nhân viên nhận ca"
-                   style="width: 100%">
+        <nz-select
+          id="assign-employee"
+          formControlName="accountId"
+          nzShowSearch
+          nzPlaceHolder="Chọn nhân viên nhận ca"
+          [nzStatus]="assignForm.get('accountId')?.invalid && assignForm.get('accountId')?.touched ? 'error' : ''"
+          style="width: 100%"
+        >
           @for (u of availableUsers(); track u.id) {
             <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')'" [nzValue]="u.id"></nz-option>
           }
         </nz-select>
+        @if (assignForm.get('accountId')?.invalid && assignForm.get('accountId')?.touched) {
+          <div class="form-error">
+            @if (assignForm.get('accountId')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Vui lòng chọn nhân viên nhận ca</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 12px;">
         <label class="form-label" for="assign-work-date">Ngày làm việc (YYYY-MM-DD) *</label>
         <nz-input-wrapper>
-          <input id="assign-work-date" type="date" nz-input formControlName="workDate"/>
+          <input
+            id="assign-work-date"
+            type="date"
+            nz-input
+            formControlName="workDate"
+            [nzStatus]="assignForm.get('workDate')?.invalid && assignForm.get('workDate')?.touched ? 'error' : ''"
+          />
         </nz-input-wrapper>
+        @if (assignForm.get('workDate')?.invalid && assignForm.get('workDate')?.touched) {
+          <div class="form-error">
+            @if (assignForm.get('workDate')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Ngày làm việc không được để trống</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 12px;">
@@ -247,12 +325,14 @@
                   placeholder="Nhập ghi chú hoặc yêu cầu..."></textarea>
       </div>
     </form>
-    <div slot="footer" class="modal-footer-actions">
-      <app-button variant="secondary" (click)="closeAssignModal()">Hủy</app-button>
-      <app-button variant="primary" leftIcon="save" [loading]="isSavingAssign()" (click)="submitAssignForm()">
-        Lưu phân ca
-      </app-button>
-    </div>
+    <ng-template #assignModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="secondary" (click)="closeAssignModal()">Hủy</app-button>
+        <app-button variant="primary" leftIcon="save" [loading]="isSavingAssign()" (click)="submitAssignForm()">
+          Lưu phân ca
+        </app-button>
+      </div>
+    </ng-template>
   </app-modal>
 
   <!-- ── 5. Modal Phân ca hàng loạt ─────────────────────────────────── -->
@@ -262,27 +342,57 @@
     title="Phân Ca Hàng Loạt (Nhiều Nhân Viên / Ngày)"
     size="lg"
     [maskClosable]="false"
+    [footer]="bulkModalFooter"
     (cancelEmit)="closeBulkModal()"
   >
     <form [formGroup]="bulkForm" (ngSubmit)="submitBulkForm()">
       <div nz-row [nzGutter]="16">
         <div nz-col [nzSpan]="12">
           <label class="form-label" for="bulk-branch">Chi nhánh *</label>
-          <nz-select id="bulk-branch" formControlName="branchId" (ngModelChange)="loadShiftsForBranch($event)"
-                     style="width: 100%">
+          <nz-select
+            id="bulk-branch"
+            formControlName="branchId"
+            (ngModelChange)="loadShiftsForBranch($event)"
+            [nzStatus]="bulkForm.get('branchId')?.invalid && bulkForm.get('branchId')?.touched ? 'error' : ''"
+            style="width: 100%"
+          >
             @for (b of branchService.branches(); track b.id) {
               <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
             }
           </nz-select>
+          @if (bulkForm.get('branchId')?.invalid && bulkForm.get('branchId')?.touched) {
+            <div class="form-error">
+              @if (bulkForm.get('branchId')?.errors?.['serverError']; as err) {
+                <span>{{ err }}</span>
+              } @else {
+                <span>Vui lòng chọn chi nhánh</span>
+              }
+            </div>
+          }
         </div>
         <div nz-col [nzSpan]="12">
           <label class="form-label" for="bulk-shift">Khung ca làm việc *</label>
-          <nz-select id="bulk-shift" formControlName="shiftId" nzPlaceHolder="Chọn khung ca" style="width: 100%">
+          <nz-select
+            id="bulk-shift"
+            formControlName="shiftId"
+            nzPlaceHolder="Chọn khung ca"
+            [nzStatus]="bulkForm.get('shiftId')?.invalid && bulkForm.get('shiftId')?.touched ? 'error' : ''"
+            style="width: 100%"
+          >
             @for (s of availableShifts(); track s.id) {
               <nz-option [nzLabel]="s.shiftName + ' (' + s.startTime + ' - ' + s.endTime + ')'"
                          [nzValue]="s.id"></nz-option>
             }
           </nz-select>
+          @if (bulkForm.get('shiftId')?.invalid && bulkForm.get('shiftId')?.touched) {
+            <div class="form-error">
+              @if (bulkForm.get('shiftId')?.errors?.['serverError']; as err) {
+                <span>{{ err }}</span>
+              } @else {
+                <span>Vui lòng chọn khung ca</span>
+              }
+            </div>
+          }
         </div>
       </div>
 
@@ -293,12 +403,22 @@
           formControlName="accountIds"
           nzMode="multiple"
           nzPlaceHolder="Chọn một hoặc nhiều nhân viên"
+          [nzStatus]="bulkForm.get('accountIds')?.invalid && bulkForm.get('accountIds')?.touched ? 'error' : ''"
           style="width: 100%"
         >
           @for (u of availableUsers(); track u.id) {
             <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')'" [nzValue]="u.id"></nz-option>
           }
         </nz-select>
+        @if (bulkForm.get('accountIds')?.invalid && bulkForm.get('accountIds')?.touched) {
+          <div class="form-error">
+            @if (bulkForm.get('accountIds')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Vui lòng chọn ít nhất một nhân viên</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
@@ -308,9 +428,19 @@
           formControlName="workDates"
           nzMode="tags"
           nzPlaceHolder="Nhập ngày YYYY-MM-DD rồi bấm Enter (VD: 2026-09-18)"
+          [nzStatus]="bulkForm.get('workDates')?.invalid && bulkForm.get('workDates')?.touched ? 'error' : ''"
           style="width: 100%"
         >
         </nz-select>
+        @if (bulkForm.get('workDates')?.invalid && bulkForm.get('workDates')?.touched) {
+          <div class="form-error">
+            @if (bulkForm.get('workDates')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Vui lòng nhập ít nhất một ngày làm việc</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
@@ -319,11 +449,13 @@
                   placeholder="Ghi chú phân ca hàng loạt..."></textarea>
       </div>
     </form>
-    <div slot="footer" class="modal-footer-actions">
-      <app-button variant="secondary" (click)="closeBulkModal()">Hủy</app-button>
-      <app-button variant="primary" leftIcon="check-all" [loading]="isSavingBulk()" (click)="submitBulkForm()">
-        Tạo lịch phân ca hàng loạt
-      </app-button>
-    </div>
+    <ng-template #bulkModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="secondary" (click)="closeBulkModal()">Hủy</app-button>
+        <app-button variant="primary" leftIcon="check" [loading]="isSavingBulk()" (click)="submitBulkForm()">
+          Tạo lịch phân ca hàng loạt
+        </app-button>
+      </div>
+    </ng-template>
   </app-modal>
 </div>

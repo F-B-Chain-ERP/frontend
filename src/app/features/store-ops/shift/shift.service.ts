@@ -37,6 +37,12 @@ export interface PageEnvelope<T> {
   content: T[];
 }
 
+export interface ShiftServiceError extends Error {
+  fieldErrors?: Record<string, string>;
+  errorCode?: string;
+  status?: number;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -75,14 +81,14 @@ export class StoreShiftService {
 
     return this.http.get<ApiEnvelope<PageEnvelope<Shift>>>(this.shiftApi, { params }).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   getShiftById(id: string): Observable<Shift> {
     return this.http.get<ApiEnvelope<Shift>>(`${this.shiftApi}/${id}`).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -92,28 +98,28 @@ export class StoreShiftService {
 
     return this.http.get<ApiEnvelope<Shift[]>>(`${this.shiftApi}/branch/${branchId}`, { params }).pipe(
       map(res => res.data ?? []),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   createShift(payload: CreateShiftPayload): Observable<Shift> {
     return this.http.post<ApiEnvelope<Shift>>(this.shiftApi, payload).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   updateShift(id: string, payload: UpdateShiftPayload): Observable<Shift> {
     return this.http.put<ApiEnvelope<Shift>>(`${this.shiftApi}/${id}`, payload).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   deleteShift(id: string): Observable<void> {
     return this.http.delete<ApiEnvelope<void>>(`${this.shiftApi}/${id}`).pipe(
       map(() => void 0),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -139,28 +145,28 @@ export class StoreShiftService {
 
     return this.http.get<ApiEnvelope<PageEnvelope<ShiftAssignment>>>(this.assignmentApi, { params }).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   getAssignmentById(id: string): Observable<ShiftAssignment> {
     return this.http.get<ApiEnvelope<ShiftAssignment>>(`${this.assignmentApi}/${id}`).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   assignShift(payload: CreateShiftAssignmentPayload): Observable<ShiftAssignment> {
     return this.http.post<ApiEnvelope<ShiftAssignment>>(this.assignmentApi, payload).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   bulkAssignShifts(payload: BulkAssignShiftPayload): Observable<ShiftAssignment[]> {
     return this.http.post<ApiEnvelope<ShiftAssignment[]>>(`${this.assignmentApi}/bulk`, payload).pipe(
       map(res => res.data ?? []),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -169,7 +175,7 @@ export class StoreShiftService {
       .post<ApiEnvelope<void>>(`${this.assignmentApi}/${id}/cancel`, reason ? { reason } : {})
       .pipe(
         map(() => void 0),
-        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+        catchError(err => throwError(() => this.errorMessage(err))),
       );
   }
 
@@ -187,28 +193,28 @@ export class StoreShiftService {
   openShift(assignmentId: string, payload: OpenShiftPayload): Observable<ShiftAssignment> {
     return this.http.post<ApiEnvelope<ShiftAssignment>>(`${this.operationApi}/${assignmentId}/open`, payload).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   getClosingSummary(assignmentId: string): Observable<ClosingSummary> {
     return this.http.get<ApiEnvelope<ClosingSummary>>(`${this.operationApi}/${assignmentId}/closing-summary`).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   closeShift(assignmentId: string, payload: CloseShiftPayload): Observable<ShiftReport> {
     return this.http.post<ApiEnvelope<ShiftReport>>(`${this.operationApi}/${assignmentId}/close`, payload).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   getShiftReportByAssignment(assignmentId: string): Observable<ShiftReport> {
     return this.http.get<ApiEnvelope<ShiftReport>>(`${this.operationApi}/assignment/${assignmentId}/report`).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -217,7 +223,7 @@ export class StoreShiftService {
       .put<ApiEnvelope<ShiftReport>>(`${this.operationApi}/reports/${reportId}/confirm`, payload ?? {})
       .pipe(
         map(res => res.data),
-        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+        catchError(err => throwError(() => this.errorMessage(err))),
       );
   }
 
@@ -228,7 +234,7 @@ export class StoreShiftService {
 
     return this.http.get<ApiEnvelope<PageEnvelope<ShiftReport>>>(`${this.operationApi}/reports`, { params }).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -239,14 +245,14 @@ export class StoreShiftService {
   generateDailyReport(payload: GenerateDailyReportPayload): Observable<StoreDailyReport> {
     return this.http.post<ApiEnvelope<StoreDailyReport>>(`${this.dailyReportApi}/generate`, payload).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   getDailyReportById(id: string): Observable<StoreDailyReport> {
     return this.http.get<ApiEnvelope<StoreDailyReport>>(`${this.dailyReportApi}/${id}`).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -254,7 +260,7 @@ export class StoreShiftService {
     const params = new HttpParams().set('branchId', branchId).set('businessDate', businessDate);
     return this.http.get<ApiEnvelope<StoreDailyReport>>(`${this.dailyReportApi}/by-date`, { params }).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -266,14 +272,14 @@ export class StoreShiftService {
 
     return this.http.get<ApiEnvelope<PageEnvelope<StoreDailyReport>>>(this.dailyReportApi, { params }).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
   updateDailyReport(id: string, payload: UpdateDailyReportPayload): Observable<StoreDailyReport> {
     return this.http.put<ApiEnvelope<StoreDailyReport>>(`${this.dailyReportApi}/${id}`, payload).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -282,7 +288,7 @@ export class StoreShiftService {
       .put<ApiEnvelope<StoreDailyReport>>(`${this.dailyReportApi}/${id}/approve`, note ? { note } : {})
       .pipe(
         map(res => res.data),
-        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+        catchError(err => throwError(() => this.errorMessage(err))),
       );
   }
 
@@ -293,12 +299,42 @@ export class StoreShiftService {
   restock(payload: RestockDailyStockPayload): Observable<PosDailyStock> {
     return this.http.post<ApiEnvelope<PosDailyStock>>(`${this.posStockApi}/restock`, payload).pipe(
       map(res => res.data),
-      catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
-  private errorMessage(err: unknown): string {
-    const e = err as { error?: { message?: string }; message?: string };
-    return e?.error?.message || e?.message || 'Đã xảy ra lỗi hệ thống khi thao tác.';
+  private errorMessage(err: unknown): ShiftServiceError {
+    const e = err as {
+      status?: number;
+      error?: {
+        message?: string;
+        errorCode?: string;
+        data?: Record<string, string> | string;
+      };
+      message?: string;
+    };
+
+    let message = e?.error?.message || e?.message || 'Đã xảy ra lỗi hệ thống khi thao tác.';
+    let fieldErrors: Record<string, string> | undefined;
+
+    if (e?.error?.data) {
+      if (typeof e.error.data === 'object' && e.error.data !== null) {
+        fieldErrors = e.error.data;
+        const details = Object.values(e.error.data).filter(Boolean).join(', ');
+        if (details) {
+          message = details;
+        }
+      } else if (typeof e.error.data === 'string' && e.error.data.trim()) {
+        message = e.error.data;
+      }
+    }
+
+    const customError = new Error(message) as ShiftServiceError;
+    if (fieldErrors) {
+      customError.fieldErrors = fieldErrors;
+    }
+    customError.errorCode = e?.error?.errorCode;
+    customError.status = e?.status;
+    return customError;
   }
 }
