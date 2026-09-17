@@ -68,6 +68,7 @@ export interface CreatePosOrderRequest {
   shippingAddress?: string | null;
   paymentMethod: 'CASH' | 'COD' | 'VNPAY' | 'MOMO' | 'BANK_TRANSFER';
   note?: string | null;
+  pickupTimeSlotId?: string | null;
 }
 
 export interface PosOrder {

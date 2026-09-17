@@ -90,7 +90,7 @@
           <th scope="col" [nzShowSort]="true" [nzSortFn]="sortStatusFn" nzWidth="150px" nzAlign="center">Trạng thái</th>
 
           <!-- Thao tác -->
-          <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+          <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
         </tr>
         <tr class="thead-search">
           <th></th>
@@ -196,6 +196,24 @@
             <td nzAlign="center">
               <div class="tbl-actions">
                 <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_GIO_HOAT_DONG.VIEW]"
+                  variant="ghost"
+                  iconOnly="clock-circle"
+                  nz-tooltip
+                  nzTooltipTitle="Lịch hoạt động tuần"
+                  (click)="navigateToBranchHours(data)"
+                >
+                </app-button>
+                <app-button
+                  *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_KHUNG_GIO_PICKUP.VIEW]"
+                  variant="ghost"
+                  iconOnly="field-time"
+                  nz-tooltip
+                  nzTooltipTitle="Khung giờ Pickup"
+                  (click)="navigateToPickupSlots(data)"
+                >
+                </app-button>
+                <app-button
                   *erpUTTHasSomeAuthority="[ROLE.QUAN_LY_CHI_NHANH.UPDATE]"
                   variant="ghost"
                   iconOnly="edit"
@@ -213,16 +231,6 @@
                   (click)="onDeleteBranch(data)"
                 >
                 </app-button>
-              </div>
-            </td>
-          </tr>
-        } @empty {
-          <tr>
-            <td colspan="8" class="text-center table-empty">
-              <div class="empty-state">
-                <nz-icon nzType="inbox" class="empty-state__icon" />
-                <p class="empty-state__text">Không có dữ liệu chi nhánh nào</p>
-                <app-button variant="secondary" leftIcon="plus" (click)="openCreateModal()"> Thêm chi nhánh mới </app-button>
               </div>
             </td>
           </tr>

@@ -1,31 +1,31 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { NzTableModule } from 'ng-zorro-antd/table';
-import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { NzSwitchModule } from 'ng-zorro-antd/switch';
-import { NzGridModule } from 'ng-zorro-antd/grid';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
+import {Component, OnInit, computed, inject, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import {NzTableModule} from 'ng-zorro-antd/table';
+import {NzCardModule} from 'ng-zorro-antd/card';
+import {NzInputModule} from 'ng-zorro-antd/input';
+import {NzSelectModule} from 'ng-zorro-antd/select';
+import {NzIconModule} from 'ng-zorro-antd/icon';
+import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
+import {NzSwitchModule} from 'ng-zorro-antd/switch';
+import {NzGridModule} from 'ng-zorro-antd/grid';
+import {NzInputNumberModule} from 'ng-zorro-antd/input-number';
 
-import { BaseComponent } from '../../../shared/base-component/base.component';
-import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
-import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
-import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
-import { AppTableSearchInputComponent } from '../../../shared/app-table-search-input/app-table-search-input.component';
-import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
-import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
-import { ROLE } from '../../../core/config/functions.constants';
-import { ColumnTextFilter } from '../../../shared/utils/column-text-filter';
-import { EnterAsTabContainerDirective } from '../../../shared/directives/enter-as-tab-container.directive';
-import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
-import { createSortFn } from '../../../shared/helpers/table.helper';
-import { BranchManagementService } from './branch-management.service';
-import { Branch, BranchPayload, BRANCH_STATUS_ACTIVE, BRANCH_STATUS_OPTIONS, getBranchStatusMeta } from './branch.model';
-import { takeUntil } from 'rxjs/operators';
+import {BaseComponent} from '../../../shared/base-component/base.component';
+import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
+import {AppPaginationComponent} from '../../../shared/app-pagination/app-pagination.component';
+import {AppModalComponent} from '../../../shared/app-modal/app-modal.component';
+import {AppTableSearchInputComponent} from '../../../shared/app-table-search-input/app-table-search-input.component';
+import {AppBreadcrumbsComponent} from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import {HasSomeAuthorityDirective} from '../../../core/auth/has-some-authority.directive';
+import {ROLE} from '../../../core/config/functions.constants';
+import {ColumnTextFilter} from '../../../shared/utils/column-text-filter';
+import {EnterAsTabContainerDirective} from '../../../shared/directives/enter-as-tab-container.directive';
+import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
+import {createSortFn} from '../../../shared/helpers/table.helper';
+import {BranchManagementService} from './branch-management.service';
+import {Branch, BranchPayload, BRANCH_STATUS_ACTIVE, BRANCH_STATUS_OPTIONS, getBranchStatusMeta} from './branch.model';
+import {takeUntil} from 'rxjs/operators';
 
 @Component({
   selector: 'app-branch-list',
@@ -78,8 +78,8 @@ export class BranchListComponent extends BaseComponent implements OnInit {
   pageSize = DEFAULT_PAGE_SIZE;
 
   readonly statusFilterOptions = [
-    { label: 'Tất cả trạng thái', value: '' },
-    ...BRANCH_STATUS_OPTIONS.map(opt => ({ label: opt.label, value: opt.value })),
+    {label: 'Tất cả trạng thái', value: ''},
+    ...BRANCH_STATUS_OPTIONS.map(opt => ({label: opt.label, value: opt.value})),
   ];
 
   // Column-based In-Memory Filter
@@ -135,9 +135,9 @@ export class BranchListComponent extends BaseComponent implements OnInit {
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
-      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
-      { label: 'Hệ thống', url: '/admin/system/accounts/list' },
-      { label: 'Quản lý chi nhánh', url: '/admin/system/branches/list' },
+      {label: 'Trang chủ', url: '/admin/home', icon: 'home'},
+      {label: 'Hệ thống', url: '/admin/system/accounts/list'},
+      {label: 'Quản lý chi nhánh', url: '/admin/system/branches/list'},
     ]);
 
     this.loadData();
@@ -214,7 +214,7 @@ export class BranchListComponent extends BaseComponent implements OnInit {
   }
 
   openEditModal(branch: Branch): void {
-    this.selectedBranchForEdit = { ...branch };
+    this.selectedBranchForEdit = {...branch};
     this.branchForm.reset({
       code: branch.code,
       name: branch.name,
@@ -344,5 +344,19 @@ export class BranchListComponent extends BaseComponent implements OnInit {
     if (this.pageIndex > maxPage) {
       this.pageIndex = maxPage;
     }
+  }
+
+  /** Chuyển hướng tới cấu hình giờ hoạt động của chi nhánh. */
+  navigateToBranchHours(branch: Branch): void {
+    this.router.navigate(['/admin/system/branch-hours/list'], {
+      queryParams: {branchId: branch.id},
+    });
+  }
+
+  /** Chuyển hướng tới quản lý khung giờ pickup của chi nhánh. */
+  navigateToPickupSlots(branch: Branch): void {
+    this.router.navigate(['/admin/system/pickup-slots/list'], {
+      queryParams: {branchId: branch.id},
+    });
   }
 }

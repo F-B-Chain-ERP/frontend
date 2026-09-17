@@ -12,6 +12,8 @@ import { AppNotificationService } from '../../../shared/app-notification/app-not
 import { normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE } from '../../../core/util/image.util';
 import { PosApiService, PosOrder } from '../services/pos-api.service';
 import { StoreBranchService } from '../services/store-branch.service';
+import { PickupSlotService } from '../../system/pickup-slots/pickup-slot.service';
+import { PickupTimeSlot } from '../../system/pickup-slots/pickup-slot.model';
 
 const DELIVERY_FEE = 15000;
 
@@ -61,6 +63,11 @@ export class CheckoutComponent implements OnInit {
   private readonly posApi = inject(PosApiService);
   private readonly branches = inject(StoreBranchService);
   private readonly account = inject(AccountService);
+  private readonly pickupSlotService = inject(PickupSlotService);
+
+  readonly availablePickupSlots = signal<PickupTimeSlot[]>([]);
+  readonly isLoadingPickupSlots = signal<boolean>(false);
+  readonly selectedPickupSlotId = signal<string | null>(null);
 
   /** 1 key cho cả phiên checkout: lỗi mạng bấm lại không trùng đơn, thành công mới đổi key. */
   private idempotencyKey = newIdempotencyKey();
@@ -69,13 +76,47 @@ export class CheckoutComponent implements OnInit {
 
   ngOnInit(): void {
     this.cartService.refresh();
-    this.branches.loadBranches().subscribe();
+    this.branches.loadBranches().subscribe({
+      next: () => {
+        const bId = this.branches.branchId();
+        if (this.deliveryMethod() === 'pickup' && bId) {
+          this.loadPickupSlots(bId);
+        }
+      },
+    });
     this.syncAddressValidators(this.deliveryMethod());
   }
 
   onDeliveryMethodChange(method: 'delivery' | 'pickup'): void {
     this.deliveryMethod.set(method);
     this.syncAddressValidators(method);
+    const bId = this.branches.branchId();
+    if (method === 'pickup' && bId) {
+      this.loadPickupSlots(bId);
+    }
+  }
+
+  loadPickupSlots(branchId: string | null | undefined): void {
+    if (!branchId) return;
+    this.isLoadingPickupSlots.set(true);
+    this.pickupSlotService.getPublicSlots(branchId).subscribe({
+      next: slots => {
+        this.isLoadingPickupSlots.set(false);
+        this.availablePickupSlots.set(slots);
+        const firstAvailable = slots.find(s => s.isAvailable);
+        if (firstAvailable && !this.selectedPickupSlotId()) {
+          this.selectedPickupSlotId.set(firstAvailable.id);
+        }
+      },
+      error: () => {
+        this.isLoadingPickupSlots.set(false);
+        this.availablePickupSlots.set([]);
+      },
+    });
+  }
+
+  selectPickupSlot(slotId: string): void {
+    this.selectedPickupSlotId.set(slotId);
   }
 
   formatPrice(amount: number): string {
@@ -119,6 +160,7 @@ export class CheckoutComponent implements OnInit {
           // Online (VNPay/MoMo) chưa triển khai: delivery thu COD, pickup trả CASH tại quầy.
           paymentMethod: isDelivery ? 'COD' : 'CASH',
           note: raw.note.trim() ? raw.note.trim().slice(0, 500) : null,
+          pickupTimeSlotId: !isDelivery ? this.selectedPickupSlotId() : null,
         },
         this.idempotencyKey,
       )

@@ -165,6 +165,42 @@
               <span class="checkout-option__check"></span>
             </label>
           </div>
+
+          @if (deliveryMethod() === 'pickup') {
+            <div class="pickup-slots-section" style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color, #e2e8f0);">
+              <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <nz-icon nzType="clock-circle" /> Chọn khung giờ đến lấy hàng hôm nay:
+              </div>
+              @if (isLoadingPickupSlots()) {
+                <div class="text-muted" style="font-size: 13px;">Đang tải danh sách khung giờ...</div>
+              } @else if (availablePickupSlots().length === 0) {
+                <div class="text-muted" style="font-size: 13px; font-style: italic;">
+                  Quán không giới hạn khung giờ hôm nay. Quý khách có thể đến lấy ngay sau khi nhận thông báo sẵn sàng.
+                </div>
+              } @else {
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px;">
+                  @for (slot of availablePickupSlots(); track slot.id) {
+                    <button
+                      type="button"
+                      [disabled]="!slot.isAvailable"
+                      (click)="selectPickupSlot(slot.id)"
+                      [style.border-color]="selectedPickupSlotId() === slot.id ? 'var(--brand, #0284c7)' : 'var(--border-color, #e2e8f0)'"
+                      [style.background]="selectedPickupSlotId() === slot.id ? 'var(--brand-light, #f0f9ff)' : '#fff'"
+                      [style.opacity]="slot.isAvailable ? '1' : '0.5'"
+                      style="padding: 8px 10px; border-radius: 8px; border-width: 1.5px; border-style: solid; cursor: pointer; text-align: center; transition: all 0.2s;"
+                    >
+                      <div [style.color]="selectedPickupSlotId() === slot.id ? 'var(--brand, #0284c7)' : 'var(--text-primary, #1e293b)'" style="font-weight: 600; font-size: 13px;">
+                        {{ slot.startTime.substring(0, 5) }} - {{ slot.endTime.substring(0, 5) }}
+                      </div>
+                      <div style="font-size: 11px; color: var(--text-muted, #64748b);">
+                        {{ slot.isAvailable ? 'Còn nhận đơn' : 'Hết chỗ' }}
+                      </div>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          }
         </section>
 
         <!-- Payment method: tự động theo hình thức nhận (online chưa triển khai) -->

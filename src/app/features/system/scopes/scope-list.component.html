@@ -165,16 +165,6 @@
               </div>
             </td>
           </tr>
-        } @empty {
-          <tr>
-            <td colspan="5" class="text-center table-empty">
-              <div class="empty-state">
-                <nz-icon nzType="inbox" class="empty-state__icon" />
-                <p class="empty-state__text">Không có dữ liệu phạm vi nào</p>
-                <app-button variant="secondary" leftIcon="plus" (click)="openCreateModal()"> Thêm phạm vi mới </app-button>
-              </div>
-            </td>
-          </tr>
         }
       </tbody>
     </nz-table>
