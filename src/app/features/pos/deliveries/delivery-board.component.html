@@ -69,11 +69,13 @@
             <td nzAlign="left">{{ deliveryOf(o.id)?.deliveryAddress ?? '—' }}</td>
             <td nzAlign="right">{{ formatPrice(o.totalAmount) }}</td>
             <td nzAlign="center">
-              <span [class]="getOrderStatusMeta(o.status).badgeClass">{{ getOrderStatusMeta(o.status).label }}</span>
+              <span class="tbl-badge" [class]="getOrderStatusMeta(o.status).badgeClass">{{ getOrderStatusMeta(o.status).label }}</span>
             </td>
             <td nzAlign="center">
               @if (deliveryOf(o.id); as d) {
-                <span [class]="getDeliveryStatusMeta(d.status).badgeClass">{{ getDeliveryStatusMeta(d.status).label }}</span>
+                <span class="tbl-badge" [class]="getDeliveryStatusMeta(d.status).badgeClass">
+                  {{ getDeliveryStatusMeta(d.status).label }}
+                </span>
               } @else {
                 <span class="text-muted">—</span>
               }

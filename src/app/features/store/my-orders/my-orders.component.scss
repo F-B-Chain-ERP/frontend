@@ -192,11 +192,27 @@
 }
 
 .order-card__money {
-  display: flex;
-  gap: var(--space-3);
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: var(--space-4);
+
   padding: var(--space-2) 0;
   border-top: 1px dashed var(--border-color);
+}
+
+.order-card__money-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  color: var(--text-primary);
+}
+
+.order-card__money-total {
+  color: var(--text-primary);
+  text-align: right;
+  white-space: nowrap;
 }
 
 .order-card__history {
@@ -228,4 +244,147 @@
 .my-orders-page__more {
   display: flex;
   justify-content: center;
+}
+
+.order-card__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 0;
+  border: none;
+  background: transparent;
+
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  line-height: 20px;
+
+  white-space: nowrap;
+}
+
+
+/* Màu trạng thái */
+
+.order-card__status.tbl-badge--success {
+  color: var(--success);
+}
+
+.order-card__status.tbl-badge--warning {
+  color: var(--warning);
+}
+
+.order-card__status.tbl-badge--danger {
+  color: var(--danger);
+}
+
+.order-card__status.tbl-badge--info {
+  color: var(--info);
+}
+
+.order-card__status.tbl-badge--primary {
+  color: var(--brand);
+}
+
+.order-card__status.tbl-badge--neutral {
+  color: var(--text-secondary);
+}
+
+.order-card__status-dot {
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  background: currentColor;
+}
+
+/* Màu trạng thái */
+
+.order-card__status.tbl-badge--success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.order-card__status.tbl-badge--warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.order-card__status.tbl-badge--danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.order-card__status.tbl-badge--info {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.order-card__status.tbl-badge--primary {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.order-card__status.tbl-badge--neutral {
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+
+.order-card__money-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: var(--text-primary);
+}
+
+.order-card__money-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.order-card__money-label {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.order-card__money-item strong {
+  color: var(--text-primary);
+  font-weight: var(--fw-semibold);
+}
+
+.order-card__money-divider {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+::ng-deep .order-card .btn.btn--ghost {
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+::ng-deep .order-card .btn.btn--ghost .btn__content,
+::ng-deep .order-card .btn.btn--ghost .btn__label {
+  color: var(--danger) !important;
+}
+
+::ng-deep .order-card .btn.btn--ghost:hover,
+::ng-deep .order-card .btn.btn--ghost:focus,
+::ng-deep .order-card .btn.btn--ghost:active {
+  color: var(--danger) !important;
+  background: var(--danger-soft) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+::ng-deep .order-card .btn.btn--ghost:hover .btn__label,
+::ng-deep .order-card .btn.btn--ghost:focus .btn__label,
+::ng-deep .order-card .btn.btn--ghost:active .btn__label {
+  color: var(--danger) !important;
 }

@@ -5,7 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { forkJoin, map } from 'rxjs';
 import { NzIconDirective } from 'ng-zorro-antd/icon';
 import { NzInputDirective } from 'ng-zorro-antd/input';
-import { NzStepsModule } from 'ng-zorro-antd/steps';
+// import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 
 import { AccountService } from '../../../core/auth/account.service';
@@ -24,7 +24,7 @@ const CANCELLABLE = ['PENDING', 'CONFIRMED', 'PREPARING'];
 @Component({
   selector: 'app-my-orders',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, NzIconDirective, NzInputDirective, NzStepsModule, NzSpinModule, AppButtonComponent],
+  imports: [CommonModule, FormsModule, RouterLink, NzIconDirective, NzInputDirective, NzSpinModule, AppButtonComponent],
   templateUrl: './my-orders.component.html',
   styleUrls: ['./my-orders.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
