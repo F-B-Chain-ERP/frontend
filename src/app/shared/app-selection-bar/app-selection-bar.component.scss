@@ -1,15 +1,34 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
 .selection-bar {
+  --sel-bg: var(--selection-bar-bg, var(--brand-50, #fdf0e9));
+  --sel-border: var(--selection-bar-border, var(--brand-200, #f4b595));
+  --sel-text: var(--text-primary);
+  --sel-count: var(--brand);
+  --sel-total: var(--text-muted);
+  --sel-divider: var(--border-subtle);
+  --sel-clear: var(--text-secondary);
+  --sel-clear-hover-color: var(--danger, #dc2626);
+  --sel-clear-hover-bg: var(--danger-soft, #fceeed);
+  --sel-shadow: var(--shadow-sm);
+  --sel-badge-shadow: none;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px var(--space-6, 16px);
-  background: var(--brand-50, #fdf0e9);
-  border: 1px solid var(--brand-200, #f4b595);
+  background: var(--sel-bg);
+  border: 1px solid var(--sel-border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--sel-shadow);
   min-height: 48px;
   animation: selectionBarFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  transition: all var(--dur-fast, 120ms) var(--ease);
+  transition: background-color var(--dur-fast, 120ms) var(--ease),
+              border-color var(--dur-fast, 120ms) var(--ease),
+              box-shadow var(--dur-fast, 120ms) var(--ease);
 
   &__left {
     display: flex;
@@ -28,6 +47,8 @@
     background: var(--brand);
     color: #ffffff;
     flex-shrink: 0;
+    box-shadow: var(--sel-badge-shadow);
+    transition: box-shadow var(--dur-fast, 120ms) var(--ease);
 
     &-icon {
       font-size: 11px;
@@ -40,17 +61,17 @@
     align-items: center;
     gap: 4px;
     font-size: var(--text-sm, 12.5px);
-    color: var(--text-primary);
+    color: var(--sel-text);
   }
 
   &__count {
-    color: var(--brand);
+    color: var(--sel-count);
     font-weight: var(--fw-bold, 700);
     font-size: var(--text-base, 13px);
   }
 
   &__total {
-    color: var(--text-muted);
+    color: var(--sel-total);
     font-size: var(--text-xs, 11.5px);
   }
 
@@ -58,7 +79,7 @@
     display: inline-block;
     width: 1px;
     height: 16px;
-    background: var(--border-subtle);
+    background: var(--sel-divider);
     margin: 0 var(--space-1, 2px);
   }
 
@@ -68,7 +89,7 @@
     gap: 4px;
     background: transparent;
     border: none;
-    color: var(--text-secondary);
+    color: var(--sel-clear);
     font-size: var(--text-xs, 11.5px);
     font-weight: var(--fw-medium, 500);
     cursor: pointer;
@@ -77,8 +98,8 @@
     transition: all var(--dur-fast, 120ms) var(--ease);
 
     &:hover {
-      color: var(--danger, #dc2626);
-      background: var(--danger-soft, #fceeed);
+      color: var(--sel-clear-hover-color);
+      background: var(--sel-clear-hover-bg);
     }
   }
 
@@ -105,6 +126,39 @@
     &__actions {
       width: 100%;
       justify-content: flex-start;
+    }
+  }
+}
+
+// ── Dark Theme Support ───────────────────────────────────────────────
+:host-context([data-theme='dark']),
+:host-context([data-theme="dark"]),
+[data-theme='dark'],
+[data-theme="dark"] {
+  .selection-bar {
+    --sel-bg: color-mix(in srgb, var(--brand) 14%, var(--surface-card, #121A2B));
+    --sel-border: color-mix(in srgb, var(--brand) 32%, transparent);
+    --sel-text: var(--text-primary, #E7EBF3);
+    --sel-count: var(--brand-300, #EE8F62);
+    --sel-total: var(--text-secondary, #A4AEC4);
+    --sel-divider: color-mix(in srgb, var(--brand) 25%, var(--border-strong, #2C374E));
+    --sel-clear: var(--text-secondary, #A4AEC4);
+    --sel-clear-hover-color: #f87171;
+    --sel-clear-hover-bg: rgba(239, 68, 68, 0.16);
+    --sel-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 1px color-mix(in srgb, var(--brand) 15%, transparent);
+    --sel-badge-shadow: 0 0 10px color-mix(in srgb, var(--brand) 45%, transparent);
+
+    &__actions {
+      ::ng-deep .btn--secondary {
+        background: color-mix(in srgb, var(--surface-raised, #162033) 85%, var(--brand) 15%);
+        border-color: color-mix(in srgb, var(--border-strong, #2C374E) 70%, var(--brand) 30%);
+
+        &:hover {
+          background: color-mix(in srgb, var(--surface-hover, #1A2438) 80%, var(--brand) 20%);
+          border-color: var(--brand-400, var(--brand));
+          color: #ffffff;
+        }
+      }
     }
   }
 }

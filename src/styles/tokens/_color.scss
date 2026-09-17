@@ -166,6 +166,10 @@ $amber-600: #E06029 !default;
   --focus-ring: color-mix(in srgb, var(--brand) 35%, transparent);
   --overlay: color-mix(in srgb, var(--navy-950) 55%, transparent);
 
+  // ── Selection Bar ──
+  --selection-bar-bg: var(--brand-50);
+  --selection-bar-border: var(--brand-200);
+
   // ── Sidebar ──
   --sidebar-bg: var(--sidebar-surface);
   --sidebar-fg: var(--gray-700);
@@ -217,4 +221,8 @@ $amber-600: #E06029 !default;
   --info-soft: color-mix(in srgb, var(--info-500) 18%, transparent);
 
   --overlay: color-mix(in srgb, #000000 62%, transparent);
+
+  // ── Selection Bar ──
+  --selection-bar-bg: color-mix(in srgb, var(--brand) 14%, var(--surface-card));
+  --selection-bar-border: color-mix(in srgb, var(--brand) 32%, transparent);
 }
