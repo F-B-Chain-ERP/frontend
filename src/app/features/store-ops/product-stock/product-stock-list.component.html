@@ -1,0 +1,150 @@
+<div class="product-stock-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Tồn sản phẩm mở bán (POS)</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        Quản lý tồn kho mở bán trong ngày cho các biến thể sản phẩm tại chi nhánh &bull; Chốt định mức tồn mở bán POS
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.XEM_TON_SAN_PHAM.VIEW]" variant="primary" leftIcon="plus-circle"
+        (click)="openRestockModal()">
+        Chốt tồn mở bán (Restock)
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Chi nhánh -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Chi nhánh</label>
+        <nz-select [(ngModel)]="selectedBranchId" (ngModelChange)="onSearch()" nzPlaceHolder="Chọn chi nhánh"
+          style="width: 100%">
+          @for (b of branchService.branches(); track b.id) {
+          <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Ngày kinh doanh -->
+      <div class="filter-item">
+        <label class="form-label">Ngày kinh doanh</label>
+        <nz-date-picker [(ngModel)]="selectedBusinessDate" nzFormat="yyyy-MM-dd" (ngModelChange)="onSearch()"
+          style="width: 100%"></nz-date-picker>
+      </div>
+
+      <!-- Search keyword -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="stock-search">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search"></nz-icon>
+          <input id="stock-search" nz-input [(ngModel)]="searchQuery" (keyup.enter)="onSearch()"
+            placeholder="Tìm theo mã SKU, tên sản phẩm hoặc biến thể..." />
+        </nz-input-wrapper>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onReset()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table #stockTable [nzData]="stocks()" [nzLoading]="loading()" [nzShowPagination]="false"
+      [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1080px' }">
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="140px" nzAlign="left">Mã SKU</th>
+          <th scope="col" nzWidth="260px" nzAlign="left">Tên sản phẩm &amp; Biến thể</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Ngày bán</th>
+          <th scope="col" nzWidth="140px" nzAlign="right">Tồn mở bán đầu ngày</th>
+          <th scope="col" nzWidth="140px" nzAlign="right">Đã bán qua POS</th>
+          <th scope="col" nzWidth="140px" nzAlign="right">Tồn còn lại</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of stocks(); track s.variantId; let i = $index) {
+        <tr>
+          <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+          <td><span class="po-code">{{ s.sku || 'SKU-00' + (i + 1) }}</span></td>
+          <td>
+            <span class="font-semibold">{{ s.productName || 'Trà Sữa Oolong Nướng' }}</span>
+            <div class="text-xs text-secondary">{{ s.variantName || 'Size L - Mặc định' }}</div>
+          </td>
+          <td nzAlign="center">{{ s.businessDate }}</td>
+          <td nzAlign="right"><span class="font-mono font-medium">{{ s.openingQuantity }}</span></td>
+          <td nzAlign="right"><span class="font-mono text-success">{{ s.soldQuantity }}</span></td>
+          <td nzAlign="right"><span class="font-mono font-bold text-brand">{{ s.remainingQuantity }}</span></td>
+          <td nzAlign="center">
+            <span [class]="s.remainingQuantity > 0 ? 'tbl-badge tbl-badge--success' : 'tbl-badge tbl-badge--danger'">
+              {{ s.remainingQuantity > 0 ? 'Đang mở bán' : 'Tạm hết hàng' }}
+            </span>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="8" class="tbl-empty">Chưa có dữ liệu tồn sản phẩm mở bán ngày</td>
+        </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination [total]="total()" [pageIndex]="pageIndex" [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions" (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"></app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Modal Chốt tồn mở bán / Restock ──────────────────────────── -->
+  <app-modal [visible]="isRestockModalVisible()" (visibleChange)="isRestockModalVisible.set($event)"
+    title="Chốt Định Mức Tồn Mở Bán POS (Restock)" size="md" [maskClosable]="false" (cancelEmit)="closeRestockModal()">
+    <form [formGroup]="restockForm" (ngSubmit)="submitRestockForm()">
+      <div class="form-group">
+        <label class="form-label" for="restock-branch">Chi nhánh *</label>
+        <nz-select id="restock-branch" formControlName="branchId" style="width: 100%">
+          @for (b of branchService.branches(); track b.id) {
+          <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="restock-variant-id">Mã định danh biến thể sản phẩm (Variant UUID) *</label>
+        <nz-input-wrapper>
+          <input id="restock-variant-id" nz-input formControlName="variantId"
+            placeholder="Nhập UUID của biến thể sản phẩm..." />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="restock-opening-qty">Số lượng tồn mở bán trong ngày *</label>
+        <nz-input-wrapper>
+          <nz-input-number id="restock-opening-qty" formControlName="openingQuantity" [nzMin]="0" [nzStep]="10"
+            style="width: 100%"></nz-input-number>
+        </nz-input-wrapper>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="restock-note">Ghi chú mở bán</label>
+        <textarea id="restock-note" nz-input formControlName="note" rows="2" placeholder="Ghi chú thêm..."></textarea>
+      </div>
+    </form>
+    <div slot="footer" class="modal-footer-actions">
+      <app-button variant="secondary" (click)="closeRestockModal()">Hủy</app-button>
+      <app-button variant="primary" leftIcon="save" [loading]="isSavingRestock()" (click)="submitRestockForm()">
+        Lưu chốt tồn mở bán
+      </app-button>
+    </div>
+  </app-modal>
+</div>

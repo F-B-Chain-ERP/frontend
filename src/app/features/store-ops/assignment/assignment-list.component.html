@@ -1,0 +1,329 @@
+<div class="assignment-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Phân ca làm việc</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        Lập lịch ca trực cho nhân viên thu ngân &bull; Theo dõi trạng thái ca làm việc &bull; Hỗ trợ phân ca linh hoạt
+        theo tuần
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.CREATE]"
+        variant="secondary"
+        leftIcon="schedule"
+        (click)="openBulkModal()"
+      >
+        Phân ca hàng loạt
+      </app-button>
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.CREATE]"
+        variant="primary"
+        leftIcon="plus"
+        (click)="openAssignModal()"
+      >
+        Phân ca mới
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Chi nhánh -->
+      <div class="filter-item">
+        <label class="form-label">Chi nhánh</label>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          (ngModelChange)="onBranchChange($event)"
+          nzPlaceHolder="Tất cả chi nhánh"
+          style="width: 100%"
+        >
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Nhân viên -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Nhân viên</label>
+        <nz-select
+          [(ngModel)]="selectedAccountId"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả nhân viên"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (u of availableUsers(); track u.id) {
+            <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')'" [nzValue]="u.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Từ ngày -->
+      <div class="filter-item">
+        <label class="form-label">Từ ngày</label>
+        <nz-date-picker
+          [(ngModel)]="selectedStartDate"
+          nzFormat="yyyy-MM-dd"
+          [nzAllowClear]="true"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        ></nz-date-picker>
+      </div>
+
+      <!-- Đến ngày -->
+      <div class="filter-item">
+        <label class="form-label">Đến ngày</label>
+        <nz-date-picker
+          [(ngModel)]="selectedEndDate"
+          nzFormat="yyyy-MM-dd"
+          [nzAllowClear]="true"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        ></nz-date-picker>
+      </div>
+
+      <!-- Trạng thái -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onReset()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #assignmentTable
+      [nzData]="assignments()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1380px' }"
+    >
+      <thead>
+      <tr>
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+        <th scope="col" nzWidth="120px" nzAlign="left">Mã ca</th>
+        <th scope="col" nzWidth="200px" nzAlign="left">Khung ca / Giờ</th>
+        <th scope="col" nzWidth="180px" nzAlign="left">Nhân viên</th>
+        <th scope="col" nzWidth="110px" nzAlign="center">Ngày làm</th>
+        <th scope="col" nzWidth="140px" nzAlign="center">Giờ vào ca</th>
+        <th scope="col" nzWidth="140px" nzAlign="center">Giờ ra ca</th>
+        <th scope="col" nzWidth="150px" nzAlign="left">Ghi chú</th>
+        <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+        <th scope="col" nzWidth="110px" nzAlign="center">Thao tác</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (a of assignments(); track a.id; let i = $index) {
+          <tr>
+            <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+            <td><span class="po-code">{{ a.shiftCode }}</span></td>
+            <td>
+              <span class="font-semibold">{{ a.shiftName }}</span>
+              <div class="text-xs text-secondary">{{ a.startTime }} - {{ a.endTime }}</div>
+            </td>
+            <td>
+              <span class="font-medium">{{ a.employeeName }}</span>
+              <div class="text-xs text-muted">{{ a.employeeEmail }}</div>
+            </td>
+            <td nzAlign="center">{{ a.workDate }}</td>
+            <td nzAlign="center">
+              <span class="font-mono text-xs">{{ a.checkInAt ? (a.checkInAt | date: 'HH:mm:ss') : '—' }}</span>
+            </td>
+            <td nzAlign="center">
+              <span class="font-mono text-xs">{{ a.checkOutAt ? (a.checkOutAt | date: 'HH:mm:ss') : '—' }}</span>
+            </td>
+            <td><span class="text-xs text-secondary">{{ a.note || '—' }}</span></td>
+            <td nzAlign="center">
+              <span [class]="getShiftAssignmentStatusMeta(a.status).badgeClass">
+                {{ getShiftAssignmentStatusMeta(a.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                @if (a.status === 'SCHEDULED') {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.DELETE]"
+                    variant="ghost"
+                    iconOnly="close-circle"
+                    nz-tooltip
+                    nzTooltipTitle="Hủy phân ca"
+                    (click)="cancelAssignment(a)"
+                  ></app-button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Modal Phân ca đơn lẻ ────────────────────────────────────── -->
+  <app-modal
+    [visible]="isAssignModalVisible()"
+    (visibleChange)="isAssignModalVisible.set($event)"
+    title="Phân Ca Làm Việc Cho Nhân Viên"
+    size="md"
+    [maskClosable]="false"
+    (cancelEmit)="closeAssignModal()"
+  >
+    <form [formGroup]="assignForm" (ngSubmit)="submitAssignForm()">
+      <div class="form-group">
+        <label class="form-label" for="assign-branch">Chi nhánh *</label>
+        <nz-select id="assign-branch" formControlName="branchId" (ngModelChange)="loadShiftsForBranch($event)"
+                   style="width: 100%">
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="form-group" style="margin-top: 12px;">
+        <label class="form-label" for="assign-shift">Khung ca làm việc *</label>
+        <nz-select id="assign-shift" formControlName="shiftId" nzPlaceHolder="Chọn khung ca" style="width: 100%">
+          @for (s of availableShifts(); track s.id) {
+            <nz-option [nzLabel]="s.shiftName + ' (' + s.startTime + ' - ' + s.endTime + ')'"
+                       [nzValue]="s.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="form-group" style="margin-top: 12px;">
+        <label class="form-label" for="assign-employee">Nhân viên *</label>
+        <nz-select id="assign-employee" formControlName="accountId" nzShowSearch nzPlaceHolder="Chọn nhân viên nhận ca"
+                   style="width: 100%">
+          @for (u of availableUsers(); track u.id) {
+            <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')'" [nzValue]="u.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="form-group" style="margin-top: 12px;">
+        <label class="form-label" for="assign-work-date">Ngày làm việc (YYYY-MM-DD) *</label>
+        <nz-input-wrapper>
+          <input id="assign-work-date" type="date" nz-input formControlName="workDate"/>
+        </nz-input-wrapper>
+      </div>
+
+      <div class="form-group" style="margin-top: 12px;">
+        <label class="form-label" for="assign-note">Ghi chú phân ca</label>
+        <textarea id="assign-note" nz-input formControlName="note" rows="2"
+                  placeholder="Nhập ghi chú hoặc yêu cầu..."></textarea>
+      </div>
+    </form>
+    <div slot="footer" class="modal-footer-actions">
+      <app-button variant="secondary" (click)="closeAssignModal()">Hủy</app-button>
+      <app-button variant="primary" leftIcon="save" [loading]="isSavingAssign()" (click)="submitAssignForm()">
+        Lưu phân ca
+      </app-button>
+    </div>
+  </app-modal>
+
+  <!-- ── 5. Modal Phân ca hàng loạt ─────────────────────────────────── -->
+  <app-modal
+    [visible]="isBulkModalVisible()"
+    (visibleChange)="isBulkModalVisible.set($event)"
+    title="Phân Ca Hàng Loạt (Nhiều Nhân Viên / Ngày)"
+    size="lg"
+    [maskClosable]="false"
+    (cancelEmit)="closeBulkModal()"
+  >
+    <form [formGroup]="bulkForm" (ngSubmit)="submitBulkForm()">
+      <div nz-row [nzGutter]="16">
+        <div nz-col [nzSpan]="12">
+          <label class="form-label" for="bulk-branch">Chi nhánh *</label>
+          <nz-select id="bulk-branch" formControlName="branchId" (ngModelChange)="loadShiftsForBranch($event)"
+                     style="width: 100%">
+            @for (b of branchService.branches(); track b.id) {
+              <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+            }
+          </nz-select>
+        </div>
+        <div nz-col [nzSpan]="12">
+          <label class="form-label" for="bulk-shift">Khung ca làm việc *</label>
+          <nz-select id="bulk-shift" formControlName="shiftId" nzPlaceHolder="Chọn khung ca" style="width: 100%">
+            @for (s of availableShifts(); track s.id) {
+              <nz-option [nzLabel]="s.shiftName + ' (' + s.startTime + ' - ' + s.endTime + ')'"
+                         [nzValue]="s.id"></nz-option>
+            }
+          </nz-select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="bulk-employees">Chọn danh sách nhân viên nhận ca *</label>
+        <nz-select
+          id="bulk-employees"
+          formControlName="accountIds"
+          nzMode="multiple"
+          nzPlaceHolder="Chọn một hoặc nhiều nhân viên"
+          style="width: 100%"
+        >
+          @for (u of availableUsers(); track u.id) {
+            <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')'" [nzValue]="u.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="bulk-dates">Danh sách ngày làm việc (Phân cách bằng dấu phẩy) *</label>
+        <nz-select
+          id="bulk-dates"
+          formControlName="workDates"
+          nzMode="tags"
+          nzPlaceHolder="Nhập ngày YYYY-MM-DD rồi bấm Enter (VD: 2026-09-18)"
+          style="width: 100%"
+        >
+        </nz-select>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="bulk-note">Ghi chú chung</label>
+        <textarea id="bulk-note" nz-input formControlName="note" rows="2"
+                  placeholder="Ghi chú phân ca hàng loạt..."></textarea>
+      </div>
+    </form>
+    <div slot="footer" class="modal-footer-actions">
+      <app-button variant="secondary" (click)="closeBulkModal()">Hủy</app-button>
+      <app-button variant="primary" leftIcon="check-all" [loading]="isSavingBulk()" (click)="submitBulkForm()">
+        Tạo lịch phân ca hàng loạt
+      </app-button>
+    </div>
+  </app-modal>
+</div>
