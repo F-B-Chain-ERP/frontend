@@ -1,0 +1,57 @@
+.assignment-list-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.po-code {
+  font-family: var(--font-mono, monospace);
+  font-weight: var(--fw-semibold);
+  color: var(--brand);
+}
+
+.page__filter-box {
+  background-color: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+
+    &--grow {
+      flex: 1;
+      min-width: 240px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page__filter-box__row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .page__filter-box__actions {
+      justify-content: flex-end;
+      margin-top: var(--space-2);
+    }
+  }
+}
+
+.page__list {
+  .ant-card-body {
+    padding: 0;
+  }
+}
+
+.modal-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.tbl-empty {
+  text-align: center;
+  padding: var(--space-6) 0;
+  color: var(--text-muted);
+}

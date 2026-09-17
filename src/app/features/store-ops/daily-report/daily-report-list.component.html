@@ -1,0 +1,270 @@
+<div class="daily-report-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Báo cáo ngày cửa hàng &amp; Khóa sổ</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        Tổng kết toàn diện dòng tiền kinh doanh trong ngày &bull; Đối soát doanh thu POS, tiền mặt nộp két và doanh số
+        chuyển khoản &bull; Phê duyệt khóa sổ
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button
+        *erpUTTHasSomeAuthority="[ROLE.BAO_CAO_NGAY.CREATE]"
+        variant="primary"
+        leftIcon="sync"
+        (click)="openGenerateModal()"
+      >
+        Tổng hợp báo cáo ngày
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Chi nhánh -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Chi nhánh</label>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Chọn chi nhánh"
+          style="width: 100%"
+        >
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Từ ngày -->
+      <div class="filter-item">
+        <label class="form-label">Từ ngày</label>
+        <nz-date-picker
+          [(ngModel)]="selectedStartDate"
+          nzFormat="yyyy-MM-dd"
+          [nzAllowClear]="true"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        ></nz-date-picker>
+      </div>
+
+      <!-- Đến ngày -->
+      <div class="filter-item">
+        <label class="form-label">Đến ngày</label>
+        <nz-date-picker
+          [(ngModel)]="selectedEndDate"
+          nzFormat="yyyy-MM-dd"
+          [nzAllowClear]="true"
+          (ngModelChange)="onSearch()"
+          style="width: 100%"
+        ></nz-date-picker>
+      </div>
+
+      <!-- Actions -->
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onReset()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #reportTable
+      [nzData]="reports()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1440px' }"
+    >
+      <thead>
+      <tr>
+        <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+        <th scope="col" nzWidth="120px" nzAlign="center">Ngày</th>
+        <th scope="col" nzWidth="90px" nzAlign="center">Tổng đơn</th>
+        <th scope="col" nzWidth="140px" nzAlign="right">Doanh thu gộp</th>
+        <th scope="col" nzWidth="120px" nzAlign="right">Giảm giá</th>
+        <th scope="col" nzWidth="150px" nzAlign="right">Doanh thu thuần</th>
+        <th scope="col" nzWidth="140px" nzAlign="right">Tiền mặt POS</th>
+        <th scope="col" nzWidth="140px" nzAlign="right">Chuyển khoản</th>
+        <th scope="col" nzWidth="130px" nzAlign="right">Tiền quỹ mở</th>
+        <th scope="col" nzWidth="130px" nzAlign="right">Tiền quỹ chốt</th>
+        <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
+        <th scope="col" nzWidth="100px" nzAlign="center">Thao tác</th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (r of reports(); track r.id; let i = $index) {
+          <tr>
+            <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+            <td nzAlign="center"><span class="font-semibold">{{ r.businessDate }}</span></td>
+            <td nzAlign="center">
+              <span class="tag-compact">{{ r.totalOrders }} đơn</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono">{{ r.grossRevenue | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono text-danger">-{{ r.discountAmount | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-bold text-success">{{ r.netRevenue | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-semibold">{{ r.cashAmount | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono text-secondary">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono">{{ r.openingCash | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-semibold">{{ r.closingCash | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="center">
+              <span [class]="getDailyReportStatusMeta(r.status).badgeClass">
+                {{ getDailyReportStatusMeta(r.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết &amp; Khóa sổ"
+                  (click)="onViewReport(r)"
+                ></app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Modal Tổng hợp Báo cáo Ngày ─────────────────────────────── -->
+  <app-modal
+    [visible]="isGenerateModalVisible()"
+    (visibleChange)="isGenerateModalVisible.set($event)"
+    title="Tổng Hợp Báo Cáo Ngày Kinh Doanh"
+    size="md"
+    [maskClosable]="false"
+    (cancelEmit)="closeGenerateModal()"
+  >
+    <form [formGroup]="generateForm" (ngSubmit)="submitGenerate()">
+      <div class="form-group">
+        <label class="form-label" for="gen-branch">Chi nhánh tổng hợp *</label>
+        <nz-select id="gen-branch" formControlName="branchId" style="width: 100%">
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="gen-date">Ngày kinh doanh (YYYY-MM-DD) *</label>
+        <nz-input-wrapper>
+          <input id="gen-date" type="date" nz-input formControlName="businessDate"/>
+        </nz-input-wrapper>
+      </div>
+      <p class="form-help-text" style="margin-top: 8px; color: var(--text-secondary); font-size: 13px;">
+        <nz-icon nzType="info-circle" style="color: var(--brand);"></nz-icon>
+        Hệ thống sẽ tự động tổng hợp toàn bộ các đơn hàng POS và các ca làm việc đã kết ca trong ngày được chọn.
+      </p>
+    </form>
+    <div slot="footer" class="modal-footer-actions">
+      <app-button variant="secondary" (click)="closeGenerateModal()">Hủy</app-button>
+      <app-button variant="primary" leftIcon="sync" [loading]="isGenerating()" (click)="submitGenerate()">
+        Bắt đầu Tổng hợp
+      </app-button>
+    </div>
+  </app-modal>
+
+  <!-- ── 5. Drawer Chi tiết Báo cáo Ngày & Khóa sổ ──────────────────── -->
+  <nz-drawer
+    [nzVisible]="isDrawerVisible()"
+    [nzWidth]="680"
+    nzTitle="Bảng Tổng Hợp Dòng Tiền &amp; Khóa Sổ Ngày"
+    (nzOnClose)="onCloseDrawer()"
+  >
+    <ng-container *nzDrawerContent>
+      @if (selectedReport(); as r) {
+        <div class="report-drawer-body">
+          <div class="summary-card">
+            <div class="summary-card__header">
+              <span class="header-tag">{{ r.businessDate }}</span>
+              <span [class]="getDailyReportStatusMeta(r.status).badgeClass">
+                {{ getDailyReportStatusMeta(r.status).label }}
+              </span>
+            </div>
+            <div class="summary-card__net">
+              <span class="net-label">DOANH THU THUẦN TRONG NGÀY:</span>
+              <span class="net-val font-mono font-bold">{{ r.netRevenue | number: '1.0-0' }} ₫</span>
+            </div>
+          </div>
+
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <span class="metric-title">Tổng đơn hàng hoàn thành</span>
+              <span class="metric-val font-semibold">{{ r.totalOrders }} đơn</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-title">Doanh thu gộp (Gross)</span>
+              <span class="metric-val font-mono">{{ r.grossRevenue | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-title">Tổng tiền chiết khấu</span>
+              <span class="metric-val font-mono text-danger">-{{ r.discountAmount | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-title">Doanh thu Tiền mặt POS</span>
+              <span class="metric-val font-mono text-success">{{ r.cashAmount | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-title">Doanh thu Chuyển khoản/QR</span>
+              <span class="metric-val font-mono text-secondary">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="metric-box">
+              <span class="metric-title">Tiền mặt nộp két cuối ngày</span>
+              <span class="metric-val font-mono font-bold text-brand">{{ r.closingCash | number: '1.0-0' }} ₫</span>
+            </div>
+          </div>
+
+          <div class="drawer-footer-actions">
+            <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
+            @if (r.status !== 'RECONCILED') {
+              <app-button
+                *erpUTTHasSomeAuthority="[ROLE.BAO_CAO_NGAY.UPDATE]"
+                variant="primary"
+                leftIcon="check-circle"
+                [loading]="isApproving()"
+                (click)="onApproveDailyReport()"
+              >
+                Phê duyệt &amp; Khóa sổ ngày
+              </app-button>
+            }
+          </div>
+        </div>
+      }
+    </ng-container>
+  </nz-drawer>
+</div>

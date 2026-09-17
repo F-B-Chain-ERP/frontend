@@ -1,0 +1,224 @@
+import {Component, OnInit, inject, signal} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+
+import {NzTableModule} from 'ng-zorro-antd/table';
+import {NzCardModule} from 'ng-zorro-antd/card';
+import {NzInputModule} from 'ng-zorro-antd/input';
+import {NzSelectModule} from 'ng-zorro-antd/select';
+import {NzDatePickerModule} from 'ng-zorro-antd/date-picker';
+import {NzGridModule} from 'ng-zorro-antd/grid';
+import {NzDividerModule} from 'ng-zorro-antd/divider';
+import {NzDrawerModule} from 'ng-zorro-antd/drawer';
+import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
+import {NzIconModule} from 'ng-zorro-antd/icon';
+import {NzSpinModule} from 'ng-zorro-antd/spin';
+import {NzAlertModule} from 'ng-zorro-antd/alert';
+
+import {BaseComponent} from '../../../shared/base-component/base.component';
+import {AppBreadcrumbsComponent} from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
+import {AppPaginationComponent} from '../../../shared/app-pagination/app-pagination.component';
+import {AppModalComponent} from '../../../shared/app-modal/app-modal.component';
+import {HasSomeAuthorityDirective} from '../../../core/auth/has-some-authority.directive';
+import {ROLE} from '../../../core/config/functions.constants';
+import {BranchService} from '../../../core/auth/branch.service';
+import {StoreShiftService} from '../shift/shift.service';
+import {StoreDailyReport, getDailyReportStatusMeta} from '../shift/shift.model';
+import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
+
+@Component({
+  selector: 'app-store-daily-report-list',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    NzTableModule,
+    NzCardModule,
+    NzInputModule,
+    NzSelectModule,
+    NzDatePickerModule,
+    NzGridModule,
+    NzDividerModule,
+    NzDrawerModule,
+    NzTooltipModule,
+    NzIconModule,
+    NzSpinModule,
+    NzAlertModule,
+    AppBreadcrumbsComponent,
+    AppButtonComponent,
+    AppPaginationComponent,
+    AppModalComponent,
+    HasSomeAuthorityDirective,
+  ],
+  templateUrl: './daily-report-list.component.html',
+  styleUrls: ['./daily-report-list.component.scss'],
+})
+export class StoreDailyReportListComponent extends BaseComponent implements OnInit {
+  readonly ROLE = ROLE;
+  readonly getDailyReportStatusMeta = getDailyReportStatusMeta;
+
+  readonly branchService = inject(BranchService);
+  private readonly shiftService = inject(StoreShiftService);
+
+  readonly reports = signal<StoreDailyReport[]>([]);
+  readonly loading = signal<boolean>(false);
+  readonly total = signal<number>(0);
+
+  // Filter params
+  selectedBranchId: string | null = null;
+  selectedStartDate: Date | null = null;
+  selectedEndDate: Date | null = null;
+  pageIndex = DEFAULT_PAGE_INDEX;
+  pageSize = DEFAULT_PAGE_SIZE;
+  readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
+
+  // Generate Report Modal
+  readonly isGenerateModalVisible = signal<boolean>(false);
+  readonly isGenerating = signal<boolean>(false);
+  generateForm!: FormGroup;
+
+  // Drawer Chi tiết báo cáo
+  readonly isDrawerVisible = signal<boolean>(false);
+  readonly selectedReport = signal<StoreDailyReport | null>(null);
+  readonly isApproving = signal<boolean>(false);
+
+  ngOnInit(): void {
+    this.initForms();
+    this.branchService.loadMine().subscribe(() => {
+      const current = this.branchService.currentBranch();
+      if (current) {
+        this.selectedBranchId = current.id;
+      }
+      this.loadData();
+    });
+  }
+
+  private initForms(): void {
+    this.generateForm = this.fb.group({
+      branchId: ['', [Validators.required]],
+      businessDate: [this.formatDate(new Date()), [Validators.required]],
+    });
+  }
+
+  loadData(): void {
+    this.loading.set(true);
+    const start = this.selectedStartDate ? this.formatDate(this.selectedStartDate) : undefined;
+    const end = this.selectedEndDate ? this.formatDate(this.selectedEndDate) : undefined;
+    const branchId = this.selectedBranchId || undefined;
+
+    this.shiftService
+      .searchDailyReports(branchId, start, end, this.pageIndex - 1, this.pageSize)
+      .subscribe({
+        next: page => {
+          this.reports.set(page?.content ?? []);
+          this.total.set(page?.totalElements ?? 0);
+          this.loading.set(false);
+        },
+        error: err => {
+          this.loading.set(false);
+          this.toastService.error('Lỗi tải danh sách báo cáo ngày', err.message);
+        },
+      });
+  }
+
+  onSearch(): void {
+    this.pageIndex = 1;
+    this.loadData();
+  }
+
+  onReset(): void {
+    this.selectedStartDate = null;
+    this.selectedEndDate = null;
+    this.pageIndex = 1;
+    this.loadData();
+  }
+
+  onPageIndexChange(idx: number): void {
+    this.pageIndex = idx;
+    this.loadData();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.pageIndex = 1;
+    this.loadData();
+  }
+
+  // ── Tổng hợp báo cáo ngày ──────────────────────────────────────────
+  openGenerateModal(): void {
+    const branchId = this.selectedBranchId || this.branchService.branches()[0]?.id || '';
+    this.generateForm.reset({
+      branchId,
+      businessDate: this.formatDate(new Date()),
+    });
+    this.isGenerateModalVisible.set(true);
+  }
+
+  closeGenerateModal(): void {
+    this.isGenerateModalVisible.set(false);
+  }
+
+  submitGenerate(): void {
+    if (this.generateForm.invalid) {
+      this.generateForm.markAllAsTouched();
+      return;
+    }
+    this.isGenerating.set(true);
+    const val = this.generateForm.value;
+
+    this.shiftService.generateDailyReport(val).subscribe({
+      next: report => {
+        this.isGenerating.set(false);
+        this.isGenerateModalVisible.set(false);
+        this.toastService.success(
+          'Tổng hợp thành công',
+          `Đã tổng hợp báo cáo ngày ${report.businessDate} với ${report.totalOrders} đơn hàng hoàn thành`,
+        );
+        this.loadData();
+      },
+      error: err => {
+        this.isGenerating.set(false);
+        this.toastService.error('Lỗi tổng hợp báo cáo ngày', err.message);
+      },
+    });
+  }
+
+  // ── Drawer Xem chi tiết & Phê duyệt khóa sổ ───────────────────────
+  onViewReport(r: StoreDailyReport): void {
+    this.selectedReport.set(r);
+    this.isDrawerVisible.set(true);
+  }
+
+  onCloseDrawer(): void {
+    this.isDrawerVisible.set(false);
+    this.selectedReport.set(null);
+  }
+
+  onApproveDailyReport(): void {
+    const r = this.selectedReport();
+    if (!r) return;
+
+    this.isApproving.set(true);
+    this.shiftService.approveDailyReport(r.id, 'Quản lý phê duyệt khóa sổ ngày').subscribe({
+      next: updated => {
+        this.isApproving.set(false);
+        this.toastService.success('Khóa sổ thành công', `Đã khóa sổ báo cáo ngày ${updated.businessDate}`);
+        this.selectedReport.set(updated);
+        this.loadData();
+      },
+      error: err => {
+        this.isApproving.set(false);
+        this.toastService.error('Không thể phê duyệt', err.message);
+      },
+    });
+  }
+
+  private formatDate(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+}

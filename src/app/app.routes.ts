@@ -204,25 +204,37 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
-        path: 'store/assignments/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Phân ca',
+        path: 'store/assignments',
+        loadChildren: () => import('./features/store-ops/assignment/assignment.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.PHAN_CA.VIEW] },
       },
       {
-        path: 'store/reports/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Báo cáo ngày',
+        path: 'store/assignments/list',
+        redirectTo: 'store/assignments',
+        pathMatch: 'full',
+      },
+      {
+        path: 'store/reports',
+        loadChildren: () => import('./features/store-ops/daily-report/daily-report.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.BAO_CAO_NGAY.VIEW] },
       },
       {
-        path: 'store/product-stock/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Tồn sản phẩm',
+        path: 'store/reports/list',
+        redirectTo: 'store/reports',
+        pathMatch: 'full',
+      },
+      {
+        path: 'store/product-stock',
+        loadChildren: () => import('./features/store-ops/product-stock/product-stock.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.XEM_TON_SAN_PHAM.VIEW] },
+      },
+      {
+        path: 'store/product-stock/list',
+        redirectTo: 'store/product-stock',
+        pathMatch: 'full',
       },
       // ── MENU ─────────────────────────────────────
       {
