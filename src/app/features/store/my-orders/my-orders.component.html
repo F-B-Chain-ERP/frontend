@@ -1,0 +1,145 @@
+<div class="my-orders-page">
+  <div class="my-orders-page__header">
+    <div>
+      <h1 class="my-orders-page__title">
+        <nz-icon nzType="solution" />
+        Đơn hàng của tôi
+      </h1>
+      <p class="my-orders-page__sub">Theo dõi trạng thái và hủy đơn khi còn được phép.</p>
+    </div>
+    <a routerLink="/store" class="my-orders-page__continue">
+      <nz-icon nzType="arrow-left" />
+      Tiếp tục mua sắm
+    </a>
+  </div>
+
+  <div class="my-orders-page__tabs">
+    @for (tab of statusTabs; track tab.value) {
+      <button
+        type="button"
+        class="my-orders-page__tab"
+        [class.my-orders-page__tab--active]="selectedStatus() === tab.value"
+        (click)="selectStatusTab(tab.value)"
+      >
+        {{ tab.label }}
+        @if (countForTab(tab.value) !== undefined && countForTab(tab.value)! > 0) {
+          <span> ({{ countForTab(tab.value) }})</span>
+        }
+      </button>
+    }
+  </div>
+
+  @if (loading() && !orders().length) {
+    <div class="my-orders-page__loading">
+      <nz-spin nzTip="Đang tải đơn hàng..."></nz-spin>
+    </div>
+  } @else if (!orders().length) {
+    <div class="my-orders-page__empty">
+      <nz-icon nzType="shopping-cart" />
+      <h3>Chưa có đơn nào ở mục này</h3>
+      <p>Thử tab khác hoặc đặt món mới để theo dõi tại đây.</p>
+      <a routerLink="/store">
+        <app-button variant="primary" [rounded]="true">Đặt món ngay</app-button>
+      </a>
+    </div>
+  } @else {
+    <div class="my-orders-page__list">
+      @for (o of orders(); track o.id) {
+        <div class="order-card">
+          <div class="order-card__head" (click)="toggleDetail(o)">
+            <div class="order-card__meta">
+              <strong>{{ formatDateTime(o.createdAt) }} • {{ o.orderType === 'DELIVERY' ? 'Giao tận nơi' : 'Tự đến lấy' }}</strong>
+            </div>
+            <span [class]="getStatusMeta(o.status).badgeClass">{{ getStatusMeta(o.status).label }}</span>
+            <strong>{{ formatPrice(o.totalAmount) }}</strong>
+          </div>
+          @if (expandedIds().has(o.id)) {
+            <div class="order-card__body">
+              @if (isDetailLoading(o.id)) {
+                <nz-spin nzTip="Đang tải chi tiết..."></nz-spin>
+              } @else if (detailOf(o.id); as d) {
+                @if (orderStepIndex(d.orderType, d.status) >= 0) {
+                  <nz-steps [nzCurrent]="orderStepIndex(d.orderType, d.status)" nzSize="small" class="order-card__steps">
+                    @for (step of orderStepTitles(d.orderType); track step) {
+                      <nz-step [nzTitle]="step"></nz-step>
+                    }
+                  </nz-steps>
+                }
+
+                @for (item of d.items; track item.id) {
+                  <div class="order-card__item">
+                    <img
+                      [src]="normalizeImageUrl(item.productImageUrl) || fallbackImage"
+                      [alt]="item.productName"
+                      class="order-card__thumb"
+                      (error)="onImageError($event)"
+                    />
+                    <span
+                      >{{ item.productName }}
+                      @if (item.variantName) {
+                        <span> ({{ item.variantName }})</span>
+                      }
+                      x{{ item.quantity }}</span
+                    >
+                    <span>{{ formatPrice(item.amount) }}</span>
+                  </div>
+                  @for (t of item.toppings; track t.toppingId) {
+                    <div class="order-card__topping">
+                      <span>+ {{ t.toppingName }} x{{ t.quantity }}</span>
+                      <span>{{ formatPrice(t.totalPrice) }}</span>
+                    </div>
+                  }
+                }
+
+                <div class="order-card__money">
+                  <span>Tạm tính {{ formatPrice(d.subtotal) }}</span>
+                  <span>Giảm {{ formatPrice(d.discount) }}</span>
+                  <span>Ship {{ formatPrice(d.shippingFee) }}</span>
+                  <strong>Tổng {{ formatPrice(d.totalAmount) }} ({{ paymentLabel(d.paymentStatus) }})</strong>
+                </div>
+
+                @if (d.shippingAddress) {
+                  <div class="text-muted">Giao tới: {{ d.shippingAddress }}</div>
+                }
+
+                <div class="order-card__history">
+                  @for (h of historyOf(o.id); track h.id) {
+                    <div class="order-card__history-row">
+                      <span>{{ historyLabel(h.oldStatus) }} → {{ historyLabel(h.newStatus) }}</span>
+                      <span>{{ formatDateTime(h.changedAt) }}</span>
+                    </div>
+                  }
+                </div>
+
+                @if (canCancel(d.status)) {
+                  @if (cancellingId() === d.id) {
+                    <div class="order-card__cancel">
+                      <input nz-input [(ngModel)]="cancelReason" placeholder="Lý do hủy đơn..." class="order-card__cancel-input" />
+                      <app-button
+                        variant="primary"
+                        (click)="confirmCancel()"
+                        [disabled]="!cancelReason.trim() || actionLoading()"
+                        [loading]="actionLoading()"
+                      >
+                        Xác nhận hủy
+                      </app-button>
+                      <app-button variant="ghost" (click)="closeCancel()">Đóng</app-button>
+                    </div>
+                  } @else {
+                    <app-button variant="ghost" (click)="askCancel(o, $event)">Hủy đơn</app-button>
+                  }
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    @if (total() > orders().length) {
+      <div class="my-orders-page__more">
+        <app-button variant="ghost" (click)="loadMore()">Xem thêm ({{ total() - orders().length }} đơn)</app-button>
+      </div>
+    }
+  }
+</div>

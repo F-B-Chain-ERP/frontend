@@ -1,22 +1,35 @@
-import {ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {CommonModule} from '@angular/common';
-import {ActivatedRoute, Router} from '@angular/router';
-import {NzIconDirective} from 'ng-zorro-antd/icon';
-import {NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent} from 'ng-zorro-antd/input';
-import {NzOptionComponent, NzSelectComponent} from 'ng-zorro-antd/select';
-import {AppButtonComponent} from '../../shared/app-button/app-button.component';
-import {AppModalComponent} from '../../shared/app-modal/app-modal.component';
-import {AppDrinkCardComponent, DrinkItem} from '../../shared/app-drink-card/app-drink-card.component';
-import {AppQuantityStepperComponent} from '../../shared/app-quantity-stepper/app-quantity-stepper.component';
-import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
-import {CartService} from '../../shared/services/cart.service';
-import {Category} from '../menu/categories/category.model';
-import {Product, ProductDetail} from '../menu/products/product.model';
-import {ProductVariant} from '../menu/products/variants/variant.model';
-import {SalesService} from './services/sales.service';
-import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE, DEFAULT_STYLE_IMAGE} from '../../core/util/image.util';
-import {Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap, takeUntil} from 'rxjs';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { NzIconDirective } from 'ng-zorro-antd/icon';
+import { NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent } from 'ng-zorro-antd/input';
+import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
+import { AppButtonComponent } from '../../shared/app-button/app-button.component';
+import { AppModalComponent } from '../../shared/app-modal/app-modal.component';
+import { AppDrinkCardComponent, DrinkItem } from '../../shared/app-drink-card/app-drink-card.component';
+import { AppQuantityStepperComponent } from '../../shared/app-quantity-stepper/app-quantity-stepper.component';
+import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
+import { CartService } from '../../shared/services/cart.service';
+import { Category } from '../menu/categories/category.model';
+import { Product, ProductDetail } from '../menu/products/product.model';
+import { ProductVariant } from '../menu/products/variants/variant.model';
+import { SalesService } from './services/sales.service';
+import { PosApiService } from './services/pos-api.service';
+import { StoreBranchService } from './services/store-branch.service';
+import {
+  LevelOption,
+  SizeOption,
+  ToppingOption,
+  defaultIceCode,
+  defaultSugarCode,
+  parseIceOptions,
+  parseSizeOption,
+  parseSugarOptions,
+  toToppingOptions,
+} from './services/pos-options.util';
+import { normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE, DEFAULT_STYLE_IMAGE } from '../../core/util/image.util';
+import { Subject, catchError, debounceTime, distinctUntilChanged, map, of, switchMap, takeUntil } from 'rxjs';
 
 export interface CategoryTab {
   id: string;
@@ -25,21 +38,7 @@ export interface CategoryTab {
   icon: string;
 }
 
-export interface SizeOption {
-  id: string;
-  variantCode: string;
-  name: string;
-  sizeLabel: string;
-  volume: string;
-  extraPrice: number;
-  finalPrice: number;
-}
-
-export interface ToppingOption {
-  id: string;
-  label: string;
-  price: number;
-}
+export type { SizeOption, ToppingOption };
 
 export interface CustomerReview {
   name: string;
@@ -69,38 +68,6 @@ function getCategoryIcon(name: string): string {
   return 'appstore';
 }
 
-function parseSizeOption(v: ProductVariant, basePrice: number): SizeOption {
-  const label = (v.sizeLabel || '').trim().toUpperCase();
-  const code = (v.variantCode || '').trim().toUpperCase();
-  let volume = 'Tiêu chuẩn';
-  let name = v.variantName || `Size ${label || 'Chuẩn'}`;
-
-  if (label === 'S' || code.includes('-S') || code.endsWith('S')) {
-    volume = '355ml';
-    if (!v.variantName) name = 'Size Nhỏ (S)';
-  } else if (label === 'M' || code.includes('-M') || code.endsWith('M')) {
-    volume = '500ml';
-    if (!v.variantName) name = 'Size Vừa (M)';
-  } else if (label === 'L' || code.includes('-L') || code.endsWith('L')) {
-    volume = '700ml';
-    if (!v.variantName) name = 'Size Lớn (L)';
-  } else if (label === 'XL' || code.includes('-XL') || code.endsWith('XL')) {
-    volume = '850ml';
-    if (!v.variantName) name = 'Size Khổng Lồ (XL)';
-  }
-
-  const extra = Number(v.priceDelta) || 0;
-  return {
-    id: v.id,
-    variantCode: v.variantCode,
-    name,
-    sizeLabel: label || 'STD',
-    volume,
-    extraPrice: extra,
-    finalPrice: basePrice + extra,
-  };
-}
-
 @Component({
   selector: 'app-store',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -124,10 +91,12 @@ function parseSizeOption(v: ProductVariant, basePrice: number): SizeOption {
 })
 export class StoreComponent implements OnInit, OnDestroy {
   readonly cartService = inject(CartService);
+  readonly storeBranches = inject(StoreBranchService);
   private readonly toast = inject(AppNotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly salesService = inject(SalesService);
+  private readonly posApi = inject(PosApiService);
   private readonly destroy$ = new Subject<void>();
   private readonly search$ = new Subject<string>();
   private readonly detailRequest$ = new Subject<DrinkItem>();
@@ -154,7 +123,7 @@ export class StoreComponent implements OnInit, OnDestroy {
   readonly topSelling = signal<DrinkItem[]>([]);
 
   // Category Tabs & Style Categories
-  readonly categories = signal<CategoryTab[]>([{id: 'all', name: 'Tất cả món', count: 0, icon: 'appstore'}]);
+  readonly categories = signal<CategoryTab[]>([{ id: 'all', name: 'Tất cả món', count: 0, icon: 'appstore' }]);
   readonly styleCategories = signal<StyleCategory[]>([]);
 
   // Modal 2: Customize Order (Size, Sugar, Ice, Toppings, Note, Quantity)
@@ -163,29 +132,18 @@ export class StoreComponent implements OnInit, OnDestroy {
   readonly selectedProductDetail = signal<ProductDetail | null>(null);
   readonly availableSizes = signal<SizeOption[]>([]);
   readonly selectedSize = signal<string>('');
-  readonly availableSugarOptions = signal<string[]>([]);
+  readonly availableSugarOptions = signal<LevelOption[]>([]);
   readonly selectedSugar = signal<string>('');
-  readonly availableIceOptions = signal<string[]>([]);
+  readonly availableIceOptions = signal<LevelOption[]>([]);
   readonly selectedIce = signal<string>('');
   readonly selectedToppingIds = signal<Set<string>>(new Set());
   readonly modalQuantity = signal<number>(1);
   modalNote = '';
 
-  readonly quickNotes: string[] = [
-    'Ít ngọt',
-    'Nhiều đá',
-    'Để riêng đá mang về',
-    'Không lấy ống hút',
-    'Uống nóng',
-  ];
+  readonly quickNotes: string[] = ['Ít ngọt', 'Nhiều đá', 'Để riêng đá mang về', 'Không lấy ống hút', 'Uống nóng'];
 
-  // Topping Options (Standard cafe addons)
-  readonly toppingOptions: ToppingOption[] = [
-    {id: 'pearl', label: 'Trân châu hoàng kim', price: 8000},
-    {id: 'peach', label: 'Thạch đào giòn giòn', price: 10000},
-    {id: 'cheese', label: 'Kem phô mai Cheese Foam', price: 12000},
-    {id: 'lotus', label: 'Hạt sen Huế nấu đường phèn', price: 12000},
-  ];
+  /** Topping thật từ BE theo SP + chi nhánh (thay hardcode). */
+  readonly toppingOptions = signal<ToppingOption[]>([]);
 
   // Verified Customer Reviews
   readonly customerReviews: CustomerReview[] = [
@@ -225,9 +183,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     });
 
     // Gõ search debounce 300ms thay vì lọc mỗi ký tự
-    this.search$
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
-      .subscribe(() => this.onFilterChange());
+    this.search$.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$)).subscribe(() => this.onFilterChange());
 
     // Chi tiết modal đi qua switchMap: bấm món khác khi request cũ chưa về
     // thì hủy request cũ, response cũ không ghi đè modal mới (hết race).
@@ -235,13 +191,13 @@ export class StoreComponent implements OnInit, OnDestroy {
       .pipe(
         switchMap(drink =>
           this.salesService.getProductDetail(drink.id).pipe(
-            map(detail => ({drink, detail: detail as ProductDetail | null})),
-            catchError(() => of({drink, detail: null as ProductDetail | null}))
-          )
+            map(detail => ({ drink, detail })),
+            catchError(() => of({ drink, detail: null as ProductDetail | null })),
+          ),
         ),
-        takeUntil(this.destroy$)
+        takeUntil(this.destroy$),
       )
-      .subscribe(({drink, detail}) => {
+      .subscribe(({ drink, detail }) => {
         this.isLoadingVariants.set(false);
         if (detail) {
           this.applyProductDetail(detail);
@@ -252,6 +208,17 @@ export class StoreComponent implements OnInit, OnDestroy {
 
     this.loadStoreCategories();
     this.loadStoreProducts();
+
+    // Chi nhánh đặt món: có branch mới tải giỏ server (giỏ gắn theo branch).
+    this.storeBranches
+      .loadBranches()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({ next: () => this.cartService.refresh(), error: () => undefined });
+  }
+
+  onBranchChange(branchId: string): void {
+    this.storeBranches.selectBranch(branchId);
+    this.cartService.refresh();
   }
 
   ngOnDestroy(): void {
@@ -269,16 +236,19 @@ export class StoreComponent implements OnInit, OnDestroy {
    */
   loadStoreCategories(): void {
     this.isLoadingCategories.set(true);
-    this.salesService.getCategories().pipe(takeUntil(this.destroy$)).subscribe({
-      next: res => {
-        this.isLoadingCategories.set(false);
-        const activeCats = res.items || [];
-        this.applyCategories(activeCats);
-      },
-      error: () => {
-        this.isLoadingCategories.set(false);
-      },
-    });
+    this.salesService
+      .getCategories()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          this.isLoadingCategories.set(false);
+          const activeCats = res.items || [];
+          this.applyCategories(activeCats);
+        },
+        error: () => {
+          this.isLoadingCategories.set(false);
+        },
+      });
   }
 
   /**
@@ -286,18 +256,21 @@ export class StoreComponent implements OnInit, OnDestroy {
    */
   loadStoreProducts(): void {
     this.isLoadingProducts.set(true);
-    this.salesService.getProducts({pageSize: 100}).pipe(takeUntil(this.destroy$)).subscribe({
-      next: res => {
-        this.isLoadingProducts.set(false);
-        const products = res.items || [];
-        this.rawProducts.set(products);
-        this.processProducts(products);
-      },
-      error: () => {
-        this.isLoadingProducts.set(false);
-        this.toast.error('Không thể tải thực đơn đồ uống. Vui lòng thử lại sau!', '');
-      },
-    });
+    this.salesService
+      .getProducts({ pageSize: 100 })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          this.isLoadingProducts.set(false);
+          const products = res.items || [];
+          this.rawProducts.set(products);
+          this.processProducts(products);
+        },
+        error: () => {
+          this.isLoadingProducts.set(false);
+          this.toast.error('Không thể tải thực đơn đồ uống. Vui lòng thử lại sau!', '');
+        },
+      });
   }
 
   /**
@@ -306,7 +279,7 @@ export class StoreComponent implements OnInit, OnDestroy {
   private applyCategories(cats: Category[]): void {
     const products = this.drinksList();
     const tabs: CategoryTab[] = [
-      {id: 'all', name: 'Tất cả món', count: products.length, icon: 'appstore'},
+      { id: 'all', name: 'Tất cả món', count: products.length, icon: 'appstore' },
       ...cats.map(c => ({
         id: c.id,
         name: c.name,
@@ -323,7 +296,7 @@ export class StoreComponent implements OnInit, OnDestroy {
         name: c.name,
         subtitle: c.description || 'Thưởng thức phong vị hảo hạng mỗi ngày',
         imageUrl: normalizeImageUrl(c.imageUrl) || FALLBACK_STYLE_IMAGE,
-      }))
+      })),
     );
   }
 
@@ -341,7 +314,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     const currentTabs = this.categories();
     const updatedTabs = currentTabs.map(tab => {
       if (tab.id === 'all') {
-        return {...tab, count: items.length};
+        return { ...tab, count: items.length };
       }
       return {
         ...tab,
@@ -412,13 +385,13 @@ export class StoreComponent implements OnInit, OnDestroy {
   }
 
   formatPrice(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   }
 
   scrollToSection(sectionId: string): void {
     const el = document.getElementById(sectionId);
     if (el) {
-      el.scrollIntoView({behavior: 'smooth', block: 'start'});
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -434,7 +407,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     }
     this.toast.success(
       'Đăng ký thành công!',
-      `Chúng tôi đã lưu địa chỉ "${this.newsletterEmail}". Bạn sẽ nhận được các mã ưu đãi độc quyền sớm nhất!`
+      `Chúng tôi đã lưu địa chỉ "${this.newsletterEmail}". Bạn sẽ nhận được các mã ưu đãi độc quyền sớm nhất!`,
     );
     this.newsletterEmail = '';
   }
@@ -459,10 +432,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
       list = list.filter(
-        d =>
-          d.name.toLowerCase().includes(q) ||
-          d.description.toLowerCase().includes(q) ||
-          d.categoryName.toLowerCase().includes(q)
+        d => d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q) || d.categoryName.toLowerCase().includes(q),
       );
     }
 
@@ -570,15 +540,24 @@ export class StoreComponent implements OnInit, OnDestroy {
       this.selectedSize.set('default');
     }
 
-    // 2. Cấu hình Mức đường
-    const sugarOpts = this.parseSugarOptions(detail.availableSugarLevels);
+    // 2. Cấu hình Mức đường (gửi MÃ mức cho BE)
+    const sugarOpts = parseSugarOptions(detail.availableSugarLevels);
     this.availableSugarOptions.set(sugarOpts);
-    this.selectedSugar.set(sugarOpts.includes('100% (Chuẩn)') ? '100% (Chuẩn)' : sugarOpts[0] || '');
+    this.selectedSugar.set(defaultSugarCode(sugarOpts));
 
-    // 3. Cấu hình Mức đá
-    const iceOpts = this.parseIceOptions(detail.availableIceLevels);
+    // 3. Cấu hình Mức đá (gửi MÃ mức cho BE)
+    const iceOpts = parseIceOptions(detail.availableIceLevels);
     this.availableIceOptions.set(iceOpts);
-    this.selectedIce.set(iceOpts.includes('100% đá (Chuẩn)') ? '100% đá (Chuẩn)' : iceOpts[0] || '');
+    this.selectedIce.set(defaultIceCode(iceOpts));
+
+    // 4. Topping thật theo SP + chi nhánh
+    this.posApi
+      .getProductToppings(detail.id, this.storeBranches.branchId())
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: list => this.toppingOptions.set(toToppingOptions(list)),
+        error: () => this.toppingOptions.set([]),
+      });
   }
 
   private applyProductDetailFallback(drink: DrinkItem): void {
@@ -594,10 +573,13 @@ export class StoreComponent implements OnInit, OnDestroy {
       },
     ]);
     this.selectedSize.set('default');
-    this.availableSugarOptions.set(['100% (Chuẩn)', '70%', '50%', 'Không đường (0%)']);
-    this.selectedSugar.set('100% (Chuẩn)');
-    this.availableIceOptions.set(['100% đá (Chuẩn)', '70% đá', '50% đá', 'Không đá (0%)', 'Uống nóng']);
-    this.selectedIce.set('100% đá (Chuẩn)');
+    const fallbackSugar = parseSugarOptions(null);
+    this.availableSugarOptions.set(fallbackSugar);
+    this.selectedSugar.set(defaultSugarCode(fallbackSugar));
+    const fallbackIce = parseIceOptions(null);
+    this.availableIceOptions.set(fallbackIce);
+    this.selectedIce.set(defaultIceCode(fallbackIce));
+    this.toppingOptions.set([]);
   }
 
   quickAddToCart(drink: DrinkItem): void {
@@ -612,34 +594,12 @@ export class StoreComponent implements OnInit, OnDestroy {
     }
   }
 
-  private parseSugarOptions(csvStr?: string | null): string[] {
-    if (!csvStr || !csvStr.trim()) {
-      return ['0%', '30%', '50%', '70%', '100% (Chuẩn)'];
-    }
-    const levels = csvStr.split(',').map(s => s.trim()).filter(Boolean);
-    const mapLevel = (lvl: string) => {
-      if (lvl === '100') return '100% (Chuẩn)';
-      if (lvl === '0') return 'Không đường (0%)';
-      return `${lvl}%`;
-    };
-    return levels.map(mapLevel);
+  sugarLabel(code: string): string {
+    return this.availableSugarOptions().find(o => o.code === code)?.label ?? code;
   }
 
-  private parseIceOptions(csvStr?: string | null): string[] {
-    if (!csvStr || !csvStr.trim()) {
-      return ['100% đá (Chuẩn)', '70% đá', '50% đá', 'Không đá (0%)', 'Uống nóng'];
-    }
-    const levels = csvStr.split(',').map(s => s.trim()).filter(Boolean);
-    const mapLevel = (lvl: string) => {
-      if (lvl === '100') return '100% đá (Chuẩn)';
-      if (lvl === '0') return 'Không đá (0%)';
-      return `${lvl}% đá`;
-    };
-    const parsed = levels.map(mapLevel);
-    if (!parsed.some(s => s.includes('nóng') || s.includes('Nóng'))) {
-      parsed.push('Uống nóng');
-    }
-    return parsed;
+  iceLabel(code: string): string {
+    return this.availableIceOptions().find(o => o.code === code)?.label ?? code;
   }
 
   toggleTopping(id: string): void {
@@ -667,7 +627,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     }
 
     for (const topId of this.selectedToppingIds()) {
-      const top = this.toppingOptions.find(t => t.id === topId);
+      const top = this.toppingOptions().find(t => t.id === topId);
       if (top) unitPrice += top.price;
     }
 
@@ -679,26 +639,29 @@ export class StoreComponent implements OnInit, OnDestroy {
     if (!drink) return;
 
     const sizeOpt = this.availableSizes().find(s => s.id === this.selectedSize());
-    const selectedToppings = this.toppingOptions.filter(t => this.selectedToppingIds().has(t.id));
+    const selectedToppings = this.toppingOptions().filter(t => this.selectedToppingIds().has(t.id));
     const qty = this.modalQuantity();
-    const note = this.modalNote.trim();
+    const noteText = this.modalNote.trim();
+    const variantId = this.selectedSize() && this.selectedSize() !== 'default' ? this.selectedSize() : null;
 
     this.cartService.addItem(
       drink,
       {
         size: sizeOpt?.name || sizeOpt?.sizeLabel || this.selectedSize(),
         sizeExtra: sizeOpt?.extraPrice || 0,
+        variantId,
         sugar: this.isBeverage(drink) ? this.selectedSugar() : undefined,
         ice: this.isBeverage(drink) ? this.selectedIce() : undefined,
         toppings: selectedToppings,
+        note: noteText || undefined,
       },
-      qty
+      qty,
     );
 
     this.closeCustomizeModal();
     this.toast.success(
       `Đã thêm ${qty}x "${drink.name}" vào giỏ hàng!`,
-      note ? `Ghi chú: "${note}"` : 'Nhấn vào biểu tượng giỏ hàng để xem chi tiết hoặc thanh toán.'
+      noteText ? `Ghi chú: "${noteText}"` : 'Nhấn vào biểu tượng giỏ hàng để xem chi tiết hoặc thanh toán.',
     );
   }
 

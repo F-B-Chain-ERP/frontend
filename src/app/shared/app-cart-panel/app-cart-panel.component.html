@@ -1,32 +1,19 @@
 <!-- Backdrop Overlay -->
-<div
-  class="cart-drawer-overlay"
-  [class.cart-drawer-overlay--visible]="cartService.isCartOpen()"
-  (click)="onClose()"
-></div>
+<div class="cart-drawer-overlay" [class.cart-drawer-overlay--visible]="cartService.isCartOpen()" (click)="onClose()"></div>
 
 <!-- Drawer Panel -->
-<aside
-  class="cart-drawer"
-  [class.cart-drawer--open]="cartService.isCartOpen()"
-  aria-label="Giỏ hàng mua hàng"
->
+<aside class="cart-drawer" [class.cart-drawer--open]="cartService.isCartOpen()" aria-label="Giỏ hàng mua hàng">
   <!-- ── 1. Drawer Header ───────────────────────────── -->
   <div class="cart-drawer__header">
     <div class="cart-drawer__header-title">
-      <nz-icon nzType="shopping-cart" class="cart-drawer__header-icon"/>
+      <nz-icon nzType="shopping-cart" class="cart-drawer__header-icon" />
       <h2>Giỏ hàng của bạn</h2>
       @if (cartService.totalCount() > 0) {
         <span class="cart-drawer__count-badge">{{ cartService.totalCount() }}</span>
       }
     </div>
-    <button
-      type="button"
-      class="cart-drawer__close-btn"
-      (click)="onClose()"
-      title="Đóng giỏ hàng"
-    >
-      <nz-icon nzType="close"/>
+    <button type="button" class="cart-drawer__close-btn" (click)="onClose()" title="Đóng giỏ hàng">
+      <nz-icon nzType="close" />
     </button>
   </div>
 
@@ -35,15 +22,11 @@
     @if (cartService.isEmpty()) {
       <div class="cart-empty">
         <div class="cart-empty__icon-box">
-          <nz-icon nzType="shopping"/>
+          <nz-icon nzType="shopping" />
         </div>
         <h3 class="cart-empty__title">Giỏ hàng đang trống</h3>
-        <p class="cart-empty__desc">
-          Bạn chưa chọn sản phẩm nào. Hãy khám phá thực đơn cà phê và đồ uống đặc sản nhé!
-        </p>
-        <app-button variant="primary" leftIcon="appstore" [rounded]="true" (click)="onClose()">
-          Xem thực đơn ngay
-        </app-button>
+        <p class="cart-empty__desc">Bạn chưa chọn sản phẩm nào. Hãy khám phá thực đơn cà phê và đồ uống đặc sản nhé!</p>
+        <app-button variant="primary" leftIcon="appstore" [rounded]="true" (click)="onClose()"> Xem thực đơn ngay </app-button>
       </div>
     } @else {
       <div class="cart-items-list">
@@ -52,15 +35,10 @@
             <!-- Thumbnail -->
             <div class="cart-item-card__thumb">
               @if (item.drink.imageUrl) {
-                <img
-                  [src]="normalizeImageUrl(item.drink.imageUrl)"
-                  [alt]="item.drink.name"
-                  loading="lazy"
-                  (error)="onImageError($event)"
-                />
+                <img [src]="normalizeImageUrl(item.drink.imageUrl)" [alt]="item.drink.name" loading="lazy" (error)="onImageError($event)" />
               } @else {
                 <div class="cart-item-card__thumb-placeholder">
-                  <nz-icon nzType="coffee"/>
+                  <nz-icon nzType="coffee" />
                 </div>
               }
             </div>
@@ -75,7 +53,7 @@
                   (click)="onRemoveItem(item.id, item.drink.name)"
                   nz-tooltip="Xóa món này"
                 >
-                  <nz-icon nzType="delete"/>
+                  <nz-icon nzType="delete" />
                 </button>
               </div>
 
@@ -84,11 +62,7 @@
               }
 
               <div class="cart-item-card__bottom">
-                <app-quantity-stepper
-                  [value]="item.quantity"
-                  size="sm"
-                  (valueChange)="onQuantityChange(item.id, $event)"
-                />
+                <app-quantity-stepper [value]="item.quantity" size="sm" (valueChange)="onQuantityChange(item.id, $event)" />
 
                 <div class="cart-item-card__price-box">
                   <span class="cart-item-card__total-price">{{ formatPrice(item.totalPrice) }}</span>
@@ -123,21 +97,8 @@
       </div>
 
       <div class="cart-drawer__actions">
-        <app-button
-          variant="secondary"
-          [fullWidth]="false"
-          (click)="onClearCart()"
-        >
-          Xóa giỏ
-        </app-button>
-        <app-button
-          variant="primary"
-          leftIcon="check-circle"
-          [fullWidth]="true"
-          (click)="onCheckout()"
-        >
-          Tiến hành Đặt hàng
-        </app-button>
+        <app-button variant="secondary" [fullWidth]="false" (click)="onClearCart()"> Xóa giỏ </app-button>
+        <app-button variant="primary" leftIcon="check-circle" [fullWidth]="true" (click)="onCheckout()"> Tiến hành Đặt hàng </app-button>
       </div>
     </div>
   }

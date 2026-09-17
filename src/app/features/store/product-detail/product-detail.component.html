@@ -2,7 +2,7 @@
   <!-- ── 1. Top Breadcrumbs Bar ── -->
   <div class="detail-breadcrumb">
     <button type="button" class="back-link-btn" (click)="goBack()">
-      <nz-icon nzType="arrow-left"/>
+      <nz-icon nzType="arrow-left" />
       <span>Quay lại Thực Đơn</span>
     </button>
     <div class="breadcrumb-trail">
@@ -40,20 +40,16 @@
           <span class="product-media-card__cat-tag">{{ p.categoryName || 'Đồ uống' }}</span>
 
           @if (p.isFeatured) {
-            <span class="product-media-card__badge product-media-card__badge--featured">
-              <nz-icon nzType="fire"/> Signature
-            </span>
+            <span class="product-media-card__badge product-media-card__badge--featured"> <nz-icon nzType="fire" /> Signature </span>
           } @else if (p.isBestSeller) {
-            <span class="product-media-card__badge product-media-card__badge--bestseller">
-              <nz-icon nzType="star"/> Bán chạy
-            </span>
+            <span class="product-media-card__badge product-media-card__badge--bestseller"> <nz-icon nzType="star" /> Bán chạy </span>
           }
         </div>
 
         <!-- Meta Features Badges -->
         <div class="product-highlights">
           <div class="highlight-item">
-            <nz-icon nzType="clock-circle" class="highlight-item__icon"/>
+            <nz-icon nzType="clock-circle" class="highlight-item__icon" />
             <div class="highlight-item__text">
               <span class="label">Thời gian chuẩn bị</span>
               <span class="val">~{{ p.preparationMinutes || 10 }} phút</span>
@@ -61,7 +57,7 @@
           </div>
 
           <div class="highlight-item">
-            <nz-icon nzType="check-circle" class="highlight-item__icon highlight-item__icon--success"/>
+            <nz-icon nzType="check-circle" class="highlight-item__icon highlight-item__icon--success" />
             <div class="highlight-item__text">
               <span class="label">Phục vụ tại quán &amp; Mang về</span>
               <span class="val">Pha chế tươi mới</span>
@@ -69,7 +65,7 @@
           </div>
 
           <div class="highlight-item">
-            <nz-icon nzType="star" class="highlight-item__icon highlight-item__icon--warning"/>
+            <nz-icon nzType="star" class="highlight-item__icon highlight-item__icon--warning" />
             <div class="highlight-item__text">
               <span class="label">Đánh giá khách hàng</span>
               <span class="val">4.8 / 5.0 (120+ lượt mua)</span>
@@ -81,7 +77,10 @@
         <div class="product-info-block">
           <h3 class="product-info-block__title">Mô tả món ăn / đồ uống</h3>
           <p class="product-info-block__text">
-            {{ p.description || 'Thức uống thủ công tươi mới từ nguyên liệu tự nhiên chọn lọc, mang hương vị đậm đà, cân bằng và khơi nguồn năng lượng tích cực.' }}
+            {{
+              p.description ||
+                'Thức uống thủ công tươi mới từ nguyên liệu tự nhiên chọn lọc, mang hương vị đậm đà, cân bằng và khơi nguồn năng lượng tích cực.'
+            }}
           </p>
         </div>
 
@@ -89,18 +88,12 @@
         <div class="product-info-block">
           <div class="product-info-block__header-row">
             <h3 class="product-info-block__title">Các kích cỡ &amp; biến thể có sẵn ({{ availableSizes().length }})</h3>
-            <span class="status-badge-active">
-              <nz-icon nzType="check"/> Sẵn sàng phục vụ
-            </span>
+            <span class="status-badge-active"> <nz-icon nzType="check" /> Sẵn sàng phục vụ </span>
           </div>
 
           <div class="variants-table-card">
             @for (size of availableSizes(); track size.id) {
-              <div
-                class="variant-row"
-                [class.variant-row--active]="selectedSize() === size.id"
-                (click)="selectedSize.set(size.id)"
-              >
+              <div class="variant-row" [class.variant-row--active]="selectedSize() === size.id" (click)="selectedSize.set(size.id)">
                 <div class="variant-row__left">
                   <span class="variant-badge">{{ size.sizeLabel }}</span>
                   <div class="variant-meta">
@@ -134,7 +127,7 @@
             </div>
           </div>
 
-          <hr class="config-divider"/>
+          <hr class="config-divider" />
 
           <!-- 1. Chọn Kích cỡ -->
           <div class="config-group">
@@ -152,7 +145,7 @@
                 >
                   <div class="size-choice-card__top">
                     <span class="size-pill">{{ size.sizeLabel }}</span>
-                    <nz-icon nzType="coffee" class="size-icon"/>
+                    <nz-icon nzType="coffee" class="size-icon" />
                   </div>
                   <strong class="size-choice-card__name">{{ size.name }}</strong>
                   <span class="size-choice-card__vol">{{ size.volume }}</span>
@@ -166,7 +159,7 @@
 
                   @if (selectedSize() === size.id) {
                     <div class="size-checked-tag">
-                      <nz-icon nzType="check"/>
+                      <nz-icon nzType="check" />
                     </div>
                   }
                 </div>
@@ -183,14 +176,14 @@
               </div>
 
               <div class="segmented-pill-row">
-                @for (s of availableSugarOptions(); track s) {
+                @for (s of availableSugarOptions(); track s.code) {
                   <button
                     type="button"
                     class="segmented-pill-btn"
-                    [class.segmented-pill-btn--active]="selectedSugar() === s"
-                    (click)="selectedSugar.set(s)"
+                    [class.segmented-pill-btn--active]="selectedSugar() === s.code"
+                    (click)="selectedSugar.set(s.code)"
                   >
-                    {{ s }}
+                    {{ s.label }}
                   </button>
                 }
               </div>
@@ -206,17 +199,17 @@
               </div>
 
               <div class="segmented-pill-row">
-                @for (ice of availableIceOptions(); track ice) {
+                @for (ice of availableIceOptions(); track ice.code) {
                   <button
                     type="button"
                     class="segmented-pill-btn"
-                    [class.segmented-pill-btn--active]="selectedIce() === ice"
-                    (click)="selectedIce.set(ice)"
+                    [class.segmented-pill-btn--active]="selectedIce() === ice.code"
+                    (click)="selectedIce.set(ice.code)"
                   >
-                    @if (ice.includes('nóng') || ice.includes('Nóng')) {
-                      <nz-icon nzType="fire"/>
+                    @if (ice.code === 'HOT') {
+                      <nz-icon nzType="fire" />
                     }
-                    {{ ice }}
+                    {{ ice.label }}
                   </button>
                 }
               </div>
@@ -231,7 +224,7 @@
             </div>
 
             <div class="topping-select-grid">
-              @for (t of toppingOptions; track t.id) {
+              @for (t of toppingOptions(); track t.id) {
                 <div
                   class="topping-select-card"
                   [class.topping-select-card--selected]="selectedToppingIds().has(t.id)"
@@ -245,11 +238,11 @@
                   <div class="toggle-box">
                     @if (selectedToppingIds().has(t.id)) {
                       <span class="circle-btn circle-btn--checked">
-                        <nz-icon nzType="check"/>
+                        <nz-icon nzType="check" />
                       </span>
                     } @else {
                       <span class="circle-btn">
-                        <nz-icon nzType="plus"/>
+                        <nz-icon nzType="plus" />
                       </span>
                     }
                   </div>
@@ -284,26 +277,17 @@
             />
           </div>
 
-          <hr class="config-divider"/>
+          <hr class="config-divider" />
 
           <!-- 6. Bottom Action: Stepper & Add to cart button -->
           <div class="order-action-footer">
             <div class="stepper-box">
               <span class="stepper-title">Số lượng:</span>
-              <app-quantity-stepper
-                [value]="quantity()"
-                [min]="1"
-                [max]="50"
-                (valueChange)="onQuantityChange($event)"
-              />
+              <app-quantity-stepper [value]="quantity()" [min]="1" [max]="50" (valueChange)="onQuantityChange($event)" />
             </div>
 
-            <button
-              type="button"
-              class="add-cart-large-btn"
-              (click)="addToCart()"
-            >
-              <nz-icon nzType="shopping-cart"/>
+            <button type="button" class="add-cart-large-btn" (click)="addToCart()">
+              <nz-icon nzType="shopping-cart" />
               <span>Thêm vào giỏ hàng • {{ formatPrice(computeTotal()) }}</span>
             </button>
           </div>

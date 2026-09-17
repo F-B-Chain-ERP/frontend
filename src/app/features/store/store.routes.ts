@@ -1,4 +1,4 @@
-import {Routes} from '@angular/router';
+import { Routes } from '@angular/router';
 
 export const routes: Routes = [
   {
@@ -10,6 +10,11 @@ export const routes: Routes = [
     path: 'checkout',
     loadComponent: () => import('./checkout/checkout.component'),
     title: 'Thanh toán',
+  },
+  {
+    path: 'orders',
+    loadComponent: () => import('./my-orders/my-orders.component'),
+    title: 'Đơn hàng của tôi',
   },
   {
     path: 'product/:id',

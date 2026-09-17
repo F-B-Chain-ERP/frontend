@@ -1,18 +1,18 @@
-import {ChangeDetectionStrategy, Component, computed, inject, signal} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormsModule} from '@angular/forms';
-import {Router, RouterLink} from '@angular/router';
-import {NzIconModule} from 'ng-zorro-antd/icon';
-import {NzAvatarModule} from 'ng-zorro-antd/avatar';
-import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
-import {NzInputModule} from 'ng-zorro-antd/input';
-import {NzDropDownModule} from 'ng-zorro-antd/dropdown';
-import {NzMenuModule} from 'ng-zorro-antd/menu';
-import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
-import {CartService} from '../../../shared/services/cart.service';
-import {AccountService} from '../../../core/auth/account.service';
-import {LoginService} from '../../../features/login/login.service';
-import {ThemeService} from '../../../core/theme/theme.service';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzAvatarModule } from 'ng-zorro-antd/avatar';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+import { NzMenuModule } from 'ng-zorro-antd/menu';
+import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
+import { CartService } from '../../../shared/services/cart.service';
+import { AccountService } from '../../../core/auth/account.service';
+import { LoginService } from '../../../features/login/login.service';
+import { ThemeService } from '../../../core/theme/theme.service';
 
 @Component({
   selector: 'app-client-navbar',
@@ -49,11 +49,11 @@ export class ClientNavbarComponent {
   /** Chỉ hiển thị liên kết quay lại trang quản trị khi người dùng là tài khoản nội bộ (admin/nhân viên). */
   readonly isAdmin = computed(() => {
     const user = this.account();
-    return user && user.principalType === 'ACCOUNT';
+    return user?.principalType === 'ACCOUNT';
   });
 
   formatPrice(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   }
 
   toggleTheme(): void {
@@ -70,7 +70,7 @@ export class ClientNavbarComponent {
 
   onNavSearch(): void {
     if (this.navSearchText.trim()) {
-      this.router.navigate(['/store'], {queryParams: {q: this.navSearchText.trim()}});
+      this.router.navigate(['/store'], { queryParams: { q: this.navSearchText.trim() } });
     }
   }
 
@@ -79,10 +79,10 @@ export class ClientNavbarComponent {
     if (this.router.url.startsWith('/store')) {
       const el = document.getElementById(sectionId);
       if (el) {
-        el.scrollIntoView({behavior: 'smooth', block: 'start'});
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     } else {
-      this.router.navigate(['/store'], {fragment: sectionId});
+      this.router.navigate(['/store'], { fragment: sectionId });
     }
   }
 
@@ -92,7 +92,7 @@ export class ClientNavbarComponent {
 
   goToSettings(): void {
     const account = this.account();
-    if (account && account.principalType === 'CUSTOMER') {
+    if (account?.principalType === 'CUSTOMER') {
       this.router.navigate(['/store/settings']);
     } else {
       this.router.navigate(['/admin/account/settings']);
@@ -101,6 +101,11 @@ export class ClientNavbarComponent {
 
   goToAdminHome(): void {
     this.router.navigate(['/admin/home']);
+  }
+
+  goToMyOrders(): void {
+    this.isUserMenuOpen.set(false);
+    this.router.navigate(['/store/orders']);
   }
 
   logout(): void {
