@@ -55,3 +55,19 @@
   padding: var(--space-6) 0;
   color: var(--text-muted);
 }
+
+.form-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+:host ::ng-deep {
+  nz-input-number.ng-invalid.ng-touched {
+    border-color: #ff4d4f !important;
+    box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+  }
+}

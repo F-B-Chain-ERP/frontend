@@ -95,12 +95,16 @@ export interface CreateShiftAssignmentPayload {
   note?: string;
 }
 
-export interface BulkAssignShiftPayload {
+export interface BulkAssignItemPayload {
   shiftId: string;
-  branchId: string;
-  accountIds: string[];
-  workDates: string[];
+  accountId: string;
+  workDate: string;
   note?: string;
+}
+
+export interface BulkAssignShiftPayload {
+  branchId: string;
+  assignments: BulkAssignItemPayload[];
 }
 
 // ── 3. Vận hành & Chốt két ca (Shift Operations & Report) ───────────
@@ -110,7 +114,8 @@ export interface OpenShiftPayload {
 }
 
 export interface CloseShiftPayload {
-  closingCashActual: number;
+  actualCash: number;
+  closingCashActual?: number;
   cashPayout?: number;
   cashDenominations?: string;
   differenceReason?: string;

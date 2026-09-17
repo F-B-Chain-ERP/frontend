@@ -33,6 +33,8 @@ import {
   ShiftAssignment,
   ShiftReport,
   ClosingSummary,
+  CloseShiftPayload,
+  OpenShiftPayload,
   ShiftStatus,
   ShiftAssignmentStatus,
   SHIFT_ASSIGNMENT_STATUS_OPTIONS,
@@ -81,6 +83,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   readonly getShiftReportStatusMeta = getShiftReportStatusMeta;
   readonly assignmentStatusOptions = SHIFT_ASSIGNMENT_STATUS_OPTIONS;
   readonly currencyFormatter = (value: number): string => (value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0');
+  readonly currencyParser = (value: string): number => Number(value.replace(/\$\s?|(,*)/g, '')) || 0;
 
   readonly branchService = inject(BranchService);
   readonly shiftService = inject(StoreShiftService);
@@ -133,13 +136,15 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   readonly closingSummary = signal<ClosingSummary | null>(null);
   readonly isSummaryLoading = signal<boolean>(false);
   closeShiftForm!: FormGroup;
+  readonly closingCashActualSignal = signal<number>(0);
+  readonly cashPayoutSignal = signal<number>(0);
 
   // Computed: Chênh lệch tạm tính trong modal đóng ca
   readonly calculatedDifference = computed(() => {
     const summary = this.closingSummary();
     if (!summary) return 0;
-    const actual = Number(this.closeShiftForm?.get('closingCashActual')?.value) || 0;
-    const payout = Number(this.closeShiftForm?.get('cashPayout')?.value) || 0;
+    const actual = this.closingCashActualSignal();
+    const payout = this.cashPayoutSignal();
     const expected = summary.initialCash + summary.cashSales - payout;
     return actual - expected;
   });
@@ -179,10 +184,17 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     });
 
     this.closeShiftForm = this.fb.group({
-      closingCashActual: [0, [Validators.required, Validators.min(0)]],
+      actualCash: [0, [Validators.required, Validators.min(0)]],
       cashPayout: [0, [Validators.min(0)]],
       differenceReason: [''],
       note: [''],
+    });
+
+    this.closeShiftForm.get('actualCash')?.valueChanges.subscribe(val => {
+      this.closingCashActualSignal.set(Number(val) || 0);
+    });
+    this.closeShiftForm.get('cashPayout')?.valueChanges.subscribe(val => {
+      this.cashPayoutSignal.set(Number(val) || 0);
     });
 
     this.shiftForm = this.fb.group({
@@ -306,9 +318,18 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
         this.toastService.success('Mở ca thành công', `Đã mở ca làm việc cho ${updated.employeeName}`);
         this.loadOperationsData();
       },
-      error: err => {
+      error: (err: any) => {
         this.isOpeningShift.set(false);
-        this.toastService.error('Không thể mở ca', err.message);
+        if (err?.fieldErrors) {
+          Object.entries(err.fieldErrors).forEach(([field, msg]) => {
+            const control = this.openShiftForm.get(field);
+            if (control) {
+              control.setErrors({ serverError: msg });
+              control.markAsTouched();
+            }
+          });
+        }
+        this.toastService.error('Không thể mở ca', err.message || 'Đã xảy ra lỗi khi mở ca.');
       },
     });
   }
@@ -323,8 +344,10 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
       next: summary => {
         this.closingSummary.set(summary);
         this.isSummaryLoading.set(false);
+        this.closingCashActualSignal.set(summary.expectedCash || 0);
+        this.cashPayoutSignal.set(summary.cashPayout || 0);
         this.closeShiftForm.reset({
-          closingCashActual: summary.expectedCash,
+          actualCash: summary.expectedCash,
           cashPayout: summary.cashPayout || 0,
           differenceReason: '',
           note: '',
@@ -347,6 +370,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   submitCloseShift(): void {
     if (this.closeShiftForm.invalid) {
       this.closeShiftForm.markAllAsTouched();
+      this.toastService.error('Vui lòng kiểm tra lại các thông tin bắt buộc.');
       return;
     }
     const a = this.targetAssignmentForClose();
@@ -354,22 +378,40 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
 
     const formVal = this.closeShiftForm.value;
     const diff = this.calculatedDifference();
-    if (diff !== 0 && !formVal.differenceReason?.trim()) {
-      this.toastService.warning('Cần giải trình', 'Két tiền bị chênh lệch! Vui lòng nhập lý do giải trình.');
+    if (diff !== 0 && (!formVal.differenceReason?.trim() || formVal.differenceReason.trim().length < 10)) {
+      this.closeShiftForm.get('differenceReason')?.setErrors({ minlength: true });
+      this.closeShiftForm.get('differenceReason')?.markAsTouched();
+      this.toastService.warning('Cần giải trình', 'Két tiền bị chênh lệch! Vui lòng nhập lý do giải trình (tối thiểu 10 ký tự).');
       return;
     }
 
     this.isClosingShift.set(true);
-    this.shiftService.closeShift(a.id, formVal).subscribe({
+    const payload: CloseShiftPayload = {
+      actualCash: Number(formVal.actualCash) != null && !isNaN(Number(formVal.actualCash)) ? Number(formVal.actualCash) : 0,
+      cashPayout: Number(formVal.cashPayout) || 0,
+      differenceReason: formVal.differenceReason?.trim() || undefined,
+      note: formVal.note?.trim() || undefined,
+    };
+
+    this.shiftService.closeShift(a.id, payload).subscribe({
       next: report => {
         this.isClosingShift.set(false);
         this.isCloseModalVisible.set(false);
         this.toastService.success('Chốt ca thành công', `Đã xuất biên bản chốt ca với chênh lệch ${report.difference.toLocaleString()} ₫`);
         this.loadOperationsData();
       },
-      error: err => {
+      error: (err: any) => {
         this.isClosingShift.set(false);
-        this.toastService.error('Không thể chốt ca', err.message);
+        if (err?.fieldErrors) {
+          Object.entries(err.fieldErrors).forEach(([field, msg]) => {
+            const control = this.closeShiftForm.get(field);
+            if (control) {
+              control.setErrors({ serverError: msg });
+              control.markAsTouched();
+            }
+          });
+        }
+        this.toastService.error('Không thể chốt ca', err.message || 'Đã xảy ra lỗi khi chốt ca.');
       },
     });
   }

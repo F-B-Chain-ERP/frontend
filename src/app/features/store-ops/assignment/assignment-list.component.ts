@@ -24,12 +24,14 @@ import {ROLE} from '../../../core/config/functions.constants';
 import {BranchService} from '../../../core/auth/branch.service';
 import {UserService} from '../../system/users/user.service';
 import {User} from '../../system/users/user.model';
-import {StoreShiftService} from '../shift/shift.service';
+import {StoreShiftService, ShiftServiceError} from '../shift/shift.service';
 import {
   Shift,
   ShiftAssignment,
   SHIFT_ASSIGNMENT_STATUS_OPTIONS,
   getShiftAssignmentStatusMeta,
+  BulkAssignItemPayload,
+  BulkAssignShiftPayload,
 } from '../shift/shift.model';
 import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
 
@@ -231,8 +233,17 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
         this.toastService.success('Phân ca thành công', `Đã phân ca ${created.shiftName} cho ${created.employeeName}`);
         this.loadData();
       },
-      error: err => {
+      error: (err: ShiftServiceError) => {
         this.isSavingAssign.set(false);
+        if (err?.fieldErrors) {
+          Object.entries(err.fieldErrors).forEach(([field, msg]) => {
+            const control = this.assignForm.get(field);
+            if (control) {
+              control.setErrors({ serverError: msg });
+              control.markAsTouched();
+            }
+          });
+        }
         this.toastService.error('Lỗi phân ca', err.message);
       },
     });
@@ -261,18 +272,59 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
       this.bulkForm.markAllAsTouched();
       return;
     }
-    this.isSavingBulk.set(true);
-    const val = this.bulkForm.value;
 
-    this.shiftService.bulkAssignShifts(val).subscribe({
+    const val = this.bulkForm.value;
+    const accountIds: string[] = val.accountIds || [];
+    const workDates: string[] = val.workDates || [];
+
+    if (accountIds.length === 0) {
+      this.bulkForm.get('accountIds')?.setErrors({ required: true });
+      this.bulkForm.get('accountIds')?.markAsTouched();
+      return;
+    }
+
+    if (workDates.length === 0) {
+      this.bulkForm.get('workDates')?.setErrors({ required: true });
+      this.bulkForm.get('workDates')?.markAsTouched();
+      return;
+    }
+
+    const assignments: BulkAssignItemPayload[] = [];
+    for (const accId of accountIds) {
+      for (const wDate of workDates) {
+        assignments.push({
+          shiftId: val.shiftId,
+          accountId: accId,
+          workDate: typeof wDate === 'string' ? wDate.trim() : this.formatDate(wDate),
+          note: val.note || undefined,
+        });
+      }
+    }
+
+    const payload: BulkAssignShiftPayload = {
+      branchId: val.branchId,
+      assignments,
+    };
+
+    this.isSavingBulk.set(true);
+    this.shiftService.bulkAssignShifts(payload).subscribe({
       next: list => {
         this.isSavingBulk.set(false);
         this.isBulkModalVisible.set(false);
         this.toastService.success('Phân ca hàng loạt thành công', `Đã tạo ${list.length} lượt phân ca làm việc`);
         this.loadData();
       },
-      error: err => {
+      error: (err: ShiftServiceError) => {
         this.isSavingBulk.set(false);
+        if (err?.fieldErrors) {
+          Object.entries(err.fieldErrors).forEach(([field, msg]) => {
+            const control = this.bulkForm.get(field);
+            if (control) {
+              control.setErrors({ serverError: msg });
+              control.markAsTouched();
+            }
+          });
+        }
         this.toastService.error('Lỗi phân ca hàng loạt', err.message);
       },
     });

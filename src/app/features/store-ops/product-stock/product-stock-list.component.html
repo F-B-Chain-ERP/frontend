@@ -75,17 +75,43 @@
         @for (s of stocks(); track s.variantId; let i = $index) {
         <tr>
           <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
-          <td><span class="po-code">{{ s.sku || 'SKU-00' + (i + 1) }}</span></td>
           <td>
-            <span class="font-semibold">{{ s.productName || 'Trà Sữa Oolong Nướng' }}</span>
-            <div class="text-xs text-secondary">{{ s.variantName || 'Size L - Mặc định' }}</div>
+            <span class="po-code" nz-tooltip [nzTooltipTitle]="'Mã SKU: ' + (s.sku || 'SKU-00' + (i + 1))">
+              {{ s.sku || 'SKU-00' + (i + 1) }}
+            </span>
           </td>
-          <td nzAlign="center">{{ s.businessDate }}</td>
-          <td nzAlign="right"><span class="font-mono font-medium">{{ s.openingQuantity }}</span></td>
-          <td nzAlign="right"><span class="font-mono text-success">{{ s.soldQuantity }}</span></td>
-          <td nzAlign="right"><span class="font-mono font-bold text-brand">{{ s.remainingQuantity }}</span></td>
+          <td>
+            <div class="font-semibold" nz-tooltip [nzTooltipTitle]="'Sản phẩm: ' + (s.productName || 'Trà Sữa Oolong Nướng')">
+              {{ s.productName || 'Trà Sữa Oolong Nướng' }}
+            </div>
+            <div class="text-xs text-secondary" nz-tooltip [nzTooltipTitle]="'Biến thể: ' + (s.variantName || 'Size L - Mặc định')">
+              {{ s.variantName || 'Size L - Mặc định' }}
+            </div>
+          </td>
           <td nzAlign="center">
-            <span [class]="s.remainingQuantity > 0 ? 'tbl-badge tbl-badge--success' : 'tbl-badge tbl-badge--danger'">
+            <span nz-tooltip [nzTooltipTitle]="'Ngày mở bán: ' + s.businessDate">{{ s.businessDate }}</span>
+          </td>
+          <td nzAlign="right">
+            <span class="font-mono font-medium" nz-tooltip [nzTooltipTitle]="'Tồn mở bán đầu ngày: ' + s.openingQuantity">
+              {{ s.openingQuantity }}
+            </span>
+          </td>
+          <td nzAlign="right">
+            <span class="font-mono text-success" nz-tooltip [nzTooltipTitle]="'Số lượng đã bán qua POS: ' + s.soldQuantity">
+              {{ s.soldQuantity }}
+            </span>
+          </td>
+          <td nzAlign="right">
+            <span class="font-mono font-bold text-brand" nz-tooltip [nzTooltipTitle]="'Số lượng còn lại: ' + s.remainingQuantity">
+              {{ s.remainingQuantity }}
+            </span>
+          </td>
+          <td nzAlign="center">
+            <span
+              [class]="s.remainingQuantity > 0 ? 'tbl-badge tbl-badge--success' : 'tbl-badge tbl-badge--danger'"
+              nz-tooltip
+              [nzTooltipTitle]="s.remainingQuantity > 0 ? 'Mặt hàng đang mở bán bình thường trên POS' : 'Mặt hàng đã hết hạn mức bán trong ngày'"
+            >
               {{ s.remainingQuantity > 0 ? 'Đang mở bán' : 'Tạm hết hàng' }}
             </span>
           </td>
@@ -104,31 +130,75 @@
 
   <!-- ── 4. Modal Chốt tồn mở bán / Restock ──────────────────────────── -->
   <app-modal [visible]="isRestockModalVisible()" (visibleChange)="isRestockModalVisible.set($event)"
-    title="Chốt Định Mức Tồn Mở Bán POS (Restock)" size="md" [maskClosable]="false" (cancelEmit)="closeRestockModal()">
+    title="Chốt Định Mức Tồn Mở Bán POS (Restock)" size="md" [maskClosable]="false"
+    [footer]="restockModalFooter" (cancelEmit)="closeRestockModal()">
     <form [formGroup]="restockForm" (ngSubmit)="submitRestockForm()">
       <div class="form-group">
         <label class="form-label" for="restock-branch">Chi nhánh *</label>
-        <nz-select id="restock-branch" formControlName="branchId" style="width: 100%">
+        <nz-select
+          id="restock-branch"
+          formControlName="branchId"
+          [nzStatus]="restockForm.get('branchId')?.invalid && restockForm.get('branchId')?.touched ? 'error' : ''"
+          style="width: 100%"
+        >
           @for (b of branchService.branches(); track b.id) {
           <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
           }
         </nz-select>
+        @if (restockForm.get('branchId')?.invalid && restockForm.get('branchId')?.touched) {
+          <div class="form-error">
+            @if (restockForm.get('branchId')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Vui lòng chọn chi nhánh</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
         <label class="form-label" for="restock-variant-id">Mã định danh biến thể sản phẩm (Variant UUID) *</label>
         <nz-input-wrapper>
-          <input id="restock-variant-id" nz-input formControlName="variantId"
-            placeholder="Nhập UUID của biến thể sản phẩm..." />
+          <input
+            id="restock-variant-id"
+            nz-input
+            formControlName="variantId"
+            [nzStatus]="restockForm.get('variantId')?.invalid && restockForm.get('variantId')?.touched ? 'error' : ''"
+            placeholder="Nhập UUID của biến thể sản phẩm..."
+          />
         </nz-input-wrapper>
+        @if (restockForm.get('variantId')?.invalid && restockForm.get('variantId')?.touched) {
+          <div class="form-error">
+            @if (restockForm.get('variantId')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else {
+              <span>Mã biến thể không được để trống</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
         <label class="form-label" for="restock-opening-qty">Số lượng tồn mở bán trong ngày *</label>
-        <nz-input-wrapper>
-          <nz-input-number id="restock-opening-qty" formControlName="openingQuantity" [nzMin]="0" [nzStep]="10"
-            style="width: 100%"></nz-input-number>
-        </nz-input-wrapper>
+        <nz-input-number
+          id="restock-opening-qty"
+          formControlName="openingQuantity"
+          [nzMin]="0"
+          [nzStep]="10"
+          [nzStatus]="restockForm.get('openingQuantity')?.invalid && restockForm.get('openingQuantity')?.touched ? 'error' : ''"
+          style="width: 100%"
+        ></nz-input-number>
+        @if (restockForm.get('openingQuantity')?.invalid && restockForm.get('openingQuantity')?.touched) {
+          <div class="form-error">
+            @if (restockForm.get('openingQuantity')?.errors?.['serverError']; as err) {
+              <span>{{ err }}</span>
+            } @else if (restockForm.get('openingQuantity')?.errors?.['min']) {
+              <span>Số lượng tồn mở bán phải &gt;= 0</span>
+            } @else {
+              <span>Số lượng tồn mở bán không được để trống</span>
+            }
+          </div>
+        }
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
@@ -136,11 +206,13 @@
         <textarea id="restock-note" nz-input formControlName="note" rows="2" placeholder="Ghi chú thêm..."></textarea>
       </div>
     </form>
-    <div slot="footer" class="modal-footer-actions">
-      <app-button variant="secondary" (click)="closeRestockModal()">Hủy</app-button>
-      <app-button variant="primary" leftIcon="save" [loading]="isSavingRestock()" (click)="submitRestockForm()">
-        Lưu chốt tồn mở bán
-      </app-button>
-    </div>
+    <ng-template #restockModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="secondary" (click)="closeRestockModal()">Hủy</app-button>
+        <app-button variant="primary" leftIcon="save" [loading]="isSavingRestock()" (click)="submitRestockForm()">
+          Lưu chốt tồn mở bán
+        </app-button>
+      </div>
+    </ng-template>
   </app-modal>
 </div>
