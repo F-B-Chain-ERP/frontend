@@ -1,12 +1,12 @@
-import {HttpClient, HttpParams} from '@angular/common/http';
-import {Injectable, inject} from '@angular/core';
-import {Observable, throwError} from 'rxjs';
-import {catchError, map} from 'rxjs/operators';
-import {ApplicationConfigService} from '../../../core/config/application-config.service';
-import {normalizeImageUrl} from '../../../core/util/image.util';
-import {ApiResponse} from '../../login/login.model';
-import {Category} from '../../menu/categories/category.model';
-import {Product, ProductDetail} from '../../menu/products/product.model';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { ApplicationConfigService } from '../../../core/config/application-config.service';
+import { normalizeImageUrl } from '../../../core/util/image.util';
+import { ApiResponse } from '../../login/login.model';
+import { Category } from '../../menu/categories/category.model';
+import { Product, ProductDetail } from '../../menu/products/product.model';
 
 export interface SalesCategoryResponse {
   items: Category[];
@@ -62,7 +62,7 @@ export class SalesService {
     const url = `${this.salesUrl}/categories`;
     const params = new HttpParams().set('page', '0').set('size', '100');
 
-    return this.http.get<ApiResponse<BackendPageResponse<Category>>>(url, {params}).pipe(
+    return this.http.get<ApiResponse<BackendPageResponse<Category>>>(url, { params }).pipe(
       map(res => ({
         items: (res.data?.content || []).map(c => ({
           ...c,
@@ -73,12 +73,8 @@ export class SalesService {
       catchError(err => {
         // Fallback sang endpoint menu categories nếu API sales chưa sẵn sàng
         const fallbackUrl = this.config.getEndpointFor('api/v1/menu/categories');
-        const fallbackParams = new HttpParams()
-          .set('page', '0')
-          .set('size', '100')
-          .set('categoryType', 'PRODUCT')
-          .set('status', 'ACTIVE');
-        return this.http.get<ApiResponse<BackendPageResponse<Category>>>(fallbackUrl, {params: fallbackParams}).pipe(
+        const fallbackParams = new HttpParams().set('page', '0').set('size', '100').set('categoryType', 'PRODUCT').set('status', 'ACTIVE');
+        return this.http.get<ApiResponse<BackendPageResponse<Category>>>(fallbackUrl, { params: fallbackParams }).pipe(
           map(fallbackRes => ({
             items: (fallbackRes.data?.content || []).map(c => ({
               ...c,
@@ -86,9 +82,9 @@ export class SalesService {
             })),
             total: fallbackRes.data?.totalElements || 0,
           })),
-          catchError(() => throwError(() => err))
+          catchError(() => throwError(() => err)),
         );
-      })
+      }),
     );
   }
 
@@ -117,7 +113,7 @@ export class SalesService {
       params = params.set('sortBy', filter.sortBy);
     }
 
-    return this.http.get<ApiResponse<BackendPageResponse<Product>>>(url, {params}).pipe(
+    return this.http.get<ApiResponse<BackendPageResponse<Product>>>(url, { params }).pipe(
       map(res => ({
         items: (res.data?.content || []).map(p => ({
           ...p,
@@ -136,7 +132,7 @@ export class SalesService {
           .set('status', 'ACTIVE');
         if (filter?.search?.trim()) fbParams = fbParams.set('search', filter.search.trim());
         if (filter?.categoryId && filter.categoryId !== 'all') fbParams = fbParams.set('categoryId', filter.categoryId);
-        return this.http.get<ApiResponse<BackendPageResponse<Product>>>(fallbackUrl, {params: fbParams}).pipe(
+        return this.http.get<ApiResponse<BackendPageResponse<Product>>>(fallbackUrl, { params: fbParams }).pipe(
           map(fbRes => ({
             items: (fbRes.data?.content || []).map(p => ({
               ...p,
@@ -146,9 +142,9 @@ export class SalesService {
             pageIndex: (fbRes.data?.pageNumber ?? 0) + 1,
             pageSize: fbRes.data?.pageSize ?? 100,
           })),
-          catchError(() => throwError(() => err))
+          catchError(() => throwError(() => err)),
         );
-      })
+      }),
     );
   }
 
@@ -178,9 +174,9 @@ export class SalesService {
             }
             return detail;
           }),
-          catchError(() => throwError(() => err))
+          catchError(() => throwError(() => err)),
         );
-      })
+      }),
     );
   }
 }

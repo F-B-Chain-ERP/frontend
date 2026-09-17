@@ -1,12 +1,13 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Output, inject} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {NzIconModule} from 'ng-zorro-antd/icon';
-import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
-import {AppButtonComponent} from '../app-button/app-button.component';
-import {AppQuantityStepperComponent} from '../app-quantity-stepper/app-quantity-stepper.component';
-import {CartService, CartItem} from '../services/cart.service';
-import {AppNotificationService} from '../app-notification/app-notification.service';
-import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../core/util/image.util';
+import { ChangeDetectionStrategy, Component, EventEmitter, Output, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { AppButtonComponent } from '../app-button/app-button.component';
+import { AppQuantityStepperComponent } from '../app-quantity-stepper/app-quantity-stepper.component';
+import { CartService, CartItem } from '../services/cart.service';
+import { AppNotificationService } from '../app-notification/app-notification.service';
+import { normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE } from '../../core/util/image.util';
 
 @Component({
   selector: 'app-cart-panel',
@@ -19,6 +20,7 @@ import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../core/util/image.u
 export class AppCartPanelComponent {
   readonly cartService = inject(CartService);
   private readonly toast = inject(AppNotificationService);
+  private readonly router = inject(Router);
 
   readonly normalizeImageUrl = normalizeImageUrl;
   readonly fallbackImage = DEFAULT_BEVERAGE_IMAGE;
@@ -26,7 +28,7 @@ export class AppCartPanelComponent {
   @Output() checkout = new EventEmitter<CartItem[]>();
 
   formatPrice(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   }
 
   onImageError(event: Event): void {
@@ -55,19 +57,14 @@ export class AppCartPanelComponent {
   }
 
   onCheckout(): void {
-    const items = this.cartService.items();
-    if (!items.length) {
+    if (!this.cartService.items().length) {
       this.toast.warning('Giỏ hàng chưa có sản phẩm nào để thanh toán!');
       return;
     }
-
-    this.checkout.emit(items);
-    this.toast.success(
-      'Đặt hàng thành công!',
-      `Đơn hàng gồm ${this.cartService.totalCount()} món (${this.formatPrice(this.cartService.totalAmount())}) đã được gửi vào hệ thống.`
-    );
-    this.cartService.clearCart();
+    // Chuyển sang trang checkout tạo đơn thật, không toast giả + không tự xóa giỏ ở đây.
+    this.checkout.emit(this.cartService.items());
     this.cartService.closeCart();
+    this.router.navigate(['/store/checkout']);
   }
 }
 

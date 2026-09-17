@@ -9,6 +9,7 @@ import {
   TitleStrategy,
   provideRouter,
   withComponentInputBinding,
+  withInMemoryScrolling,
   withNavigationErrorHandler,
 } from '@angular/router';
 
@@ -24,6 +25,9 @@ import { NzModalModule } from 'ng-zorro-antd/modal';
 
 const routerFeatures: RouterFeatures[] = [
   withComponentInputBinding(),
+  // SPA không reload nên phải cuộn lên đầu mỗi lần chuyển trang,
+  // không thì mở trang giỏ hàng vẫn đứng ở vị trí cuộn cũ (tưởng hiển thị cuối trang).
+  withInMemoryScrolling({ scrollPositionRestoration: 'top' }),
   withNavigationErrorHandler((e: NavigationError) => {
     const router = inject(Router);
     const errorStatus = (e.error as { status?: number })?.status;

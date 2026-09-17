@@ -7,7 +7,7 @@
       (click)="isMobileMenuOpen.set(!isMobileMenuOpen())"
       aria-label="Toggle navigation"
     >
-      <nz-icon [nzType]="isMobileMenuOpen() ? 'close' : 'menu'"/>
+      <nz-icon [nzType]="isMobileMenuOpen() ? 'close' : 'menu'" />
     </button>
 
     <!-- ── 1. Brand Logo (Figma SHOP.CO typography) ── -->
@@ -17,32 +17,16 @@
 
     <!-- ── 2. Navigation Links ── -->
     <nav class="client-navbar__nav" [class.client-navbar__nav--open]="isMobileMenuOpen()">
-      <a
-        routerLink="/store"
-        (click)="scrollToSection('all-drinks')"
-        class="client-navbar__link"
-      >
+      <a routerLink="/store" (click)="scrollToSection('all-drinks')" class="client-navbar__link">
         <span>Thực Đơn</span>
       </a>
-      <a
-        routerLink="/store"
-        (click)="scrollToSection('new-arrivals')"
-        class="client-navbar__link"
-      >
+      <a routerLink="/store" (click)="scrollToSection('new-arrivals')" class="client-navbar__link">
         <span>Món Mới</span>
       </a>
-      <a
-        routerLink="/store"
-        (click)="scrollToSection('top-selling')"
-        class="client-navbar__link"
-      >
+      <a routerLink="/store" (click)="scrollToSection('top-selling')" class="client-navbar__link">
         <span>Bán Chạy</span>
       </a>
-      <a
-        routerLink="/store"
-        (click)="scrollToSection('browse-style')"
-        class="client-navbar__link"
-      >
+      <a routerLink="/store" (click)="scrollToSection('browse-style')" class="client-navbar__link">
         <span>Khám Phá</span>
       </a>
     </nav>
@@ -50,7 +34,7 @@
     <!-- ── 3. Central Search Bar (Figma SHOP.CO style) ── -->
     <div class="client-navbar__search">
       <nz-input-wrapper class="client-navbar__search-wrapper">
-        <nz-icon nzInputPrefix nzType="search" class="client-navbar__search-icon"/>
+        <nz-icon nzInputPrefix nzType="search" class="client-navbar__search-icon" />
         <input
           nz-input
           type="text"
@@ -67,18 +51,18 @@
       <!-- Brand Color Picker -->
       <label class="client-navbar__color-pick" for="store-color-pick" title="Màu thương hiệu">
         <span class="client-navbar__color-dot" [style.background]="theme.brand500"></span>
-        <input id="store-color-pick" type="color" class="client-navbar__color-input" [value]="theme.brand500"
-               (input)="onBrandColorChange($event)"/>
+        <input
+          id="store-color-pick"
+          type="color"
+          class="client-navbar__color-input"
+          [value]="theme.brand500"
+          (input)="onBrandColorChange($event)"
+        />
       </label>
 
       <!-- Cart Trigger Button -->
-      <button
-        type="button"
-        class="client-navbar__icon-btn client-navbar__icon-btn--cart"
-        (click)="openCart()"
-        title="Xem giỏ hàng"
-      >
-        <nz-icon nzType="shopping-cart"/>
+      <button type="button" class="client-navbar__icon-btn client-navbar__icon-btn--cart" (click)="openCart()" title="Xem giỏ hàng">
+        <nz-icon nzType="shopping-cart" />
         @if (cartService.totalCount() > 0) {
           <span class="client-navbar__cart-badge">{{ cartService.totalCount() }}</span>
         }
@@ -103,8 +87,7 @@
           />
           <div class="client-navbar__user-info">
             <span class="client-navbar__user-name">{{ user.firstName || user.login }}</span>
-            <nz-icon nzType="down" class="client-navbar__user-caret"
-                     [class.client-navbar__user-caret--open]="isUserMenuOpen()"/>
+            <nz-icon nzType="down" class="client-navbar__user-caret" [class.client-navbar__user-caret--open]="isUserMenuOpen()" />
           </div>
         </div>
 
@@ -116,35 +99,34 @@
             </li>
             @if (isAdmin()) {
               <li nz-menu-item (click)="goToAdminHome()">
-                <nz-icon nzType="dashboard"/>
+                <nz-icon nzType="dashboard" />
                 <span>Quay lại trang quản trị</span>
+              </li>
+              <li nz-menu-divider></li>
+            } @else {
+              <li nz-menu-item (click)="goToMyOrders()">
+                <nz-icon nzType="solution" />
+                <span>Đơn hàng của tôi</span>
               </li>
               <li nz-menu-divider></li>
             }
             <li nz-menu-item (click)="goToSettings()">
-              <nz-icon nzType="setting"/>
+              <nz-icon nzType="setting" />
               <span>Cài đặt tài khoản</span>
             </li>
             <li nz-menu-item (click)="toggleTheme(); isUserMenuOpen.set(true)">
-              <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'"/>
+              <nz-icon [nzType]="theme.mode === 'dark' ? 'moon' : 'sun'" />
               <span>Giao diện: {{ theme.mode === 'dark' ? 'Tối' : 'Sáng' }}</span>
             </li>
             <li nz-menu-divider></li>
             <li nz-menu-item class="menu-item--danger" (click)="logout()">
-              <nz-icon nzType="logout"/>
+              <nz-icon nzType="logout" />
               <span>Đăng xuất</span>
             </li>
           </ul>
         </nz-dropdown-menu>
       } @else {
-        <app-button
-          variant="primary"
-          [rounded]="true"
-          (click)="goToLogin()"
-          class="client-navbar__login-btn"
-        >
-          Đăng nhập
-        </app-button>
+        <app-button variant="primary" [rounded]="true" (click)="goToLogin()" class="client-navbar__login-btn"> Đăng nhập </app-button>
       }
     </div>
   </div>

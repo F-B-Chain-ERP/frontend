@@ -1,12 +1,12 @@
-import {ChangeDetectionStrategy, Component, computed, inject} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {Router, RouterLink} from '@angular/router';
-import {NzIconDirective} from 'ng-zorro-antd/icon';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { NzIconDirective } from 'ng-zorro-antd/icon';
 
-import {CartService} from '../../../shared/services/cart.service';
-import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
-import {AppQuantityStepperComponent} from '../../../shared/app-quantity-stepper/app-quantity-stepper.component';
-import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../../core/util/image.util';
+import { CartService } from '../../../shared/services/cart.service';
+import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
+import { AppQuantityStepperComponent } from '../../../shared/app-quantity-stepper/app-quantity-stepper.component';
+import { normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE } from '../../../core/util/image.util';
 
 @Component({
   selector: 'app-cart-page',
@@ -16,25 +16,26 @@ import {normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE} from '../../../core/util/imag
   styleUrls: ['./cart.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CartPageComponent {
+export class CartPageComponent implements OnInit {
   readonly cartService = inject(CartService);
-  private readonly router = inject(Router);
-
   readonly normalizeImageUrl = normalizeImageUrl;
   readonly fallbackImage = DEFAULT_BEVERAGE_IMAGE;
-
   readonly items = this.cartService.items;
   readonly totalCount = this.cartService.totalCount;
   readonly totalAmount = this.cartService.totalAmount;
   readonly isEmpty = this.cartService.isEmpty;
 
-  // Derived: shipping & discount mock
-  readonly shippingFee = computed(() => (this.totalAmount() >= 99000 || this.isEmpty() ? 0 : 15000));
-  readonly discount = computed(() => (this.totalAmount() >= 150000 ? 20000 : 0));
-  readonly grandTotal = computed(() => this.totalAmount() + this.shippingFee() - this.discount());
+  private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.cartService.refresh();
+  }
+
+  // Phí ship/giảm giá do BE tính lúc tạo đơn (ship 15k nếu DELIVERY, giảm giá chỉ từ voucher).
+  // Trang giỏ chỉ hiện tạm tính, không mock số như trước.
 
   formatPrice(amount: number): string {
-    return new Intl.NumberFormat('vi-VN', {style: 'currency', currency: 'VND'}).format(amount);
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   }
 
   onUpdateQuantity(itemId: string, quantity: number): void {

@@ -3,30 +3,47 @@
   <div class="checkout-page__header">
     <div class="checkout-page__header-left">
       <h1 class="checkout-page__title">
-        <nz-icon nzType="solution"/>
+        <nz-icon nzType="solution" />
         Thanh toán
       </h1>
       <div class="checkout-page__steps">
         <a routerLink="/store/cart" class="step">Giỏ hàng</a>
-        <nz-icon nzType="right" class="step__sep"/>
+        <nz-icon nzType="right" class="step__sep" />
         <span class="step step--active">Thanh toán</span>
       </div>
     </div>
     <a routerLink="/store" class="checkout-page__continue">
-      <nz-icon nzType="arrow-left"/>
+      <nz-icon nzType="arrow-left" />
       Tiếp tục mua sắm
     </a>
   </div>
 
-  @if (isEmpty()) {
+  @if (isEmpty() && !successOrder()) {
     <div class="checkout-empty">
       <div class="checkout-empty__icon">
-        <nz-icon nzType="shopping-cart"/>
+        <nz-icon nzType="shopping-cart" />
       </div>
       <h3>Giỏ hàng trống</h3>
       <p>Bạn cần thêm món vào giỏ trước khi thanh toán.</p>
       <a routerLink="/store">
         <app-button variant="primary" [rounded]="true">Khám phá thực đơn</app-button>
+      </a>
+    </div>
+  } @else if (successOrder(); as order) {
+    <div class="checkout-empty">
+      <div class="checkout-empty__icon">
+        <nz-icon nzType="check-circle" />
+      </div>
+      <h3>Đặt món thành công!</h3>
+      <p>
+        Tổng thanh toán <strong>{{ formatPrice(order.totalAmount) }}</strong>
+      </p>
+      <p>{{ order.orderType === 'DELIVERY' ? 'Thu tiền mặt khi nhận món.' : 'Vui lòng trả tiền mặt tại quầy.' }}</p>
+      <a routerLink="/store/orders">
+        <app-button variant="primary" [rounded]="true">Theo dõi đơn hàng</app-button>
+      </a>
+      <a routerLink="/store">
+        <app-button variant="ghost" [rounded]="true" (click)="backToStore()">Tiếp tục đặt món</app-button>
       </a>
     </div>
   } @else {
@@ -36,29 +53,33 @@
         <!-- Customer info -->
         <section class="checkout-card">
           <h3 class="checkout-card__title">
-            <nz-icon nzType="user"/>
+            <nz-icon nzType="user" />
             Thông tin giao hàng
           </h3>
 
           <div class="checkout-card__grid checkout-card__grid--2">
-            <div class="checkout-field"
-                 [class.checkout-field--error]="checkoutForm.get('fullName')?.invalid && checkoutForm.get('fullName')?.touched">
+            <div
+              class="checkout-field"
+              [class.checkout-field--error]="checkoutForm.get('fullName')?.invalid && checkoutForm.get('fullName')?.touched"
+            >
               <label for="fullName">Họ và tên <span class="req">*</span></label>
               <nz-input-wrapper>
-                <nz-icon nzInputPrefix nzType="user"/>
-                <input nz-input id="fullName" formControlName="fullName" placeholder="Nguyễn Văn A"/>
+                <nz-icon nzInputPrefix nzType="user" />
+                <input nz-input id="fullName" formControlName="fullName" placeholder="Nguyễn Văn A" />
               </nz-input-wrapper>
               @if (checkoutForm.get('fullName')?.hasError('required') && checkoutForm.get('fullName')?.touched) {
                 <span class="checkout-field__error">Vui lòng nhập họ tên.</span>
               }
             </div>
 
-            <div class="checkout-field"
-                 [class.checkout-field--error]="checkoutForm.get('phone')?.invalid && checkoutForm.get('phone')?.touched">
+            <div
+              class="checkout-field"
+              [class.checkout-field--error]="checkoutForm.get('phone')?.invalid && checkoutForm.get('phone')?.touched"
+            >
               <label for="phone">Số điện thoại <span class="req">*</span></label>
               <nz-input-wrapper>
-                <nz-icon nzInputPrefix nzType="phone"/>
-                <input nz-input id="phone" formControlName="phone" placeholder="0912345678"/>
+                <nz-icon nzInputPrefix nzType="phone" />
+                <input nz-input id="phone" formControlName="phone" placeholder="0912345678" />
               </nz-input-wrapper>
               @if (checkoutForm.get('phone')?.hasError('required') && checkoutForm.get('phone')?.touched) {
                 <span class="checkout-field__error">Số điện thoại không được để trống.</span>
@@ -68,24 +89,28 @@
             </div>
           </div>
 
-          <div class="checkout-field"
-               [class.checkout-field--error]="checkoutForm.get('email')?.invalid && checkoutForm.get('email')?.touched">
+          <div
+            class="checkout-field"
+            [class.checkout-field--error]="checkoutForm.get('email')?.invalid && checkoutForm.get('email')?.touched"
+          >
             <label for="email">Email (không bắt buộc)</label>
             <nz-input-wrapper>
-              <nz-icon nzInputPrefix nzType="mail"/>
-              <input nz-input id="email" formControlName="email" placeholder="ban@email.com"/>
+              <nz-icon nzInputPrefix nzType="mail" />
+              <input nz-input id="email" formControlName="email" placeholder="ban@email.com" />
             </nz-input-wrapper>
             @if (checkoutForm.get('email')?.hasError('email') && checkoutForm.get('email')?.touched) {
               <span class="checkout-field__error">Email không hợp lệ.</span>
             }
           </div>
 
-          <div class="checkout-field"
-               [class.checkout-field--error]="checkoutForm.get('address')?.invalid && checkoutForm.get('address')?.touched">
+          <div
+            class="checkout-field"
+            [class.checkout-field--error]="checkoutForm.get('address')?.invalid && checkoutForm.get('address')?.touched"
+          >
             <label for="address">Địa chỉ giao hàng <span class="req">*</span></label>
             <nz-input-wrapper>
-              <nz-icon nzInputPrefix nzType="home"/>
-              <input nz-input id="address" formControlName="address" placeholder="Số nhà, tên đường, phường/xã..."/>
+              <nz-icon nzInputPrefix nzType="home" />
+              <input nz-input id="address" formControlName="address" placeholder="Số nhà, tên đường, phường/xã..." />
             </nz-input-wrapper>
             @if (checkoutForm.get('address')?.hasError('required') && checkoutForm.get('address')?.touched) {
               <span class="checkout-field__error">Vui lòng nhập địa chỉ.</span>
@@ -93,11 +118,18 @@
           </div>
 
           <div class="checkout-field">
+            <label for="voucherCode">Mã voucher (nếu có)</label>
+            <nz-input-wrapper>
+              <nz-icon nzInputPrefix nzType="gift" />
+              <input nz-input id="voucherCode" formControlName="voucherCode" placeholder="VD: SALE10" />
+            </nz-input-wrapper>
+          </div>
+
+          <div class="checkout-field">
             <label for="note">Ghi chú</label>
             <nz-input-wrapper>
-              <nz-icon nzInputPrefix nzType="file-text"/>
-              <input nz-input id="note" formControlName="note"
-                     placeholder="VD: Ít đá, không đường, giao giờ hành chính..."/>
+              <nz-icon nzInputPrefix nzType="file-text" />
+              <input nz-input id="note" formControlName="note" placeholder="VD: Ít đá, không đường, giao giờ hành chính..." />
             </nz-input-wrapper>
           </div>
         </section>
@@ -105,84 +137,58 @@
         <!-- Delivery method -->
         <section class="checkout-card">
           <h3 class="checkout-card__title">
-            <nz-icon nzType="car"/>
+            <nz-icon nzType="car" />
             Phương thức nhận hàng
           </h3>
           <div class="checkout-options">
-            <label class="checkout-option"
-                   [class.checkout-option--active]="checkoutForm.get('deliveryMethod')?.value === 'delivery'">
-              <input type="radio" formControlName="deliveryMethod" value="delivery"/>
+            <label class="checkout-option" [class.checkout-option--active]="deliveryMethod() === 'delivery'">
+              <input type="radio" [checked]="deliveryMethod() === 'delivery'" (change)="onDeliveryMethodChange('delivery')" />
               <div class="checkout-option__icon">
-                <nz-icon nzType="car"/>
+                <nz-icon nzType="car" />
               </div>
               <div class="checkout-option__text">
                 <strong>Giao tận nơi</strong>
-                <span>Giao trong 20-30 phút • Phí ship 15k (Freeship đơn ≥99k)</span>
+                <span>Giao trong 20-30 phút • Phí ship 15.000đ • Thu tiền mặt khi nhận (COD)</span>
               </div>
               <span class="checkout-option__check"></span>
             </label>
 
-            <label class="checkout-option"
-                   [class.checkout-option--active]="checkoutForm.get('deliveryMethod')?.value === 'pickup'">
-              <input type="radio" formControlName="deliveryMethod" value="pickup"/>
+            <label class="checkout-option" [class.checkout-option--active]="deliveryMethod() === 'pickup'">
+              <input type="radio" [checked]="deliveryMethod() === 'pickup'" (change)="onDeliveryMethodChange('pickup')" />
               <div class="checkout-option__icon">
-                <nz-icon nzType="shop"/>
+                <nz-icon nzType="shop" />
               </div>
               <div class="checkout-option__text">
-                <strong>Tự đến lấy</strong>
-                <span>Lấy tại quầy • Miễn phí • Chuẩn bị 10 phút</span>
+                <strong>Tự đến lấy{{ branchName() ? ' • ' + branchName() : '' }}</strong>
+                <span>Lấy tại quầy • Miễn phí • Trả tiền mặt tại quầy</span>
               </div>
               <span class="checkout-option__check"></span>
             </label>
           </div>
         </section>
 
-        <!-- Payment method -->
+        <!-- Payment method: tự động theo hình thức nhận (online chưa triển khai) -->
         <section class="checkout-card">
           <h3 class="checkout-card__title">
-            <nz-icon nzType="wallet"/>
+            <nz-icon nzType="wallet" />
             Phương thức thanh toán
           </h3>
           <div class="checkout-options">
-            <label class="checkout-option"
-                   [class.checkout-option--active]="checkoutForm.get('paymentMethod')?.value === 'cod'">
-              <input type="radio" formControlName="paymentMethod" value="cod"/>
+            <div class="checkout-option checkout-option--active">
               <div class="checkout-option__icon checkout-option__icon--cod">
-                <nz-icon nzType="dollar"/>
+                <nz-icon nzType="dollar" />
               </div>
               <div class="checkout-option__text">
-                <strong>Thanh toán khi nhận hàng (COD)</strong>
-                <span>Tiền mặt / Chuyển khoản khi nhận món</span>
+                <strong>{{ deliveryMethod() === 'delivery' ? 'Thanh toán khi nhận hàng (COD)' : 'Tiền mặt tại quầy' }}</strong>
+                <span>Thanh toán online (VNPay/MoMo) sắp ra mắt</span>
               </div>
               <span class="checkout-option__check"></span>
-            </label>
-
-            <label class="checkout-option"
-                   [class.checkout-option--active]="checkoutForm.get('paymentMethod')?.value === 'vnpay'">
-              <input type="radio" formControlName="paymentMethod" value="vnpay"/>
-              <div class="checkout-option__icon checkout-option__icon--vnpay">VNPay</div>
-              <div class="checkout-option__text">
-                <strong>VNPay / Thẻ ngân hàng</strong>
-                <span>Giảm 10k cho đơn ≥150k</span>
-              </div>
-              <span class="checkout-option__check"></span>
-            </label>
-
-            <label class="checkout-option"
-                   [class.checkout-option--active]="checkoutForm.get('paymentMethod')?.value === 'momo'">
-              <input type="radio" formControlName="paymentMethod" value="momo"/>
-              <div class="checkout-option__icon checkout-option__icon--momo">MoMo</div>
-              <div class="checkout-option__text">
-                <strong>Ví MoMo</strong>
-                <span>Thanh toán nhanh qua MoMo</span>
-              </div>
-              <span class="checkout-option__check"></span>
-            </label>
+            </div>
           </div>
         </section>
 
         <label class="cb checkout-agree">
-          <input type="checkbox" formControlName="agree"/>
+          <input type="checkbox" formControlName="agree" />
           <span class="cb__box"></span>
           <span>Tôi đồng ý với <a href="javascript:void(0)">Điều khoản</a> & <a href="javascript:void(0)">Chính sách</a> của UTT.CO</span>
         </label>
@@ -191,11 +197,11 @@
         }
 
         <app-button class="checkout-submit" type="submit" variant="primary" [fullWidth]="true">
-          Đặt hàng • {{ formatPrice(grandTotal()) }}
+          {{ isSubmitting() ? 'Đang đặt món...' : 'Đặt hàng • ' + formatPrice(grandTotal()) }}
         </app-button>
 
         <p class="checkout-secure">
-          <nz-icon nzType="safety-certificate"/>
+          <nz-icon nzType="safety-certificate" />
           Thanh toán an toàn • Mã hóa SSL • Hỗ trợ đổi/trả 30 phút
         </p>
       </div>
@@ -226,22 +232,23 @@
         </div>
 
         <div class="checkout-summary__rows">
-          <div class="row"><span>Tạm tính</span><span>{{ formatPrice(totalAmount()) }}</span></div>
+          <div class="row">
+            <span>Tạm tính</span><span>{{ formatPrice(totalAmount()) }}</span>
+          </div>
           <div class="row">
             <span>Phí giao hàng</span>
-            <span class="ship"
-                  [class.free]="shippingFee() === 0">{{ shippingFee() === 0 ? 'Miễn phí' : formatPrice(shippingFee()) }}</span>
+            <span class="ship" [class.free]="shippingFee() === 0">{{
+              shippingFee() === 0 ? 'Miễn phí (tự đến lấy)' : formatPrice(shippingFee())
+            }}</span>
           </div>
-          @if (discount() > 0) {
-            <div class="row row--discount"><span>Giảm giá</span><span>-{{ formatPrice(discount()) }}</span></div>
-          }
-          <div class="row row--total"><span>Tổng cộng</span><span class="grand">{{ formatPrice(grandTotal()) }}</span>
+          <div class="row row--total">
+            <span>Tạm tổng (chưa gồm voucher)</span><span class="grand">{{ formatPrice(grandTotal()) }}</span>
           </div>
         </div>
 
         <div class="checkout-summary__promo">
-          <nz-icon nzType="gift"/>
-          <span>Mã <strong>UTT20</strong> giảm 20% cho khách hàng mới đã áp dụng!</span>
+          <nz-icon nzType="gift" />
+          <span>Nhập mã voucher ở bước thanh toán để được giảm giá.</span>
         </div>
       </aside>
     </form>

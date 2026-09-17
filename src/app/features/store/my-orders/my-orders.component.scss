@@ -1,0 +1,231 @@
+.my-orders-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 860px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.my-orders-page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.my-orders-page__title {
+  font-size: var(--text-xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.my-orders-page__sub {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+
+.my-orders-page__continue {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.my-orders-page__loading,
+.my-orders-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.my-orders-page__empty nz-icon {
+  font-size: 40px;
+}
+
+.my-orders-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.my-orders-page__tabs {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-6);
+  overflow-x: auto;
+  padding: var(--space-2) 2px var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.my-orders-page__tab {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.my-orders-page__tab:hover {
+  color: var(--text-primary);
+}
+
+.my-orders-page__tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  background: var(--brand);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--dur-fast) var(--ease);
+  pointer-events: none;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.my-orders-page__tab:hover::after {
+  transform: scaleX(1);
+}
+
+.my-orders-page__tab--active {
+  color: var(--brand);
+  font-weight: var(--fw-semibold);
+}
+
+.my-orders-page__tab--active::after {
+  transform: scaleX(1);
+}
+
+.order-card {
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-4);
+}
+
+.order-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  flex-wrap: wrap;
+}
+
+.order-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.font-mono {
+  font-family: var(--font-mono, monospace);
+}
+
+.text-muted {
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.order-card__body {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: 13px;
+}
+
+.order-card__steps {
+  margin-bottom: var(--space-2);
+}
+
+.order-card__item,
+.order-card__topping {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.order-card__thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.order-card__item > span:first-of-type {
+  flex: 1;
+}
+
+.order-card__topping {
+  padding-left: var(--space-4);
+  color: var(--text-secondary);
+}
+
+.order-card__money {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) 0;
+  border-top: 1px dashed var(--border-color);
+}
+
+.order-card__history {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.order-card__history-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.order-card__cancel {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.order-card__cancel-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.my-orders-page__more {
+  display: flex;
+  justify-content: center;
+}

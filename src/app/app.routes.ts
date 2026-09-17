@@ -155,17 +155,17 @@ export const routes: Routes = [
           authorities: [ROLE.QUAN_LY_PHAM_VI.VIEW],
         },
       },
-      // ── POS (trang trắng placeholder) ────────────────
+      // ── POS (quản đơn + điều giao) ────────────────
       {
         path: 'pos/orders/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
+        loadComponent: () => import('./features/pos/orders/order-list.component'),
         title: 'Đơn hàng',
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.DON_HANG.VIEW] },
       },
       {
         path: 'pos/deliveries/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
+        loadComponent: () => import('./features/pos/deliveries/delivery-board.component'),
         title: 'Giao hàng',
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.GIAO_HANG.VIEW] },

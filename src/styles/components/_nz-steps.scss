@@ -40,4 +40,15 @@
   .ant-steps-item-tail::after {
     background: var(--border-subtle);
   }
+
+  // Vòng tròn số các chặng chưa tới: nền trong suốt + viền/chữ muted,
+  // không thì trắng bệch trên nền tối (mặc định ng-zorro nền trắng chữ xám).
+  .ant-steps-item-wait > .ant-steps-item-container > .ant-steps-item-icon {
+    background: transparent;
+    border-color: var(--border-strong);
+
+    > .ant-steps-icon {
+      color: var(--text-muted);
+    }
+  }
 }

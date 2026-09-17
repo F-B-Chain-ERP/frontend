@@ -383,6 +383,7 @@
   align-items: center;
   gap: var(--space-2);
   padding: 2px var(--space-4);
+  border: 1px solid transparent;
   border-radius: var(--radius-pill);
   font-size: var(--text-xs);
   font-weight: var(--fw-medium);
@@ -401,6 +402,7 @@
   &--success {
     background: var(--success-soft);
     color: var(--success);
+    border-color: color-mix(in srgb, currentColor 55%, transparent);
 
     &::before {
       background: var(--success);
@@ -410,6 +412,7 @@
   &--warning {
     background: var(--warning-soft);
     color: var(--warning-600);
+    border-color: color-mix(in srgb, currentColor 55%, transparent);
 
     &::before {
       background: var(--warning);
@@ -419,6 +422,7 @@
   &--danger {
     background: var(--danger-soft);
     color: var(--danger);
+    border-color: color-mix(in srgb, currentColor 55%, transparent);
 
     &::before {
       background: var(--danger);
@@ -428,19 +432,41 @@
   &--info {
     background: var(--info-soft);
     color: var(--info);
+    border-color: color-mix(in srgb, currentColor 55%, transparent);
 
     &::before {
       background: var(--info);
     }
   }
 
+  &--primary {
+    background: var(--brand-soft);
+    color: var(--brand-600);
+    border-color: color-mix(in srgb, currentColor 55%, transparent);
+
+    &::before {
+      background: var(--brand-600);
+    }
+  }
+
   &--neutral {
     background: var(--surface-hover);
     color: var(--text-secondary);
+    border-color: color-mix(in srgb, currentColor 45%, transparent);
 
     &::before {
       background: var(--text-muted);
     }
+  }
+}
+
+// Nền tối: chữ badge primary dùng brand-300 cho đủ tương phản
+// (giống text-link light 600 / dark 300).
+[data-theme='dark'] .tbl-badge--primary {
+  color: var(--brand-300);
+
+  &::before {
+    background: var(--brand-300);
   }
 }
 

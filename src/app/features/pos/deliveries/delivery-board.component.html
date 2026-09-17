@@ -1,0 +1,214 @@
+<div class="pos-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Điều phối giao hàng</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="reload" (click)="load()" [loading]="loading()"> Tải lại </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Chi nhánh</span>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả chi nhánh"
+          nzShowSearch
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzValue]="b.id" [nzLabel]="b.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onFilterChange()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="selectedBranchId = null; onFilterChange()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      [nzData]="orders()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1200px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="150px" nzAlign="left">Mã đơn</th>
+          <th scope="col" nzWidth="180px" nzAlign="left">Người nhận</th>
+          <th scope="col" nzWidth="220px" nzAlign="left">Địa chỉ</th>
+          <th scope="col" nzWidth="130px" nzAlign="right">Tổng tiền</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Đơn</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Giao hàng</th>
+          <th scope="col" nzWidth="190px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (o of orders(); track o.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex() - 1) * pageSize() + idx + 1 }}</td>
+            <td nzAlign="left">
+              <span class="font-mono">{{ o.orderCode }}</span>
+            </td>
+            <td nzAlign="left">{{ deliveryOf(o.id)?.receiverPhone ?? o.receiverName }}</td>
+            <td nzAlign="left">{{ deliveryOf(o.id)?.deliveryAddress ?? '—' }}</td>
+            <td nzAlign="right">{{ formatPrice(o.totalAmount) }}</td>
+            <td nzAlign="center">
+              <span [class]="getOrderStatusMeta(o.status).badgeClass">{{ getOrderStatusMeta(o.status).label }}</span>
+            </td>
+            <td nzAlign="center">
+              @if (deliveryOf(o.id); as d) {
+                <span [class]="getDeliveryStatusMeta(d.status).badgeClass">{{ getDeliveryStatusMeta(d.status).label }}</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                @if (deliveryOf(o.id); as d) {
+                  @if (d.status === 'PENDING' || d.status === 'FAILED' || d.status === 'ASSIGNED') {
+                    <app-button
+                      variant="ghost"
+                      iconOnly="user-add"
+                      nz-tooltip
+                      [nzTooltipTitle]="d.status === 'ASSIGNED' ? 'Đổi shipper' : 'Gán shipper'"
+                      *erpUTTHasSomeAuthority="[ROLE.GIAO_HANG.UPDATE]"
+                      (click)="openAssign(o)"
+                      [disabled]="actionLoading()"
+                    >
+                    </app-button>
+                  }
+                  @if (d.status === 'ASSIGNED') {
+                    <app-button
+                      variant="ghost"
+                      iconOnly="inbox"
+                      nz-tooltip
+                      nzTooltipTitle="Shipper đã lấy hàng"
+                      *erpUTTHasSomeAuthority="[ROLE.GIAO_HANG.UPDATE]"
+                      (click)="advanceDelivery(o, 'PICKED_UP')"
+                      [disabled]="actionLoading()"
+                    >
+                    </app-button>
+                  }
+                  @if (d.status === 'PICKED_UP') {
+                    <app-button
+                      variant="ghost"
+                      iconOnly="car"
+                      nz-tooltip
+                      nzTooltipTitle="Bắt đầu đi giao"
+                      *erpUTTHasSomeAuthority="[ROLE.GIAO_HANG.UPDATE]"
+                      (click)="advanceDelivery(o, 'DELIVERING')"
+                      [disabled]="actionLoading()"
+                    >
+                    </app-button>
+                  }
+                  @if (d.status === 'DELIVERING') {
+                    <app-button
+                      variant="ghost"
+                      iconOnly="check-circle"
+                      nz-tooltip
+                      nzTooltipTitle="Đã giao xong"
+                      *erpUTTHasSomeAuthority="[ROLE.GIAO_HANG.UPDATE]"
+                      (click)="advanceDelivery(o, 'DELIVERED')"
+                      [disabled]="actionLoading()"
+                    >
+                    </app-button>
+                    <app-button
+                      variant="ghost"
+                      iconOnly="close-circle"
+                      nz-tooltip
+                      nzTooltipTitle="Giao thất bại"
+                      *erpUTTHasSomeAuthority="[ROLE.GIAO_HANG.UPDATE]"
+                      (click)="openFail(o)"
+                      [disabled]="actionLoading()"
+                    >
+                    </app-button>
+                  }
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination [total]="total()" [pageIndex]="pageIndex()" [pageSize]="pageSize()" (pageIndexChange)="onPageChange($event)">
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <app-modal
+    [visible]="!!assignTarget()"
+    title="Phân công shipper"
+    size="md"
+    [centered]="true"
+    [maskClosable]="false"
+    [footer]="assignModalFooter"
+    (cancelEmit)="closeAssignModal()"
+    (visibleChange)="closeAssignModal()"
+  >
+    <ng-container>
+      <span class="form-label">Nhân viên giao hàng</span>
+      <nz-select [(ngModel)]="selectedShipperId" nzShowSearch nzPlaceHolder="Chọn nhân viên giao hàng" style="width: 100%">
+        @for (s of shippers(); track s.id) {
+          <nz-option [nzValue]="s.id" [nzLabel]="s.name"></nz-option>
+        }
+      </nz-select>
+    </ng-container>
+    <ng-template #assignModalFooter>
+      <app-button variant="ghost" (click)="closeAssignModal()">Đóng</app-button>
+      <app-button
+        variant="primary"
+        (click)="confirmAssign()"
+        [disabled]="!selectedShipperId || actionLoading()"
+        [loading]="actionLoading()"
+      >
+        Xác nhận gán
+      </app-button>
+    </ng-template>
+  </app-modal>
+
+  <nz-modal
+    [nzVisible]="!!failTarget()"
+    nzTitle="Lý do giao thất bại"
+    [nzMaskClosable]="false"
+    [nzKeyboard]="false"
+    [nzOkText]="'Xác nhận thất bại'"
+    [nzOkDisabled]="!failReason.trim()"
+    [nzOkLoading]="actionLoading()"
+    [nzCancelText]="'Đóng'"
+    (nzOnOk)="confirmFail()"
+    (nzOnCancel)="closeFailModal()"
+  >
+    <ng-container *nzModalContent>
+      <nz-input-wrapper>
+        <textarea
+          nz-input
+          rows="3"
+          [ngModel]="failReason"
+          (ngModelChange)="failReason = $event"
+          placeholder="VD: Khách không nghe máy, sai địa chỉ..."
+        ></textarea>
+      </nz-input-wrapper>
+      @if (!failReason.trim()) {
+        <span class="form-error">Giao thất bại bắt buộc có lý do.</span>
+      }
+    </ng-container>
+  </nz-modal>
+</div>

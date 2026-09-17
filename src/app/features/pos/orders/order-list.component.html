@@ -1,0 +1,341 @@
+<div class="pos-order-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Đơn hàng</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="reload" (click)="load()" [loading]="loading()"> Tải lại </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Chi nhánh</span>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả chi nhánh"
+          nzShowSearch
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzValue]="b.id" [nzLabel]="b.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Hình thức</span>
+        <nz-select
+          [(ngModel)]="selectedOrderType"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả hình thức"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          <nz-option nzValue="PICKUP" nzLabel="Tự đến lấy"></nz-option>
+          <nz-option nzValue="DELIVERY" nzLabel="Giao tận nơi"></nz-option>
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Trạng thái</span>
+        <nz-select
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item">
+        <span class="form-label">Từ ngày</span>
+        <nz-date-picker
+          [(ngModel)]="fromDate"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Từ ngày"
+          nzFormat="dd/MM/yyyy"
+        ></nz-date-picker>
+      </div>
+
+      <div class="filter-item">
+        <span class="form-label">Đến ngày</span>
+        <nz-date-picker
+          [(ngModel)]="toDate"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Đến ngày"
+          nzFormat="dd/MM/yyyy"
+        ></nz-date-picker>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onFilterChange()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      [nzData]="orders()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1100px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="150px" nzAlign="left">Mã đơn</th>
+          <th scope="col" nzWidth="130px" nzAlign="left">Hình thức</th>
+          <th scope="col" nzWidth="180px" nzAlign="left">Khách hàng</th>
+          <th scope="col" nzWidth="140px" nzAlign="right">Tổng tiền</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Ngày tạo</th>
+          <th scope="col" nzWidth="170px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (o of orders(); track o.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex() - 1) * pageSize() + idx + 1 }}</td>
+            <td nzAlign="left">
+              <a class="order-code" (click)="openDetail(o)">{{ o.orderCode }}</a>
+            </td>
+            <td nzAlign="left">{{ o.orderType === 'DELIVERY' ? 'Giao tận nơi' : 'Tự đến lấy' }}</td>
+            <td nzAlign="left">{{ o.receiverName }}</td>
+            <td nzAlign="right">{{ formatPrice(o.totalAmount) }}</td>
+            <td nzAlign="center">
+              <span [class]="getStatusMeta(o.status).badgeClass">{{ getStatusMeta(o.status).label }}</span>
+            </td>
+            <td nzAlign="center">{{ formatDateTime(o.createdAt) }}</td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Chi tiết" (click)="openDetail(o)"> </app-button>
+                @for (action of nextActions(o.orderType, o.status, '', false); track action) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_HANG.UPDATE]"
+                    variant="ghost"
+                    [iconOnly]="actionIcon(action)"
+                    nz-tooltip
+                    [nzTooltipTitle]="actionTooltip(action)"
+                    (click)="advance(o, action)"
+                    [disabled]="actionLoading()"
+                  >
+                  </app-button>
+                }
+                <app-button
+                  variant="ghost"
+                  iconOnly="dollar"
+                  nz-tooltip
+                  nzTooltipTitle="Thanh toán"
+                  *erpUTTHasSomeAuthority="[ROLE.DON_HANG.UPDATE]"
+                  (click)="openPayment(o)"
+                  [disabled]="actionLoading()"
+                >
+                </app-button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Detail Modal ────────────────────────────────────────────── -->
+  <app-modal
+    [visible]="detailVisible()"
+    (visibleChange)="detailVisible.set($event)"
+    title="Chi tiết đơn hàng"
+    size="lg"
+    [centered]="true"
+    [maskClosable]="false"
+    [footer]="detailModalFooter"
+    (cancelEmit)="closeDetail()"
+  >
+    <ng-container>
+      @if (detailLoading()) {
+        <nz-spin nzTip="Đang tải..."></nz-spin>
+      } @else if (detail(); as d) {
+        <div class="order-detail-head">
+          <div>
+            <div class="order-detail-code">{{ d.orderCode }}</div>
+            <div class="text-muted">
+              {{ d.customerName }} • {{ d.customerPhone }}
+              @if (d.shippingAddress) {
+                <span> • {{ d.shippingAddress }}</span>
+              }
+            </div>
+          </div>
+          <span [class]="getStatusMeta(d.status).badgeClass">{{ getStatusMeta(d.status).label }}</span>
+        </div>
+
+        @if (orderStepIndex(d.orderType, d.status) >= 0) {
+          <nz-steps [nzCurrent]="orderStepIndex(d.orderType, d.status)" nzSize="small" class="order-detail-steps">
+            @for (step of orderStepTitles(d.orderType); track step) {
+              <nz-step [nzTitle]="step"></nz-step>
+            }
+          </nz-steps>
+        } @else {
+          <div class="order-detail-note">
+            Đơn {{ getStatusMeta(d.status).label }}
+            @if (d.note) {
+              <span> • Ghi chú: {{ d.note }}</span>
+            }
+          </div>
+        }
+
+        <div class="order-detail-stats">
+          <div class="order-detail-stat">
+            <span class="order-detail-stat__value">{{ formatPrice(d.subtotal) }}</span>
+            <span class="order-detail-stat__label">Tạm tính</span>
+          </div>
+          <div class="order-detail-stat">
+            <span class="order-detail-stat__value">{{ formatPrice(d.discount) }}</span>
+            <span class="order-detail-stat__label">Giảm giá</span>
+          </div>
+          <div class="order-detail-stat">
+            <span class="order-detail-stat__value">{{ formatPrice(d.totalAmount) }}</span>
+            <span class="order-detail-stat__label">Tổng thu ({{ d.paymentMethod }} • {{ d.paymentStatus }})</span>
+          </div>
+        </div>
+
+        @for (item of d.items; track item.id) {
+          <div class="order-detail__item">
+            <span
+              >{{ item.productName }}
+              @if (item.variantName) {
+                <span> ({{ item.variantName }})</span>
+              }
+              x{{ item.quantity }}</span
+            >
+            <span>{{ formatPrice(item.amount) }}</span>
+          </div>
+          @for (t of item.toppings; track t.toppingId) {
+            <div class="order-detail__topping">
+              <span>+ {{ t.toppingName }} x{{ t.quantity }}</span
+              ><span>{{ formatPrice(t.totalPrice) }}</span>
+            </div>
+          }
+        }
+
+        @if (d.delivery) {
+          <div class="order-detail-note">
+            Giao hàng: {{ d.delivery.receiverName }} • {{ d.delivery.receiverPhone }} • {{ d.delivery.deliveryAddress }} ({{
+              d.delivery.status
+            }})
+          </div>
+        }
+
+        <div class="order-detail__history">
+          @for (h of history(); track h.id) {
+            <div class="order-detail__history-row">
+              <span>{{ h.oldStatus ?? '—' }} → {{ h.newStatus }}</span>
+              <span>{{ formatDateTime(h.changedAt) }}</span>
+              @if (h.note) {
+                <span>{{ h.note }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </ng-container>
+    <ng-template #detailModalFooter>
+      @if (detail(); as d) {
+        @for (action of nextActions(d.orderType, d.status, d.paymentStatus); track action) {
+          <app-button
+            [variant]="action === 'CANCELLED' || action === 'REJECTED' ? 'ghost' : 'primary'"
+            *erpUTTHasSomeAuthority="[ROLE.DON_HANG.UPDATE]"
+            (click)="advanceFromDetail(d, action)"
+            [disabled]="actionLoading()"
+          >
+            {{ actionLabels[action] || action }}
+          </app-button>
+        }
+      @if (!['CANCELLED', 'REJECTED', 'COMPLETED'].includes(d.status) && d.paymentStatus === 'UNPAID') {
+        <app-button
+          variant="ghost"
+          *erpUTTHasSomeAuthority="[ROLE.DON_HANG.UPDATE]"
+          (click)="openPaymentFromDetail(d)"
+          [disabled]="actionLoading()"
+        >
+          Thu tiền
+        </app-button>
+      }
+      }
+      <app-button variant="ghost" (click)="closeDetail()">Đóng</app-button>
+    </ng-template>
+  </app-modal>
+
+  <nz-modal
+    [nzVisible]="!!cancelTarget()"
+    nzTitle="Lý do hủy / từ chối đơn"
+    [nzMaskClosable]="false"
+    [nzKeyboard]="false"
+    [nzOkText]="'Xác nhận hủy'"
+    [nzOkDisabled]="!cancelReason.trim()"
+    [nzOkLoading]="actionLoading()"
+    [nzCancelText]="'Đóng'"
+    (nzOnOk)="confirmCancel()"
+    (nzOnCancel)="closeCancelModal()"
+  >
+    <ng-container *nzModalContent>
+      <nz-input-wrapper>
+        <textarea
+          nz-input
+          rows="3"
+          [ngModel]="cancelReason"
+          (ngModelChange)="cancelReason = $event"
+          placeholder="Nhập lý do hủy / từ chối đơn hàng..."
+        ></textarea>
+      </nz-input-wrapper>
+      @if (!cancelReason.trim()) {
+        <span class="form-error">Vui lòng nhập lý do trước khi hủy đơn.</span>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <nz-modal
+    [nzVisible]="!!paymentTarget()"
+    nzTitle="Xác nhận đã thu tiền"
+    [nzOkText]="'Đã thu tiền'"
+    [nzOkLoading]="actionLoading()"
+    [nzCancelText]="'Đóng'"
+    (nzOnOk)="confirmPayment()"
+    (nzOnCancel)="closePaymentModal()"
+  >
+    <ng-container *nzModalContent>
+      <p>
+        Xác nhận đã thu <strong>{{ paymentTarget() ? formatPrice(paymentTarget()!.totalAmount) : '' }}</strong>
+        của đơn <strong>{{ paymentTarget()?.orderCode }}</strong>?
+      </p>
+      <p style="margin-bottom: 0; color: var(--text-secondary)">
+        Tiền đã thu không đảo ngược tay được — muốn hoàn phải hủy đơn để sinh phiếu hoàn tiền.
+      </p>
+    </ng-container>
+  </nz-modal>
+</div>
