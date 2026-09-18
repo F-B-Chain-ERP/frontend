@@ -8,8 +8,10 @@ export interface Topping {
   imageUrl: string | null;
   groupName: string | null;
   materialId: string | null;
+  materialName: string | null;
   materialQuantity: number | null;
   status: string;
+  createdBy: string | null;
   createdAt: string;
   updatedAt: string;
 }

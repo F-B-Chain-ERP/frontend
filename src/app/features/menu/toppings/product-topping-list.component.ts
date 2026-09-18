@@ -12,7 +12,6 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
-import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { BaseComponent } from '../../../shared/base-component/base.component';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
@@ -31,6 +30,7 @@ import {
   UpdateProductToppingRequest,
 } from './topping-assignment.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
+import { normalizeImageUrl } from '../../../core/util/image.util';
 import { takeUntil } from 'rxjs';
 
 @Component({
@@ -51,7 +51,6 @@ import { takeUntil } from 'rxjs';
     NzInputNumberModule,
     NzSpinModule,
     NzEmptyModule,
-    NzPaginationModule,
     AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
@@ -64,6 +63,7 @@ import { takeUntil } from 'rxjs';
 export class ProductToppingListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
+  readonly normalizeImageUrl = normalizeImageUrl;
 
   // ── Product selector state ──────────────────────────────────
   readonly products = signal<ProductItem[]>([]);
@@ -80,6 +80,15 @@ export class ProductToppingListComponent extends BaseComponent implements OnInit
   readonly assignedToppings = signal<ProductTopping[]>([]);
   readonly isLoadingToppings = signal(false);
   readonly isSaving = signal(false);
+
+  // ── Computed ────────────────────────────────────────────────
+  get defaultToppingCount(): number {
+    return this.assignedToppings().filter(t => t.isDefault).length;
+  }
+
+  onImageError(event: Event): void {
+    (event.target as HTMLImageElement).style.display = 'none';
+  }
 
   // ── Add topping modal ───────────────────────────────────────
   readonly isAddModalVisible = signal(false);
@@ -136,6 +145,9 @@ export class ProductToppingListComponent extends BaseComponent implements OnInit
           this.products.set(res.items);
           this.productTotal.set(res.total);
           this.isLoadingProducts.set(false);
+          if (!this.selectedProduct() && res.items.length > 0) {
+            this.selectProduct(res.items[0]);
+          }
         },
         error: err => {
           this.isLoadingProducts.set(false);
@@ -145,6 +157,12 @@ export class ProductToppingListComponent extends BaseComponent implements OnInit
   }
 
   onProductSearch(): void {
+    this.productPageIndex = DEFAULT_PAGE_INDEX;
+    this.loadProducts();
+  }
+
+  onCategoryFilterChange(categoryId: string | null): void {
+    this.selectedCategoryId = categoryId;
     this.productPageIndex = DEFAULT_PAGE_INDEX;
     this.loadProducts();
   }

@@ -10,81 +10,57 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════
-       SECTION 2: 2-COLUMN LAYOUT (branch list + availability)
+       SECTION 2: TABS + FILTER + TABLE
        ════════════════════════════════════════════════════════════ -->
-  <div class="availability-layout">
-    <!-- LEFT: Branch mini-list (always visible) -->
-    <div class="availability-layout__left">
-      <nz-card class="branch-mini-list" [nzBordered]="false">
-        <div class="branch-mini-list__header">
-          <h3>Chi nhánh</h3>
-        </div>
-        <div class="branch-mini-list__items">
-          @for (branch of branches(); track branch.id) {
-          <div class="branch-mini-item" [class.branch-mini-item--active]="branch.id === selectedBranch()?.id"
-            (click)="selectBranch(branch)">
-            <span class="branch-mini-item__name">{{ branch.name }}</span>
-            <span class="branch-mini-item__code">{{ branch.code }}</span>
-          </div>
-          } @empty {
-          <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Không có chi nhánh nào'"></nz-empty>
+  <nz-tabs
+    [nzSelectedIndex]="activeTab() === 'product' ? 0 : 1"
+    (nzSelectedIndexChange)="onTabChange($event)"
+    class="availability-tabs">
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- TAB 1: SẢN PHẨM KHẢ DỤNG -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <nz-tab nzTitle="Sản phẩm khả dụng">
+      <div class="availability-filter">
+        <label class="form-label">Chi nhánh</label>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          (ngModelChange)="onBranchChange($event)"
+          nzPlaceHolder="Chọn chi nhánh"
+          class="availability-filter__select">
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
           }
-        </div>
-      </nz-card>
-    </div>
-
-    <!-- RIGHT: Availability content (chọn CN → chọn section → list) -->
-    <div class="availability-layout__right">
-      @if (selectedBranch(); as branch) {
-      @if (!selectedSection()) {
-      <nz-card class="availability-branch-info" [nzBordered]="false">
-        <div class="availability-branch-info__header">
-          <h2>{{ branch.name }}</h2>
-          <nz-tag>{{ branch.code }}</nz-tag>
-        </div>
-      </nz-card>
-
-      <div class="availability-options">
-        <nz-card class="availability-option" [nzBordered]="false" (click)="openSection('product')"
-          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_KHA_DUNG.VIEW]">
-          <div class="availability-option__body">
-            <nz-icon nzType="appstore" class="availability-option__icon"></nz-icon>
-            <div class="availability-option__text">
-              <span class="availability-option__title">Sản phẩm khả dụng</span>
-              <span class="availability-option__desc">Bật/tắt bán và đặt giá bán riêng theo chi nhánh</span>
-            </div>
-            <nz-icon nzType="right" class="availability-option__arrow"></nz-icon>
-          </div>
-        </nz-card>
-
-        <nz-card class="availability-option" [nzBordered]="false" (click)="openSection('topping')"
-          *erpUTTHasSomeAuthority="[ROLE.TOPPING_KHA_DUNG.VIEW]">
-          <div class="availability-option__body">
-            <nz-icon nzType="coffee" class="availability-option__icon"></nz-icon>
-            <div class="availability-option__text">
-              <span class="availability-option__title">Topping khả dụng</span>
-              <span class="availability-option__desc">Bật/tắt topping được sử dụng theo chi nhánh</span>
-            </div>
-            <nz-icon nzType="right" class="availability-option__arrow"></nz-icon>
-          </div>
-        </nz-card>
-      </div>
-      } @else {
-      <div class="availability-section-bar">
-        <app-button variant="ghost" size="sm" leftIcon="arrow-left" (click)="openSection(null)">Danh mục</app-button>
-        <div class="availability-section-bar__info">
-          <span class="availability-section-bar__branch">{{ branch.name }}</span>
-          <nz-tag>{{ branch.code }}</nz-tag>
-          <span class="availability-section-bar__sep">/</span>
-          <span class="availability-section-bar__title">{{
-            selectedSection() === 'product' ? 'Sản phẩm khả dụng' : 'Topping khả dụng'
-            }}</span>
-        </div>
+        </nz-select>
       </div>
 
-      <app-availability-table [type]="selectedSection()!" [branchId]="branch.id" />
+      <!-- Table -->
+      @if (selectedBranchId(); as branchId) {
+        <app-availability-table type="product" [branchId]="branchId" />
       }
+    </nz-tab>
+
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <!-- TAB 2: TOPPING KHẢ DỤNG -->
+    <!-- ════════════════════════════════════════════════════════════ -->
+    <nz-tab nzTitle="Topping khả dụng">
+      <div class="availability-filter">
+        <label class="form-label">Chi nhánh</label>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          (ngModelChange)="onBranchChange($event)"
+          nzPlaceHolder="Chọn chi nhánh"
+          class="availability-filter__select">
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <!-- Table -->
+      @if (selectedBranchId(); as branchId) {
+        <app-availability-table type="topping" [branchId]="branchId" />
       }
-    </div>
-  </div>
+    </nz-tab>
+  </nz-tabs>
 </div>

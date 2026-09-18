@@ -388,6 +388,10 @@ export class BomListComponent extends BaseComponent implements OnInit {
         this.toastService.warning(`Dòng ${i + 1}: Vui lòng chọn đơn vị tính`);
         return;
       }
+      if (r.wastagePercent == null || r.wastagePercent <= 0 || r.wastagePercent > 100) {
+        this.toastService.warning(`Dòng ${i + 1}: Tỷ lệ hao hụt phải lớn hơn 0% và không vượt quá 100%`);
+        return;
+      }
     }
 
     // Kiểm tra trùng lặp nguyên liệu
@@ -425,8 +429,13 @@ export class BomListComponent extends BaseComponent implements OnInit {
         },
         error: (err) => {
           this.isSaving.set(false);
-          const msg = err?.error?.message || 'Không thể lưu công thức định lượng';
-          this.toastService.error(msg);
+          const code = err?.error?.code;
+          if (code === 'MENU_400_BOM_INVALID_WASTAGE') {
+            this.toastService.error('Tỷ lệ hao hụt không hợp lệ. Vui lòng kiểm tra lại (phải lớn hơn 0% và không vượt quá 100%)');
+          } else {
+            const msg = err?.error?.message || 'Không thể lưu công thức định lượng';
+            this.toastService.error(msg);
+          }
         },
       });
   }

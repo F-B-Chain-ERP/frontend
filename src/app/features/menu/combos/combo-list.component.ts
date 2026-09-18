@@ -8,10 +8,8 @@ import {NzInputModule} from 'ng-zorro-antd/input';
 import {NzIconModule} from 'ng-zorro-antd/icon';
 import {NzTagModule} from 'ng-zorro-antd/tag';
 import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
-import {NzGridModule} from 'ng-zorro-antd/grid';
 import {NzSelectModule} from 'ng-zorro-antd/select';
 import {NzSpinModule} from 'ng-zorro-antd/spin';
-import {NzPopconfirmModule} from 'ng-zorro-antd/popconfirm';
 import {NzEmptyModule} from 'ng-zorro-antd/empty';
 import {NzSwitchModule} from 'ng-zorro-antd/switch';
 import {NzInputNumberModule} from 'ng-zorro-antd/input-number';
@@ -58,10 +56,8 @@ import {takeUntil} from 'rxjs';
     NzIconModule,
     NzTagModule,
     NzTooltipModule,
-    NzGridModule,
     NzSelectModule,
     NzSpinModule,
-    NzPopconfirmModule,
     NzEmptyModule,
     NzSwitchModule,
     NzInputNumberModule,
@@ -133,6 +129,18 @@ export class ComboListComponent extends BaseComponent implements OnInit {
   readonly isEditingPrice = signal<boolean>(false);
   readonly isSavingPrice = signal<boolean>(false);
   editingPriceValue: number = 0;
+
+  // ── Edit Item Modal ──
+  readonly isEditModalVisible = signal<boolean>(false);
+  readonly isEditSaving = signal<boolean>(false);
+  readonly editItem = signal<ComboItem | null>(null);
+  editQuantity = 1;
+  editIsSubstitutable = false;
+
+  get editModalTitle(): string {
+    const item = this.editItem();
+    return item ? `Sửa thành phần — ${item.productName}` : 'Sửa thành phần';
+  }
 
   get addModalTitle(): string {
     const combo = this.selectedCombo();
@@ -359,6 +367,62 @@ export class ComboListComponent extends BaseComponent implements OnInit {
       });
   }
 
+  // ── Edit Item Modal ──
+
+  openEditItemModal(item: ComboItem): void {
+    this.editItem.set(item);
+    this.editQuantity = item.quantity;
+    this.editIsSubstitutable = item.isSubstitutable;
+    this.isEditModalVisible.set(true);
+  }
+
+  closeEditModal(): void {
+    this.isEditModalVisible.set(false);
+    this.editItem.set(null);
+  }
+
+  confirmEditItem(): void {
+    const combo = this.selectedCombo();
+    const detail = this.comboDetail();
+    const item = this.editItem();
+    if (!combo || !detail || !item) return;
+
+    if (!this.editQuantity || this.editQuantity < 1) {
+      this.toastService.warning('Số lượng phải >= 1');
+      return;
+    }
+
+    if (this.editQuantity === item.quantity && this.editIsSubstitutable === item.isSubstitutable) {
+      this.toastService.info('Không có thay đổi nào');
+      this.closeEditModal();
+      return;
+    }
+
+    const items = detail.items.map(i =>
+      i.comboItemId === item.comboItemId
+        ? {variantId: i.variantId, quantity: this.editQuantity, isSubstitutable: this.editIsSubstitutable}
+        : {variantId: i.variantId, quantity: i.quantity, isSubstitutable: i.isSubstitutable}
+    );
+
+    this.isEditSaving.set(true);
+    this.comboService
+      .syncItems(combo.id, items)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (updatedDetail) => {
+          this.comboDetail.set(updatedDetail);
+          this.toastService.success('Đã cập nhật thành phần');
+          this.isEditSaving.set(false);
+          this.closeEditModal();
+          this.loadCombos();
+        },
+        error: (err) => {
+          this.toastService.error(err?.message || 'Không thể cập nhật');
+          this.isEditSaving.set(false);
+        },
+      });
+  }
+
   // ── Edit Combo Price ──
 
   startEditPrice(): void {
@@ -440,7 +504,10 @@ export class ComboListComponent extends BaseComponent implements OnInit {
   readonly isSwapCalculating = signal<boolean>(false);
   readonly swapItem = signal<ComboItem | null>(null);
   readonly swapVariants = signal<ProductVariantOption[]>([]);
+  readonly swapProducts = signal<Product[]>([]);
   readonly swapPricePreview = signal<CalculateComboPriceResponseDto | null>(null);
+  swapProductId: string | null = null;
+  swapCurrentProductId: string | null = null;
   swapNewVariantId = '';
   swapNewQuantity = 1;
 
@@ -455,25 +522,50 @@ export class ComboListComponent extends BaseComponent implements OnInit {
     this.swapNewQuantity = item.quantity;
     this.swapPricePreview.set(null);
     this.swapVariants.set([]);
+    this.swapProducts.set([]);
     this.isSwapModalVisible.set(true);
 
-    // Load variants of the same product
-    const product = this.products().find((p) => p.code === item.productCode);
-    if (product) {
-      this.productService
-        .getVariants(product.id)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe({
-          next: (variants) => this.swapVariants.set(variants || []),
-          error: () => this.swapVariants.set([]),
-        });
+    const currentProduct = this.products().find((p) => p.code === item.productCode);
+    if (currentProduct) {
+      this.swapCurrentProductId = currentProduct.id;
+      this.swapProductId = currentProduct.id;
+      this.loadSwapProducts();
+      this.loadSwapVariants(currentProduct.id);
     }
+  }
+
+  private loadSwapProducts(): void {
+    const currentProduct = this.swapItem()
+      ? this.products().find((p) => p.code === this.swapItem()!.productCode)
+      : null;
+    const filtered = this.products().filter(
+      (p) => p.id !== currentProduct?.id && p.status === 'ACTIVE',
+    );
+    this.swapProducts.set(filtered);
+  }
+
+  private loadSwapVariants(productId: string): void {
+    this.productService
+      .getVariants(productId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (variants) => this.swapVariants.set(variants || []),
+        error: () => this.swapVariants.set([]),
+      });
+  }
+
+  onSwapProductChange(productId: string): void {
+    this.swapProductId = productId;
+    this.swapNewVariantId = '';
+    this.swapPricePreview.set(null);
+    this.loadSwapVariants(productId);
   }
 
   closeSwapModal(): void {
     this.isSwapModalVisible.set(false);
     this.swapItem.set(null);
     this.swapPricePreview.set(null);
+    this.swapCurrentProductId = null;
   }
 
   onSwapVariantChange(variantId: string): void {
