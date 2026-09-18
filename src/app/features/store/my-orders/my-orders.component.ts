@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, map } from 'rxjs';
 import { NzIconDirective } from 'ng-zorro-antd/icon';
 import { NzInputDirective } from 'ng-zorro-antd/input';
@@ -15,6 +16,8 @@ import { PosApiService } from '../services/pos-api.service';
 import { PosOrder, PosOrderDetail, PosOrderHistoryItem, SalesBranch } from '../models/pos.model';
 import { getOrderStatusMeta } from '../../pos/order.model';
 import { StoreBranchService } from '../services/store-branch.service';
+import { RealtimeNotificationService } from '../../../core/notification/realtime-notification.service';
+import { OrderRealtimePayload } from '../../../core/notification/notification.model';
 
 const CANCELLABLE = ['PENDING', 'CONFIRMED', 'PREPARING'];
 
@@ -107,6 +110,9 @@ export class MyOrdersComponent implements OnInit {
   private readonly account = inject(AccountService);
   private readonly toast = inject(AppNotificationService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly realtimeNotification = inject(RealtimeNotificationService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly branchService = inject(StoreBranchService);
 
   ngOnInit(): void {
@@ -118,6 +124,82 @@ export class MyOrdersComponent implements OnInit {
     this.branchService.loadBranches().subscribe({ error: () => undefined });
     this.load();
     this.loadTabCounts();
+
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        const orderCode = params['orderCode'];
+        if (orderCode) {
+          this.searchTerm.set(orderCode);
+          this.selectedStatus.set('');
+          // If orders are already loaded, trigger scroll and expansion
+          this.highlightOrder(orderCode);
+        }
+      });
+
+    this.realtimeNotification.orderEvents$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(event => {
+        this.handleRealtimeOrderEvent(event);
+      });
+  }
+
+  private highlightOrder(orderCode: string): void {
+    const list = this.orders();
+    const found = list.find(o => (o.orderCode || '').toLowerCase() === orderCode.toLowerCase());
+    if (found) {
+      const next = new Set(this.expandedIds());
+      next.add(found.id);
+      this.expandedIds.set(next);
+      this.fetchDetail(found.id);
+      setTimeout(() => {
+        const el = document.getElementById('order-card-' + (found.orderCode || found.id));
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  }
+
+  private handleRealtimeOrderEvent(event: OrderRealtimePayload): void {
+    if (!event || !event.orderId) return;
+
+    const currentOrders = this.orders();
+    const existingIndex = currentOrders.findIndex(o => o.id === event.orderId);
+
+    if (existingIndex !== -1) {
+      const updated = [...currentOrders];
+      const target = { ...updated[existingIndex] };
+      if (event.orderStatus) {
+        target.status = event.orderStatus;
+      }
+      updated[existingIndex] = target;
+      this.orders.set(updated);
+
+      const currentDetail = this.details().get(event.orderId);
+      if (currentDetail && event.orderStatus) {
+        const nextMap = new Map(this.details());
+        nextMap.set(event.orderId, { ...currentDetail, status: event.orderStatus });
+        this.details.set(nextMap);
+      }
+
+      if (this.expandedIds().has(event.orderId)) {
+        const currentDetails = new Map(this.details());
+        currentDetails.delete(event.orderId);
+        this.details.set(currentDetails);
+
+        const currentLoading = new Set(this.loadingDetails());
+        currentLoading.delete(event.orderId);
+        this.loadingDetails.set(currentLoading);
+
+        this.fetchDetail(event.orderId);
+      }
+
+      this.loadTabCounts();
+    } else if (event.eventType === 'ORDER_CREATED') {
+      this.load();
+      this.loadTabCounts();
+    }
   }
 
   formatPrice(amount: number | null | undefined): string {
@@ -127,8 +209,18 @@ export class MyOrdersComponent implements OnInit {
   formatDateTime(value: string | null | undefined): string {
     if (!value) return '—';
     const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return '—';
-    return `${d.toLocaleDateString('vi-VN')} ${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+    if (isNaN(d.getTime())) return value;
+    return new Intl.DateTimeFormat('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(d);
+  }
+
+  orderTypeLabel(type: string | null | undefined): string {
+    return type === 'DELIVERY' ? 'Giao hàng tận nơi' : 'Nhận tại cửa hàng';
   }
 
   canCancel(status: string): boolean {
@@ -218,6 +310,11 @@ export class MyOrdersComponent implements OnInit {
         this.loading.set(false);
         // Tải trước chi tiết cho các đơn
         merged.forEach(o => this.fetchDetail(o.id));
+
+        const currentCode = this.route.snapshot.queryParams['orderCode'];
+        if (currentCode) {
+          this.highlightOrder(currentCode);
+        }
       },
       error: err => {
         this.loading.set(false);

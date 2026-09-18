@@ -1,10 +1,10 @@
 import {HttpClient} from '@angular/common/http';
 import {Injectable, computed, inject, signal} from '@angular/core';
-import {Observable, map, tap} from 'rxjs';
+import {Observable, Subject, map, tap} from 'rxjs';
 import {ApplicationConfigService} from '../config/application-config.service';
 import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
 import {ApiResponse} from '../../features/login/login.model';
-import {AppNotification, SseTicketResponse} from './notification.model';
+import {AppNotification, OrderRealtimePayload, SseTicketResponse} from './notification.model';
 
 /**
  * Quản lý thông báo thời gian thực (realtime notifications) qua Server-Sent Events (SSE)
@@ -27,6 +27,7 @@ export class RealtimeNotificationService {
   readonly unreadCount = computed(() => this.notifications().filter(n => !n.readAt).length);
   readonly isConnected = signal<boolean>(false);
   readonly isConnecting = signal<boolean>(false);
+  readonly orderEvents$ = new Subject<OrderRealtimePayload>();
 
   /**
    * Tải danh sách thông báo gần đây từ cơ sở dữ liệu (source of truth).
@@ -94,6 +95,23 @@ export class RealtimeNotificationService {
         this.toast.info(notif.title, notif.body);
       } catch (e) {
         console.error('Error parsing notification SSE payload', e);
+      }
+    });
+
+    this.eventSource.addEventListener('order_event', (event: MessageEvent) => {
+      try {
+        const payload: OrderRealtimePayload = JSON.parse(event.data);
+        this.orderEvents$.next(payload);
+
+        if (payload.eventType === 'ORDER_CREATED') {
+          this.playOrderAlertSound();
+          this.toast.success(payload.title, payload.message);
+        } else {
+          this.playNotificationSound();
+          this.toast.info(payload.title, payload.message);
+        }
+      } catch (e) {
+        console.error('Error parsing order_event SSE payload', e);
       }
     });
 
@@ -211,6 +229,36 @@ export class RealtimeNotificationService {
       osc.stop(ctx.currentTime + 0.35);
     } catch {
       // AudioContext có thể bị chặn nếu user chưa tương tác với trang web, bỏ qua an toàn
+    }
+  }
+
+  /**
+   * Âm thanh chuông báo đơn mới 2-tone sống động (E5 -> A5) qua Web Audio API.
+   */
+  private playOrderAlertSound(): void {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as {webkitAudioContext: typeof AudioContext}).webkitAudioContext;
+      if (!AudioCtx) {
+        return;
+      }
+      const ctx = new AudioCtx();
+      const playTone = (freq: number, start: number, dur: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur);
+      };
+
+      playTone(659.25, 0, 0.22); // E5
+      playTone(880.00, 0.14, 0.35); // A5
+    } catch {
+      // Bỏ qua an toàn nếu chưa có tương tác người dùng
     }
   }
 }

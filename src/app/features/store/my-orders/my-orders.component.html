@@ -75,7 +75,7 @@
   } @else {
     <div class="orders-list">
       @for (o of filteredOrders(); track o.id) {
-        <div class="order-card">
+        <div class="order-card" [attr.id]="'order-card-' + (o.orderCode || o.id)">
           <!-- Card Header: Shop info + Status -->
           <div class="order-card__header">
             <div class="store-group">

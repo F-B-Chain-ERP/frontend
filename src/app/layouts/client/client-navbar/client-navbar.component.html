@@ -68,6 +68,11 @@
         }
       </button>
 
+      <!-- Notification Bell -->
+      @if (account()) {
+        <app-notification-bell class="client-navbar__bell"></app-notification-bell>
+      }
+
       <!-- User Profile / Login -->
       @if (account(); as user) {
         <div

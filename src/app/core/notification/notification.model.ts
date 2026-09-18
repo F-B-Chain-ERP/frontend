@@ -15,3 +15,18 @@ export interface SseTicketResponse {
   ticket: string;
   expiresInSeconds: number;
 }
+
+export interface OrderRealtimePayload {
+  eventType: 'ORDER_CREATED' | 'ORDER_STATUS_CHANGED' | 'DELIVERY_ASSIGNED' | 'DELIVERY_STATUS_CHANGED' | string;
+  orderId: string;
+  orderCode: string;
+  branchId?: string;
+  customerId?: string;
+  shipperId?: string;
+  orderStatus: string;
+  deliveryStatus?: string;
+  paymentStatus?: string;
+  title: string;
+  message: string;
+  timestamp: string;
+}
