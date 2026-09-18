@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -22,6 +23,8 @@ import { UserService } from '../../system/users/user.service';
 import { UserStatus } from '../../system/users/user.model';
 import { PosStaffApiService } from '../pos-staff-api.service';
 import { PosDeliveryInfo, PosOrderSummary, getDeliveryStatusMeta, getOrderStatusMeta } from '../order.model';
+import { RealtimeNotificationService } from '../../../core/notification/realtime-notification.service';
+import { OrderRealtimePayload } from '../../../core/notification/notification.model';
 
 /**
  * Bảng điều giao hàng (thay placeholder coming-soon).
@@ -76,10 +79,26 @@ export class PosDeliveryBoardComponent implements OnInit {
   private readonly api = inject(PosStaffApiService);
   private readonly users = inject(UserService);
   private readonly toast = inject(AppNotificationService);
+  private readonly realtimeNotification = inject(RealtimeNotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
     this.branchService.loadMine().subscribe();
     this.load();
+
+    this.realtimeNotification.orderEvents$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(event => {
+        if (!event) return;
+        const currentBranch = this.branchService.currentBranch()?.id;
+        if (this.selectedBranchId && event.branchId && this.selectedBranchId !== event.branchId) {
+          return;
+        }
+        if (!this.selectedBranchId && currentBranch && event.branchId && currentBranch !== event.branchId) {
+          return;
+        }
+        this.load();
+      });
   }
 
   formatPrice(amount: number | null | undefined): string {

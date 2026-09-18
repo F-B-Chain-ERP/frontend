@@ -13,6 +13,7 @@ import { CartService } from '../../../shared/services/cart.service';
 import { AccountService } from '../../../core/auth/account.service';
 import { LoginService } from '../../../features/login/login.service';
 import { ThemeService } from '../../../core/theme/theme.service';
+import { NotificationBellComponent } from '../../header/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-client-navbar',
@@ -28,6 +29,7 @@ import { ThemeService } from '../../../core/theme/theme.service';
     NzDropDownModule,
     NzMenuModule,
     AppButtonComponent,
+    NotificationBellComponent,
   ],
   templateUrl: './client-navbar.component.html',
   styleUrls: ['./client-navbar.component.scss'],
