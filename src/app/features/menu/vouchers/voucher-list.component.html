@@ -433,6 +433,11 @@
             nzAddonAfter="lần"
             style="width: 100%"
           />
+          @if (voucherForm.get('usageLimitPerCustomer')?.dirty || voucherForm.get('usageLimitPerCustomer')?.touched) {
+            @if (voucherForm.get('usageLimitPerCustomer')?.hasError('usageLimitPerCustomerExceedsUsageLimit')) {
+              <span class="form-error">Lượt dùng mỗi khách không được vượt quá tổng lượt dùng tối đa.</span>
+            }
+          }
         </div>
 
         <div nz-col [nzSpan]="24" [nzMd]="12">
