@@ -1,0 +1,294 @@
+<div class="pos-order-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Bếp (KDS) — Trạm BAR</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="reload" (click)="load()" [loading]="loading()"> Tải lại </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Chi nhánh</span>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả chi nhánh"
+          nzShowSearch
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzValue]="b.id" [nzLabel]="b.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Trạng thái</span>
+        <nz-select
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item">
+        <span class="form-label">Từ ngày</span>
+        <nz-date-picker
+          [(ngModel)]="fromDate"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Từ ngày"
+          nzFormat="dd/MM/yyyy"
+        ></nz-date-picker>
+      </div>
+
+      <div class="filter-item">
+        <span class="form-label">Đến ngày</span>
+        <nz-date-picker
+          [(ngModel)]="toDate"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Đến ngày"
+          nzFormat="dd/MM/yyyy"
+        ></nz-date-picker>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onFilterChange()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 3. Board 3 cột ─────────────────────────────────────────────── -->
+  <nz-spin [nzSpinning]="loading()">
+    <div class="kds-board">
+      <nz-card class="kds-column" [nzBordered]="false" nzTitle="Chờ làm">
+        <div class="kds-count"><span class="tbl-badge tbl-badge--warning">{{ queued().length }} phiếu</span></div>
+        @if (!queued().length) {
+          <nz-empty nzNotFoundContent="Không có phiếu chờ"></nz-empty>
+        }
+        @for (t of queued(); track t.id) {
+          <div class="kds-ticket" (click)="openDetail(t)">
+            <div class="kds-ticket__head">
+              <span class="kds-ticket__code">{{ t.ticketCode }}</span>
+              <span class="tbl-badge" [class]="getStatusMeta(t.status).badgeClass">{{ getStatusMeta(t.status).label }}</span>
+            </div>
+            <div class="text-muted">{{ t.orderCode }} • {{ t.customerName ?? '—' }} • {{ t.totalItems }} món</div>
+            <div class="text-muted" [class.kds-overdue]="isOverdue(t.createdAt)">
+              Vào bếp {{ formatDateTime(t.createdAt) }} ({{ elapsedMinutes(t.createdAt) }} phút)
+              @if (isOverdue(t.createdAt)) {
+                <span> • Trễ</span>
+              }
+            </div>
+            <div class="tbl-actions" *erpUTTHasSomeAuthority="[ROLE.KDS_TICKET.UPDATE]">
+              @for (action of nextActions(t.status); track action) {
+                <app-button
+                  variant="ghost"
+                  [iconOnly]="actionIcon(action)"
+                  nz-tooltip
+                  [nzTooltipTitle]="actionTooltip(action)"
+                  (click)="advance(t, action); $event.stopPropagation()"
+                  [disabled]="actionLoading()"
+                >
+                </app-button>
+              }
+            </div>
+          </div>
+        }
+      </nz-card>
+
+      <nz-card class="kds-column" [nzBordered]="false" nzTitle="Đang pha chế">
+        <div class="kds-count"><span class="tbl-badge tbl-badge--info">{{ preparing().length }} phiếu</span></div>
+        @if (!preparing().length) {
+          <nz-empty nzNotFoundContent="Không có phiếu đang pha"></nz-empty>
+        }
+        @for (t of preparing(); track t.id) {
+          <div class="kds-ticket" (click)="openDetail(t)">
+            <div class="kds-ticket__head">
+              <span class="kds-ticket__code">{{ t.ticketCode }}</span>
+              <span class="tbl-badge" [class]="getStatusMeta(t.status).badgeClass">{{ getStatusMeta(t.status).label }}</span>
+            </div>
+            <div class="text-muted">{{ t.orderCode }} • {{ t.customerName ?? '—' }} • {{ t.totalItems }} món</div>
+            <div class="text-muted" [class.kds-overdue]="isOverdue(t.createdAt)">
+              Vào bếp {{ formatDateTime(t.createdAt) }} ({{ elapsedMinutes(t.createdAt) }} phút)
+              @if (isOverdue(t.createdAt)) {
+                <span> • Trễ</span>
+              }
+            </div>
+            <div class="tbl-actions" *erpUTTHasSomeAuthority="[ROLE.KDS_TICKET.UPDATE]">
+              @for (action of nextActions(t.status); track action) {
+                <app-button
+                  variant="ghost"
+                  [iconOnly]="actionIcon(action)"
+                  nz-tooltip
+                  [nzTooltipTitle]="actionTooltip(action)"
+                  (click)="advance(t, action); $event.stopPropagation()"
+                  [disabled]="actionLoading()"
+                >
+                </app-button>
+              }
+            </div>
+          </div>
+        }
+      </nz-card>
+
+      <nz-card class="kds-column" [nzBordered]="false" nzTitle="Sẵn sàng">
+        <div class="kds-count"><span class="tbl-badge tbl-badge--primary">{{ ready().length }} phiếu</span></div>
+        @if (!ready().length) {
+          <nz-empty nzNotFoundContent="Không có phiếu sẵn sàng"></nz-empty>
+        }
+        @for (t of ready(); track t.id) {
+          <div class="kds-ticket" (click)="openDetail(t)">
+            <div class="kds-ticket__head">
+              <span class="kds-ticket__code">{{ t.ticketCode }}</span>
+              <span class="tbl-badge" [class]="getStatusMeta(t.status).badgeClass">{{ getStatusMeta(t.status).label }}</span>
+            </div>
+            <div class="text-muted">{{ t.orderCode }} • {{ t.customerName ?? '—' }} • {{ t.totalItems }} món</div>
+            <div class="text-muted">Vào bếp {{ formatDateTime(t.createdAt) }}</div>
+            <div class="tbl-actions" *erpUTTHasSomeAuthority="[ROLE.KDS_TICKET.UPDATE]">
+              @for (action of nextActions(t.status); track action) {
+                <app-button
+                  variant="ghost"
+                  [iconOnly]="actionIcon(action)"
+                  nz-tooltip
+                  [nzTooltipTitle]="actionTooltip(action)"
+                  (click)="advance(t, action); $event.stopPropagation()"
+                  [disabled]="actionLoading()"
+                >
+                </app-button>
+              }
+            </div>
+          </div>
+        }
+      </nz-card>
+    </div>
+  </nz-spin>
+
+  <nz-card class="page__list" [nzBordered]="false">
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        (pageIndexChange)="onPageChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Detail Modal ────────────────────────────────────────────── -->
+  <app-modal
+    [visible]="detailVisible()"
+    (visibleChange)="detailVisible.set($event)"
+    title="Chi tiết phiếu bếp"
+    size="lg"
+    [centered]="true"
+    [maskClosable]="false"
+    [footer]="detailModalFooter"
+    (cancelEmit)="closeDetail()"
+  >
+    <ng-container>
+      @if (detailLoading()) {
+        <nz-spin nzTip="Đang tải..."></nz-spin>
+      } @else if (detail(); as d) {
+        <div class="order-detail-head">
+          <div>
+            <div class="order-detail-code">{{ d.ticketCode }}</div>
+            <div class="text-muted">Đơn {{ d.orderCode }} • {{ d.customerName }}@if (d.customerPhone) {
+                <span> • {{ d.customerPhone }}</span>
+              }
+            </div>
+          </div>
+          <span [class]="getStatusMeta(d.status).badgeClass">{{ getStatusMeta(d.status).label }}</span>
+        </div>
+
+        <div class="order-detail-stats">
+          <div class="order-detail-stat">
+            <span class="order-detail-stat__value">{{ d.totalItems ?? d.items.length }}</span>
+            <span class="order-detail-stat__label">Tổng món</span>
+          </div>
+          <div class="order-detail-stat">
+            <span class="order-detail-stat__value">{{ formatDateTime(d.createdAt) }}</span>
+            <span class="order-detail-stat__label">Vào bếp</span>
+          </div>
+          <div class="order-detail-stat">
+            <span class="order-detail-stat__value">{{ d.orderType ?? '—' }}</span>
+            <span class="order-detail-stat__label">Hình thức</span>
+          </div>
+        </div>
+
+        @if (d.note) {
+          <div class="order-detail-note">Ghi chú đơn: {{ d.note }}</div>
+        }
+
+        @for (item of d.items; track item.id) {
+          <div class="order-detail__item">
+            <span
+              >{{ item.productName }}
+              @if (item.variantName) {
+                <span> ({{ item.variantName }})</span>
+              }
+              x{{ item.quantity }}</span
+            >
+            <span class="tbl-badge" [class]="getStatusMeta(item.status).badgeClass">{{ getStatusMeta(item.status).label }}</span>
+          </div>
+          <div class="order-detail__topping">
+            <span>
+              @if (item.sugarLevel) {
+                <span>Đường {{ item.sugarLevel }}</span>
+              }
+              @if (item.iceLevel) {
+                <span> • Đá {{ item.iceLevel }}</span>
+              }
+              @if (item.note) {
+                <span> • {{ item.note }}</span>
+              }
+            </span>
+            <span>Xong {{ item.preparedQuantity }}/{{ item.quantity }}</span>
+          </div>
+          <div class="kds-item__actions" *erpUTTHasSomeAuthority="[ROLE.KDS_TICKET.UPDATE]">
+            <app-quantity-stepper
+              [value]="item.preparedQuantity"
+              [min]="0"
+              [max]="item.quantity"
+              [disabled]="actionLoading()"
+              (valueChange)="changePrepared(item.id, $event)"
+            ></app-quantity-stepper>
+            @if (item.status !== 'READY' && item.status !== 'SERVED' && item.status !== 'CANCELLED') {
+              <app-button variant="ghost" leftIcon="bell" (click)="markItemReady(item.id)" [disabled]="actionLoading()">
+                Món xong
+              </app-button>
+            }
+          </div>
+        }
+      }
+    </ng-container>
+    <ng-template #detailModalFooter>
+      @if (detail(); as d) {
+        @for (action of nextActions(d.status); track action) {
+          <app-button
+            variant="primary"
+            *erpUTTHasSomeAuthority="[ROLE.KDS_TICKET.UPDATE]"
+            (click)="advanceFromDetail(d, action)"
+            [disabled]="actionLoading()"
+          >
+            {{ actionLabels[action] || action }}
+          </app-button>
+        }
+      }
+      <app-button variant="ghost" (click)="closeDetail()">Đóng</app-button>
+    </ng-template>
+  </app-modal>
+</div>
