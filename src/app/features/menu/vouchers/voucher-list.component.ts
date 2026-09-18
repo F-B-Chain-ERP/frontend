@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -144,7 +144,7 @@ export class VoucherListComponent extends BaseComponent implements OnInit {
     maxDiscountAmount: this.fb.control<number | null>(null, [Validators.min(0)]),
     minOrderAmount: this.fb.control<number | null>(0, [Validators.required, Validators.min(0)]),
     usageLimit: this.fb.control<number | null>(null, [Validators.min(0)]),
-    usageLimitPerCustomer: this.fb.control<number | null>(null, [Validators.min(0)]),
+    usageLimitPerCustomer: this.fb.control<number | null>(null, [Validators.min(0), c => this.validateUsageLimitPerCustomer(c)]),
     startAt: this.fb.control<Date | null>(null, [Validators.required]),
     endAt: this.fb.control<Date | null>(null, [Validators.required]),
     status: ['ACTIVE' as VoucherStatus, [Validators.required]],
@@ -187,6 +187,19 @@ export class VoucherListComponent extends BaseComponent implements OnInit {
     return current.getTime() < new Date(start.getFullYear(), start.getMonth(), start.getDate()).getTime();
   };
 
+  /** Cross-field: lượt dùng mỗi khách không được vượt quá tổng lượt dùng tối đa. */
+  private validateUsageLimitPerCustomer(control: AbstractControl): ValidationErrors | null {
+    const perCustomer = control.value as number | null;
+    if (perCustomer == null || perCustomer <= 0) {
+      return null;
+    }
+    const total = control.parent?.get('usageLimit')?.value as number | null;
+    if (total == null || total <= 0) {
+      return null;
+    }
+    return perCustomer > total ? { usageLimitPerCustomerExceedsUsageLimit: true } : null;
+  }
+
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
@@ -198,6 +211,11 @@ export class VoucherListComponent extends BaseComponent implements OnInit {
       .get('discountType')
       ?.valueChanges.pipe(takeUntil(this.destroy$))
       .subscribe((type: VoucherDiscountType | null) => this.syncDiscountValidators(type ?? 'FIXED'));
+
+    this.voucherForm
+      .get('usageLimit')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.voucherForm.get('usageLimitPerCustomer')?.updateValueAndValidity());
 
     this.loadData();
   }
