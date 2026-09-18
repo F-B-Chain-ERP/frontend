@@ -88,7 +88,7 @@
 
       <!-- Từ ngày -->
       <div class="filter-item filter-item--date">
-        <label class="form-label">Từ ngày</label>
+        <label class="form-label" for="stock-out-from-date">Từ ngày</label>
         <nz-date-picker
           id="stock-out-from-date"
           [(ngModel)]="selectedFromDate"
@@ -102,7 +102,7 @@
 
       <!-- Đến ngày -->
       <div class="filter-item filter-item--date">
-        <label class="form-label">Đến ngày</label>
+        <label class="form-label" for="stock-out-to-date">Đến ngày</label>
         <nz-date-picker
           id="stock-out-to-date"
           [(ngModel)]="selectedToDate"
@@ -434,11 +434,9 @@
             nzPlaceHolder="Chọn mục đích xuất"
             style="width: 100%"
           >
-            <nz-option nzValue="BRANCH_ISSUE" nzLabel="Xuất cấp chi nhánh"></nz-option>
-            <nz-option nzValue="PRODUCTION_ISSUE" nzLabel="Xuất pha chế / Sản xuất"></nz-option>
-            <nz-option nzValue="TRANSFER_OUT" nzLabel="Xuất điều chuyển kho"></nz-option>
-            <nz-option nzValue="WASTAGE" nzLabel="Xuất hủy / Hao hụt"></nz-option>
-            <nz-option nzValue="ADJUSTMENT" nzLabel="Xuất kiểm kê điều chỉnh"></nz-option>
+            @for (opt of stockOutDestinationTypeOptions; track opt.value) {
+              <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+            }
           </nz-select>
         </div>
 
@@ -542,6 +540,7 @@
                 <th class="col-stt">#</th>
                 <th class="col-material">Nguyên vật liệu</th>
                 <th class="col-batch">Số lô (Batch No)</th>
+                <th class="col-expiry">Hạn sử dụng</th>
                 <th class="col-qty">Số lượng</th>
                 <th class="col-price">Đơn giá (VNĐ)</th>
                 <th class="col-total">Thành tiền (VNĐ)</th>
@@ -580,6 +579,9 @@
                   </td>
                   <td class="col-batch">
                     <input nz-input formControlName="batchNo" placeholder="Số lô" />
+                  </td>
+                  <td class="col-expiry">
+                    <input nz-input type="date" formControlName="expiryDate" />
                   </td>
                   <td class="col-qty">
                     <input
@@ -635,7 +637,7 @@
                 </tr>
               } @empty {
                 <tr>
-                  <td [attr.colspan]="modalMode() === 'view' ? 6 : 7" class="text-center py-4 text-muted">
+                  <td [attr.colspan]="modalMode() === 'view' ? 7 : 8" class="text-center py-4 text-muted">
                     Chưa có nguyên vật liệu nào trong phiếu xuất.
                   </td>
                 </tr>
@@ -643,7 +645,7 @@
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="3" class="text-right font-semibold">Tổng cộng:</td>
+                <td colspan="4" class="text-right font-semibold">Tổng cộng:</td>
                 <td class="col-qty font-mono font-semibold">{{ itemsArray.length }} loại</td>
                 <td></td>
                 <td class="col-total font-mono font-bold text-primary" style="font-size: var(--text-base);">

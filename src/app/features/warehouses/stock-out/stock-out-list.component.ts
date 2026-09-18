@@ -81,6 +81,23 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
   }
   readonly destinationTypeOptions = STOCK_OUT_DESTINATION_TYPE_OPTIONS;
   readonly statusOptions = STOCK_OUT_STATUS_OPTIONS;
+
+  // Chỉ cho tạo tay các mục đích do con người nhập (BRANCH_ISSUE/PRODUCTION_ISSUE/WASTAGE).
+  // TRANSFER_OUT/ADJUSTMENT do hệ thống tự sinh (chuyển kho/kiểm kê) nên backend cấm tạo tay
+  // (INV_400_SYSTEM_VOUCHER_ONLY); vẫn hiển thị khi xem/sửa phiếu cũ có sẵn loại này.
+  get stockOutDestinationTypeOptions(): { value: string; label: string }[] {
+    const manual = STOCK_OUT_DESTINATION_TYPE_OPTIONS.filter(
+      o => o.value === 'BRANCH_ISSUE' || o.value === 'PRODUCTION_ISSUE' || o.value === 'WASTAGE',
+    ).map(o => ({ value: o.value as string, label: o.label }));
+    const current = this.stockOutForm.get('destinationType')?.value as string;
+    if (current && !manual.some(o => o.value === current)) {
+      const sys = STOCK_OUT_DESTINATION_TYPE_OPTIONS.find(o => o.value === current);
+      if (sys) {
+        manual.push({ value: sys.value as string, label: sys.label });
+      }
+    }
+    return manual;
+  }
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
   readonly getStatusMeta = getStockOutStatusMeta;
   readonly getDestinationTypeMeta = getStockOutDestinationTypeMeta;
@@ -168,6 +185,7 @@ export class StockOutListComponent extends BaseComponent implements OnInit {
       quantity: [item?.quantity ?? 1, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]],
       unitPrice: [item?.unitPrice ?? 0, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(2)]],
       batchNo: [item?.batchNo || ''],
+      expiryDate: [item?.expiryDate || ''],
     });
   }
 

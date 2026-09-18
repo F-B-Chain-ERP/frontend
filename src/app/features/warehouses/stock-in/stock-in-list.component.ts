@@ -86,6 +86,24 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   }
   readonly sourceTypeOptions = STOCK_IN_SOURCE_TYPE_OPTIONS;
   readonly statusOptions = STOCK_IN_STATUS_OPTIONS;
+
+  // Chỉ cho tạo tay các nguồn do con người nhập (PURCHASE, RETURN).
+  // TRANSFER_IN/ADJUSTMENT do hệ thống tự sinh (chuyển kho/kiểm kê) nên backend cấm tạo tay
+  // (INV_400_SYSTEM_VOUCHER_ONLY); vẫn hiển thị khi xem/sửa phiếu cũ có sẵn loại này.
+  get stockInSourceTypeOptions(): { value: string; label: string }[] {
+    const manual = STOCK_IN_SOURCE_TYPE_OPTIONS.filter(o => o.value === 'PURCHASE' || o.value === 'RETURN').map(o => ({
+      value: o.value as string,
+      label: o.label,
+    }));
+    const current = this.stockInForm.get('sourceType')?.value as string;
+    if (current && !manual.some(o => o.value === current)) {
+      const sys = STOCK_IN_SOURCE_TYPE_OPTIONS.find(o => o.value === current);
+      if (sys) {
+        manual.push({ value: sys.value as string, label: sys.label });
+      }
+    }
+    return manual;
+  }
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
   readonly getStatusMeta = getStockInStatusMeta;
   readonly getSourceTypeMeta = getStockInSourceTypeMeta;

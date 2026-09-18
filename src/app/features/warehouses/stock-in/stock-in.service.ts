@@ -2,11 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
-import {
-  StockIn,
-  StockInFilter,
-  StockInListResponse,
-} from './stock-in.model';
+import { StockIn, StockInFilter, StockInItem, StockInListResponse } from './stock-in.model';
 
 interface ApiEnvelope<T> {
   status: number;
@@ -80,21 +76,35 @@ export class StockInService {
   }
 
   createStockIn(payload: Partial<StockIn>): Observable<StockIn> {
-    const { code, status, ...body } = payload as Record<string, unknown>;
+    const { code, status, items, ...body } = payload as Record<string, unknown>;
     void code;
     void status;
     return this.http
-      .post<ApiEnvelope<StockIn>>(this.stockInApi, body)
+      .post<ApiEnvelope<StockIn>>(this.stockInApi, { ...body, items: this.sanitizeStockInItems(items as StockInItem[]) })
       .pipe(map(res => this.enrichWarehouseName(res.data)));
   }
 
   updateStockIn(id: string, payload: Partial<StockIn>): Observable<StockIn> {
-    const { code, status, ...body } = payload as Record<string, unknown>;
+    const { code, status, items, ...body } = payload as Record<string, unknown>;
     void code;
     void status;
     return this.http
-      .put<ApiEnvelope<StockIn>>(`${this.stockInApi}/${id}`, body)
+      .put<ApiEnvelope<StockIn>>(`${this.stockInApi}/${id}`, { ...body, items: this.sanitizeStockInItems(items as StockInItem[]) })
       .pipe(map(res => this.enrichWarehouseName(res.data)));
+  }
+
+  private sanitizeStockInItems(items?: (Partial<StockInItem> | undefined)[]): unknown[] {
+    return (items ?? []).map(it => {
+      if (!it) return it;
+      const { id, materialName, ...rest } = it;
+      void id;
+      void materialName;
+      const clean = { ...rest } as Record<string, unknown>;
+      if (clean['expiryDate'] === '') clean['expiryDate'] = null;
+      if (clean['batchNo'] === '') clean['batchNo'] = null;
+      if (clean['purchaseOrderItemId'] === '') clean['purchaseOrderItemId'] = null;
+      return clean;
+    });
   }
 
   changeStatus(id: string, status: 'POSTED' | 'CANCELLED'): Observable<StockIn> {

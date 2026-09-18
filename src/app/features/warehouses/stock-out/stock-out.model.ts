@@ -16,6 +16,7 @@ export interface StockOutItem {
   quantity: number;
   unitPrice: number;
   batchNo?: string | null;
+  expiryDate?: string | null;
 }
 
 export interface StockOut {
