@@ -372,6 +372,37 @@
   }
 }
 
+// ── Edit Item Modal ──
+.edit-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+
+  &__current {
+    padding: var(--space-3);
+    background: var(--surface-secondary);
+    border-radius: var(--radius-md);
+  }
+
+  &__current-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  &__price {
+    font-weight: var(--fw-semibold);
+    color: var(--brand);
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}
+
 .text-danger {
   color: var(--danger);
 }

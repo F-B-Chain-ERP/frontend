@@ -8,6 +8,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { BaseComponent } from '../../../shared/base-component/base.component';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
@@ -25,6 +26,8 @@ import {
   getToppingStatusMeta,
 } from './topping.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
+import { WarehouseMaterialService } from '../../warehouses/materials/material.service';
+import { normalizeImageUrl } from '../../../core/util/image.util';
 import { takeUntil } from 'rxjs';
 
 @Component({
@@ -41,6 +44,7 @@ import { takeUntil } from 'rxjs';
     NzIconModule,
     NzTooltipModule,
     NzGridModule,
+    NzSpinModule,
     AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
@@ -55,11 +59,13 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
   readonly getToppingStatusMeta = getToppingStatusMeta;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
   readonly statusOptions = TOPPING_STATUS_OPTIONS;
+  readonly normalizeImageUrl = normalizeImageUrl;
 
   readonly toppings = signal<Topping[]>([]);
   readonly total = signal(0);
   readonly loading = signal(false);
   readonly isSaving = signal(false);
+  readonly materials = signal<any[]>([]);
 
   searchQuery = '';
   searchGroupName = '';
@@ -67,9 +73,21 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
   pageIndex = DEFAULT_PAGE_INDEX;
   pageSize = DEFAULT_PAGE_SIZE;
 
-  readonly isFormModalVisible = signal(false);
-  readonly modalMode = signal<'add' | 'edit'>('add');
+  // Modal State (Create / View / Edit) — same pattern as Material
+  readonly isModalVisible = signal(false);
+  readonly modalMode = signal<'create' | 'view' | 'edit'>('create');
   selectedRecord: Topping | null = null;
+
+  get modalTitle(): string {
+    const mode = this.modalMode();
+    if (mode === 'create') return 'Thêm mới topping';
+    if (mode === 'view') return 'Chi tiết topping';
+    return 'Cập nhật topping';
+  }
+
+  onImageError(event: Event): void {
+    (event.target as HTMLImageElement).style.display = 'none';
+  }
 
   readonly form = this.fb.group({
     code: this.fb.control<string | null>(null, [
@@ -80,10 +98,14 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
     name: this.fb.control<string | null>(null, [Validators.required, Validators.maxLength(150)]),
     price: this.fb.control<number | null>(null, [Validators.required, Validators.min(0)]),
     groupName: this.fb.control<string | null>(null, [Validators.maxLength(100)]),
+    imageUrl: this.fb.control<string | null>(null, [Validators.maxLength(500)]),
+    materialId: this.fb.control<string | null>(null),
+    materialQuantity: this.fb.control<number | null>(null, [Validators.min(0.001)]),
     status: this.fb.control<string | null>(null),
   });
 
   private readonly toppingService = inject(ToppingService);
+  private readonly materialService = inject(WarehouseMaterialService);
 
   ngOnInit(): void {
     this.breadcrumbsService.set([
@@ -92,6 +114,7 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
       { label: 'Topping', url: '/admin/menu/toppings/list' },
     ]);
     this.loadData();
+    this.loadMaterials();
   }
 
   loadData(): void {
@@ -144,31 +167,105 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
     this.loadData();
   }
 
+  // ── Modal: Create ────────────────────────────────────────────────
   openCreateModal(): void {
-    this.modalMode.set('add');
+    this.modalMode.set('create');
     this.selectedRecord = null;
-    this.form.reset({ code: null, name: null, price: null, groupName: null, status: 'ACTIVE' });
-    this.isFormModalVisible.set(true);
-  }
-
-  openEditModal(record: Topping): void {
-    this.modalMode.set('edit');
-    this.selectedRecord = { ...record };
     this.form.reset({
-      code: record.code,
-      name: record.name,
-      price: record.price,
-      groupName: record.groupName,
-      status: record.status,
+      code: null, name: null, price: null, groupName: null,
+      imageUrl: null, materialId: null, materialQuantity: null, status: 'ACTIVE',
     });
-    this.isFormModalVisible.set(true);
+    this.form.enable();
+    this.isModalVisible.set(true);
   }
 
-  closeFormModal(): void {
-    this.isFormModalVisible.set(false);
+  // ── Modal: View (detail) ─────────────────────────────────────────
+  openViewModal(item: Topping): void {
+    this.modalMode.set('view');
+    this.selectedRecord = { ...item };
+    this.form.reset();
+    this.form.disable();
+    this.isModalVisible.set(true);
+    this.toppingService
+      .getTopping(item.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: detail => {
+          const d = detail || item;
+          this.selectedRecord = d;
+          this.form.reset({
+            code: d.code,
+            name: d.name,
+            price: d.price,
+            groupName: d.groupName,
+            imageUrl: d.imageUrl,
+            materialId: d.materialId,
+            materialQuantity: d.materialQuantity,
+            status: d.status,
+          });
+          this.form.disable();
+        },
+        error: err => {
+          this.toastService.error(err.message || 'Không thể tải chi tiết topping');
+        },
+      });
   }
 
+  // ── Modal: Edit ──────────────────────────────────────────────────
+  openEditModal(item: Topping): void {
+    this.modalMode.set('edit');
+    this.selectedRecord = { ...item };
+    this.form.reset();
+    this.form.enable();
+    this.isModalVisible.set(true);
+    this.toppingService
+      .getTopping(item.id)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: detail => {
+          const d = detail || item;
+          this.selectedRecord = d;
+          this.form.reset({
+            code: d.code,
+            name: d.name,
+            price: d.price,
+            groupName: d.groupName,
+            imageUrl: d.imageUrl,
+            materialId: d.materialId,
+            materialQuantity: d.materialQuantity,
+            status: d.status,
+          });
+          this.form.enable();
+          this.form.get('code')?.disable();
+        },
+        error: err => {
+          this.toastService.error(err.message || 'Không thể tải chi tiết topping');
+        },
+      });
+  }
+
+  // ── Modal: Close ─────────────────────────────────────────────────
+  closeModal(): void {
+    this.isModalVisible.set(false);
+    this.form.reset();
+    this.form.enable();
+    this.selectedRecord = null;
+  }
+
+  // ── Switch from View to Edit ─────────────────────────────────────
+  editFromView(): void {
+    if (this.selectedRecord) {
+      this.openEditModal(this.selectedRecord);
+    }
+  }
+
+  // ── Submit (Create / Edit only) ──────────────────────────────────
   onSubmitForm(): void {
+    if (this.modalMode() === 'view') {
+      this.closeModal();
+      return;
+    }
+
     if (!this.validateAndFocusFirstInvalid(this.form)) {
       return;
     }
@@ -186,7 +283,12 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
         this.toastService.error('Lỗi', 'Vui lòng chọn trạng thái.');
         return;
       }
-      const req: UpdateToppingRequest = { code, name, price, groupName, status };
+      const req: UpdateToppingRequest = {
+        code, name, price, groupName, status,
+        imageUrl: raw.imageUrl?.trim() || null,
+        materialId: raw.materialId || null,
+        materialQuantity: raw.materialQuantity || null,
+      };
       this.toppingService
         .update(this.selectedRecord.id, req)
         .pipe(takeUntil(this.destroy$))
@@ -194,7 +296,7 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
           next: () => {
             this.isSaving.set(false);
             this.toastService.success('Thành công', 'Đã cập nhật topping.');
-            this.closeFormModal();
+            this.closeModal();
             this.loadData();
           },
           error: err => {
@@ -203,7 +305,12 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
           },
         });
     } else {
-      const req: CreateToppingRequest = { code, name, price, groupName };
+      const req: CreateToppingRequest = {
+        code, name, price, groupName,
+        imageUrl: raw.imageUrl?.trim() || null,
+        materialId: raw.materialId || null,
+        materialQuantity: raw.materialQuantity || null,
+      };
       this.toppingService
         .create(req)
         .pipe(takeUntil(this.destroy$))
@@ -211,7 +318,7 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
           next: () => {
             this.isSaving.set(false);
             this.toastService.success('Thành công', 'Đã thêm topping.');
-            this.closeFormModal();
+            this.closeModal();
             this.loadData();
           },
           error: err => {
@@ -222,6 +329,7 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
     }
   }
 
+  // ── Delete ───────────────────────────────────────────────────────
   onDelete(record: Topping): void {
     this.modalService.confirm({
       nzTitle: 'Xác nhận xóa topping',
@@ -242,5 +350,18 @@ export class ToppingListComponent extends BaseComponent implements OnInit {
           });
       },
     });
+  }
+
+  private loadMaterials(): void {
+    this.materialService
+      .getMaterials({ pageIndex: 1, pageSize: 100, status: 'ACTIVE' })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (res) => this.materials.set(res.items || []),
+        error: (err) => {
+          console.error('Lỗi tải danh mục nguyên vật liệu:', err);
+          this.toastService.error('Không thể tải danh sách nguyên vật liệu. Vui lòng kiểm tra quyền truy cập.');
+        },
+      });
   }
 }
