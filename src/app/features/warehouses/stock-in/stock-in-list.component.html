@@ -434,10 +434,9 @@
             nzPlaceHolder="Chọn nguồn nhập"
             style="width: 100%"
           >
-            <nz-option nzValue="PURCHASE" nzLabel="Mua hàng từ NCC"></nz-option>
-            <nz-option nzValue="TRANSFER_IN" nzLabel="Chuyển kho đến"></nz-option>
-            <nz-option nzValue="RETURN" nzLabel="Nhập trả hàng"></nz-option>
-            <nz-option nzValue="ADJUSTMENT" nzLabel="Kiểm kê điều chỉnh"></nz-option>
+            @for (opt of stockInSourceTypeOptions; track opt.value) {
+              <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+            }
           </nz-select>
         </div>
 

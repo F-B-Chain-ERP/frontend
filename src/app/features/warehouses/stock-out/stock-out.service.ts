@@ -2,11 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { ApplicationConfigService } from '../../../core/config/application-config.service';
-import {
-  StockOut,
-  StockOutFilter,
-  StockOutListResponse,
-} from './stock-out.model';
+import { StockOut, StockOutFilter, StockOutItem, StockOutListResponse } from './stock-out.model';
 
 interface ApiEnvelope<T> {
   status: number;
@@ -80,21 +76,34 @@ export class StockOutService {
   }
 
   createStockOut(payload: Partial<StockOut>): Observable<StockOut> {
-    const { code, status, ...body } = payload as Record<string, unknown>;
+    const { code, status, items, ...body } = payload as Record<string, unknown>;
     void code;
     void status;
     return this.http
-      .post<ApiEnvelope<StockOut>>(this.stockOutApi, body)
+      .post<ApiEnvelope<StockOut>>(this.stockOutApi, { ...body, items: this.sanitizeStockOutItems(items as StockOutItem[]) })
       .pipe(map(res => this.enrichWarehouseName(res.data)));
   }
 
   updateStockOut(id: string, payload: Partial<StockOut>): Observable<StockOut> {
-    const { code, status, ...body } = payload as Record<string, unknown>;
+    const { code, status, items, ...body } = payload as Record<string, unknown>;
     void code;
     void status;
     return this.http
-      .put<ApiEnvelope<StockOut>>(`${this.stockOutApi}/${id}`, body)
+      .put<ApiEnvelope<StockOut>>(`${this.stockOutApi}/${id}`, { ...body, items: this.sanitizeStockOutItems(items as StockOutItem[]) })
       .pipe(map(res => this.enrichWarehouseName(res.data)));
+  }
+
+  private sanitizeStockOutItems(items?: (Partial<StockOutItem> | undefined)[]): unknown[] {
+    return (items ?? []).map(it => {
+      if (!it) return it;
+      const { id, materialName, expiryDate, ...rest } = it;
+      void id;
+      void materialName;
+      void expiryDate;
+      const clean = { ...rest } as Record<string, unknown>;
+      if (clean['batchNo'] === '') clean['batchNo'] = null;
+      return clean;
+    });
   }
 
   changeStatus(id: string, status: 'POSTED' | 'CANCELLED'): Observable<StockOut> {
