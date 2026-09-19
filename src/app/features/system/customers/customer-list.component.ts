@@ -180,7 +180,7 @@ export class CustomerListComponent extends BaseComponent implements OnInit {
       },
       error: err => {
         this.loading.set(false);
-        this.toastService.error('Lỗi', err.message || 'Không thể tải danh sách khách hàng.');
+        this.toastService.error('Lỗi', this.toServerMessage(err, 'Không thể tải danh sách khách hàng.'));
       },
     });
   }
@@ -347,7 +347,7 @@ export class CustomerListComponent extends BaseComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.toastService.error('Lỗi', err.message || (this.isEditMode ? 'Không thể cập nhật khách hàng.' : 'Không thể thêm khách hàng.'));
+        this.toastService.error('Lỗi', this.toServerMessage(err, this.isEditMode ? 'Không thể cập nhật khách hàng.' : 'Không thể thêm khách hàng.'));
       },
     });
   }
@@ -367,7 +367,7 @@ export class CustomerListComponent extends BaseComponent implements OnInit {
       },
       error: err => {
         this.isSaving.set(false);
-        this.toastService.error('Lỗi', err.message || 'Không thể đặt lại mật khẩu.');
+        this.toastService.error('Lỗi', this.toServerMessage(err, 'Không thể đặt lại mật khẩu.'));
       },
     });
   }
@@ -384,7 +384,7 @@ export class CustomerListComponent extends BaseComponent implements OnInit {
             this.setOfCheckedKeys.delete(customer.id);
             this.loadData();
           },
-          error: () => this.toastService.error('Không thể xóa khách hàng này.'),
+          error: err => this.toastService.error('Lỗi', this.toServerMessage(err, 'Không thể xóa khách hàng này.')),
         });
       },
     });
@@ -404,7 +404,7 @@ export class CustomerListComponent extends BaseComponent implements OnInit {
             this.clearSelection();
             this.loadData();
           },
-          error: () => this.toastService.error('Lỗi', 'Không thể xóa các khách hàng đã chọn.'),
+          error: err => this.toastService.error('Lỗi', this.toServerMessage(err, 'Không thể xóa các khách hàng đã chọn.')),
         });
       },
     });
@@ -425,7 +425,7 @@ export class CustomerListComponent extends BaseComponent implements OnInit {
             this.clearSelection();
             this.loadData();
           },
-          error: () => this.toastService.error('Lỗi', 'Không thể cập nhật trạng thái hàng loạt.'),
+          error: err => this.toastService.error('Lỗi', this.toServerMessage(err, 'Không thể cập nhật trạng thái hàng loạt.')),
         });
       },
     });
@@ -438,6 +438,11 @@ export class CustomerListComponent extends BaseComponent implements OnInit {
 
   getStatusMeta(status: CustomerStatus | string) {
     return getCustomerStatusMeta(status);
+  }
+
+  private toServerMessage(err: unknown, fallback: string): string {
+    const e = err as { error?: { message?: string }; message?: string };
+    return e?.error?.message?.trim() || e?.message?.trim() || fallback;
   }
 
   toLocalDate(value?: string | null): string {
