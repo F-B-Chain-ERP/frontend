@@ -136,6 +136,18 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
     return this.selectedRecord.materialName ?? this.selectedRecord.materialId;
   }
 
+  /** Đơn vị tính tự lấy từ NVL đã chọn → chỉ hiển thị, không cho sửa. */
+  get selectedMaterialUnit(): string {
+    if (this.modalMode() === 'edit' && this.selectedRecord?.unitName) {
+      return this.selectedRecord.unitName;
+    }
+    const id = this.form.get('materialId')?.value;
+    if (!id) {
+      return '—';
+    }
+    return this.materials.find(m => m.id === id)?.unitName ?? '—';
+  }
+
   // ── Lifecycle ───────────────────────────────────────────────────────
   ngOnInit(): void {
     this.breadcrumbsService.set([
@@ -345,11 +357,12 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
     this.form.get('materialId')?.enable();
     this.form.reset({
       materialId: null,
-      supplierSku: null,
+      supplierSku: this.generateSku(),
       purchasePrice: null,
       leadTimeDays: null,
       isPreferred: false,
     });
+    this.form.get('supplierSku')?.disable();
     this.isFormModalVisible.set(true);
   }
 
@@ -364,7 +377,17 @@ export class SupplierMaterialListComponent extends BaseComponent implements OnIn
       isPreferred: record.isPreferred,
     });
     this.form.get('materialId')?.disable();
+    this.form.get('supplierSku')?.disable();
     this.isFormModalVisible.set(true);
+  }
+
+  /** Sinh mã gợi ý cho "Mã hàng NCC" (định dạng SKU-XXXXXXXX, in hoa hex) giống CodeGenerator bên BE. */
+  private generateSku(): string {
+    let hex = '';
+    for (let i = 0; i < 8; i++) {
+      hex += Math.floor(Math.random() * 16).toString(16).toUpperCase();
+    }
+    return `SKU-${hex}`;
   }
 
   closeFormModal(): void {
