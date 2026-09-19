@@ -48,6 +48,8 @@ import { SupplierService } from '../suppliers/supplier.service';
 import { Supplier, SupplierStatus } from '../suppliers/supplier.model';
 import { WarehouseMaterialService } from '../../warehouses/materials/material.service';
 import { Material } from '../../warehouses/materials/material.model';
+import { SupplierMaterialService } from '../supplier-materials/supplier-material.service';
+import { SupplierMaterial } from '../supplier-materials/supplier-material.model';
 import {
   PoOption,
   PurchaseOrder,
@@ -70,10 +72,6 @@ interface NameCodeBE {
 
 function supplierLabel(s: Supplier): string {
   return `${s.code || ''} ${s.name || ''}`.trim();
-}
-
-function materialLabel(m: Material): string {
-  return `${m.code || ''} ${m.name || ''}`.trim();
 }
 
 @Component({
@@ -133,30 +131,31 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   readonly modalMode = signal<'create' | 'view' | 'edit'>('create');
   readonly isSaving = signal(false);
   readonly supplierOptions = signal<PoOption[]>([]);
+  // ── Bảng giá NCC của NCC đang chọn (giới hạn NVL + đơn vị/đơn giá mặc định) ──
   readonly materialOptions = signal<PoOption[]>([]);
+  readonly supplierMaterialScope = signal<SupplierMaterial[]>([]);
+  readonly materialMaster = signal<Material[]>([]);
   readonly warehouseOptions = signal<PoOption[]>([]);
   readonly unitOptions = signal<PoOption[]>([]);
 
-  // ── Dropdown NCC/NVL tìm kiếm server (chịu được data lớn, không bò từng trang) ──
+  // ── Dropdown NCC tìm kiếm server (chịu được data lớn, không bò từng trang) ──
   readonly isLoadingSuppliers = signal(false);
-  readonly isLoadingMaterials = signal(false);
   private supplierSearchText = '';
-  private materialSearchText = '';
   private supplierPageIndex = 1;
-  private materialPageIndex = 1;
   private readonly supplierPageSize = 10;
-  private readonly materialPageSize = 20;
   private supplierTotal = 0;
-  private materialTotal = 0;
   private supplierRequestSeq = 0;
-  private materialRequestSeq = 0;
   private readonly supplierSearch$ = new Subject<string>();
-  private readonly materialSearch$ = new Subject<string>();
   private selectedSupplierCache: Supplier | null = null;
   private readonly pinnedMaterials = new Map<string, PoOption>();
 
   selectedPoId: string | number | null = null;
   readonly modalDetail = signal<PurchaseOrderDetail | null>(null);
+
+  /** "Dự kiến nhận" đang là giá trị tự sinh (theo max leadTime NVL) → sẽ tự cập nhật. */
+  private expectedDateAuto = false;
+  /** Chặn nhận diện "sửa tay" khi đang tự ghi ngày (tránh vô hiệu hóa chính logic). */
+  private writingExpectedDate = false;
 
   readonly poForm = this.fb.group({
     poCode: [''],
@@ -190,6 +189,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
   private readonly unitService = inject(UnitService);
   private readonly supplierService = inject(SupplierService);
   private readonly materialService = inject(WarehouseMaterialService);
+  private readonly supplierMaterialService = inject(SupplierMaterialService);
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(ApplicationConfigService);
   private readonly appRef = inject(ApplicationRef);
@@ -214,6 +214,84 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.appRef.tick();
   }
 
+  /** Số ngày giao lớn nhất trong các NVL đã chọn (từ bảng giá NCC). */
+  private maxLeadTimeDays(): number | null {
+    let max: number | null = null;
+    for (const ctrl of this.itemsArray.controls) {
+      const g = ctrl as FormGroup;
+      const mid = g.get('materialId')?.value as string | null;
+      if (!mid) {
+        continue;
+      }
+      const sm = this.supplierMaterialScope().find(x => x.materialId === mid);
+      const lead = sm?.leadTimeDays != null ? Number(sm.leadTimeDays) : null;
+      if (lead != null && (max == null || lead > max)) {
+        max = lead;
+      }
+    }
+    return max;
+  }
+
+  /** Gợi ý cho người dùng: "Tự động: +N ngày (theo NVL)". */
+  get expectedLeadHint(): string | null {
+    if (!this.expectedDateAuto) {
+      return null;
+    }
+    const lead = this.maxLeadTimeDays();
+    return null ;
+  }
+
+  /** "Dự kiến nhận" tự sinh = ngày đặt + max(leadTime các NVL). Chỉ ghi đè khi chưa sửa tay. */
+  private maybeAutoExpectedDate(): void {
+    if (!this.expectedDateAuto) {
+      return;
+    }
+    const expectedControl = this.poForm.get('expectedDate');
+    const order = this.toLocalDate(this.poForm.get('orderDate')?.value);
+    if (!order) {
+      if (expectedControl?.value) {
+        this.writeExpectedDate(null);
+      }
+      return;
+    }
+    const lead = this.maxLeadTimeDays();
+    if (lead == null) {
+      return;
+    }
+    const expected = new Date(order);
+    expected.setDate(expected.getDate() + lead);
+    const current = this.toLocalDate(expectedControl?.value);
+    if (!current || current.getTime() !== expected.getTime()) {
+      this.writeExpectedDate(expected);
+    }
+  }
+
+  private writeExpectedDate(value: Date | null): void {
+    this.writingExpectedDate = true;
+    this.poForm.get('expectedDate')?.setValue(value);
+    this.writingExpectedDate = false;
+  }
+
+  private toLocalDate(value: unknown): Date | null {
+    if (!value) {
+      return null;
+    }
+    const d = value instanceof Date ? new Date(value.getTime()) : new Date(String(value));
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  /** Chặn chọn "Dự kiến nhận" trước ngày đặt trên date-picker. */
+  disableExpectedBeforeOrder = (current: Date): boolean => {
+    const order = this.toLocalDate(this.poForm.get('orderDate')?.value);
+    if (!order) {
+      return false;
+    }
+    const cur = new Date(current);
+    cur.setHours(0, 0, 0, 0);
+    order.setHours(0, 0, 0, 0);
+    return cur.getTime() < order.getTime();
+  };
+
   get modalTitle(): string {
     const mode = this.modalMode();
     if (mode === 'create') return 'Tạo đơn mua hàng';
@@ -237,26 +315,38 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       { label: 'Đơn mua hàng', url: '/admin/procurement/purchase-orders/list' },
     ]);
 
-    this.poForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcTotals());
+    this.poForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.recalcTotals();
+      this.maybeAutoExpectedDate();
+    });
+    // Trả quyền nhập tay: chỉ cần user đổi "Dự kiến nhận" là ngừng tự ghi đè.
+    this.poForm
+      .get('expectedDate')!
+      .valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        if (!this.writingExpectedDate) {
+          this.expectedDateAuto = false;
+        }
+      });
     this.receiveForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcReceiveTotals());
 
-    // Gõ tìm NCC/NVL -> debounce rồi mới gọi API (không spam mỗi ký tự).
+    // Gõ tìm NCC -> debounce rồi mới gọi API (không spam mỗi ký tự).
     this.supplierSearch$
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
       .subscribe(text => {
         this.supplierSearchText = text;
         this.loadSuppliers(true);
       });
-    this.materialSearch$
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
-      .subscribe(text => {
-        this.materialSearchText = text;
-        this.loadMaterials(true);
-      });
+
+    // Đổi NCC trong form -> nạp bảng giá NCC mới; đang nhập thì reset NVL + ngày.
+    this.poForm
+      .get('supplierId')!
+      .valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(id => this.onSupplierFormChanged(id as string | null));
 
     // Lookup nạp 1 lần khi vào trang (modal mở sau dùng lại, không gọi lại).
     this.loadSuppliers();
-    this.loadMaterials();
+    this.loadMaterialMaster();
     this.loadWarehouses().pipe(takeUntil(this.destroy$)).subscribe();
     this.loadUnits().pipe(takeUntil(this.destroy$)).subscribe();
 
@@ -832,6 +922,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.modalMode.set('create');
     this.selectedPoId = null;
     this.modalDetail.set(null);
+    this.pinnedMaterials.clear();
     this.resetForm();
     this.loadLookupOptions();
     this.isModalVisible.set(true);
@@ -884,16 +975,42 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     this.itemsArray.removeAt(index);
     this.itemsArray.markAsDirty();
     this.recalcTotals();
+    this.refreshMaterialOptions();
   }
 
   onMaterialTextInput(index: number): void {
-    this.itemsArray.at(index).get('materialId')?.setValue(null);
-    const text = this.itemsArray.at(index).get('materialText')?.value as string;
-    this.materialSearch$.next((text ?? '').trim());
+    const group = this.itemsArray.at(index) as FormGroup;
+    group.get('materialId')?.setValue(null);
+    group.get('unitId')?.setValue(null);
+    group.get('unitPrice')?.setValue(null);
+    const text = group.get('materialText')?.value as string;
+    this.materialFilterText = (text ?? '').trim().toLowerCase();
+    this.refreshMaterialOptions();
   }
 
+  /** Lọc client-side dropdown NVL theo chữ đang gõ (scope bảng giá NCC nhỏ). */
+  private materialFilterText = '';
+
   onMatSelect(index: number, option: { nzValue?: string } | null): void {
-    this.itemsArray.at(index).get('materialId')?.setValue(option?.nzValue ?? null);
+    const materialId = option?.nzValue ?? null;
+    const group = this.itemsArray.at(index) as FormGroup;
+    group.get('materialId')?.setValue(materialId);
+    if (!materialId) {
+      return;
+    }
+    // Lấy đơn vị + đơn giá mặc định từ bảng giá NCC của NCC đang chọn.
+    const sm = this.supplierMaterialScope().find(x => x.materialId === materialId);
+    if (!sm) {
+      return;
+    }
+    const m = this.materialMaster().find(x => x.id === materialId);
+    if (m?.baseUnitId) {
+      group.get('unitId')?.setValue(m.baseUnitId);
+    }
+    if (sm.purchasePrice != null) {
+      group.get('unitPrice')?.setValue(sm.purchasePrice);
+    }
+    this.refreshMaterialOptions();
   }
 
   submitForm(): void {
@@ -902,6 +1019,12 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     }
 
     const raw = this.poForm.getRawValue();
+    const orderDate = this.toDateStr(raw.orderDate);
+    const expectedDate = this.toDateStr(raw.expectedDate);
+    if (expectedDate && orderDate && expectedDate < orderDate) {
+      this.toastService.error('Lỗi', 'Dự kiến nhận không được trước ngày đặt.');
+      return;
+    }
     const payload = {
       poCode: raw.poCode?.trim() || undefined,
       supplierId: raw.supplierId as string,
@@ -959,6 +1082,7 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       expectedDate: null,
       note: '',
     });
+    this.expectedDateAuto = true;
     this.itemsArray.clear();
     this.itemsArray.push(this.newItem());
     this.recalcTotals();
@@ -973,9 +1097,11 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       expectedDate: detail.expectedDate ? new Date(detail.expectedDate) : null,
       note: detail.note ?? '',
     });
+    // Đổ từ bản ghi thật → không tự ghi đè ngày nhận nữa.
+    this.expectedDateAuto = false;
     this.itemsArray.clear();
     (detail.items || []).forEach(it => {
-      const matLabel = this.materialOptions().find(o => o.value === it.materialId)?.label ?? '';
+      const matLabel = this.materialDisplayLabel(it.materialId, it.materialName ?? '');
       this.itemsArray.push(
         this.fb.group({
           materialId: [it.materialId, [Validators.required]],
@@ -1094,44 +1220,124 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       });
   }
 
-  // ── Dropdown NVL (dòng phiếu): 1 list dùng chung, tìm kiếm server ──────
-  onMaterialSearch(value: string): void {
-    this.materialSearch$.next((value ?? '').trim());
+  // ── Dropdown NVL (dòng phiếu): chỉ hiện NVL thuộc bảng giá NCC đang chọn ──
+
+  /** Ghim NVL các dòng đang chọn để không mất label khi search (edit nhiều dòng). */
+  private loadMaterialMaster(): void {
+    this.materialService
+      .getMaterials({ query: '', status: 'ACTIVE', pageIndex: 1, pageSize: 100 })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => this.materialMaster.set(res.items),
+        error: () => this.materialMaster.set([]),
+      });
   }
 
-  private loadMaterials(reset = true): void {
-    if (reset) {
-      this.materialPageIndex = 1;
+  /** Nạp bảng giá NCC của NCC đang chọn → quyết định NVL được chọn. */
+  /** Đổi NCC trong form: nạp bảng giá NCC mới; nếu đang nhập (không phải đang đổ bản ghi) thì reset NVL + ngày. */
+  private onSupplierFormChanged(id: string | null): void {
+    this.loadSupplierMaterialScope(id);
+    // patchForm (mở/sửa đơn cũ) chạy qua đây khi modalMode = 'view' -> không reset.
+    if (this.modalMode() === 'view') {
+      return;
     }
-    const requestId = ++this.materialRequestSeq;
-    this.isLoadingMaterials.set(true);
-    this.materialService
-      .getMaterials({
-        query: this.materialSearchText,
-        status: 'ACTIVE',
-        pageIndex: this.materialPageIndex,
-        pageSize: this.materialPageSize,
-      })
+    this.itemsArray.clear();
+    this.itemsArray.push(this.newItem());
+    this.poForm.get('orderDate')?.setValue(null);
+    this.poForm.get('expectedDate')?.setValue(null);
+    // Gắn cờ SAU khi clear: setValue(null) của expectedDate còn kích nguồn "sửa tay" -> sẽ tự tắt auto.
+    this.expectedDateAuto = true;
+    this.recalcTotals();
+    this.refreshMaterialOptions();
+  }
+
+  loadSupplierMaterialScope(supplierId: string | null | undefined): void {
+    this.supplierMaterialScope.set([]);
+    if (!supplierId) {
+      this.refreshMaterialOptions();
+      return;
+    }
+    this.supplierMaterialService
+      .getBySupplier(supplierId, { query: '', pageIndex: 1, pageSize: 100 })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-          if (requestId !== this.materialRequestSeq) {
-            return;
-          }
-          const page = (res.items || []).map(m => ({ label: materialLabel(m), value: m.id }));
-          const base = reset ? page : [...this.materialOptions(), ...page];
-          this.materialOptions.set(this.withPinnedMaterials(base));
-          this.materialTotal = res.total;
-          this.isLoadingMaterials.set(false);
+          const active = (res.items || []).filter(x => x.status === 'ACTIVE');
+          this.supplierMaterialScope.set(active);
+          this.ensureMaterialMasterForScope(active);
+          this.refreshMaterialOptions();
+          this.maybeAutoExpectedDate();
         },
-        error: err => {
-          if (requestId !== this.materialRequestSeq) {
-            return;
-          }
-          this.isLoadingMaterials.set(false);
-          this.toastService.error('Lỗi', err?.message || 'Không thể tải danh sách nguyên vật liệu.');
-        },
+        error: () => this.refreshMaterialOptions(),
       });
+  }
+
+  /** NVL trong bảng giá NCC nhưng chưa có trong master → tải bổ sung (lấy code/baseUnit). */
+  private ensureMaterialMasterForScope(items: SupplierMaterial[]): void {
+    const missing = [...new Set(items.map(sm => sm.materialId))].filter(
+      id => !this.materialMaster().some(m => m.id === id),
+    );
+    if (missing.length === 0) {
+      return;
+    }
+    forkJoin(missing.map(id => this.materialService.getMaterialById(id).pipe(catchError(() => of(null)))))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(list => {
+        const found = list.filter((m): m is Material => !!m);
+        if (found.length === 0) {
+          return;
+        }
+        this.materialMaster.update(existing => {
+          const seen = new Set(existing.map(m => m.id));
+          return [...existing, ...found.filter(m => !seen.has(m.id))];
+        });
+        this.refreshMaterialOptions();
+      });
+  }
+
+  /** NVL đang được chọn ở các dòng (không cho chọn trùng). */
+  private usedMaterialIds(): Set<string> {
+    return new Set(
+      this.itemsArray.controls
+        .map(ctrl => (ctrl as FormGroup).get('materialId')?.value as string)
+        .filter((id): id is string => !!id),
+    );
+  }
+
+  /** Options autocomplete = NVL thuộc bảng giá NCC đang chọn, loại NVL đã chọn ở dòng khác. */
+  private refreshMaterialOptions(): void {
+    const scopeOpts: PoOption[] = this.supplierMaterialScope()
+      .filter(sm => {
+        if (!this.materialFilterText) {
+          return true;
+        }
+        const m = this.materialMaster().find(x => x.id === sm.materialId);
+        const label = m
+          ? `${m.code || ''} ${m.name || ''}`.trim()
+          : `${sm.materialName ?? ''} ${sm.supplierSku ?? ''}`;
+        return label.toLowerCase().includes(this.materialFilterText);
+      })
+      .map(sm => {
+        const m = this.materialMaster().find(x => x.id === sm.materialId);
+        return {
+          label: m
+            ? `${m.code || ''} ${m.name || ''}`.trim()
+            : (sm.materialName ?? sm.materialId),
+          value: sm.materialId,
+        };
+      });
+    const used = this.usedMaterialIds();
+    this.materialOptions.set(this.withPinnedMaterials(scopeOpts).filter(o => !used.has(String(o.value))));
+  }
+
+  /** Label NVL cho dòng hiện có (edit) — ưu tiên master, rồi bảng giá NCC, rồi tên cũ. */
+  private materialDisplayLabel(materialId: string, fallback?: string): string {
+    const m = this.materialMaster().find(x => x.id === materialId);
+    if (m) {
+      return `${m.code || ''} ${m.name || ''}`.trim();
+    }
+    const scoped = this.supplierMaterialScope().find(x => x.materialId === materialId);
+    return scoped?.materialName ?? fallback ?? materialId;
   }
 
   /** Ghim NVL các dòng đang chọn để không mất label khi search (edit nhiều dòng). */
@@ -1180,8 +1386,8 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     if (this.unitOptions().length === 0) {
       this.loadUnits().pipe(takeUntil(this.destroy$)).subscribe();
     }
-    if (this.materialOptions().length === 0 && this.pinnedMaterials.size === 0) {
-      this.loadMaterials();
+    if (this.materialMaster().length === 0 && this.pinnedMaterials.size === 0) {
+      this.loadMaterialMaster();
     }
   }
 
