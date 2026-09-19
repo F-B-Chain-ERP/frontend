@@ -471,8 +471,12 @@
             id="po-expectedDate"
             formControlName="expectedDate"
             nzFormat="yyyy-MM-dd"
+            [nzDisabledDate]="disableExpectedBeforeOrder"
             style="width: 100%"
           ></nz-date-picker>
+          @if (expectedLeadHint) {
+            <span class="form-hint">{{ expectedLeadHint }}</span>
+          }
         </div>
 
         <!-- Ghi chú -->
@@ -563,11 +567,11 @@
                       formControlName="materialText"
                       [nzAutocomplete]="matAuto"
                       (input)="onMaterialTextInput(i)"
-                      placeholder="Gõ / chọn NVL"
+                      placeholder="Chọn NVL (của NCC đã chọn)"
                     />
                     <nz-autocomplete #matAuto (selectionChange)="onMatSelect(i, $event)">
                       @for (opt of materialOptions(); track opt.value) {
-                        <nz-auto-option [nzValue]="opt.value" [nzLabel]="opt.label">{{ opt.label }}</nz-auto-option>
+<nz-auto-option [nzValue]="opt.value" [nzLabel]="opt.label">{{ opt.label }}</nz-auto-option>
                       }
                     </nz-autocomplete>
                   </td>

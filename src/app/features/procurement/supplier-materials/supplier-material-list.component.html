@@ -227,8 +227,23 @@
               type="text"
               nz-input
               formControlName="supplierSku"
-              placeholder="VD: ARA-1KG"
+              placeholder="Tự động sinh"
               maxlength="100"
+            />
+          </nz-input-wrapper>
+        </div>
+
+        <!-- Đơn vị (tự động lấy từ NVL, chỉ hiển thị) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-unitName">Đơn vị</label>
+          <nz-input-wrapper>
+            <input
+              id="modal-unitName"
+              type="text"
+              nz-input
+              [value]="selectedMaterialUnit"
+              disabled
+              placeholder="Tự lấy theo nguyên vật liệu đã chọn"
             />
           </nz-input-wrapper>
         </div>
