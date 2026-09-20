@@ -10,6 +10,13 @@
       </p>
     </div>
     <div class="page__header__right">
+      @if (activeTab() === 'operations') {
+      <app-report-export-button
+        endpoint="api/v1/reports/store/shift/export"
+        [payload]="shiftExportPayload"
+        label="Xuất biên bản ca"
+      ></app-report-export-button>
+      }
       @if (activeTab() === 'templates') {
       <app-button *erpUTTHasSomeAuthority="[ROLE.CA_LAM_VIEC.CREATE]" variant="primary" leftIcon="plus"
         (click)="openCreateShiftModal()">

@@ -1,10 +1,10 @@
-import {HttpClient} from '@angular/common/http';
-import {Injectable, computed, inject, signal} from '@angular/core';
-import {Observable, map, tap} from 'rxjs';
-import {ApplicationConfigService} from '../config/application-config.service';
-import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
-import {ApiResponse} from '../../features/login/login.model';
-import {AppNotification, SseTicketResponse} from './notification.model';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, Subject, map, tap } from 'rxjs';
+import { ApplicationConfigService } from '../config/application-config.service';
+import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
+import { ApiResponse } from '../../features/login/login.model';
+import { AppNotification, ReportSseEvent, SseTicketResponse, isReportSseEvent } from './notification.model';
 
 /**
  * Quản lý thông báo thời gian thực (realtime notifications) qua Server-Sent Events (SSE)
@@ -14,6 +14,14 @@ import {AppNotification, SseTicketResponse} from './notification.model';
   providedIn: 'root',
 })
 export class RealtimeNotificationService {
+  readonly notifications = signal<AppNotification[]>([]);
+  readonly unreadCount = computed(() => this.notifications().filter(n => !n.readAt).length);
+  readonly isConnected = signal<boolean>(false);
+  readonly isConnecting = signal<boolean>(false);
+
+  /** Sự kiện báo cáo bất đồng bộ hoàn tất (REPORT_DONE) hoặc thất bại (REPORT_FAILED) qua SSE. */
+  readonly reportEvents = new Subject<ReportSseEvent>();
+
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(ApplicationConfigService);
   private readonly toast = inject(AppNotificationService);
@@ -23,23 +31,14 @@ export class RealtimeNotificationService {
   private retryAttempt = 0;
   private isExplicitDisconnect = false;
 
-  readonly notifications = signal<AppNotification[]>([]);
-  readonly unreadCount = computed(() => this.notifications().filter(n => !n.readAt).length);
-  readonly isConnected = signal<boolean>(false);
-  readonly isConnecting = signal<boolean>(false);
-
   /**
    * Tải danh sách thông báo gần đây từ cơ sở dữ liệu (source of truth).
    */
   loadRecent(limit = 20): Observable<AppNotification[]> {
-    return this.http
-      .get<ApiResponse<AppNotification[]>>(
-        this.appConfig.getEndpointFor(`api/v1/notifications/recent?limit=${limit}`)
-      )
-      .pipe(
-        map(res => res.data ?? []),
-        tap(items => this.notifications.set(items))
-      );
+    return this.http.get<ApiResponse<AppNotification[]>>(this.appConfig.getEndpointFor(`api/v1/notifications/recent?limit=${limit}`)).pipe(
+      map(res => res.data ?? []),
+      tap(items => this.notifications.set(items)),
+    );
   }
 
   /**
@@ -54,26 +53,21 @@ export class RealtimeNotificationService {
     this.isExplicitDisconnect = false;
     this.isConnecting.set(true);
 
-    this.http
-      .post<ApiResponse<SseTicketResponse>>(
-        this.appConfig.getEndpointFor('api/v1/notifications/sse-ticket'),
-        {}
-      )
-      .subscribe({
-        next: res => {
-          const ticket = res.data?.ticket;
-          if (!ticket) {
-            this.isConnecting.set(false);
-            this.scheduleReconnect();
-            return;
-          }
-          this.openEventSource(ticket);
-        },
-        error: () => {
+    this.http.post<ApiResponse<SseTicketResponse>>(this.appConfig.getEndpointFor('api/v1/notifications/sse-ticket'), {}).subscribe({
+      next: res => {
+        const ticket = res.data?.ticket;
+        if (!ticket) {
           this.isConnecting.set(false);
           this.scheduleReconnect();
-        },
-      });
+          return;
+        }
+        this.openEventSource(ticket);
+      },
+      error: () => {
+        this.isConnecting.set(false);
+        this.scheduleReconnect();
+      },
+    });
   }
 
   private openEventSource(ticket: string): void {
@@ -88,7 +82,13 @@ export class RealtimeNotificationService {
 
     this.eventSource.addEventListener('notification', (event: MessageEvent) => {
       try {
-        const notif: AppNotification = JSON.parse(event.data);
+        const payload = JSON.parse(event.data);
+        if (isReportSseEvent(payload)) {
+          // Sự kiện hoàn tất/thất bại báo cáo bất đồng bộ -> chuyển tới reportEvents
+          this.reportEvents.next(payload);
+          return;
+        }
+        const notif: AppNotification = payload;
         this.notifications.update(list => [notif, ...list.filter(n => n.id !== notif.id)]);
         this.playNotificationSound();
         this.toast.info(notif.title, notif.body);
@@ -143,9 +143,7 @@ export class RealtimeNotificationService {
    */
   markAsRead(id: string): void {
     const now = new Date().toISOString();
-    this.notifications.update(list =>
-      list.map(n => (n.id === id ? {...n, readAt: now, status: 'READ'} : n))
-    );
+    this.notifications.update(list => list.map(n => (n.id === id ? { ...n, readAt: now, status: 'READ' } : n)));
     this.http.patch(this.appConfig.getEndpointFor(`api/v1/notifications/${id}/read`), {}).subscribe();
   }
 
@@ -154,9 +152,7 @@ export class RealtimeNotificationService {
    */
   markAllAsRead(): void {
     const now = new Date().toISOString();
-    this.notifications.update(list =>
-      list.map(n => ({...n, readAt: n.readAt || now, status: 'READ'}))
-    );
+    this.notifications.update(list => list.map(n => ({ ...n, readAt: n.readAt || now, status: 'READ' })));
     this.http.patch(this.appConfig.getEndpointFor('api/v1/notifications/read-all'), {}).subscribe();
   }
 
@@ -189,7 +185,7 @@ export class RealtimeNotificationService {
    */
   private playNotificationSound(): void {
     try {
-      const AudioCtx = window.AudioContext || (window as unknown as {webkitAudioContext: typeof AudioContext}).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) {
         return;
       }
