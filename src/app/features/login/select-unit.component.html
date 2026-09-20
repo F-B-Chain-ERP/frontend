@@ -49,7 +49,7 @@
       @if (hasActiveSession()) {
         <button nz-button nzType="default" class="select-unit__back-btn" (click)="goBack()">
           <nz-icon nzType="arrow-left"></nz-icon>
-          Quay lại hệ thống
+          Quay lại {{ isCustomer() ? 'cửa hàng' : 'hệ thống' }}
         </button>
       }
       <div class="select-unit__user-wrap" (click)="logout()" title="Đăng xuất">
@@ -66,9 +66,9 @@
     <!-- Centered Card -->
     <div class="select-unit__card">
       <div class="select-unit__card-inner">
-        <h1 class="select-unit__title">CHỌN ĐƠN VỊ LÀM VIỆC</h1>
+        <h1 class="select-unit__title">{{ titleText() }}</h1>
         <p class="select-unit__subtitle">
-          Vui lòng chọn đơn vị/chi nhánh để tiếp tục
+          {{ subtitleText() }}
         </p>
 
         @if (loading()) {
@@ -76,13 +76,13 @@
             <nz-spin nzTip="Đang tải danh sách chi nhánh..."></nz-spin>
           </div>
         } @else if (branches().length === 0) {
-          <nz-empty nzDescription="Tài khoản chưa được gán phạm vi chi nhánh nào. Vui lòng liên hệ quản trị viên."></nz-empty>
+          <nz-empty nzNotFoundImage="simple" [nzNotFoundContent]="emptyText()"></nz-empty>
         } @else {
           <div class="select-unit__form">
             <!-- Form Item: Dropdown dạng Bảng (Table Dropdown) -->
             <div class="select-unit__form-item">
               <label class="select-unit__label">
-                Đơn vị / Chi nhánh <span class="select-unit__required">*</span>
+                {{ labelText() }} <span class="select-unit__required">*</span>
               </label>
 
               <!-- Trigger Box -->
@@ -113,7 +113,7 @@
                       }
                     </div>
                   } @else {
-                    <span class="unit-combobox__placeholder">Chọn đơn vị / chi nhánh làm việc...</span>
+                    <span class="unit-combobox__placeholder">{{ placeholderText() }}</span>
                   }
                 </div>
 
@@ -159,7 +159,7 @@
                       }
                     </div>
                     <span class="unit-table-dropdown__badge">
-                      {{ filteredBranches().length }} / {{ branches().length }} đơn vị
+                      {{ filteredBranches().length }} / {{ branches().length }} {{ isCustomer() ? 'chi nhánh' : 'đơn vị' }}
                     </span>
                   </div>
 
@@ -228,7 +228,7 @@
 
                   <!-- Footer tip -->
                   <div class="unit-table-dropdown__footer">
-                    <span>💡 Nhấp để chọn đơn vị &bull; Nhấp đúp để chọn và đăng nhập ngay</span>
+                    <span>{{ footerTipText() }}</span>
                   </div>
                 </div>
               </nz-dropdown-menu>
@@ -278,9 +278,9 @@
               (click)="submit()"
             >
               @if (selectedBranch(); as sel) {
-                <span>Vào làm việc với: {{ sel.name }}</span>
+                <span>{{ submitSelectedText() }}{{ sel.name }}</span>
               } @else {
-                <span>Đăng nhập</span>
+                <span>{{ submitFallbackText() }}</span>
               }
               <nz-icon nzType="arrow-right"></nz-icon>
             </button>

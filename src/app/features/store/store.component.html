@@ -243,16 +243,6 @@
       </div>
 
 <div class="store-filter-card__sort">
-        <nz-select
-          [ngModel]="storeBranches.branchId()"
-          (ngModelChange)="onBranchChange($event)"
-          class="store-filter-select"
-          nzPlaceHolder="Chọn chi nhánh"
-        >
-          @for (b of storeBranches.branches(); track b.id) {
-            <nz-option [nzValue]="b.id" [nzLabel]="b.name"></nz-option>
-          }
-        </nz-select>
         <nz-select [(ngModel)]="sortBy" (ngModelChange)="onFilterChange()" class="store-filter-select">
           <nz-option nzValue="featured" nzLabel="Sắp xếp: Phổ biến nhất"></nz-option>
           <nz-option nzValue="price-asc" nzLabel="Giá: Thấp đến Cao"></nz-option>

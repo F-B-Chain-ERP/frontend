@@ -7,8 +7,8 @@ const STORAGE_KEY = 'store_branch_id';
 
 /**
  * Chi nhánh đặt món của kênh bán hàng (khách chọn nơi nhận/giao).
- * BE bắt branchId mọi API cart/order nhưng storefront trước đây không có khái niệm này.
- * Mặc định branch ACTIVE đầu tiên, khách đổi được, lưu localStorage.
+ * BE bắt branchId mọi API cart/order. Chỉ gán branchId khi khách chủ động
+ * chọn (trang /select-branch hoặc dropdown trên /store), không tự động chọn thay khách.
  */
 @Injectable({
   providedIn: 'root',
@@ -20,16 +20,7 @@ export class StoreBranchService {
   private readonly api = inject(PosApiService);
   loadBranches(): Observable<SalesBranch[]> {
     return this.api.getSalesBranches().pipe(
-      tap(list => {
-        this.branches.set(list);
-        const current = this.branchId();
-        if (!current || !list.some(b => b.id === current)) {
-          const fallback = list.find(b => b.supportsPickup) ?? list[0] ?? null;
-          this.branchId.set(fallback ? fallback.id : null);
-          if (fallback) localStorage.setItem(STORAGE_KEY, fallback.id);
-          else localStorage.removeItem(STORAGE_KEY);
-        }
-      }),
+      tap(list => this.branches.set(list)),
       map(() => this.branches()),
     );
   }
