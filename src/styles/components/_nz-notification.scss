@@ -95,3 +95,12 @@
     font-weight: var(--fw-semibold);
   }
 }
+
+.notification-clickable {
+  cursor: pointer;
+
+  .ant-notification-notice-description::after {
+    content: ' · Bấm để xem chi tiết';
+    font-weight: var(--fw-semibold);
+  }
+}
