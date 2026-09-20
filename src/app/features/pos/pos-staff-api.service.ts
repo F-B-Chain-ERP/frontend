@@ -44,6 +44,7 @@ export class PosStaffApiService {
     if (filter.status) params = params.set('status', filter.status);
     if (filter.fromDate) params = params.set('fromDate', filter.fromDate);
     if (filter.toDate) params = params.set('toDate', filter.toDate);
+    if (filter.search) params = params.set('search', filter.search);
     return this.http.get<ApiResponse<BackendPage<OrderSummaryBE>>>(this.ordersUrl(), { params }).pipe(
       map(res => ({
         items: (res.data?.content ?? []).map(o => ({

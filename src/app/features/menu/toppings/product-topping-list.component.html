@@ -1,179 +1,235 @@
-<div class="assign-page">
+<div class="page topping-assign-page">
   <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
   <div class="page__header">
     <div class="page__header__left">
       <h1 class="page__header__title">Gán Topping cho Sản phẩm</h1>
       <app-breadcrumbs></app-breadcrumbs>
-      <p class="page__header__description">Chọn sản phẩm bên trái, sau đó gán / quản lý topping bên phải.</p>
+    </div>
+
+    <div class="page__header__right">
+      <app-button variant="primary" leftIcon="plus" [disabled]="!selectedProduct()" (click)="openAddModal()"
+                  *erpUTTHasSomeAuthority="ROLE.SAN_PHAM_TOPPING.CREATE">
+        Thêm topping
+      </app-button>
     </div>
   </div>
 
-  <!-- ── 2. Two-Column Layout ───────────────────────────────────────── -->
-  <div class="assign-layout">
-    <!-- LEFT COLUMN: Product Selector -->
-    <div class="assign-layout__left">
-      <nz-card class="product-panel" [nzBordered]="false">
-        <div class="product-panel__header">
-          <h3 class="product-panel__title">Danh sách sản phẩm</h3>
+  <!-- ── 2. Main 2-Column Layout ────────────────────────────────────── -->
+  <div nz-row [nzGutter]="[20, 20]" class="topping-layout">
+    <!-- Left Column: Product Selection Panel -->
+    <div nz-col [nzSpan]="24" [nzLg]="8" [nzXl]="7">
+      <nz-card class="product-selector-card" [nzBordered]="false">
+        <div class="selector-header">
+          <div class="selector-title">
+            <nz-icon nzType="coffee"/>
+            <span>Chọn sản phẩm</span>
+          </div>
+          <span class="product-count-badge">{{ products().length }} món</span>
         </div>
 
-        <!-- Product Search + Category Filter -->
-        <div class="product-panel__filters">
-          <nz-input-wrapper [nzAllowClear]="true">
-            <nz-icon nzInputPrefix nzType="search" />
-            <input
-              nz-input
-              [(ngModel)]="productSearchQuery"
-              (keyup.enter)="onProductSearch()"
-              placeholder="Tìm sản phẩm..."
-            />
-          </nz-input-wrapper>
-          <nz-select
-            [(ngModel)]="selectedCategoryId"
-            (ngModelChange)="onProductSearch()"
-            nzPlaceHolder="Tất cả danh mục"
-            [nzAllowClear]="true"
-            style="width: 100%"
-          >
+        <!-- Filters -->
+        <div class="selector-filters">
+          <nz-select [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryFilterChange($event)"
+                     nzPlaceHolder="Tất cả danh mục" [nzAllowClear]="true" class="selector-select">
             @for (cat of categories(); track cat.id) {
               <nz-option [nzValue]="cat.id" [nzLabel]="cat.name"></nz-option>
             }
           </nz-select>
+
+          <nz-input-wrapper class="selector-search" [nzAllowClear]="true">
+            <nz-icon nzInputPrefix nzType="search"/>
+            <input type="text" nz-input [(ngModel)]="productSearchQuery" (keyup.enter)="onProductSearch()"
+                   placeholder="Tìm tên hoặc mã món..."/>
+          </nz-input-wrapper>
         </div>
 
         <!-- Product List -->
-        <nz-spin [nzSpinning]="isLoadingProducts()">
-          <div class="product-panel__list">
+        <div class="product-item-list">
+          @if (isLoadingProducts()) {
+            <div class="loading-box">
+              <nz-spin nzTip="Đang tải danh sách món..."></nz-spin>
+            </div>
+          } @else if (products().length === 0) {
+            <div class="selector-empty">
+              <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Không tìm thấy món nào"></nz-empty>
+            </div>
+          } @else {
             @for (product of products(); track product.id) {
-              <div
-                class="product-item"
-                [class.product-item--active]="selectedProduct()?.id === product.id"
-                (click)="selectProduct(product)"
-              >
-                <div class="product-item__info">
-                  <span class="product-item__code">{{ product.code }}</span>
-                  <span class="product-item__name">{{ product.name }}</span>
-                  <span class="product-item__price">{{ product.basePrice | number:'1.0-0' }} &#8363;</span>
+              <div class="product-item" [class.product-item--active]="selectedProduct()?.id === product.id"
+                   (click)="selectProduct(product)">
+                <div class="product-item__thumb">
+                  @if (product.imageUrl) {
+                    <img [src]="normalizeImageUrl(product.imageUrl)" [alt]="product.name" (error)="onImageError($event)"/>
+                  } @else {
+                    <div class="thumb-placeholder">
+                      <nz-icon nzType="coffee"/>
+                    </div>
+                  }
                 </div>
-                <span class="product-item__category">{{ product.categoryName }}</span>
+                <div class="product-item__info">
+                  <div class="product-item__header">
+                    <span class="product-item__code font-mono">{{ product.code }}</span>
+                    <span class="product-item__price font-mono font-semibold">
+                      {{ product.basePrice | number: '1.0-0' }} &#8363;
+                    </span>
+                  </div>
+                  <div class="product-item__name font-medium" [title]="product.name">
+                    {{ product.name }}
+                  </div>
+                  <div class="product-item__cat text-muted text-xs">
+                    {{ product.categoryName || 'Chưa phân loại' }}
+                  </div>
+                </div>
+                <div class="product-item__arrow">
+                  <nz-icon nzType="right"/>
+                </div>
               </div>
-            } @empty {
-              <nz-empty [nzNotFoundContent]="'Không tìm thấy sản phẩm'" nzNotFoundSimple></nz-empty>
             }
-          </div>
-        </nz-spin>
+          }
+        </div>
 
         <!-- Product Pagination -->
         @if (productTotal() > productPageSize) {
-          <div class="product-panel__pagination">
+          <div class="selector-pagination">
             <app-pagination
               [total]="productTotal()"
               [pageIndex]="productPageIndex"
               [pageSize]="productPageSize"
               [pageSizeOptions]="[10, 20, 50]"
-              (pageIndexChange)="onProductPageIndexChange($event)"
-            >
+              (pageIndexChange)="onProductPageIndexChange($event)">
             </app-pagination>
           </div>
         }
       </nz-card>
     </div>
 
-    <!-- RIGHT COLUMN: Topping Assignment -->
-    <div class="assign-layout__right">
+    <!-- Right Column: Topping Assignment -->
+    <div nz-col [nzSpan]="24" [nzLg]="16" [nzXl]="17">
       @if (selectedProduct(); as product) {
-        <nz-card class="product-detail-card" [nzBordered]="false">
-          <div class="product-detail-card__header">
-            <div class="product-detail-card__info">
-              <span class="product-detail-card__code">{{ product.code }}</span>
-              <h3 class="product-detail-card__name">{{ product.name }}</h3>
-              <span class="product-detail-card__price">Giá gốc: {{ product.basePrice | number:'1.0-0' }} &#8363;</span>
+        <!-- Product Banner Summary Card -->
+        <nz-card class="product-banner-card" [nzBordered]="false">
+          <div class="banner-content">
+            <div class="banner-media">
+              @if (product.imageUrl) {
+                <img [src]="normalizeImageUrl(product.imageUrl)" [alt]="product.name" class="banner-thumb" (error)="onImageError($event)"/>
+              } @else {
+                <div class="banner-thumb-placeholder">
+                  <nz-icon nzType="coffee"/>
+                </div>
+              }
             </div>
-            <div class="product-detail-card__actions">
-              <app-button
-                *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.CREATE]"
-                variant="primary"
-                leftIcon="plus"
-                (click)="openAddModal()"
-              >
-                Thêm topping
-              </app-button>
+
+            <div class="banner-info">
+              <div class="banner-tags">
+                <span class="badge-code font-mono">{{ product.code }}</span>
+                <span class="badge-cat">
+                  <nz-icon nzType="folder" style="margin-right: 4px"/>
+                  {{ product.categoryName || 'Thực đơn' }}
+                </span>
+              </div>
+              <h2 class="banner-title">{{ product.name }}</h2>
+              <div class="banner-price">
+                <span class="text-muted">Giá gốc:</span>
+                <span class="price-value font-mono font-bold">{{ product.basePrice | number: '1.0-0' }} &#8363;</span>
+              </div>
+            </div>
+
+            <div class="banner-stats">
+              <div class="kpi-card">
+                <div class="kpi-label">Tổng topping</div>
+                <div class="kpi-val font-mono">{{ assignedToppings().length }}</div>
+                <div class="kpi-sub text-muted">đã gán</div>
+              </div>
+
+              <div class="kpi-card">
+                <div class="kpi-label">Mặc định</div>
+                <div class="kpi-val kpi-val--success font-mono">{{ defaultToppingCount }}</div>
+                <div class="kpi-sub text-muted">tự chọn sẵn</div>
+              </div>
             </div>
           </div>
         </nz-card>
 
+        <!-- Toppings Table Card -->
         <nz-card class="topping-table-card" [nzBordered]="false">
-          <nz-spin [nzSpinning]="isLoadingToppings()">
-            <nz-table
-              #toppingTable
-              [nzData]="assignedToppings()"
-              [nzShowPagination]="false"
-              [nzFrontPagination]="false"
-              nzSize="middle"
-            >
-              <thead>
-                <tr>
-                  <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
-                  <th scope="col" nzWidth="120px" nzAlign="left">Mã topping</th>
-                  <th scope="col" nzWidth="200px" nzAlign="left">Tên topping</th>
-                  <th scope="col" nzWidth="130px" nzAlign="left">Nhóm</th>
-                  <th scope="col" nzWidth="120px" nzAlign="right">Đơn giá</th>
-                  <th scope="col" nzWidth="120px" nzAlign="center">Mặc định</th>
-                  <th scope="col" nzWidth="120px" nzAlign="center">SL tối đa</th>
-                  <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (item of assignedToppings(); track item.id; let idx = $index) {
-                  <tr>
-                    <td nzAlign="center" class="font-mono text-muted">{{ idx + 1 }}</td>
-                    <td nzAlign="left"><span class="topping-code">{{ item.toppingCode }}</span></td>
-                    <td nzAlign="left">{{ item.toppingName }}</td>
-                    <td nzAlign="left">{{ item.groupName || '—' }}</td>
-                    <td nzAlign="right" class="topping-price">{{ item.toppingPrice | number:'1.0-0' }} &#8363;</td>
-                    <td nzAlign="center">
-                      @if (item.isDefault) {
-                        <span class="tbl-badge tbl-badge--success">Mặc định</span>
-                      } @else {
-                        <span class="tbl-badge tbl-badge--default">Tùy chọn</span>
-                      }
-                    </td>
-                    <td nzAlign="center" class="font-mono">{{ item.maxQuantity }}</td>
-                    <td nzAlign="center">
-                      <div class="tbl-actions">
-                        <app-button
-                          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.UPDATE]"
-                          variant="ghost"
-                          iconOnly="edit"
-                          nz-tooltip
-                          nzTooltipTitle="Sửa cấu hình"
-                          (click)="openEditModal(item)"
-                        >
-                        </app-button>
-                        <app-button
-                          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.DELETE]"
-                          variant="ghost"
-                          iconOnly="delete"
-                          nz-tooltip
-                          nzTooltipTitle="Gỡ topping"
-                          (click)="onDelete(item)"
-                        >
-                        </app-button>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </nz-table>
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <h3 class="section-title">
+                <nz-icon nzType="profile"/>
+                Danh sách topping đã gán
+              </h3>
+              <span class="section-badge">{{ assignedToppings().length }} topping</span>
+            </div>
 
-            @if (assignedToppings().length === 0 && !isLoadingToppings()) {
-              <nz-empty [nzNotFoundContent]="'Chưa gán topping nào cho sản phẩm này'" nzNotFoundSimple></nz-empty>
-            }
-          </nz-spin>
+            <div class="toolbar-right">
+              <app-button variant="ghost" iconOnly="reload" nz-tooltip nzTooltipTitle="Tải lại danh sách topping"
+                          [loading]="isLoadingToppings()" (click)="loadAssignedToppings(product.id)">
+              </app-button>
+            </div>
+          </div>
+
+          <nz-table #toppingTable [nzData]="assignedToppings()" [nzLoading]="isLoadingToppings()"
+                    [nzShowPagination]="false"
+                    [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '860px' }"
+                    [nzNoResult]="emptyResultTpl">
+            <ng-template #emptyResultTpl>
+              <nz-empty nzNotFoundImage="simple" nzNotFoundContent="Chưa gán topping nào cho sản phẩm này"></nz-empty>
+            </ng-template>
+            <thead>
+            <tr>
+              <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+              <th scope="col" nzWidth="110px" nzAlign="left">Mã topping</th>
+              <th scope="col" nzWidth="180px" nzAlign="left">Tên topping</th>
+              <th scope="col" nzWidth="130px" nzAlign="left">Nhóm</th>
+              <th scope="col" nzWidth="120px" nzAlign="right">Đơn giá</th>
+              <th scope="col" nzWidth="120px" nzAlign="center">Mặc định</th>
+              <th scope="col" nzWidth="100px" nzAlign="center">SL tối đa</th>
+              <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+            </tr>
+            </thead>
+            <tbody>
+              @for (item of assignedToppings(); track item.id; let idx = $index) {
+                <tr>
+                  <td nzAlign="center" class="font-mono text-muted">{{ idx + 1 }}</td>
+                  <td nzAlign="left">
+                    <span class="topping-code font-mono font-semibold">{{ item.toppingCode }}</span>
+                  </td>
+                  <td nzAlign="left">
+                    <span class="font-medium">{{ item.toppingName }}</span>
+                  </td>
+                  <td nzAlign="left">{{ item.groupName || '—' }}</td>
+                  <td nzAlign="right" class="topping-price font-mono font-semibold">
+                    {{ item.toppingPrice | number: '1.0-0' }} &#8363;
+                  </td>
+                  <td nzAlign="center">
+                    @if (item.isDefault) {
+                      <span class="tbl-badge tbl-badge--success">Mặc định</span>
+                    } @else {
+                      <span class="tbl-badge tbl-badge--default">Tùy chọn</span>
+                    }
+                  </td>
+                  <td nzAlign="center" class="font-mono">{{ item.maxQuantity }}</td>
+                  <td nzAlign="center">
+                    <div class="tbl-actions">
+                      <app-button variant="ghost" iconOnly="edit" nz-tooltip nzTooltipTitle="Sửa cấu hình"
+                                  (click)="openEditModal(item)"
+                                  *erpUTTHasSomeAuthority="ROLE.SAN_PHAM_TOPPING.UPDATE">
+                      </app-button>
+                      <app-button variant="ghost" iconOnly="delete" nz-tooltip nzTooltipTitle="Gỡ topping"
+                                  (click)="onDelete(item)"
+                                  *erpUTTHasSomeAuthority="ROLE.SAN_PHAM_TOPPING.DELETE">
+                      </app-button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </nz-table>
         </nz-card>
       } @else {
-        <nz-card class="empty-state-card" [nzBordered]="false">
-          <nz-empty [nzNotFoundContent]="'Vui lòng chọn sản phẩm bên trái để quản lý topping'" nzNotFoundSimple></nz-empty>
+        <nz-card class="no-selection-card" [nzBordered]="false">
+          <nz-empty nzNotFoundImage="simple"
+                    nzNotFoundContent="Vui lòng chọn một sản phẩm bên trái để xem và quản lý topping"></nz-empty>
         </nz-card>
       }
     </div>
@@ -183,7 +239,7 @@
   <app-modal
     [visible]="isAddModalVisible()"
     (visibleChange)="isAddModalVisible.set($event)"
-    title="Thêm topping cho sản phẩm"
+    [title]="'Thêm topping cho sản phẩm' + (selectedProduct() ? ' - ' + selectedProduct()!.name : '')"
     size="md"
     [maskClosable]="false"
     [footer]="addModalFooter"
@@ -193,7 +249,7 @@
       <form [formGroup]="addForm" class="topping-assign-form">
         <div nz-row [nzGutter]="[16, 16]">
           <div nz-col [nzSpan]="24">
-            <label class="form-label required" for="add-topping">Chọn topping</label>
+            <label class="form-label form-label--required" for="add-topping">Chọn topping</label>
             <nz-select
               id="add-topping"
               formControlName="toppingId"
@@ -224,7 +280,7 @@
           </div>
 
           <div nz-col [nzSpan]="12">
-            <label class="form-label required" for="add-maxQuantity">Số lượng tối đa</label>
+            <label class="form-label form-label--required" for="add-maxQuantity">Số lượng tối đa</label>
             <nz-input-number
               id="add-maxQuantity"
               formControlName="maxQuantity"
@@ -246,9 +302,11 @@
 
     <ng-template #addModalFooter>
       <div class="modal-footer-actions">
-        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="isAddModalVisible.set(false)"> Hủy bỏ </app-button>
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="isAddModalVisible.set(false)">
+          Hủy bỏ
+        </app-button>
         <app-button
-          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.CREATE]"
+          *erpUTTHasSomeAuthority="ROLE.SAN_PHAM_TOPPING.CREATE"
           variant="primary"
           leftIcon="check"
           [loading]="isSaving()"
@@ -279,7 +337,7 @@
         </div>
 
         <div nz-col [nzSpan]="12">
-          <label class="form-label required" for="edit-maxQuantity">Số lượng tối đa</label>
+          <label class="form-label form-label--required" for="edit-maxQuantity">Số lượng tối đa</label>
           <nz-input-number
             id="edit-maxQuantity"
             formControlName="maxQuantity"
@@ -300,9 +358,11 @@
 
     <ng-template #editModalFooter>
       <div class="modal-footer-actions">
-        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="isEditModalVisible.set(false)"> Hủy bỏ </app-button>
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="isEditModalVisible.set(false)">
+          Hủy bỏ
+        </app-button>
         <app-button
-          *erpUTTHasSomeAuthority="[ROLE.SAN_PHAM_TOPPING.UPDATE]"
+          *erpUTTHasSomeAuthority="ROLE.SAN_PHAM_TOPPING.UPDATE"
           variant="primary"
           leftIcon="check"
           [loading]="isSaving()"

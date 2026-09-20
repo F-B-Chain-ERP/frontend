@@ -69,6 +69,7 @@ export interface Material {
   name: string;
   categoryId?: string | null;
   baseUnitId?: string | null;
+  unitName?: string | null;
   status: string;
 }
 

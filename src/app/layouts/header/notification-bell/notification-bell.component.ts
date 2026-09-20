@@ -7,8 +7,9 @@ import {NzDropdownDirective, NzDropdownMenuComponent} from 'ng-zorro-antd/dropdo
 import {NzSpinComponent} from 'ng-zorro-antd/spin';
 import {RealtimeNotificationService} from '../../../core/notification/realtime-notification.service';
 import {AppNotification} from '../../../core/notification/notification.model';
+import {AccountService} from '../../../core/auth/account.service';
 
-export type NotificationFilterTab = 'ALL' | 'UNREAD' | 'PENDING' | 'APPROVED' | 'REJECTED';
+export type NotificationFilterTab = 'ALL' | 'UNREAD' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'OVERDUE';
 
 @Component({
   selector: 'app-notification-bell',
@@ -26,6 +27,7 @@ export type NotificationFilterTab = 'ALL' | 'UNREAD' | 'PENDING' | 'APPROVED' | 
 })
 export class NotificationBellComponent {
   protected readonly notificationService = inject(RealtimeNotificationService);
+  protected readonly accountService = inject(AccountService);
   private readonly router = inject(Router);
 
   protected readonly notifications = this.notificationService.notifications;
@@ -33,6 +35,8 @@ export class NotificationBellComponent {
   protected readonly isConnected = this.notificationService.isConnected;
   protected readonly isConnecting = this.notificationService.isConnecting;
   protected readonly isVisibleMenu = signal(false);
+
+  protected readonly isCustomer = computed(() => this.accountService.account()?.principalType === 'CUSTOMER');
 
   protected readonly activeFilter = signal<NotificationFilterTab>('ALL');
 
@@ -46,6 +50,9 @@ export class NotificationBellComponent {
   protected readonly rejectedCount = computed(() =>
     this.notifications().filter(n => this.isRejected(n)).length
   );
+  protected readonly overdueCount = computed(() =>
+    this.notifications().filter(n => this.isOverdue(n)).length
+  );
 
   protected readonly filteredNotifications = computed(() => {
     const list = this.notifications();
@@ -58,6 +65,8 @@ export class NotificationBellComponent {
         return list.filter(n => this.isApproved(n));
       case 'REJECTED':
         return list.filter(n => this.isRejected(n));
+      case 'OVERDUE':
+        return list.filter(n => this.isOverdue(n));
       case 'ALL':
       default:
         return list;
@@ -97,30 +106,46 @@ export class NotificationBellComponent {
   }
 
   private isPending(n: AppNotification): boolean {
-    if (n.type === 'PO_SUBMITTED') return true;
+    if (n.type === 'PO_SUBMITTED' || n.type === 'ORDER_CREATED' || n.type === 'ORDER_CONFIRMED' || n.type === 'ORDER_PREPARING' || n.type === 'ORDER_DELIVERING') return true;
     const text = ((n.title || '') + ' ' + (n.body || '')).toLowerCase();
-    return text.includes('chờ duyệt') || text.includes('trình duyệt');
+    return text.includes('chờ duyệt') || text.includes('trình duyệt') || text.includes('đang chuẩn bị') || text.includes('đang pha chế') || text.includes('đang giao') || text.includes('tiếp nhận') || text.includes('mới tạo');
   }
 
   private isApproved(n: AppNotification): boolean {
-    if (n.type === 'PO_APPROVED') return true;
+    if (n.type === 'PO_APPROVED' || n.type === 'ORDER_READY' || n.type === 'ORDER_COMPLETED') return true;
     const text = ((n.title || '') + ' ' + (n.body || '')).toLowerCase();
-    return text.includes('đã được duyệt') || text.includes('phê duyệt') || text.includes('đã duyệt');
+    return text.includes('đã được duyệt') || text.includes('phê duyệt') || text.includes('đã duyệt') || text.includes('hoàn tất') || text.includes('sẵn sàng') || text.includes('đã giao');
   }
 
   private isRejected(n: AppNotification): boolean {
-    if (n.type === 'PO_REJECTED' || n.type === 'PO_CANCELLED') return true;
+    if (n.type === 'PO_REJECTED' || n.type === 'PO_CANCELLED' || n.type === 'ORDER_CANCELLED') return true;
     const text = ((n.title || '') + ' ' + (n.body || '')).toLowerCase();
-    return text.includes('từ chối') || text.includes('bị huỷ') || text.includes('hủy đơn');
+    return text.includes('từ chối') || text.includes('bị huỷ') || text.includes('hủy đơn') || text.includes('đã hủy');
+  }
+
+  private isOverdue(n: AppNotification): boolean {
+    if (n.type === 'PAYABLE_OVERDUE') return true;
+    const text = ((n.title || '') + ' ' + (n.body || '')).toLowerCase();
+    return text.includes('quá hạn') || text.includes('công nợ quá hạn');
   }
 
   private resolveTargetUrl(item: AppNotification): string | null {
     if (item.actionUrl) {
       return item.actionUrl;
     }
+    // Overdue payable notification → navigate to payables page
+    if (this.isOverdue(item)) {
+      return '/admin/finance/payables';
+    }
     const poMatch = item.body?.match(/PO-[\w-]+/) || item.title?.match(/PO-[\w-]+/);
     if (poMatch) {
       return `/admin/procurement/purchase-orders/list?code=${encodeURIComponent(poMatch[0])}`;
+    }
+    const hdMatch = item.body?.match(/HD-[\w-]+/) || item.title?.match(/HD-[\w-]+/);
+    if (hdMatch) {
+      return this.isCustomer()
+        ? `/store/orders?orderCode=${encodeURIComponent(hdMatch[0])}`
+        : `/admin/pos/orders/list?code=${encodeURIComponent(hdMatch[0])}`;
     }
     return null;
   }

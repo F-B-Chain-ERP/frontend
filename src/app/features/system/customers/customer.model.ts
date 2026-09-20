@@ -1,8 +1,8 @@
 import {ApiResponseBE, PageResponseBE, formatInstant} from "../users/user.model";
 
 export enum CustomerStatus {
-  INACTIVE = 0,
-  ACTIVE =1,
+  INACTIVE = 'INACTIVE',
+  ACTIVE = 'ACTIVE',
 }
 export interface Customer {
   id: string;

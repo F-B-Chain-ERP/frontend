@@ -286,10 +286,19 @@
                         <app-button
                           *erpUTTHasSomeAuthority="[ROLE.COMBO.UPDATE]"
                           variant="ghost"
-                          iconOnly="swap"
-                          nz-tooltip="Đổi biến thể"
-                          (click)="openSwapModal(item)"
+                          iconOnly="edit"
+                          nz-tooltip="Sửa thành phần"
+                          (click)="openEditItemModal(item)"
                         ></app-button>
+                        @if (item.isSubstitutable) {
+                          <app-button
+                            *erpUTTHasSomeAuthority="[ROLE.COMBO.UPDATE]"
+                            variant="ghost"
+                            iconOnly="swap"
+                            nz-tooltip="Đổi biến thể"
+                            (click)="openSwapModal(item)"
+                          ></app-button>
+                        }
                         <app-button
                           *erpUTTHasSomeAuthority="[ROLE.COMBO.UPDATE]"
                           variant="ghost"
@@ -414,12 +423,37 @@
         <!-- Chọn biến thể mới -->
         <div class="swap-modal__form">
           <div class="form-group">
+            <label class="form-label">Sản phẩm thay thế</label>
+            <nz-select
+              class="form-control"
+              [(ngModel)]="swapProductId"
+              (ngModelChange)="onSwapProductChange($event)"
+              nzPlaceHolder="Chọn sản phẩm"
+            >
+              @if (swapItem(); as item) {
+                <nz-option
+                  [nzValue]="swapCurrentProductId"
+                  [nzLabel]="item.productName + ' (hiện tại)'"
+                  [nzDisabled]="true"
+                ></nz-option>
+              }
+              @for (product of swapProducts(); track product.id) {
+                <nz-option
+                  [nzValue]="product.id"
+                  [nzLabel]="product.name + ' (' + product.code + ')'"
+                ></nz-option>
+              }
+            </nz-select>
+          </div>
+
+          <div class="form-group">
             <label class="form-label">Biến thể mới <span class="required">*</span></label>
             <nz-select
               class="form-control"
               [(ngModel)]="swapNewVariantId"
               (ngModelChange)="onSwapVariantChange($event)"
               nzPlaceHolder="Chọn biến thể"
+              [nzDisabled]="!swapProductId"
             >
               @for (variant of swapVariants(); track variant.id) {
                 <nz-option
@@ -482,10 +516,61 @@
       >Xác nhận</app-button>
     </ng-template>
   </app-modal>
+
+  <!-- ════════════════════════════════════════════════════════════
+       MODAL: SỬA THÀNH PHẦN (quantity + isSubstitutable)
+       ════════════════════════════════════════════════════════════ -->
+  <app-modal
+    [visible]="isEditModalVisible()"
+    [title]="editModalTitle"
+    size="sm"
+    [maskClosable]="false"
+    [footer]="editModalFooter"
+    (visibleChange)="isEditModalVisible.set($event)"
+    (cancelEmit)="closeEditModal()"
+  >
+    @if (editItem(); as item) {
+      <div class="edit-modal">
+        <div class="edit-modal__current">
+          <div class="edit-modal__current-info">
+            <nz-tag>{{ item.sizeLabel }}</nz-tag>
+            <span>{{ item.productName }} — {{ item.variantName }}</span>
+            <span class="edit-modal__price">{{ formatCurrency(item.variantPrice) }}</span>
+          </div>
+        </div>
+
+        <div class="edit-modal__form">
+          <div class="form-group">
+            <label class="form-label">Số lượng <span class="required">*</span></label>
+            <nz-input-number
+              class="form-control"
+              [(ngModel)]="editQuantity"
+              [nzMin]="1"
+              [nzMax]="99"
+            ></nz-input-number>
+          </div>
+
+          <div class="form-group form-group--inline">
+            <label class="form-label">Cho phép khách đổi size</label>
+            <nz-switch [(ngModel)]="editIsSubstitutable"></nz-switch>
+          </div>
+        </div>
+      </div>
+    }
+
+    <ng-template #editModalFooter>
+      <app-button variant="secondary" (click)="closeEditModal()">Hủy</app-button>
+      <app-button
+        variant="primary"
+        [loading]="isEditSaving()"
+        (click)="confirmEditItem()"
+      >Lưu thay đổi</app-button>
+    </ng-template>
+  </app-modal>
 </div>
 
 <ng-template #comboEmptyTpl>
-  <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Chưa có combo nào'">
+  <nz-empty nzNotFoundImage="simple" [nzNotFoundContent]="'Chưa có combo nào'">
     <div class="empty-state__actions">
       <a routerLink="/admin/menu/products" class="empty-state__link">
         <app-button variant="primary" leftIcon="plus">Tạo combo mới</app-button>
@@ -495,5 +580,5 @@
 </ng-template>
 
 <ng-template #itemEmptyTpl>
-  <nz-empty nzNotFoundSimple="true" [nzNotFoundContent]="'Chưa có thành phần nào'"></nz-empty>
+  <nz-empty nzNotFoundImage="simple" [nzNotFoundContent]="'Chưa có thành phần nào'"></nz-empty>
 </ng-template>

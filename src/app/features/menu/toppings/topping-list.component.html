@@ -108,6 +108,13 @@
             <td nzAlign="center">
               <div class="tbl-actions">
                 <app-button
+                  variant="ghost"
+                  iconOnly="eye"
+                  nz-tooltip
+                  nzTooltipTitle="Xem chi tiết"
+                  (click)="openViewModal(item)"
+                ></app-button>
+                <app-button
                   *erpUTTHasSomeAuthority="[ROLE.TOPPING.UPDATE]"
                   variant="ghost"
                   iconOnly="edit"
@@ -145,18 +152,19 @@
     </div>
   </nz-card>
 
-  <!-- ── 4. Form Modal (Thêm / Sửa) ─────────────────────────────────── -->
+  <!-- ── 4. Modal: Thêm mới / Xem / Cập nhật Topping ──────────────── -->
   <app-modal
-    [visible]="isFormModalVisible()"
-    (visibleChange)="isFormModalVisible.set($event)"
-    [title]="modalMode() === 'edit' ? 'Sửa topping' : 'Thêm topping'"
+    [visible]="isModalVisible()"
+    (visibleChange)="isModalVisible.set($event)"
+    [title]="modalTitle"
     size="md"
     [maskClosable]="false"
-    [footer]="formModalFooter"
-    (cancelEmit)="closeFormModal()"
+    [footer]="modalFooter"
+    (cancelEmit)="closeModal()"
   >
     <form [formGroup]="form" class="topping-modal-form">
       <div nz-row [nzGutter]="[16, 16]">
+        <!-- Mã topping -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label required" for="modal-code">Mã topping</label>
           <nz-input-wrapper>
@@ -181,6 +189,7 @@
           }
         </div>
 
+        <!-- Tên topping -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label required" for="modal-name">Tên topping</label>
           <nz-input-wrapper>
@@ -203,6 +212,7 @@
           }
         </div>
 
+        <!-- Đơn giá -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label required" for="modal-price">Đơn giá (VND)</label>
           <nz-input-wrapper>
@@ -225,6 +235,7 @@
           }
         </div>
 
+        <!-- Nhóm topping -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label" for="modal-groupName">Nhóm topping</label>
           <nz-input-wrapper>
@@ -243,10 +254,82 @@
               <span class="form-error">Nhóm topping tối đa 100 ký tự.</span>
             }
           }
-          <span class="form-hint">Phân loại nhóm topping để dễ quản lý (không bắt buộc).</span>
         </div>
 
-        @if (modalMode() === 'edit') {
+        <!-- URL hình ảnh -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-imageUrl">URL hình ảnh</label>
+          <nz-input-wrapper>
+            <nz-icon nzInputPrefix nzType="image" />
+            <input
+              id="modal-imageUrl"
+              type="url"
+              nz-input
+              formControlName="imageUrl"
+              placeholder="https://example.com/topping.jpg"
+              maxlength="500"
+            />
+          </nz-input-wrapper>
+          @if (form.get('imageUrl')?.dirty || form.get('imageUrl')?.touched) {
+            @if (form.get('imageUrl')?.hasError('maxlength')) {
+              <span class="form-error">URL hình ảnh tối đa 500 ký tự.</span>
+            }
+          }
+          @if (form.get('imageUrl')?.value) {
+            <div class="topping-image-preview">
+              <img
+                [src]="normalizeImageUrl(form.get('imageUrl')?.value)"
+                alt="Preview topping"
+                class="topping-preview-img"
+                (error)="onImageError($event)"
+              />
+            </div>
+          }
+        </div>
+
+        <!-- Nguyên vật liệu liên kết -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="modal-materialId">Nguyên vật liệu liên kết</label>
+          <nz-select
+            id="modal-materialId"
+            formControlName="materialId"
+            nzPlaceHolder="Chọn NVL (không bắt buộc)"
+            [nzAllowClear]="true"
+            nzShowSearch
+            style="width: 100%"
+          >
+            @for (m of materials(); track m.id) {
+              <nz-option [nzValue]="m.id" [nzLabel]="m.code + ' - ' + m.name"></nz-option>
+            }
+          </nz-select>
+        </div>
+
+        <!-- Định lượng tiêu hao (chỉ hiện khi đã chọn NVL) -->
+        @if (form.get('materialId')?.value) {
+          <div nz-col [nzSpan]="24" [nzMd]="12">
+            <label class="form-label required" for="modal-materialQty">Định lượng tiêu hao</label>
+            <nz-input-wrapper>
+              <nz-icon nzInputPrefix nzType="number" />
+              <input
+                id="modal-materialQty"
+                type="number"
+                nz-input
+                formControlName="materialQuantity"
+                placeholder="VD: 0.5"
+                min="0.001"
+                step="0.1"
+              />
+            </nz-input-wrapper>
+            @if (form.get('materialQuantity')?.dirty || form.get('materialQuantity')?.touched) {
+              @if (form.get('materialQuantity')?.hasError('min')) {
+                <span class="form-error">Định lượng phải lớn hơn 0.</span>
+              }
+            }
+          </div>
+        }
+
+        <!-- Trạng thái (chỉ khi xem/sửa: BE create luôn ACTIVE) -->
+        @if (modalMode() !== 'create') {
           <div nz-col [nzSpan]="24" [nzMd]="12">
             <label class="form-label required" for="modal-status">Trạng thái</label>
             <nz-select
@@ -258,19 +341,28 @@
               <nz-option [nzValue]="'ACTIVE'" [nzLabel]="'Đang bán'"></nz-option>
               <nz-option [nzValue]="'INACTIVE'" [nzLabel]="'Tạm ngưng'"></nz-option>
             </nz-select>
-            @if (form.get('status')?.dirty || form.get('status')?.touched) {
-              @if (form.get('status')?.hasError('required')) {
-                <span class="form-error">Vui lòng chọn trạng thái.</span>
-              }
-            }
           </div>
         }
       </div>
     </form>
+  </app-modal>
 
-    <ng-template #formModalFooter>
-      <div class="modal-footer-actions">
-        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeFormModal()"> Hủy bỏ </app-button>
+  <!-- Template Footer của Modal -->
+  <ng-template #modalFooter>
+    <div class="modal-footer-actions">
+      <app-button variant="secondary" (click)="closeModal()">
+        {{ modalMode() === 'view' ? 'Đóng' : 'Hủy bỏ' }}
+      </app-button>
+      @if (modalMode() === 'view') {
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.TOPPING.UPDATE]"
+          variant="primary"
+          leftIcon="edit"
+          (click)="editFromView()"
+        >
+          Chỉnh sửa
+        </app-button>
+      } @else {
         <app-button
           *erpUTTHasSomeAuthority="[modalMode() === 'edit' ? ROLE.TOPPING.UPDATE : ROLE.TOPPING.CREATE]"
           variant="primary"
@@ -280,7 +372,7 @@
         >
           {{ modalMode() === 'edit' ? 'Lưu thay đổi' : 'Thêm topping' }}
         </app-button>
-      </div>
-    </ng-template>
-  </app-modal>
+      }
+    </div>
+  </ng-template>
 </div>

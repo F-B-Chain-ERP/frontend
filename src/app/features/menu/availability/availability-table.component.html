@@ -2,7 +2,7 @@
   <div class="availability-section__header">
     <h2>{{ title }}</h2>
     @if (total() > 0) {
-      <nz-tag nzColor="blue">{{ total() }}</nz-tag>
+      <span class="availability-section__badge">{{ total() }}</span>
     }
   </div>
 
@@ -20,8 +20,10 @@
       </nz-select>
     }
 
-    <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
-    <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+    <div class="toolbar-actions">
+      <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+      <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+    </div>
   </div>
 
   <nz-table
@@ -45,7 +47,7 @@
         @if (isProduct) {
           <th nzWidth="150px" nzAlign="right">Giá tại CN</th>
         }
-        <th nzWidth="100px" nzAlign="center">Khả dụng</th>
+        <th nzWidth="100px" nzAlign="center">Khả dụng tại CN</th>
         <th nzWidth="110px" nzAlign="center">Trạng thái</th>
       </tr>
     </thead>

@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
-import { PosApiService, SalesBranch } from './pos-api.service';
+import { PosApiService } from './pos-api.service';
+import { SalesBranch } from '../models/pos.model';
 
 const STORAGE_KEY = 'store_branch_id';
 

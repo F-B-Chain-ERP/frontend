@@ -4,224 +4,30 @@
   gap: var(--space-4);
 }
 
-// ── 2-Column Layout ──
-.availability-layout {
-  display: flex;
-  gap: var(--space-4);
-  align-items: flex-start;
-
-  &__left {
-    flex: 0 0 280px;
-    position: sticky;
-    top: var(--space-4);
-  }
-
-  &__right {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
-
-  // Browser zoom (Ctrl +/-) làm thay đổi CSS viewport width → media query tự thích ứng.
-  // Khi màn hẹp (hoặc zoom to hơn), xếp dọc để bảng chiếm toàn bộ chiều rộng.
-  @media (max-width: 1399.98px) {
-    flex-direction: column;
-
-    &__left {
-      flex: none;
-      width: 100%;
-      position: static;
-    }
-
-    &__right {
-      width: 100%;
-    }
-  }
+// ── Tabs ──
+.availability-tabs {
+  margin-top: var(--space-2);
 }
 
-// ── Branch Mini List (left panel) ──
-.branch-mini-list {
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-3);
-
-    h3 {
-      margin: 0;
-      font-size: var(--text-base);
-      font-weight: var(--fw-semibold);
-    }
-  }
-
-  &__items {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-    max-height: 600px;
-    overflow-y: auto;
-
-    // Layout dọc khi màn hẹp: danh sách CN thành dải chip ngang
-    @media (max-width: 1399.98px) {
-      flex-direction: row;
-      max-height: none;
-      overflow-y: hidden;
-      overflow-x: auto;
-      padding-bottom: var(--space-2);
-    }
-  }
-}
-
-.branch-mini-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.15s;
-
-  @media (max-width: 1399.98px) {
-    flex: 0 0 auto;
-    min-width: 200px;
-  }
-
-  &:hover {
-    background-color: var(--surface-hover);
-  }
-
-  &--active {
-    background-color: var(--brand-soft);
-    color: var(--brand);
-    font-weight: var(--fw-semibold);
-  }
-
-  &__name {
-    font-size: var(--text-sm);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 160px;
-  }
-
-  &__code {
-    font-size: var(--text-xs);
-    color: var(--text-secondary);
-    white-space: nowrap;
-  }
-}
-
-// ── Branch Info (right panel) ──
-.availability-branch-info {
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-
-  &__header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-
-    h2 {
-      margin: 0;
-      font-size: var(--text-lg);
-      font-weight: var(--fw-bold);
-    }
-  }
-}
-
-// ── Option Tiles (chọn section) ──
-.availability-options {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-4);
-
-  // Màn hẹp / zoom to → 1 cột
-  @media (max-width: 899.98px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.availability-option {
-  cursor: pointer;
-  transition: all 0.15s;
-
-  &:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-  }
-
-  &__body {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-  }
-
-  &__icon {
-    font-size: 28px;
-    color: var(--brand);
-    flex: 0 0 auto;
-  }
-
-  &__text {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-1);
-    min-width: 0;
-  }
-
-  &__title {
-    font-size: var(--text-base);
-    font-weight: var(--fw-semibold);
-    color: var(--text-primary);
-  }
-
-  &__desc {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-  }
-
-  &__arrow {
-    margin-left: auto;
-    color: var(--text-secondary);
-    flex: 0 0 auto;
-  }
-}
-
-// ── Section Navigation Bar ──
-.availability-section-bar {
+// ── Compact Branch Filter ──
+.availability-filter {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
   border-radius: var(--radius-lg);
-  background-color: var(--surface);
+  background: var(--surface-card);
   box-shadow: var(--shadow-sm);
-  flex-wrap: wrap;
 
-  &__info {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
-    flex-wrap: wrap;
+  .form-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+    font-weight: var(--fw-medium);
   }
 
-  &__branch {
-    font-weight: var(--fw-semibold);
-    color: var(--text-primary);
-  }
-
-  &__sep {
-    color: var(--text-secondary);
-  }
-
-  &__title {
-    font-weight: var(--fw-bold);
-    color: var(--brand);
+  &__select {
+    flex: 1;
+    max-width: 360px;
   }
 }
