@@ -26,3 +26,26 @@ export const AuthGuard: CanActivateFn = () => {
     }),
   );
 };
+
+/** Chỉ cho tài khoản nội bộ vào khu vực ERP; customer luôn quay về storefront. */
+export const StaffGuard: CanActivateFn = (_route, state) => {
+  const accountService = inject(AccountService);
+  const stateStorageService = inject(StateStorageService);
+  const router = inject(Router);
+
+  return accountService.identity().pipe(
+    map(account => {
+      if (!account) {
+        stateStorageService.storeUrl(state.url);
+        return router.createUrlTree(['/login']);
+      }
+      if (account.principalType === 'CUSTOMER') {
+        return router.createUrlTree(['/store']);
+      }
+      if (stateStorageService.hasPendingScopeAssignment()) {
+        return router.createUrlTree(['/select-branch']);
+      }
+      return true;
+    }),
+  );
+};

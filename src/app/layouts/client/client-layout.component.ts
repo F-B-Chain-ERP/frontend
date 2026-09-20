@@ -24,6 +24,7 @@ export class ClientLayoutComponent implements OnInit, OnDestroy {
     effect(() => {
       const user = this.accountService.account();
       if (user) {
+        this.realtimeNotification.loadRecent().subscribe({error: () => undefined});
         this.realtimeNotification.connect();
       } else {
         this.realtimeNotification.disconnect();

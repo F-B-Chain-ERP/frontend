@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { AuthGuard } from './core/auth/auth.guard';
+import { StaffGuard } from './core/auth/auth.guard';
 import { UserRouteAccessService } from './core/auth/user-route-access.service';
 import { ROLE, FULL_PERMISSION } from './core/config/functions.constants';
 import { errorRoute } from './layouts/error/error.route';
@@ -32,7 +32,7 @@ export const routes: Routes = [
   // ── 2. Admin ERP as Default Entrypoint ──────────────────────
   {
     path: '',
-    redirectTo: 'admin/home',
+    redirectTo: 'store',
     pathMatch: 'full',
   },
   {
@@ -50,7 +50,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: MainComponent,
-    canActivate: [AuthGuard],
+    canActivate: [StaffGuard],
     children: [
       {
         path: '',
