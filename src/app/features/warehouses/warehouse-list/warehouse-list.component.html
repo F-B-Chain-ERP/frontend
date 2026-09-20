@@ -171,68 +171,6 @@
           <!-- Thao tác -->
           <th scope="col" nzWidth="140px" nzAlign="center">Thao tác</th>
         </tr>
-
-        <!-- Sub-header lọc cột tại chỗ -->
-        <tr class="table-filter-row">
-          <th></th>
-          <th></th>
-          <th>
-            <app-table-search-input id="col-filter-warehouse-code" placeholder="Lọc mã..." (searchChange)="searchByField('code', $event)" />
-          </th>
-          <th>
-            <app-table-search-input
-              id="col-filter-warehouse-name"
-              placeholder="Lọc tên..."
-              (searchChange)="searchByField('name', $event)"
-            />
-          </th>
-          <th>
-            <nz-select
-              id="col-filter-warehouse-type"
-              [ngModel]="null"
-              (ngModelChange)="searchByField('warehouseType', $event)"
-              nzPlaceHolder="Tất cả"
-              [nzAllowClear]="true"
-              nzSize="small"
-              style="width: 100%"
-            >
-              @for (opt of warehouseTypeOptions; track opt.value) {
-                <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
-              }
-            </nz-select>
-          </th>
-          <th>
-            <app-table-search-input
-              id="col-filter-warehouse-branch"
-              placeholder="Lọc CN..."
-              (searchChange)="searchByField('branchName', $event)"
-            />
-          </th>
-          <th>
-            <app-table-search-input
-              id="col-filter-warehouse-address"
-              placeholder="Lọc địa chỉ..."
-              (searchChange)="searchByField('address', $event)"
-            />
-          </th>
-          <th>
-            <nz-select
-              id="col-filter-warehouse-status"
-              [ngModel]="null"
-              (ngModelChange)="searchByField('status', $event)"
-              nzPlaceHolder="Tất cả"
-              [nzAllowClear]="true"
-              nzSize="small"
-              style="width: 100%"
-            >
-              @for (opt of statusOptions; track opt.value) {
-                <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
-              }
-            </nz-select>
-          </th>
-          <th></th>
-          <th></th>
-        </tr>
       </thead>
 
       <tbody>

@@ -1,4 +1,4 @@
-export type WarehouseType = 'BRANCH' | 'CENTRAL' | 'VIRTUAL';
+export type WarehouseType = 'BRANCH' | 'CENTRAL';
 export type WarehouseStatus = 'ACTIVE' | 'INACTIVE';
 
 export interface Warehouse {
@@ -35,7 +35,6 @@ export interface WarehouseListResponse {
 export const WAREHOUSE_TYPE_OPTIONS = [
   { label: 'Kho chi nhánh (BRANCH)', value: 'BRANCH' },
   { label: 'Kho tổng (CENTRAL)', value: 'CENTRAL' },
-  { label: 'Kho ảo (VIRTUAL)', value: 'VIRTUAL' },
 ];
 
 export const WAREHOUSE_STATUS_OPTIONS = [
@@ -64,8 +63,6 @@ export function getWarehouseTypeMeta(type?: string | null): {
       return { label: 'Kho tổng', color: 'purple', icon: 'appstore' };
     case 'BRANCH':
       return { label: 'Kho chi nhánh', color: 'blue', icon: 'shop' };
-    case 'VIRTUAL':
-      return { label: 'Kho ảo', color: 'cyan', icon: 'cloud' };
     default:
       return { label: type || 'Khác', color: 'default', icon: 'inbox' };
   }
