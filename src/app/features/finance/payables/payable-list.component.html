@@ -5,14 +5,13 @@
       <h1 class="page__header__title">Công nợ phải trả nhà cung cấp (AP)</h1>
       <app-breadcrumbs></app-breadcrumbs>
       <p class="page__header__description">
-        Quản lý công nợ phát sinh từ Đơn mua hàng (PO) đã nhận &bull; Lập kế hoạch dòng tiền &bull; Theo dõi lịch thanh
-        toán đến hạn
+        Quản lý công nợ phát sinh từ Đơn mua hàng (PO) đã nhận &bull; Lập kế hoạch dòng tiền &bull; Theo dõi lịch thanh toán đến hạn
       </p>
     </div>
     <div class="page__header__right">
-      <app-button variant="secondary" leftIcon="download">Xuất sổ công nợ</app-button>
+      <app-button variant="primary" leftIcon="plus" (click)="onOpenCreateModal()">Tạo công nợ</app-button>
       <a routerLink="/admin/procurement/purchase-orders">
-        <app-button variant="primary" leftIcon="shopping-cart">Đến danh sách PO</app-button>
+        <app-button variant="secondary" leftIcon="shopping-cart">Đến danh sách PO</app-button>
       </a>
     </div>
   </div>
@@ -27,7 +26,7 @@
             <nz-icon nzType="wallet"></nz-icon>
           </span>
         </div>
-        <div class="stat-card__value font-mono">{{ getTotalRemaining() | number: '1.0-0' }} ₫</div>
+        <div class="stat-card__value font-mono">{{ totalRemainingAll() | number: '1.0-0' }} ₫</div>
         <div class="stat-card__footer">
           <span class="stat-card__sub">Từ các đơn PO đã nhập kho</span>
         </div>
@@ -42,39 +41,9 @@
             <nz-icon nzType="warning"></nz-icon>
           </span>
         </div>
-        <div class="stat-card__value font-mono text-danger">{{ getTotalOverdue() | number: '1.0-0' }} ₫</div>
+        <div class="stat-card__value font-mono text-danger">{{ totalOverdueAll() | number: '1.0-0' }} ₫</div>
         <div class="stat-card__footer">
-          <span class="stat-card__sub stat-card__sub--danger">1 đơn nợ quá hạn 5 ngày</span>
-        </div>
-      </nz-card>
-    </div>
-
-    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
-      <nz-card [nzBordered]="false" class="stat-card">
-        <div class="stat-card__header">
-          <span class="stat-card__title">Đã thanh toán tuần này</span>
-          <span class="stat-card__icon stat-card__icon--teal">
-            <nz-icon nzType="check-circle"></nz-icon>
-          </span>
-        </div>
-        <div class="stat-card__value font-mono">68.200.000 ₫</div>
-        <div class="stat-card__footer">
-          <span class="stat-card__sub stat-card__sub--success">Khớp nối ủy nhiệm chi</span>
-        </div>
-      </nz-card>
-    </div>
-
-    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
-      <nz-card [nzBordered]="false" class="stat-card">
-        <div class="stat-card__header">
-          <span class="stat-card__title">Hạn mức tín dụng NCC</span>
-          <span class="stat-card__icon stat-card__icon--purple">
-            <nz-icon nzType="safety-certificate"></nz-icon>
-          </span>
-        </div>
-        <div class="stat-card__value font-mono">300.000.000 ₫</div>
-        <div class="stat-card__footer">
-          <span class="stat-card__sub">Đang sử dụng 19.2% hạn mức</span>
+          <span class="stat-card__sub stat-card__sub--danger">Cần xử lý sớm</span>
         </div>
       </nz-card>
     </div>
@@ -88,9 +57,48 @@
         <nz-input-wrapper [nzAllowClear]="true">
           <nz-icon nzInputPrefix nzType="search" />
           <input id="payable-search-input" nz-input [(ngModel)]="searchQuery" (keyup.enter)="onSearch()"
-            placeholder="Tìm theo mã công nợ, mã PO hoặc tên nhà cung cấp..." />
+            placeholder="Tìm theo số hóa đơn, mã PO, ghi chú..." />
         </nz-input-wrapper>
       </div>
+
+      <div class="filter-item filter-item--select">
+        <label class="form-label">Nhà cung cấp</label>
+        <nz-select [(ngModel)]="selectedSupplierId" nzAllowClear nzShowSearch nzPlaceHolder="Tất cả NCC"
+          style="width: 100%;" (ngModelChange)="onSupplierChange()">
+          @for (s of supplierOptions(); track s.id) {
+            <nz-option [nzValue]="s.id" [nzLabel]="s.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select [(ngModel)]="selectedStatus" nzAllowClear nzPlaceHolder="Tất cả" style="width: 100%;"
+          (ngModelChange)="onStatusChange()">
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--preset">
+        <label class="form-label">Hạn thanh toán</label>
+        <nz-select [(ngModel)]="duePreset" style="width: 100%;" (ngModelChange)="onDuePresetChange()">
+          <nz-option nzValue="ALL" nzLabel="Tất cả"></nz-option>
+          <nz-option nzValue="OVERDUE" nzLabel="Đã quá hạn"></nz-option>
+          <nz-option nzValue="7D" nzLabel="7 ngày tới"></nz-option>
+          <nz-option nzValue="30D" nzLabel="30 ngày tới"></nz-option>
+          <nz-option nzValue="CUSTOM" nzLabel="Tùy chọn..."></nz-option>
+        </nz-select>
+      </div>
+
+      @if (duePreset === 'CUSTOM') {
+        <div class="filter-item filter-item--daterange">
+          <label class="form-label">Khoảng ngày</label>
+          <nz-range-picker [(ngModel)]="dueRange" (ngModelChange)="onDueRangeChange()"
+            style="width: 100%;"></nz-range-picker>
+        </div>
+      }
 
       <div class="page__filter-box__actions">
         <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
@@ -101,20 +109,22 @@
 
   <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
   <nz-card class="page__list" [nzBordered]="false">
-    <nz-table #payableTable [nzData]="pagedData()" [nzLoading]="isLoading()" [nzShowPagination]="false"
-      [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1380px' }">
+    <nz-table #payableTable [nzData]="payables()" [nzLoading]="isLoading()" [nzShowPagination]="false"
+      [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1200px' }">
       <thead>
         <tr>
           <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
-          <th scope="col" nzWidth="140px" nzAlign="left">Mã công nợ</th>
+          <th scope="col" nzWidth="160px" nzAlign="left">Số hóa đơn</th>
           <th scope="col" nzWidth="140px" nzAlign="left">Đơn PO liên kết</th>
-          <th scope="col" nzWidth="220px" nzAlign="left">Nhà cung cấp</th>
-          <th scope="col" nzWidth="130px" nzAlign="center">Ngày nhận</th>
-          <th scope="col" nzWidth="130px" nzAlign="center">Hạn thanh toán</th>
-          <th scope="col" nzWidth="160px" nzAlign="right">Tổng giá trị đơn</th>
-          <th scope="col" nzWidth="150px" nzAlign="right">Đã thanh toán</th>
-          <th scope="col" nzWidth="150px" nzAlign="right">Còn nợ</th>
-          <th scope="col" nzWidth="150px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="200px" nzAlign="left">Nhà cung cấp</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Ngày nhận hàng</th>
+          <th scope="col" nzWidth="130px" nzAlign="center" [nzSortFn]="true"
+            [nzSortOrder]="sortOrderFor('dueDate')" (nzSortOrderChange)="onSortChange('dueDate', $event)">Hạn thanh toán</th>
+          <th scope="col" nzWidth="150px" nzAlign="right">Tổng giá trị</th>
+          <th scope="col" nzWidth="130px" nzAlign="right">Đã thanh toán</th>
+          <th scope="col" nzWidth="130px" nzAlign="right" [nzSortFn]="true"
+            [nzSortOrder]="sortOrderFor('remaining')" (nzSortOrderChange)="onSortChange('remaining', $event)">Còn nợ</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
           <th scope="col" nzWidth="110px" nzAlign="center">Thao tác</th>
         </tr>
       </thead>
@@ -122,51 +132,74 @@
         @for (p of payableTable.data; track p.id; let i = $index) {
         <tr>
           <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
-          <td><span class="po-code">{{ p.payableCode }}</span></td>
           <td>
-            <span class="code-link font-mono font-semibold">{{ p.poCode }}</span>
+            <span class="po-code">{{ p.invoiceNo || '—' }}</span>
+          </td>
+          <td>
+            @if (p.poCode) {
+              <span class="code-link font-mono font-semibold">{{ p.poCode }}</span>
+            } @else {
+              <span class="text-secondary">—</span>
+            }
           </td>
           <td><span class="font-semibold">{{ p.supplierName }}</span></td>
-          <td nzAlign="center"><span class="text-secondary font-mono">{{ p.issueDate }}</span></td>
           <td nzAlign="center">
-            <span class="font-mono" [class.text-danger]="p.status === 'OVERDUE'">
-              {{ p.dueDate }}
+            <span class="font-mono" [class.text-secondary]="!p.receivedDate">
+              {{ p.receivedDate || '—' }}
+            </span>
+          </td>
+          <td nzAlign="center">
+            <span class="font-mono due-date" [ngClass]="getDueDateClass(p.dueDate, p.status)">
+              {{ getDueDateDisplay(p.dueDate) }}
             </span>
           </td>
           <td nzAlign="right">
-            <span class="font-mono">{{ p.totalAmount | number: '1.0-0' }} ₫</span>
+            <span class="font-mono">{{ p.invoiceAmount | number: '1.0-0' }} ₫</span>
           </td>
           <td nzAlign="right">
             <span class="font-mono text-success">{{ p.paidAmount | number: '1.0-0' }} ₫</span>
           </td>
           <td nzAlign="right">
-            <span class="font-mono font-bold" [class.text-danger]="p.remainingAmount > 0 && p.status === 'OVERDUE'"
-              [class.text-warning]="p.remainingAmount > 0 && p.status !== 'OVERDUE'">
+            <span class="font-mono font-bold" [ngClass]="getRemainingClass(p)">
               {{ p.remainingAmount | number: '1.0-0' }} ₫
             </span>
           </td>
           <td nzAlign="center">
-            @if (p.status === 'PAID') {
-            <span class="tbl-badge tbl-badge--success">Đã tất toán</span>
-            } @else if (p.status === 'PARTIAL') {
-            <span class="tbl-badge tbl-badge--warning">Thanh toán 1 phần</span>
-            } @else if (p.status === 'OVERDUE') {
-            <span class="tbl-badge tbl-badge--danger">Quá hạn nợ</span>
-            } @else {
-            <span class="tbl-badge tbl-badge--neutral">Chưa thanh toán</span>
-            }
+            <span class="tbl-badge" [ngClass]="getStatusMeta(p.status).badgeClass">
+              {{ getStatusMeta(p.status).label }}
+            </span>
           </td>
           <td nzAlign="center">
             <div class="tbl-actions">
-              <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem sổ chi tiết công nợ"
+              <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết"
                 (click)="onViewPayable(p)">
               </app-button>
-              @if (p.remainingAmount > 0) {
-              <app-button variant="ghost" iconOnly="dollar" nz-tooltip nzTooltipTitle="Lập lệnh chi tiền"
-                (click)="onViewPayable(p); onOpenPaymentModal()">
-              </app-button>
+              @if (canPay(p)) {
+                <app-button variant="ghost" iconOnly="dollar" nz-tooltip nzTooltipTitle="Ghi nhận thanh toán"
+                  (click)="onViewPayable(p); onOpenPaymentModal()">
+                </app-button>
+              }
+              @if (canDelete(p)) {
+                <app-button variant="ghost" iconOnly="delete" nz-tooltip nzTooltipTitle="Xóa công nợ"
+                  (click)="onDeleteClick(p)">
+                </app-button>
+              }
+              @if (canEdit(p)) {
+                <app-button variant="ghost" iconOnly="edit" nz-tooltip nzTooltipTitle="Chỉnh sửa"
+                  (click)="onEditClick(p)">
+                </app-button>
               }
             </div>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="10" class="text-center text-secondary py-4">
+            @if (isLoading()) {
+              <nz-icon nzType="loading" class="mr-2"></nz-icon> Đang tải dữ liệu...
+            } @else {
+              Không có dữ liệu công nợ
+            }
           </td>
         </tr>
         }
@@ -182,92 +215,133 @@
     </div>
   </nz-card>
 
-  <!-- ── 5. Payable Detail Drawer ────────────────────────────────────── -->
-  <nz-drawer [nzVisible]="isDrawerVisible()" [nzWidth]="760" [nzTitle]="drawerTitleTpl" (nzOnClose)="onCloseDrawer()">
-    <ng-container *nzDrawerContent>
+  <!-- ── 5. Payable Detail Modal ─────────────────────────────────────── -->
+  <nz-modal [nzVisible]="isDetailModalVisible()" [nzTitle]="detailTitleTpl" [nzWidth]="820"
+    (nzOnCancel)="onCloseDetailModal()" [nzFooter]="detailFooter">
+    <ng-container *nzModalContent>
       @if (selectedPayable(); as p) {
-      <div class="drawer-body">
+      <div class="detail-body">
         <div class="payable-summary">
           <div class="payable-summary__item">
             <span class="label">Đơn mua hàng:</span>
-            <span class="val po-code font-semibold">{{ p.poCode }}</span>
+            <span class="val po-code font-semibold">{{ p.poCode || '—' }}</span>
           </div>
           <div class="payable-summary__item">
-            <span class="label">Tổng tiền đơn:</span>
-            <span class="val font-mono font-semibold">{{ p.totalAmount | number: '1.0-0' }} ₫</span>
+            <span class="label">Số hóa đơn:</span>
+            <span class="val font-semibold">{{ p.invoiceNo || 'Chưa có HĐ' }}</span>
+          </div>
+          <div class="payable-summary__item">
+            <span class="label">Tổng tiền:</span>
+            <span class="val font-mono font-semibold">{{ p.invoiceAmount | number: '1.0-0' }} ₫</span>
           </div>
           <div class="payable-summary__item">
             <span class="label">Đã thanh toán:</span>
             <span class="val font-mono font-semibold text-success">{{ p.paidAmount | number: '1.0-0' }} ₫</span>
           </div>
           <div class="payable-summary__item">
-            <span class="label">Số tiền còn nợ:</span>
+            <span class="label">Còn nợ:</span>
             <span class="val font-mono font-bold text-danger">{{ p.remainingAmount | number: '1.0-0' }} ₫</span>
           </div>
         </div>
 
-        <div class="terms-card">
-          <nz-icon nzType="file-protect" style="color: var(--brand); font-size: 20px;"></nz-icon>
-          <div>
-            <div class="font-semibold">Điều khoản thanh toán:</div>
-            <div class="text-secondary text-xs">{{ p.paymentTerms }}</div>
+        <div class="payable-info-grid">
+          <div class="payable-info-item">
+            <nz-icon nzType="calendar" class="payable-info-item__icon payable-info-item__icon--brand"></nz-icon>
+            <div>
+              <div class="payable-info-item__label">Ngày nhận hàng</div>
+              <div class="payable-info-item__value font-mono">{{ p.receivedDate || '—' }}</div>
+            </div>
           </div>
+          <div class="payable-info-item">
+            <nz-icon nzType="clock-circle" class="payable-info-item__icon" [ngClass]="getDueDateIconClass(p.dueDate, p.status)"></nz-icon>
+            <div>
+              <div class="payable-info-item__label">Hạn thanh toán</div>
+              <div class="payable-info-item__value font-mono" [ngClass]="getDueDateClass(p.dueDate, p.status)">
+                {{ getDueDateDisplay(p.dueDate) }}
+              </div>
+            </div>
+          </div>
+          @if (p.invoiceDate) {
+            <div class="payable-info-item">
+              <nz-icon nzType="file-text" class="payable-info-item__icon payable-info-item__icon--teal"></nz-icon>
+              <div>
+                <div class="payable-info-item__label">Ngày phát hành HĐ</div>
+                <div class="payable-info-item__value font-mono">{{ p.invoiceDate }}</div>
+              </div>
+            </div>
+          }
+          @if (p.paymentTermDays) {
+            <div class="payable-info-item">
+              <nz-icon nzType="hourglass" class="payable-info-item__icon payable-info-item__icon--purple"></nz-icon>
+              <div>
+                <div class="payable-info-item__label">Điều khoản thanh toán</div>
+                <div class="payable-info-item__value">Thanh toán trong {{ p.paymentTermDays }} ngày</div>
+              </div>
+            </div>
+          }
         </div>
 
         <!-- Payment History Table -->
-        <h4 class="history-title">Lịch Sử Các Lần Thanh Toán / Ủy Nhiệm Chi</h4>
-        <nz-table #histTable [nzData]="p.payments" [nzShowPagination]="false" nzSize="middle" class="hist-table">
-          <thead>
-            <tr>
-              <th scope="col">Ngày giao dịch</th>
-              <th scope="col">Phương thức</th>
-              <th scope="col">Mã ủy nhiệm chi / Ref</th>
-              <th scope="col" nzAlign="right">Số tiền đã trả</th>
-              <th scope="col">Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (item of histTable.data; track item.id) {
-            <tr>
-              <td class="font-mono">{{ item.paymentDate }}</td>
-              <td><span class="tag-compact">Chuyển khoản</span></td>
-              <td><span class="po-code">{{ item.bankReference || '-' }}</span></td>
-              <td nzAlign="right" class="font-mono font-semibold text-success">
-                {{ item.amount | number: '1.0-0' }} ₫
-              </td>
-              <td><span class="text-secondary text-xs">{{ item.note || '-' }}</span></td>
-            </tr>
-            } @empty {
-            <tr>
-              <td colspan="5" class="text-center text-secondary py-4">Chưa có giao dịch thanh toán nào được ghi nhận
-              </td>
-            </tr>
-            }
-          </tbody>
-        </nz-table>
+        <h4 class="history-title">Lịch Sử Các Lần Thanh Toán</h4>
+        @if (isLoadingPayments()) {
+          <div class="text-center py-4"><nz-icon nzType="loading"></nz-icon> Đang tải...</div>
+        } @else {
+          <nz-table #histTable [nzData]="detailPayments()" [nzShowPagination]="false" nzSize="middle" class="hist-table">
+            <thead>
+              <tr>
+                <th scope="col">Ngày giao dịch</th>
+                <th scope="col">Phương thức</th>
+                <th scope="col">Mã tham chiếu</th>
+                <th scope="col" nzAlign="right">Số tiền</th>
+                <th scope="col">Người ghi nhận</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of histTable.data; track item.id) {
+              <tr>
+                <td class="font-mono">{{ item.paymentDate }}</td>
+                <td>
+                  <span class="tag-compact">{{ item.paymentMethod === 'BANK_TRANSFER' ? 'Chuyển khoản' : 'Tiền mặt' }}</span>
+                </td>
+                <td><span class="po-code">{{ item.referenceNo || '—' }}</span></td>
+                <td nzAlign="right" class="font-mono font-semibold text-success">
+                  {{ item.amount | number: '1.0-0' }} ₫
+                </td>
+                <td><span class="text-secondary text-xs">{{ item.createdBy || '—' }}</span></td>
+              </tr>
+              } @empty {
+              <tr>
+                <td colspan="5" class="text-center text-secondary py-4">Chưa có giao dịch thanh toán nào</td>
+              </tr>
+              }
+            </tbody>
+          </nz-table>
+        }
 
-        <!-- Drawer Footer -->
-        <div class="drawer-footer">
-          <div class="drawer-footer__stats">
-            <span>Còn nợ: <b class="font-mono text-danger">{{ p.remainingAmount | number: '1.0-0' }} ₫</b></span>
-          </div>
-          <div class="drawer-footer__buttons">
-            <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
-            @if (p.remainingAmount > 0) {
-            <app-button variant="primary" (click)="onOpenPaymentModal()" leftIcon="dollar">
-              Lập lệnh chi thanh toán
-            </app-button>
-            }
-          </div>
+        <div class="read-only-notice">
+          <nz-icon nzType="info-circle" style="color: var(--brand);"></nz-icon>
+          <span>Lịch sử thanh toán chỉ đọc — không thể chỉnh sửa sau khi ghi nhận</span>
         </div>
       </div>
       }
     </ng-container>
-  </nz-drawer>
+    <ng-template #detailFooter>
+      @if (selectedPayable(); as p) {
+        <span class="detail-footer__stats">Còn nợ: <b class="font-mono text-danger">{{ p.remainingAmount | number: '1.0-0' }} ₫</b></span>
+        <app-button variant="secondary" (click)="onCloseDetailModal()">Đóng</app-button>
+        @if (canPay(p)) {
+        <app-button variant="primary" (click)="onOpenPaymentModal()" leftIcon="dollar">
+          Ghi nhận thanh toán
+        </app-button>
+        }
+      }
+    </ng-template>
+  </nz-modal>
 
   <!-- ── 6. Payment Modal ───────────────────────────────────────────── -->
-  <nz-modal [nzVisible]="isPaymentModalVisible()" nzTitle="Lập Ủy Nhiệm Chi Thanh Toán Công Nợ"
-    (nzOnCancel)="onClosePaymentModal()" (nzOnOk)="onConfirmPayment()" nzOkText="Xác nhận chi tiền" nzCancelText="Hủy">
+  <nz-modal [nzVisible]="isPaymentModalVisible()" nzTitle="Ghi Nhận Thanh Toán Công Nợ"
+    (nzOnCancel)="onClosePaymentModal()" (nzOnOk)="onConfirmPayment()"
+    [nzOkLoading]="isSubmittingPayment()" nzOkText="Xác nhận thanh toán" nzCancelText="Hủy">
     <ng-container *nzModalContent>
       <div class="payment-modal-content">
         <div class="form-group">
@@ -278,9 +352,17 @@
         <div class="form-group" style="margin-top: 12px;">
           <label class="form-label font-medium">Đơn mua hàng PO:</label>
           <div>
-            <span class="po-code">{{ selectedPayable()?.poCode }}</span> &bull;
+            <span class="po-code">{{ selectedPayable()?.poCode || '—' }}</span> &bull;
             Còn nợ: <b class="font-mono text-danger">{{ selectedPayable()?.remainingAmount | number: '1.0-0' }} ₫</b>
           </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Phương thức thanh toán:</label>
+          <nz-select [(ngModel)]="paymentMethod" style="width: 100%;">
+            <nz-option nzValue="BANK_TRANSFER" nzLabel="Chuyển khoản"></nz-option>
+            <nz-option nzValue="CASH" nzLabel="Tiền mặt"></nz-option>
+          </nz-select>
         </div>
 
         <div class="form-group" style="margin-top: 16px;">
@@ -290,18 +372,151 @@
         </div>
 
         <div class="form-group" style="margin-top: 16px;">
-          <label class="form-label font-medium">Nội dung chuyển khoản / Ghi chú kế toán:</label>
-          <input type="text" nz-input [(ngModel)]="paymentNote" placeholder="Nội dung ủy nhiệm chi..." />
+          <label class="form-label font-medium">Mã tham chiếu / Ủy nhiệm chi:</label>
+          <input type="text" nz-input [(ngModel)]="paymentReference" placeholder="Mã UNC, số tài khoản..." />
         </div>
       </div>
     </ng-container>
   </nz-modal>
 
-  <ng-template #drawerTitleTpl>
-    <div class="drawer-title">
+  <ng-template #detailTitleTpl>
+    <div class="detail-title">
       <nz-icon nzType="audit" style="color: var(--brand); margin-right: 8px;"></nz-icon>
-      <span>Sổ Chi Tiết Công Nợ: <b>{{ selectedPayable()?.supplierName }}</b> ({{ selectedPayable()?.payableCode
-        }})</span>
+      <span>Chi Tiết Công Nợ: <b>{{ selectedPayable()?.supplierName }}</b></span>
     </div>
   </ng-template>
+
+  <!-- ── 7. Create Modal ──────────────────────────────────────────── -->
+  <nz-modal [nzVisible]="isCreateModalVisible()" nzTitle="Tạo Công Nợ Thủ Công"
+    (nzOnCancel)="onCloseCreateModal()" (nzOnOk)="onConfirmCreate()"
+    [nzOkLoading]="isSubmittingCreate()" [nzOkDisabled]="!isCreateFormValid"
+    nzOkText="Tạo mới" nzCancelText="Hủy" nzWidth="600px">
+    <ng-container *nzModalContent>
+      <div class="create-form">
+        <!-- 1. Chọn PO (đầu tiên, bắt buộc) -->
+        <div class="form-group">
+          <label class="form-label font-medium">Đơn mua hàng (PO) <span class="text-danger">*</span></label>
+          <nz-select [(ngModel)]="createPurchaseOrderId" nzPlaceHolder="Chọn PO chưa có công nợ"
+            style="width: 100%;" nzShowSearch (ngModelChange)="onPOSelect($event)">
+            @for (po of poList(); track po.id) {
+              <nz-option [nzValue]="po.id"
+                [nzLabel]="po.poCode + ' - ' + po.supplierName + ' (' + (po.totalAmount | number: '1.0-0') + ' ₫)'">
+              </nz-option>
+            }
+          </nz-select>
+        </div>
+
+        <!-- 2. Nhà cung cấp (readonly, tự động fill từ PO) -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Nhà cung cấp</label>
+          <input type="text" nz-input [ngModel]="createSupplierDisplay" readonly disabled
+            placeholder="Tự động chọn khi chọn PO" />
+        </div>
+
+        <!-- 3. Số hóa đơn (tự动生成, không cần nhập) -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Số hóa đơn</label>
+          <input type="text" nz-input value="Tự động tạo" readonly disabled />
+          <div class="text-secondary text-xs" style="margin-top: 4px;">
+            Mã HĐ sẽ tự动生成 theo format HDA-yyyyMMdd-NNNN
+          </div>
+        </div>
+
+        <!-- 4. Số tiền (readonly, tự động = tổng PO) -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Số tiền hóa đơn (VNĐ) <span class="text-danger">*</span></label>
+          <input type="text" nz-input [ngModel]="createInvoiceAmount | number: '1.0-0'" readonly disabled
+            class="font-mono" />
+        </div>
+
+        <!-- 5. Hạn thanh toán (readonly, tự động tính) -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Hạn thanh toán</label>
+          <nz-date-picker [(ngModel)]="createDueDate" nzPlaceHolder="Chọn hạn thanh toán"
+            style="width: 100%;"></nz-date-picker>
+          <div class="text-secondary text-xs" style="margin-top: 4px;">
+            Tự động = ngày tạo PO + Điều khoản thanh toán của NCC (có thể chỉnh sửa)
+          </div>
+        </div>
+
+        <!-- 6. Ghi chú -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Ghi chú</label>
+          <textarea nz-input [(ngModel)]="createNote" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
+            placeholder="Ghi chú về công nợ..."></textarea>
+        </div>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  <!-- ── 8. Delete Confirm Modal ──────────────────────────────────── -->
+  <nz-modal [nzVisible]="isConfirmDeleteVisible()" nzTitle="Xác nhận xóa công nợ"
+    (nzOnCancel)="onCloseDeleteModal()" (nzOnOk)="onConfirmDelete()"
+    nzOkText="Xóa" nzCancelText="Hủy" nzWidth="420px">
+    <ng-container *nzModalContent>
+      <p>Bạn có chắc chắn muốn xóa công nợ này?</p>
+      @if (deleteTarget(); as p) {
+        <div style="margin-top: 12px; padding: 12px; background: #fff2f0; border: 1px solid #ffccc7; border-radius: 6px;">
+          <p style="margin: 0; color: #cf1322; font-weight: 500;">
+            {{ p.invoiceNo || 'Chưa có số HĐ' }}
+          </p>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #666;">
+            {{ p.supplierName }} | {{ p.invoiceAmount | number: '1.0-0' }} ₫
+          </p>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <!-- ── 9. Edit Modal ────────────────────────────────────────────── -->
+  <nz-modal [nzVisible]="isEditModalVisible()" nzTitle="Chỉnh sửa Công Nợ"
+    (nzOnCancel)="onCloseEditModal()" (nzOnOk)="onConfirmEdit()"
+    [nzOkLoading]="isSubmittingEdit()"
+    nzOkText="Lưu" nzCancelText="Hủy" nzWidth="600px">
+    <ng-container *nzModalContent>
+      <div class="create-form">
+        <!-- 1. PO (readonly) -->
+        <div class="form-group">
+          <label class="form-label font-medium">Đơn mua hàng (PO)</label>
+          <input type="text" nz-input [ngModel]="editPoCode" readonly disabled />
+        </div>
+
+        <!-- 2. NCC (readonly) -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Nhà cung cấp</label>
+          <input type="text" nz-input [ngModel]="editSupplierDisplay" readonly disabled />
+        </div>
+
+        <!-- 3. Số hóa đơn -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Số hóa đơn</label>
+          <input type="text" nz-input [(ngModel)]="editInvoiceNo" placeholder="VD: HDA-2026-0038" />
+        </div>
+
+        <!-- 4. Số tiền (readonly) -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Số tiền hóa đơn (VNĐ) <span class="text-danger">*</span></label>
+          <input type="text" nz-input [ngModel]="editInvoiceAmount | number: '1.0-0'" readonly disabled
+            class="font-mono" />
+        </div>
+
+        <!-- 5. Hạn thanh toán -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Hạn thanh toán</label>
+          <nz-date-picker [(ngModel)]="editDueDate" nzPlaceHolder="Chọn hạn thanh toán"
+            style="width: 100%;" [nzAllowClear]="true"></nz-date-picker>
+          <div class="text-secondary text-xs" style="margin-top: 4px;">
+            Để trống nếu chưa xác định hạn
+          </div>
+        </div>
+
+        <!-- 6. Ghi chú -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Ghi chú</label>
+          <textarea nz-input [(ngModel)]="editNote" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
+            placeholder="Ghi chú về công nợ..."></textarea>
+        </div>
+      </div>
+    </ng-container>
+  </nz-modal>
 </div>
