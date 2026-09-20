@@ -105,6 +105,16 @@
         >
           Từ chối ({{ rejectedCount() }})
         </button>
+        @if (overdueCount() > 0) {
+          <button
+            type="button"
+            class="filter-pill filter-pill--danger"
+            [class.filter-pill--active]="activeFilter() === 'OVERDUE'"
+            (click)="onFilterChange('OVERDUE', $event)"
+          >
+            Quá hạn ({{ overdueCount() }})
+          </button>
+        }
       </div>
     </div>
 

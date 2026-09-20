@@ -8,7 +8,7 @@ import {NzSpinComponent} from 'ng-zorro-antd/spin';
 import {RealtimeNotificationService} from '../../../core/notification/realtime-notification.service';
 import {AppNotification} from '../../../core/notification/notification.model';
 
-export type NotificationFilterTab = 'ALL' | 'UNREAD' | 'PENDING' | 'APPROVED' | 'REJECTED';
+export type NotificationFilterTab = 'ALL' | 'UNREAD' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'OVERDUE';
 
 @Component({
   selector: 'app-notification-bell',
@@ -46,6 +46,9 @@ export class NotificationBellComponent {
   protected readonly rejectedCount = computed(() =>
     this.notifications().filter(n => this.isRejected(n)).length
   );
+  protected readonly overdueCount = computed(() =>
+    this.notifications().filter(n => this.isOverdue(n)).length
+  );
 
   protected readonly filteredNotifications = computed(() => {
     const list = this.notifications();
@@ -58,6 +61,8 @@ export class NotificationBellComponent {
         return list.filter(n => this.isApproved(n));
       case 'REJECTED':
         return list.filter(n => this.isRejected(n));
+      case 'OVERDUE':
+        return list.filter(n => this.isOverdue(n));
       case 'ALL':
       default:
         return list;
@@ -114,9 +119,19 @@ export class NotificationBellComponent {
     return text.includes('từ chối') || text.includes('bị huỷ') || text.includes('hủy đơn');
   }
 
+  private isOverdue(n: AppNotification): boolean {
+    if (n.type === 'PAYABLE_OVERDUE') return true;
+    const text = ((n.title || '') + ' ' + (n.body || '')).toLowerCase();
+    return text.includes('quá hạn') || text.includes('công nợ quá hạn');
+  }
+
   private resolveTargetUrl(item: AppNotification): string | null {
     if (item.actionUrl) {
       return item.actionUrl;
+    }
+    // Overdue payable notification → navigate to payables page
+    if (this.isOverdue(item)) {
+      return '/admin/finance/payables';
     }
     const poMatch = item.body?.match(/PO-[\w-]+/) || item.title?.match(/PO-[\w-]+/);
     if (poMatch) {

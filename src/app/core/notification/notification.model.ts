@@ -8,7 +8,7 @@ export interface AppNotification {
   readAt?: string;
   createdAt: string;
   actionUrl?: string;
-  type?: 'PO_SUBMITTED' | 'PO_APPROVED' | 'PO_REJECTED' | 'PO_CANCELLED' | 'PO_RECEIVED' | 'GENERAL' | string;
+  type?: 'PO_SUBMITTED' | 'PO_APPROVED' | 'PO_REJECTED' | 'PO_CANCELLED' | 'PO_RECEIVED' | 'PAYABLE_OVERDUE' | 'GENERAL' | string;
 }
 
 export interface SseTicketResponse {
