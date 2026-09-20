@@ -6,17 +6,21 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
-      <app-button
-        *erpUTTHasSomeAuthority="[ROLE.DON_VI_TINH.CREATE]"
-        variant="primary"
-        leftIcon="plus"
-        (click)="openCreateModal()"
-      >
-        Thêm đơn vị tính
-      </app-button>
+      @if (selectedTabIndex === 0) {
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.DON_VI_TINH.CREATE]"
+          variant="primary"
+          leftIcon="plus"
+          (click)="openCreateModal()"
+        >
+          Thêm đơn vị tính
+        </app-button>
+      }
     </div>
   </div>
 
+  <nz-tabs [nzSelectedIndex]="selectedTabIndex" (nzSelectedIndexChange)="onTabChange($event)">
+    <nz-tab nzTitle="Đơn vị tính">
   <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
   <nz-card class="page__filter-box" [nzBordered]="false">
     <div class="page__filter-box__row">
@@ -152,6 +156,167 @@
       </app-pagination>
     </div>
   </nz-card>
+    </nz-tab>
+
+    <!-- ── Tab Quy đổi đơn vị (1 chiều, chiều ngược tự đảo) ─────────── -->
+    <nz-tab nzTitle="Quy đổi đơn vị">
+      <nz-card class="page__list" [nzBordered]="false">
+        <div class="conv-toolbar">
+          <span class="conv-toolbar__note">Mỗi dòng là 1 chiều quy đổi (VD KG → G ×1000). BE yêu cầu quyền kho NVL.</span>
+          <div class="conv-toolbar__actions">
+            <app-button
+              *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.CREATE]"
+              variant="ghost"
+              iconOnly="reload"
+              nz-tooltip
+              nzTooltipTitle="Tải lại"
+              (click)="loadConversions()"
+            >
+            </app-button>
+            <app-button
+              *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.CREATE]"
+              variant="primary"
+              leftIcon="plus"
+              (click)="openConvCreateModal()"
+            >
+              Thêm quy đổi
+            </app-button>
+          </div>
+        </div>
+        <nz-table
+          [nzData]="conversions()"
+          [nzLoading]="convLoading()"
+          [nzShowPagination]="false"
+          [nzFrontPagination]="false"
+          nzSize="middle"
+          [nzScroll]="{ x: '900px' }"
+        >
+          <thead>
+            <tr>
+              <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+              <th scope="col" nzWidth="220px" nzAlign="left">Từ đơn vị</th>
+              <th scope="col" nzWidth="220px" nzAlign="left">Sang đơn vị</th>
+              <th scope="col" nzWidth="160px" nzAlign="right">Hệ số</th>
+              <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+              <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of conversions(); track item.id; let idx = $index) {
+              <tr>
+                <td nzAlign="center" class="font-mono text-muted">{{ idx + 1 }}</td>
+                <td nzAlign="left">{{ item.fromUnitName || item.fromUnitCode || '—' }}</td>
+                <td nzAlign="left">{{ item.toUnitName || item.toUnitCode || '—' }}</td>
+                <td nzAlign="right" class="font-mono">×{{ item.factor }}</td>
+                <td nzAlign="center">
+                  <span [class]="getUnitStatusMeta(item.status).badgeClass">
+                    {{ getUnitStatusMeta(item.status).label }}
+                  </span>
+                </td>
+                <td nzAlign="center">
+                  <div class="tbl-actions">
+                    <app-button
+                      *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.UPDATE]"
+                      variant="ghost"
+                      [iconOnly]="item.status === 'ACTIVE' ? 'stop' : 'check-circle'"
+                      nz-tooltip
+                      [nzTooltipTitle]="item.status === 'ACTIVE' ? 'Ngừng sử dụng' : 'Bật sử dụng'"
+                      (click)="onToggleConvStatus(item)"
+                    >
+                    </app-button>
+                    <app-button
+                      *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.DELETE]"
+                      variant="ghost"
+                      iconOnly="delete"
+                      nz-tooltip
+                      nzTooltipTitle="Xóa"
+                      (click)="onDeleteConv(item)"
+                    >
+                    </app-button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </nz-card>
+
+      <!-- Modal thêm quy đổi -->
+      <app-modal
+        [visible]="isConvModalVisible()"
+        (visibleChange)="isConvModalVisible.set($event)"
+        title="Thêm dòng quy đổi"
+        size="md"
+        [maskClosable]="false"
+        [footer]="convModalFooter"
+        (cancelEmit)="closeConvModal()"
+      >
+        <form [formGroup]="convForm" class="unit-modal-form">
+          <div nz-row [nzGutter]="[16, 16]">
+            <div nz-col [nzSpan]="24" [nzMd]="12">
+              <label class="form-label required">Từ đơn vị</label>
+              <nz-select formControlName="fromUnitId" nzPlaceHolder="Chọn đơn vị nguồn" style="width: 100%">
+                @for (o of convUnitOptions(); track o.value) {
+                  <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+                }
+              </nz-select>
+              @if (convForm.get('fromUnitId')?.touched || convForm.get('fromUnitId')?.dirty) {
+                @if (convForm.get('fromUnitId')?.hasError('required')) {
+                  <span class="form-error">Vui lòng chọn đơn vị nguồn.</span>
+                }
+              }
+            </div>
+            <div nz-col [nzSpan]="24" [nzMd]="12">
+              <label class="form-label required">Sang đơn vị</label>
+              <nz-select formControlName="toUnitId" nzPlaceHolder="Chọn đơn vị đích" style="width: 100%">
+                @for (o of convUnitOptions(); track o.value) {
+                  <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
+                }
+              </nz-select>
+              @if (convForm.get('toUnitId')?.touched || convForm.get('toUnitId')?.dirty) {
+                @if (convForm.get('toUnitId')?.hasError('required')) {
+                  <span class="form-error">Vui lòng chọn đơn vị đích.</span>
+                }
+              }
+            </div>
+            <div nz-col [nzSpan]="24">
+              <label class="form-label required">Hệ số (số đích = số nguồn × hệ số)</label>
+              <nz-input-number
+                formControlName="factor"
+                [nzMin]="0"
+                [nzStep]="1"
+                [nzPrecision]="6"
+                nzPlaceHolder="VD: 1000 (1 KG = 1000 G)"
+                style="width: 100%"
+              ></nz-input-number>
+              @if (convForm.get('factor')?.touched || convForm.get('factor')?.dirty) {
+                @if (convForm.get('factor')?.hasError('required')) {
+                  <span class="form-error">Vui lòng nhập hệ số.</span>
+                } @else if (convForm.get('factor')?.hasError('min')) {
+                  <span class="form-error">Hệ số phải lớn hơn 0.</span>
+                }
+              }
+              <span class="form-hint">Chỉ cùng nhóm (khối lượng/thể tích/đếm). Chiều ngược tự đảo, VD lưu KG → G là đủ.</span>
+            </div>
+          </div>
+        </form>
+        <ng-template #convModalFooter>
+          <div class="modal-footer-actions">
+            <app-button variant="ghost" leftIcon="close" [disabled]="convSaving()" (click)="closeConvModal()"> Hủy bỏ </app-button>
+            <app-button
+              *erpUTTHasSomeAuthority="[ROLE.NGUYEN_VAT_LIEU.CREATE]"
+              variant="primary"
+              leftIcon="check"
+              [loading]="convSaving()"
+              (click)="onSubmitConvForm()"
+            >
+              Thêm dòng quy đổi
+            </app-button>
+          </div>
+        </ng-template>
+      </app-modal>
+    </nz-tab>
+  </nz-tabs>
 
   <!-- ── 4. Form Modal (Thêm / Sửa) ─────────────────────────────────── -->
   <app-modal
