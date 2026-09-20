@@ -282,7 +282,7 @@
     </ng-container>
     <ng-template #detailModalFooter>
       @if (detail(); as d) {
-        @for (action of nextActions(d.orderType, d.status, d.paymentStatus); track action) {
+        @for (action of nextActions(d.orderType, d.status, d.paymentStatus, true, d.delivery?.status); track action) {
           <app-button
             [variant]="action === 'CANCELLED' || action === 'REJECTED' ? 'ghost' : 'primary'"
             *erpUTTHasSomeAuthority="[ROLE.DON_HANG.UPDATE]"

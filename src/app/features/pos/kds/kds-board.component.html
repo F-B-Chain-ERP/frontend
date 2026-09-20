@@ -30,18 +30,14 @@
       </div>
 
       <div class="filter-item filter-item--grow">
-        <span class="form-label">Trạng thái</span>
-        <nz-select
-          [(ngModel)]="selectedStatus"
+        <span class="form-label">Tìm kiếm</span>
+        <input
+          nz-input
+          [(ngModel)]="searchText"
           (ngModelChange)="onFilterChange()"
-          nzPlaceHolder="Tất cả trạng thái"
-          [nzAllowClear]="true"
+          placeholder="Mã đơn (HD-...) hoặc mã ticket (BAR-012)"
           style="width: 100%"
-        >
-          @for (opt of statusOptions; track opt.value) {
-            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
-          }
-        </nz-select>
+        />
       </div>
 
       <div class="filter-item">
@@ -86,6 +82,11 @@
               <span class="tbl-badge" [class]="getStatusMeta(t.status).badgeClass">{{ getStatusMeta(t.status).label }}</span>
             </div>
             <div class="text-muted">{{ t.orderCode }} • {{ t.customerName ?? '—' }} • {{ t.totalItems }} món</div>
+            <div class="text-muted">
+              Đơn: <span class="tbl-badge" [class]="getOrderStatusMeta(t.orderStatus).badgeClass">{{
+                getOrderStatusMeta(t.orderStatus).label
+              }}</span>
+            </div>
             <div class="text-muted" [class.kds-overdue]="isOverdue(t.createdAt)">
               Vào bếp {{ formatDateTime(t.createdAt) }} ({{ elapsedMinutes(t.createdAt) }} phút)
               @if (isOverdue(t.createdAt)) {
@@ -121,6 +122,11 @@
               <span class="tbl-badge" [class]="getStatusMeta(t.status).badgeClass">{{ getStatusMeta(t.status).label }}</span>
             </div>
             <div class="text-muted">{{ t.orderCode }} • {{ t.customerName ?? '—' }} • {{ t.totalItems }} món</div>
+            <div class="text-muted">
+              Đơn: <span class="tbl-badge" [class]="getOrderStatusMeta(t.orderStatus).badgeClass">{{
+                getOrderStatusMeta(t.orderStatus).label
+              }}</span>
+            </div>
             <div class="text-muted" [class.kds-overdue]="isOverdue(t.createdAt)">
               Vào bếp {{ formatDateTime(t.createdAt) }} ({{ elapsedMinutes(t.createdAt) }} phút)
               @if (isOverdue(t.createdAt)) {
@@ -156,6 +162,11 @@
               <span class="tbl-badge" [class]="getStatusMeta(t.status).badgeClass">{{ getStatusMeta(t.status).label }}</span>
             </div>
             <div class="text-muted">{{ t.orderCode }} • {{ t.customerName ?? '—' }} • {{ t.totalItems }} món</div>
+            <div class="text-muted">
+              Đơn: <span class="tbl-badge" [class]="getOrderStatusMeta(t.orderStatus).badgeClass">{{
+                getOrderStatusMeta(t.orderStatus).label
+              }}</span>
+            </div>
             <div class="text-muted">Vào bếp {{ formatDateTime(t.createdAt) }}</div>
             <div class="tbl-actions" *erpUTTHasSomeAuthority="[ROLE.KDS_TICKET.UPDATE]">
               @for (action of nextActions(t.status); track action) {
@@ -212,6 +223,7 @@
             </div>
           </div>
           <span [class]="getStatusMeta(d.status).badgeClass">{{ getStatusMeta(d.status).label }}</span>
+          <span [class]="getOrderStatusMeta(d.orderStatus).badgeClass">Đơn: {{ getOrderStatusMeta(d.orderStatus).label }}</span>
         </div>
 
         <div class="order-detail-stats">

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
@@ -23,12 +24,12 @@ import { KdsApiService } from '../kds-api.service';
 import {
   KDS_STATUS_ACTION_ICONS,
   KDS_STATUS_ACTION_LABELS,
-  KDS_TICKET_STATUS_OPTIONS,
   KdsTicketDetail,
   KdsTicketSummary,
   getKdsStatusMeta,
   nextKdsActions,
 } from '../kds.model';
+import { getOrderStatusMeta } from '../order.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from '../../../shared/constants/constant';
 
 function toISODate(d: Date | null): string | null {
@@ -47,6 +48,7 @@ function toISODate(d: Date | null): string | null {
     FormsModule,
     NzCardModule,
     NzSelectModule,
+    NzInputModule,
     NzIconModule,
     NzDatePickerModule,
     NzSpinModule,
@@ -65,7 +67,6 @@ function toISODate(d: Date | null): string | null {
 })
 export class KdsBoardComponent implements OnInit, OnDestroy {
   readonly ROLE = ROLE;
-  readonly statusOptions = KDS_TICKET_STATUS_OPTIONS;
   readonly actionLabels = KDS_STATUS_ACTION_LABELS;
   readonly branchService = inject(BranchService);
   readonly tickets = signal<KdsTicketSummary[]>([]);
@@ -79,10 +80,11 @@ export class KdsBoardComponent implements OnInit, OnDestroy {
   readonly actionLoading = signal(false);
 
   getStatusMeta = getKdsStatusMeta;
+  getOrderStatusMeta = getOrderStatusMeta;
   nextActions = nextKdsActions;
 
   selectedBranchId: string | null = null;
-  selectedStatus: string | null = null;
+  searchText = '';
   fromDate: Date | null = null;
   toDate: Date | null = null;
 
@@ -143,7 +145,7 @@ export class KdsBoardComponent implements OnInit, OnDestroy {
     this.api
       .listTickets({
         branchId: this.selectedBranchId,
-        status: this.selectedStatus,
+        search: this.searchText?.trim() || null,
         fromDate: toISODate(this.fromDate),
         toDate: toISODate(this.toDate),
         pageIndex: this.pageIndex(),
@@ -169,7 +171,7 @@ export class KdsBoardComponent implements OnInit, OnDestroy {
 
   onResetFilters(): void {
     this.selectedBranchId = null;
-    this.selectedStatus = null;
+    this.searchText = '';
     this.fromDate = null;
     this.toDate = null;
     this.pageIndex.set(DEFAULT_PAGE_INDEX);
@@ -202,8 +204,9 @@ export class KdsBoardComponent implements OnInit, OnDestroy {
   }
 
   advance(ticket: KdsTicketSummary, target: string): void {
-    const call: Observable<unknown> =
-      target === 'PREPARING' ? this.api.start(ticket.id) : target === 'READY' ? this.api.ready(ticket.id) : this.api.serve(ticket.id);
+    // Chốt luồng: bếp chỉ tới READY (QUEUED->PREPARING->READY).
+    // Đi giao/hoàn tất bấm ở màn Đơn/Giao hàng, ticket tự SERVED dọn board.
+    const call: Observable<unknown> = target === 'PREPARING' ? this.api.start(ticket.id) : this.api.ready(ticket.id);
     this.doAction(call, `${this.actionLabels[target] ?? target} thành công`);
   }
 

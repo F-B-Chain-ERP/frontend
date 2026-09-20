@@ -30,12 +30,14 @@ export class KdsApiService {
     if (filter.status) params = params.set('status', filter.status);
     if (filter.fromDate) params = params.set('fromDate', filter.fromDate);
     if (filter.toDate) params = params.set('toDate', filter.toDate);
+    if (filter.search?.trim()) params = params.set('search', filter.search.trim());
     return this.http.get<ApiResponse<BackendPage<KdsTicketDetail>>>(this.url('/tickets'), { params }).pipe(
       map(res => ({
         items: (res.data?.content ?? []).map(t => ({
           id: t.id,
           orderId: t.orderId,
           orderCode: t.orderCode,
+          orderStatus: (t as unknown as Record<string, unknown>)['orderStatus'] as string | null ?? null,
           branchId: t.branchId,
           station: t.station,
           queueNo: t.queueNo,

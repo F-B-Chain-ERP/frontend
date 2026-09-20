@@ -20,6 +20,7 @@ export interface KdsTicketSummary {
   id: string;
   orderId: string;
   orderCode: string | null;
+  orderStatus: string | null;
   branchId: string;
   station: string;
   queueNo: number;
@@ -45,6 +46,7 @@ export interface KdsTicketFilter {
   status?: string | null;
   fromDate?: string | null;
   toDate?: string | null;
+  search?: string | null;
   pageIndex: number;
   pageSize: number;
 }
@@ -75,12 +77,11 @@ export function getKdsStatusMeta(status: string | null | undefined): StatusMeta 
   return KDS_TICKET_STATUS_OPTIONS.find(o => o.value === s) ?? { value: s, label: s || '—', badgeClass: 'tbl-badge--neutral' };
 }
 
-/** Nút chuyển trạng thái bếp theo machine BE (PosFlow.Kds). */
+/** Nút chuyển trạng thái bếp: KDS chỉ làm tới READY, còn lại để màn đơn bấm nốt (DELIVERING/COMPLETED auto SERVED ticket). */
 export function nextKdsActions(status: string): string[] {
   const s = (status ?? '').toUpperCase();
   if (s === 'QUEUED') return ['PREPARING'];
   if (s === 'PREPARING') return ['READY'];
-  if (s === 'READY') return ['SERVED'];
   return [];
 }
 

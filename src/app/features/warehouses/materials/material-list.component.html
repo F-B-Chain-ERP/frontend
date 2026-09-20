@@ -103,7 +103,7 @@
       [nzShowPagination]="false"
       [nzFrontPagination]="false"
       nzSize="middle"
-      [nzScroll]="{ x: '1320px' }"
+      [nzScroll]="{ x: '1500px' }"
       [nzNoResult]="nzEmptyTpl"
     >
       <thead>
@@ -122,6 +122,9 @@
 
         <!-- Đơn vị cơ bản -->
         <th scope="col" nzWidth="140px" nzAlign="left">Đơn vị cơ bản</th>
+
+        <!-- Đóng gói -->
+        <th scope="col" nzWidth="200px" nzAlign="left">Đóng gói</th>
 
         <!-- Cảnh báo tồn tối thiểu -->
         <th scope="col" nzWidth="170px" nzAlign="right">Cảnh báo tồn tối thiểu</th>
@@ -167,6 +170,7 @@
             placeholder="Tìm đơn vị tính"
           ></app-table-search-input>
         </th>
+        <th></th>
         <th></th>
         <th></th>
         <th>
@@ -227,6 +231,14 @@
               <span class="unit-tag" nz-tooltip [nzTooltipTitle]="item.baseUnitName || '—'">
                 <nz-icon nzType="gold" style="margin-right: 4px; color: var(--text-muted);"/>
                 <span class="unit-name-text">{{ item.baseUnitName || '—' }}</span>
+              </span>
+            </td>
+
+            <!-- Đóng gói -->
+            <td>
+              <span class="unit-tag" nz-tooltip [nzTooltipTitle]="formatPack(item)">
+                <nz-icon nzType="inbox" style="margin-right: 4px; color: var(--text-muted);"/>
+                <span class="unit-name-text">{{ formatPack(item) }}</span>
               </span>
             </td>
 
@@ -408,6 +420,43 @@
           @if (materialForm.get('baseUnitId')?.touched || materialForm.get('baseUnitId')?.dirty) {
             @if (materialForm.get('baseUnitId')?.hasError('required')) {
               <span class="form-error">Vui lòng chọn đơn vị tính cơ bản.</span>
+            }
+          }
+        </div>
+
+        <!-- Đơn vị đóng gói (không bắt buộc, đi cặp với hệ số) -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label">Đơn vị đóng gói</label>
+          <nz-select
+            id="mat-pack-unit"
+            formControlName="packUnitId"
+            nzAllowClear
+            nzPlaceHolder="Không dùng (chỉ dùng đơn vị gốc)"
+            style="width: 100%"
+          >
+            @for (opt of unitOptions(); track opt.value) {
+              <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+            }
+          </nz-select>
+        </div>
+
+        <!-- Hệ số đóng gói: 1 đơn vị đóng gói = ? đơn vị cơ bản -->
+        <div nz-col [nzSpan]="24" [nzMd]="12">
+          <label class="form-label" for="mat-pack-factor">Hệ số đóng gói</label>
+          <nz-input-number
+            id="mat-pack-factor"
+            formControlName="packToBaseFactor"
+            [nzMin]="0"
+            [nzStep]="1"
+            [nzPrecision]="6"
+            nzPlaceHolder="VD: 1000 (1 Thùng = 1000 G)"
+            style="width: 100%"
+          ></nz-input-number>
+          @if (materialForm.get('packToBaseFactor')?.touched || materialForm.get('packToBaseFactor')?.dirty) {
+            @if (materialForm.get('packToBaseFactor')?.hasError('notANumber')) {
+              <span class="form-error">Hệ số phải là số hợp lệ.</span>
+            } @else if (materialForm.get('packToBaseFactor')?.hasError('maxFraction')) {
+              <span class="form-error">Tối đa 6 số lẻ.</span>
             }
           }
         </div>
