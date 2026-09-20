@@ -5,7 +5,8 @@ import { AccountService } from '../../core/auth/account.service';
 import { normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE } from '../../core/util/image.util';
 import { DrinkItem } from '../app-drink-card/app-drink-card.component';
 import { AppNotificationService } from '../app-notification/app-notification.service';
-import { PosApiService, PosCartItem } from '../../features/store/services/pos-api.service';
+import { PosApiService } from '../../features/store/services/pos-api.service';
+import { PosCartItem } from '../../features/store/models/pos.model';
 import { StoreBranchService } from '../../features/store/services/store-branch.service';
 
 export interface CartItemOption {

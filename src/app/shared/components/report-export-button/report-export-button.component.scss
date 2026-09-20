@@ -1,0 +1,22 @@
+.export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  border-radius: 6px;
+
+  .dropdown-icon {
+    font-size: 10px;
+    margin-left: 2px;
+  }
+}
+
+.excel-icon {
+  color: #107c41;
+  margin-right: 8px;
+}
+
+.pdf-icon {
+  color: #d9383a;
+  margin-right: 8px;
+}

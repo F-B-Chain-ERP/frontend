@@ -1,10 +1,12 @@
 import {HttpClient} from '@angular/common/http';
 import {Injectable, computed, inject, signal} from '@angular/core';
-import {Observable, map, tap} from 'rxjs';
+import {Observable, Subject, map, tap} from 'rxjs';
+import {Router} from '@angular/router';
+import {AccountService} from '../auth/account.service';
 import {ApplicationConfigService} from '../config/application-config.service';
 import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
 import {ApiResponse} from '../../features/login/login.model';
-import {AppNotification, SseTicketResponse} from './notification.model';
+import {AppNotification, OrderRealtimePayload, SseTicketResponse} from './notification.model';
 
 /**
  * Quản lý thông báo thời gian thực (realtime notifications) qua Server-Sent Events (SSE)
@@ -17,16 +19,20 @@ export class RealtimeNotificationService {
   private readonly http = inject(HttpClient);
   private readonly appConfig = inject(ApplicationConfigService);
   private readonly toast = inject(AppNotificationService);
+  private readonly router = inject(Router);
+  private readonly accountService = inject(AccountService);
 
   private eventSource: EventSource | null = null;
   private reconnectTimer: any = null;
   private retryAttempt = 0;
   private isExplicitDisconnect = false;
+  private readonly recentlyReceivedOrderCodes = new Map<string, number>();
 
   readonly notifications = signal<AppNotification[]>([]);
   readonly unreadCount = computed(() => this.notifications().filter(n => !n.readAt).length);
   readonly isConnected = signal<boolean>(false);
   readonly isConnecting = signal<boolean>(false);
+  readonly orderEvents$ = new Subject<OrderRealtimePayload>();
 
   /**
    * Tải danh sách thông báo gần đây từ cơ sở dữ liệu (source of truth).
@@ -38,7 +44,7 @@ export class RealtimeNotificationService {
       )
       .pipe(
         map(res => res.data ?? []),
-        tap(items => this.notifications.set(items))
+        tap(items => this.mergeNotifications(items))
       );
   }
 
@@ -89,11 +95,45 @@ export class RealtimeNotificationService {
     this.eventSource.addEventListener('notification', (event: MessageEvent) => {
       try {
         const notif: AppNotification = JSON.parse(event.data);
-        this.notifications.update(list => [notif, ...list.filter(n => n.id !== notif.id)]);
+        this.mergeNotifications([notif]);
+        const orderCode = this.extractOrderCode(notif.actionUrl) ?? this.extractOrderCode(`${notif.title} ${notif.body}`);
+        if (orderCode) {
+          this.recentlyReceivedOrderCodes.set(orderCode, Date.now());
+        }
         this.playNotificationSound();
-        this.toast.info(notif.title, notif.body);
+        const targetUrl = this.resolveNotificationUrl(notif);
+        if (targetUrl) {
+          this.toast.infoAction(notif.title, notif.body, () => void this.router.navigateByUrl(targetUrl));
+        } else {
+          this.toast.info(notif.title, notif.body);
+        }
       } catch (e) {
         console.error('Error parsing notification SSE payload', e);
+      }
+    });
+
+    this.eventSource.addEventListener('order_event', (event: MessageEvent) => {
+      try {
+        const payload: OrderRealtimePayload = JSON.parse(event.data);
+        this.orderEvents$.next(payload);
+        const targetUrl = this.resolveOrderUrl(payload.orderCode);
+        const receivedPersistentNotification =
+          Date.now() - (this.recentlyReceivedOrderCodes.get(payload.orderCode) ?? 0) < 5000;
+
+        // Nhân viên thường nhận broadcast theo chi nhánh nhưng không có bản ghi cá nhân.
+        // Giữ item trong phiên để chuông vẫn phản ánh đúng sự kiện realtime.
+        if (!receivedPersistentNotification) {
+          this.mergeNotifications([this.toTransientNotification(payload, targetUrl)]);
+          if (payload.eventType === 'ORDER_CREATED') {
+            this.playOrderAlertSound();
+            this.toast.successAction(payload.title, payload.message, () => void this.router.navigateByUrl(targetUrl));
+          } else {
+            this.playNotificationSound();
+            this.toast.infoAction(payload.title, payload.message, () => void this.router.navigateByUrl(targetUrl));
+          }
+        }
+      } catch (e) {
+        console.error('Error parsing order_event SSE payload', e);
       }
     });
 
@@ -136,6 +176,8 @@ export class RealtimeNotificationService {
       this.reconnectTimer = null;
     }
     this.disconnectInternal();
+    this.notifications.set([]);
+    this.recentlyReceivedOrderCodes.clear();
   }
 
   /**
@@ -146,7 +188,9 @@ export class RealtimeNotificationService {
     this.notifications.update(list =>
       list.map(n => (n.id === id ? {...n, readAt: now, status: 'READ'} : n))
     );
-    this.http.patch(this.appConfig.getEndpointFor(`api/v1/notifications/${id}/read`), {}).subscribe();
+    if (!id.startsWith('realtime-order:')) {
+      this.http.patch(this.appConfig.getEndpointFor(`api/v1/notifications/${id}/read`), {}).subscribe();
+    }
   }
 
   /**
@@ -165,7 +209,9 @@ export class RealtimeNotificationService {
    */
   deleteNotification(id: string): void {
     this.notifications.update(list => list.filter(n => n.id !== id));
-    this.http.delete(this.appConfig.getEndpointFor(`api/v1/notifications/${id}`)).subscribe();
+    if (!id.startsWith('realtime-order:')) {
+      this.http.delete(this.appConfig.getEndpointFor(`api/v1/notifications/${id}`)).subscribe();
+    }
   }
 
   /**
@@ -182,6 +228,50 @@ export class RealtimeNotificationService {
   deleteRead(): void {
     this.notifications.update(list => list.filter(n => !n.readAt));
     this.http.delete(this.appConfig.getEndpointFor('api/v1/notifications/read')).subscribe();
+  }
+
+  private mergeNotifications(items: AppNotification[]): void {
+    this.notifications.update(current => {
+      const merged = new Map(current.map(item => [item.id, item]));
+      items.forEach(item => merged.set(item.id, item));
+      return [...merged.values()]
+        .sort((a, b) => (b.createdAt ?? b.sentAt ?? '').localeCompare(a.createdAt ?? a.sentAt ?? ''))
+        .slice(0, 50);
+    });
+  }
+
+  private toTransientNotification(payload: OrderRealtimePayload, actionUrl: string): AppNotification {
+    const createdAt = payload.timestamp || new Date().toISOString();
+    return {
+      id: `realtime-order:${payload.eventType}:${payload.orderId}:${createdAt}`,
+      accountId: '',
+      title: payload.title,
+      body: payload.message,
+      status: 'PENDING',
+      sentAt: createdAt,
+      createdAt,
+      actionUrl,
+      type: payload.eventType === 'ORDER_STATUS_CHANGED' ? `ORDER_${payload.orderStatus}` : payload.eventType,
+      transient: true,
+    };
+  }
+
+  private resolveNotificationUrl(notification: AppNotification): string | null {
+    if (notification.actionUrl?.startsWith('/')) {
+      return notification.actionUrl;
+    }
+    const orderCode = this.extractOrderCode(`${notification.title} ${notification.body}`);
+    return orderCode ? this.resolveOrderUrl(orderCode) : null;
+  }
+
+  private resolveOrderUrl(orderCode: string): string {
+    return this.accountService.account()?.principalType === 'CUSTOMER'
+      ? `/store/orders?orderCode=${encodeURIComponent(orderCode)}`
+      : `/admin/pos/orders/list?code=${encodeURIComponent(orderCode)}`;
+  }
+
+  private extractOrderCode(value?: string): string | null {
+    return value?.match(/HD-[\w-]+/)?.[0] ?? null;
   }
 
   /**
@@ -211,6 +301,36 @@ export class RealtimeNotificationService {
       osc.stop(ctx.currentTime + 0.35);
     } catch {
       // AudioContext có thể bị chặn nếu user chưa tương tác với trang web, bỏ qua an toàn
+    }
+  }
+
+  /**
+   * Âm thanh chuông báo đơn mới 2-tone sống động (E5 -> A5) qua Web Audio API.
+   */
+  private playOrderAlertSound(): void {
+    try {
+      const AudioCtx = window.AudioContext || (window as unknown as {webkitAudioContext: typeof AudioContext}).webkitAudioContext;
+      if (!AudioCtx) {
+        return;
+      }
+      const ctx = new AudioCtx();
+      const playTone = (freq: number, start: number, dur: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime + start);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + dur);
+      };
+
+      playTone(659.25, 0, 0.22); // E5
+      playTone(880.00, 0.14, 0.35); // A5
+    } catch {
+      // Bỏ qua an toàn nếu chưa có tương tác người dùng
     }
   }
 }

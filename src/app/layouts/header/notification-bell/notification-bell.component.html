@@ -87,7 +87,7 @@
           [class.filter-pill--active]="activeFilter() === 'PENDING'"
           (click)="onFilterChange('PENDING', $event)"
         >
-          Chờ duyệt ({{ pendingCount() }})
+          {{ isCustomer() ? 'Đang xử lý' : 'Chờ duyệt' }} ({{ pendingCount() }})
         </button>
         <button
           type="button"
@@ -95,7 +95,7 @@
           [class.filter-pill--active]="activeFilter() === 'APPROVED'"
           (click)="onFilterChange('APPROVED', $event)"
         >
-          Đã duyệt ({{ approvedCount() }})
+          {{ isCustomer() ? 'Hoàn tất' : 'Đã duyệt' }} ({{ approvedCount() }})
         </button>
         <button
           type="button"
@@ -103,7 +103,7 @@
           [class.filter-pill--active]="activeFilter() === 'REJECTED'"
           (click)="onFilterChange('REJECTED', $event)"
         >
-          Từ chối ({{ rejectedCount() }})
+          {{ isCustomer() ? 'Đã hủy' : 'Từ chối' }} ({{ rejectedCount() }})
         </button>
         @if (overdueCount() > 0) {
           <button

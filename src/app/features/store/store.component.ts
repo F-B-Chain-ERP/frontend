@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NzIconDirective } from 'ng-zorro-antd/icon';
 import { NzInputDirective, NzInputPrefixDirective, NzInputWrapperComponent } from 'ng-zorro-antd/input';
 import { NzOptionComponent, NzSelectComponent } from 'ng-zorro-antd/select';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 import { AppButtonComponent } from '../../shared/app-button/app-button.component';
 import { AppModalComponent } from '../../shared/app-modal/app-modal.component';
 import { AppDrinkCardComponent, DrinkItem } from '../../shared/app-drink-card/app-drink-card.component';
@@ -82,6 +83,7 @@ function getCategoryIcon(name: string): string {
     NzInputWrapperComponent,
     NzSelectComponent,
     NzOptionComponent,
+    NzPaginationModule,
     AppButtonComponent,
     AppModalComponent,
     AppDrinkCardComponent,
@@ -122,8 +124,39 @@ export class StoreComponent implements OnInit, OnDestroy {
   readonly newArrivals = signal<DrinkItem[]>([]);
   readonly topSelling = signal<DrinkItem[]>([]);
 
+  // Pagination for All Drinks grid
+  readonly pageIndex = signal(1);
+  readonly pageSize = signal(20);
+  readonly pageSizeOptions = [8, 12, 16, 20, 24];
+
+  readonly pagedDrinks = computed(() => {
+    const list = this.filteredDrinks();
+    const start = (this.pageIndex() - 1) * this.pageSize();
+    return list.slice(start, start + this.pageSize());
+  });
+
+  get totalFilteredDrinks(): number {
+    return this.filteredDrinks().length;
+  }
+
+  get rangeFrom(): number {
+    const total = this.totalFilteredDrinks;
+    if (total === 0) return 0;
+    return (this.pageIndex() - 1) * this.pageSize() + 1;
+  }
+
+  get rangeTo(): number {
+    return Math.min(this.pageIndex() * this.pageSize(), this.totalFilteredDrinks);
+  }
+
   // Category Tabs & Style Categories
   readonly categories = signal<CategoryTab[]>([{ id: 'all', name: 'Tất cả món', count: 0, icon: 'appstore' }]);
+
+  // Tab danh mục hiển thị: luôn có "Tất cả món", các danh mục không có sản phẩm bị ẩn
+  readonly categoryTabs = computed(() => {
+    const tabs = this.categories();
+    return tabs.filter(c => c.id === 'all' || c.count > 0);
+  });
   readonly styleCategories = signal<StyleCategory[]>([]);
 
   // Modal 2: Customize Order (Size, Sugar, Ice, Toppings, Note, Quantity)
@@ -417,6 +450,17 @@ export class StoreComponent implements OnInit, OnDestroy {
     this.onFilterChange();
   }
 
+  onPageIndexChange(index: number): void {
+    this.pageIndex.set(Math.max(1, index));
+    this.scrollToSection('all-drinks');
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.pageIndex.set(1);
+    this.scrollToSection('all-drinks');
+  }
+
   /**
    * Lọc và sắp xếp sản phẩm linh hoạt
    */
@@ -453,6 +497,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     }
 
     this.filteredDrinks.set(list);
+    this.pageIndex.set(1);
   }
 
   /**

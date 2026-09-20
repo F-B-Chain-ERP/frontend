@@ -250,6 +250,11 @@
     height: 100%;
   }
 
+  &__bell {
+    display: inline-flex;
+    align-items: center;
+  }
+
   // ── Icon buttons — unified ──
   &__icon-btn {
     position: relative;

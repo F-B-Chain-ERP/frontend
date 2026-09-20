@@ -18,6 +18,7 @@ import {AppBreadcrumbsComponent} from '../../../shared/app-breadcrumbs/app-bread
 import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
 import {AppPaginationComponent} from '../../../shared/app-pagination/app-pagination.component';
 import {AppModalComponent} from '../../../shared/app-modal/app-modal.component';
+import {ReportExportButtonComponent} from '../../../shared/components/report-export-button/report-export-button.component';
 import {HasSomeAuthorityDirective} from '../../../core/auth/has-some-authority.directive';
 import {ROLE} from '../../../core/config/functions.constants';
 import {BranchService} from '../../../core/auth/branch.service';
@@ -46,6 +47,7 @@ import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
+    ReportExportButtonComponent,
     HasSomeAuthorityDirective,
   ],
   templateUrl: './daily-report-list.component.html',
@@ -54,6 +56,14 @@ import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '
 export class StoreDailyReportListComponent extends BaseComponent implements OnInit {
   readonly ROLE = ROLE;
   readonly getDailyReportStatusMeta = getDailyReportStatusMeta;
+
+  get exportPayload(): Record<string, any> {
+    return {
+      branchId: this.selectedBranchId || undefined,
+      startDate: this.selectedStartDate ? this.formatDate(this.selectedStartDate) : undefined,
+      endDate: this.selectedEndDate ? this.formatDate(this.selectedEndDate) : undefined,
+    };
+  }
 
   readonly branchService = inject(BranchService);
   private readonly shiftService = inject(StoreShiftService);
