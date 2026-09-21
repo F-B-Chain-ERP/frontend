@@ -24,6 +24,7 @@ import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-bre
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
+import { ReportExportButtonComponent } from '../../../shared/components/report-export-button/report-export-button.component';
 import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
 import { ROLE } from '../../../core/config/functions.constants';
 import { BranchService } from '../../../core/auth/branch.service';
@@ -72,6 +73,7 @@ import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
+    ReportExportButtonComponent,
     HasSomeAuthorityDirective,
   ],
   templateUrl: './shift-list.component.html',
@@ -115,6 +117,14 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   operationPageIndex = DEFAULT_PAGE_INDEX;
   operationPageSize = DEFAULT_PAGE_SIZE;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
+
+  /** Payload xuất biên bản chốt ca (STORE_SHIFT_REPORT) theo bộ lọc hiện tại. */
+  get shiftExportPayload(): Record<string, any> {
+    return {
+      branchId: this.selectedBranchId || undefined,
+      businessDate: this.selectedWorkDate ? this.formatDate(this.selectedWorkDate) : undefined,
+    };
+  }
 
   // Drawer Xem biên bản đối soát
   readonly isDrawerVisible = signal<boolean>(false);
@@ -218,15 +228,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     const status = this.selectedStatus || undefined;
 
     this.shiftService
-      .searchAssignments(
-        branchId,
-        dateStr,
-        dateStr,
-        undefined,
-        status,
-        this.operationPageIndex - 1,
-        this.operationPageSize,
-      )
+      .searchAssignments(branchId, dateStr, dateStr, undefined, status, this.operationPageIndex - 1, this.operationPageSize)
       .subscribe({
         next: page => {
           const list = page?.content ?? [];

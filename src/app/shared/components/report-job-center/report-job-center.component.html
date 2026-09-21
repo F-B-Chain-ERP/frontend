@@ -1,0 +1,114 @@
+<nz-drawer
+  [nzVisible]="visible()"
+  nzPlacement="right"
+  [nzWidth]="480"
+  [nzTitle]="drawerTitle"
+  [nzExtra]="drawerExtra"
+  (nzOnClose)="close()"
+>
+  <ng-template #drawerTitle>
+    <div class="job-center-title">
+      <nz-icon nzType="cloud-download" class="job-center-icon"></nz-icon>
+      <span>Trung tâm tác vụ báo cáo</span>
+    </div>
+  </ng-template>
+
+  <ng-template #drawerExtra>
+    <button
+      nz-button
+      nzType="text"
+      nzShape="circle"
+      [nzLoading]="loading()"
+      (click)="loadJobs()"
+      title="Làm mới danh sách"
+    >
+      <nz-icon nzType="reload"></nz-icon>
+    </button>
+  </ng-template>
+
+  <ng-container *nzDrawerContent>
+    <div class="job-center-container">
+      @if (loading() && jobs().length === 0) {
+        <div class="job-center-loading">
+          <nz-spin nzSimple nzTip="Đang tải danh sách tác vụ..."></nz-spin>
+        </div>
+      } @else if (jobs().length === 0) {
+        <div class="job-center-empty">
+          <nz-empty
+            nzNotFoundImage="simple"
+            nzNotFoundContent="Chưa có tác vụ xuất báo cáo nào"
+          ></nz-empty>
+        </div>
+      } @else {
+        <div class="job-list">
+          @for (job of jobs(); track job.id) {
+            <div class="job-card" [class.job-card--processing]="job.status === 'PROCESSING'">
+              <div class="job-card__header">
+                <div class="job-card__title-row">
+                  <span class="job-card__name">{{ getReportTitle(job.reportType) }}</span>
+                  <div class="job-card__tags">
+                    <nz-tag [nzColor]="job.format === 'EXCEL' ? 'green' : 'red'">
+                      {{ job.format }}
+                    </nz-tag>
+                    <nz-tag [nzColor]="getStatusColor(job.status)">
+                      @if (job.status === 'PROCESSING') {
+                        <nz-icon nzType="loading" class="tag-spin"></nz-icon>
+                      }
+                      {{ getStatusLabel(job.status) }}
+                    </nz-tag>
+                  </div>
+                </div>
+                <div class="job-card__meta">
+                  <span class="job-card__time">
+                    <nz-icon nzType="clock-circle"></nz-icon>
+                    {{ job.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}
+                  </span>
+                  <span class="job-card__id">ID: {{ job.id.slice(0, 8) }}...</span>
+                </div>
+              </div>
+
+              <div class="job-card__actions">
+                @if (job.status === 'DONE') {
+                  <button
+                    nz-button
+                    nzType="primary"
+                    nzSize="small"
+                    [nzLoading]="downloadingJobIds().has(job.id)"
+                    (click)="downloadFile(job)"
+                  >
+                    <nz-icon nzType="download"></nz-icon>
+                    Tải về
+                  </button>
+                } @else if (job.status === 'PENDING') {
+                  <button
+                    nz-button
+                    nzType="default"
+                    nzDanger
+                    nzSize="small"
+                    nz-popconfirm
+                    nzPopconfirmTitle="Bạn có chắc chắn muốn hủy tác vụ này?"
+                    nzOkText="Hủy tác vụ"
+                    nzCancelText="Quay lại"
+                    (nzOnConfirm)="cancelJob(job.id)"
+                  >
+                    <nz-icon nzType="close-circle"></nz-icon>
+                    Hủy bỏ
+                  </button>
+                } @else if (job.status === 'PROCESSING') {
+                  <span class="job-processing-text">
+                    <nz-spin nzSimple nzSize="small"></nz-spin>
+                    Đang xử lý dữ liệu...
+                  </span>
+                } @else if (job.status === 'EXPIRED') {
+                  <span class="job-expired-text">File đã hết hạn lưu trữ (30 ngày)</span>
+                } @else if (job.status === 'FAILED') {
+                  <span class="job-failed-text">Xuất báo cáo không thành công</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </ng-container>
+</nz-drawer>

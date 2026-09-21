@@ -1,25 +1,29 @@
 <button
   nz-button
   [nzType]="btnType"
-  [disabled]="disabled || loading()"
+  [disabled]="disabled || loading() || pending()"
   [nzLoading]="loading()"
   nz-dropdown
   [nzDropdownMenu]="exportMenu"
   nzPlacement="bottomRight"
   class="export-btn"
 >
-  <span nz-icon nzType="download" nzTheme="outline"></span>
-  {{ label }}
+  @if (pending()) {
+    <nz-spin nzSimple [nzSize]="'small'"></nz-spin>
+  } @else {
+    <span nz-icon nzType="download" nzTheme="outline"></span>
+  }
+  {{ pending() ? 'Đang tạo báo cáo...' : label }}
   <span nz-icon nzType="down" class="dropdown-icon"></span>
 </button>
 
 <nz-dropdown-menu #exportMenu="nzDropdownMenu">
   <ul nz-menu>
-    <li nz-menu-item (click)="triggerExport('EXCEL')">
+    <li nz-menu-item [class.menu-disabled]="pending()" (click)="!pending() && triggerExport('EXCEL')">
       <span nz-icon nzType="file-excel" nzTheme="outline" class="excel-icon"></span>
       Xuất Excel (.xlsx)
     </li>
-    <li nz-menu-item (click)="triggerExport('PDF')">
+    <li nz-menu-item [class.menu-disabled]="pending()" (click)="!pending() && triggerExport('PDF')">
       <span nz-icon nzType="file-pdf" nzTheme="outline" class="pdf-icon"></span>
       Xuất PDF (.pdf)
     </li>

@@ -1,0 +1,132 @@
+.job-center-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+
+  .job-center-icon {
+    font-size: 18px;
+    color: var(--brand-500);
+  }
+}
+
+.job-center-container {
+  min-height: 200px;
+}
+
+.job-center-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px 0;
+}
+
+.job-center-empty {
+  padding: 48px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.job-card {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &--processing {
+    border-color: var(--info, #3b82f6);
+    background: var(--surface-sunken);
+  }
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #0f172a;
+  }
+
+  &__tags {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+
+    .tag-spin {
+      margin-right: 4px;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+  }
+
+  &__time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__id {
+    font-family: monospace;
+    color: #94a3b8;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 6px;
+    border-top: 1px dashed #f1f5f9;
+
+    .job-processing-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #2563eb;
+    }
+
+    .job-failed-text {
+      font-size: 12px;
+      color: #ef4444;
+    }
+
+    .job-expired-text {
+      font-size: 12px;
+      color: #f59e0b;
+    }
+  }
+}

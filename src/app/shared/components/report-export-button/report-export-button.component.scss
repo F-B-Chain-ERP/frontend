@@ -20,3 +20,9 @@
   color: #d9383a;
   margin-right: 8px;
 }
+
+.menu-disabled {
+  opacity: 0.55;
+  pointer-events: none;
+  cursor: not-allowed;
+}

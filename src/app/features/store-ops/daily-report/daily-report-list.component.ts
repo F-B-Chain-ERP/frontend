@@ -1,30 +1,30 @@
-import {Component, OnInit, inject, signal} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import {NzTableModule} from 'ng-zorro-antd/table';
-import {NzCardModule} from 'ng-zorro-antd/card';
-import {NzInputModule} from 'ng-zorro-antd/input';
-import {NzSelectModule} from 'ng-zorro-antd/select';
-import {NzDatePickerModule} from 'ng-zorro-antd/date-picker';
-import {NzGridModule} from 'ng-zorro-antd/grid';
-import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
-import {NzIconModule} from 'ng-zorro-antd/icon';
-import {NzSpinModule} from 'ng-zorro-antd/spin';
-import {NzAlertModule} from 'ng-zorro-antd/alert';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 
-import {BaseComponent} from '../../../shared/base-component/base.component';
-import {AppBreadcrumbsComponent} from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
-import {AppButtonComponent} from '../../../shared/app-button/app-button.component';
-import {AppPaginationComponent} from '../../../shared/app-pagination/app-pagination.component';
-import {AppModalComponent} from '../../../shared/app-modal/app-modal.component';
-import {ReportExportButtonComponent} from '../../../shared/components/report-export-button/report-export-button.component';
-import {HasSomeAuthorityDirective} from '../../../core/auth/has-some-authority.directive';
-import {ROLE} from '../../../core/config/functions.constants';
-import {BranchService} from '../../../core/auth/branch.service';
-import {StoreShiftService, ShiftServiceError} from '../shift/shift.service';
-import {StoreDailyReport, getDailyReportStatusMeta} from '../shift/shift.model';
-import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '../../../shared/constants/constant';
+import { BaseComponent } from '../../../shared/base-component/base.component';
+import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
+import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
+import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
+import { ReportExportButtonComponent } from '../../../shared/components/report-export-button/report-export-button.component';
+import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
+import { ROLE } from '../../../core/config/functions.constants';
+import { BranchService } from '../../../core/auth/branch.service';
+import { StoreShiftService, ShiftServiceError } from '../shift/shift.service';
+import { StoreDailyReport, getDailyReportStatusMeta } from '../shift/shift.model';
+import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from '../../../shared/constants/constant';
 
 @Component({
   selector: 'app-store-daily-report-list',
@@ -115,19 +115,17 @@ export class StoreDailyReportListComponent extends BaseComponent implements OnIn
     const end = this.selectedEndDate ? this.formatDate(this.selectedEndDate) : undefined;
     const branchId = this.selectedBranchId || undefined;
 
-    this.shiftService
-      .searchDailyReports(branchId, start, end, this.pageIndex - 1, this.pageSize)
-      .subscribe({
-        next: page => {
-          this.reports.set(page?.content ?? []);
-          this.total.set(page?.totalElements ?? 0);
-          this.loading.set(false);
-        },
-        error: err => {
-          this.loading.set(false);
-          this.toastService.error('Lỗi tải danh sách báo cáo ngày', err.message);
-        },
-      });
+    this.shiftService.searchDailyReports(branchId, start, end, this.pageIndex - 1, this.pageSize).subscribe({
+      next: page => {
+        this.reports.set(page?.content ?? []);
+        this.total.set(page?.totalElements ?? 0);
+        this.loading.set(false);
+      },
+      error: err => {
+        this.loading.set(false);
+        this.toastService.error('Lỗi tải danh sách báo cáo ngày', err.message);
+      },
+    });
   }
 
   onSearch(): void {

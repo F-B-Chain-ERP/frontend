@@ -145,6 +145,18 @@
       </div>
     </nz-dropdown-menu>
 
+    <!-- Report Job Center (Lịch sử & Tác vụ xuất báo cáo) -->
+    <a
+      routerLink="/admin/reports/jobs"
+      class="topbar__icon-btn"
+      title="Trung tâm tác vụ xuất báo cáo"
+      routerLinkActive="topbar__icon-btn--active"
+    >
+      <nz-badge [nzDot]="hasActiveReportJobs()" [nzOffset]="[-2, 2]">
+        <nz-icon nzType="cloud-download"></nz-icon>
+      </nz-badge>
+    </a>
+
     <!-- Realtime Notifications -->
     <app-notification-bell></app-notification-bell>
 

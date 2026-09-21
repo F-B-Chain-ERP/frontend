@@ -6,6 +6,11 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
+      <app-report-export-button
+        endpoint="api/v1/reports/pos/orders/export"
+        [payload]="exportPayload"
+        label="Xuất báo cáo"
+      ></app-report-export-button>
       <app-button variant="secondary" leftIcon="reload" (click)="load()" [loading]="loading()"> Tải lại </app-button>
     </div>
   </div>
