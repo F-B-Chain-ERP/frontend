@@ -10,7 +10,8 @@ import { AccountService } from '../../../core/auth/account.service';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppNotificationService } from '../../../shared/app-notification/app-notification.service';
 import { normalizeImageUrl, DEFAULT_BEVERAGE_IMAGE } from '../../../core/util/image.util';
-import { PosApiService, PosOrder } from '../services/pos-api.service';
+import { PosApiService } from '../services/pos-api.service';
+import { PosOrder } from '../models/pos.model';
 import { StoreBranchService } from '../services/store-branch.service';
 import { PickupSlotService } from '../../system/pickup-slots/pickup-slot.service';
 import { PickupTimeSlot } from '../../system/pickup-slots/pickup-slot.model';
@@ -158,6 +159,7 @@ export class CheckoutComponent implements OnInit {
           receiverPhone: raw.phone.trim(),
           shippingAddress: isDelivery ? raw.address.trim() : null,
           // Online (VNPay/MoMo) chưa triển khai: delivery thu COD, pickup trả CASH tại quầy.
+          // TODO [VNPay Sprint]: Thêm option VNPAY/MOMO, sau đó cần mở POST /{id}/payment cho CUSTOMER.
           paymentMethod: isDelivery ? 'COD' : 'CASH',
           note: raw.note.trim() ? raw.note.trim().slice(0, 500) : null,
           pickupTimeSlotId: !isDelivery ? this.selectedPickupSlotId() : null,

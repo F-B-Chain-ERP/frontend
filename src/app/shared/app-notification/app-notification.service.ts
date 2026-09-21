@@ -1,5 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {NzNotificationPlacement, NzNotificationService} from 'ng-zorro-antd/notification';
+import {take} from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -8,6 +9,24 @@ export class AppNotificationService {
   private readonly nzNotificationService = inject(NzNotificationService);
   public placement: NzNotificationPlacement = 'topRight';
   public duration = 3000;
+
+  infoAction(title: string, message: string, action: () => void): void {
+    const ref = this.nzNotificationService.info(title, message, {
+      nzPlacement: this.placement,
+      nzDuration: this.duration,
+      nzClass: 'info-notification notification-clickable',
+    });
+    ref.onClick.pipe(take(1)).subscribe(action);
+  }
+
+  successAction(title: string, message: string, action: () => void): void {
+    const ref = this.nzNotificationService.success(title, message, {
+      nzPlacement: this.placement,
+      nzDuration: this.duration,
+      nzClass: 'success-notification notification-clickable',
+    });
+    ref.onClick.pipe(take(1)).subscribe(action);
+  }
 
   success(message: string): void;
   success(title: string, message: string): void;

@@ -433,5 +433,17 @@
       color: #ffffff;
     }
   }
+
+  &--danger {
+    color: var(--danger, #ef4444);
+    border-color: var(--danger-soft, #fca5a5);
+    background: var(--danger-soft, #fef2f2);
+
+    &:hover {
+      background: var(--danger, #ef4444);
+      border-color: var(--danger, #ef4444);
+      color: #ffffff;
+    }
+  }
 }
 

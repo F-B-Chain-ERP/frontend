@@ -101,6 +101,7 @@ export interface PosOrderFilter {
   status?: string | null;
   fromDate?: string | null;
   toDate?: string | null;
+  search?: string | null;
   pageIndex: number;
   pageSize: number;
 }

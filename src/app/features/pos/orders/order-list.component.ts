@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { Observable } from 'rxjs';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -23,6 +25,8 @@ import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority
 import { BranchService } from '../../../core/auth/branch.service';
 import { ROLE } from '../../../core/config/functions.constants';
 import { PosStaffApiService } from '../pos-staff-api.service';
+import { RealtimeNotificationService } from '../../../core/notification/realtime-notification.service';
+import { OrderRealtimePayload } from '../../../core/notification/notification.model';
 import {
   ORDER_STATUS_ACTION_ICONS,
   ORDER_STATUS_ACTION_LABELS,
@@ -103,6 +107,7 @@ export class PosOrderListComponent implements OnInit {
   selectedBranchId: string | null = null;
   selectedOrderType: string | null = null;
   selectedStatus: string | null = null;
+  searchText = '';
   fromDate: Date | null = null;
   toDate: Date | null = null;
   cancelReason = '';
@@ -121,6 +126,9 @@ export class PosOrderListComponent implements OnInit {
 
   private readonly api = inject(PosStaffApiService);
   private readonly toast = inject(AppNotificationService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly realtimeNotification = inject(RealtimeNotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   onPageSizeChange(size: number): void {
     this.pageSize.set(size);
@@ -132,6 +140,7 @@ export class PosOrderListComponent implements OnInit {
     this.selectedBranchId = null;
     this.selectedOrderType = null;
     this.selectedStatus = null;
+    this.searchText = '';
     this.fromDate = null;
     this.toDate = null;
     this.pageIndex.set(DEFAULT_PAGE_INDEX);
@@ -149,6 +158,59 @@ export class PosOrderListComponent implements OnInit {
   ngOnInit(): void {
     this.branchService.loadMine().subscribe();
     this.load();
+
+    this.route.queryParams
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(params => {
+        const code = params['code'] || params['orderCode'];
+        if (code) {
+          this.searchText = code;
+          this.selectedStatus = null;
+          this.pageIndex.set(1);
+          this.load(orders => {
+            const found = orders.find(o => (o.orderCode || '').toLowerCase() === code.toLowerCase());
+            if (found) {
+              this.openDetail(found);
+            }
+          });
+        }
+      });
+
+    this.realtimeNotification.orderEvents$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(event => {
+        this.handleRealtimeOrder(event);
+      });
+  }
+
+  private handleRealtimeOrder(event: OrderRealtimePayload): void {
+    if (!event) return;
+    const currentBranch = this.branchService.currentBranch()?.id;
+    if (this.selectedBranchId && event.branchId && this.selectedBranchId !== event.branchId) {
+      return;
+    }
+    if (!this.selectedBranchId && currentBranch && event.branchId && currentBranch !== event.branchId) {
+      return;
+    }
+
+    const currentOrders = this.orders();
+    const existingIndex = currentOrders.findIndex(o => o.id === event.orderId);
+
+    if (existingIndex !== -1) {
+      const updated = [...currentOrders];
+      const target = { ...updated[existingIndex] };
+      if (event.orderStatus) {
+        target.status = event.orderStatus;
+      }
+      updated[existingIndex] = target;
+      this.orders.set(updated);
+
+      if (this.detailVisible() && this.detail()?.id === event.orderId) {
+        this.openDetail(target);
+      }
+    } else {
+      this.load();
+    }
   }
 
   formatPrice(amount: number | null | undefined): string {
@@ -162,7 +224,7 @@ export class PosOrderListComponent implements OnInit {
     return `${d.toLocaleDateString('vi-VN')} ${d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
   }
 
-  load(): void {
+  load(onComplete?: (items: PosOrderSummary[]) => void): void {
     this.loading.set(true);
     this.api
       .listOrders({
@@ -171,6 +233,7 @@ export class PosOrderListComponent implements OnInit {
         status: this.selectedStatus,
         fromDate: toISODate(this.fromDate),
         toDate: toISODate(this.toDate),
+        search: this.searchText?.trim() || null,
         pageIndex: this.pageIndex(),
         pageSize: this.pageSize(),
       })
@@ -179,6 +242,18 @@ export class PosOrderListComponent implements OnInit {
           this.orders.set(res.items);
           this.total.set(res.total);
           this.loading.set(false);
+
+          if (onComplete) {
+            onComplete(res.items);
+          } else {
+            const code = this.route.snapshot.queryParams['code'] || this.route.snapshot.queryParams['orderCode'];
+            if (code && !this.detailVisible()) {
+              const found = res.items.find(o => (o.orderCode || '').toLowerCase() === code.toLowerCase());
+              if (found) {
+                this.openDetail(found);
+              }
+            }
+          }
         },
         error: err => {
           this.loading.set(false);
