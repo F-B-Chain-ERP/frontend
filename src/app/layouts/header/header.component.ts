@@ -16,6 +16,7 @@ import {AppNotificationService} from '../../shared/app-notification/app-notifica
 import {BranchResponse} from '../../features/login/login.model';
 import {RealtimeNotificationService} from '../../core/notification/realtime-notification.service';
 import {NotificationBellComponent} from './notification-bell/notification-bell.component';
+import {ReportJobCenterComponent} from '../../shared/components/report-job-center/report-job-center.component';
 import MenuSearchComponent from '../../shared/app-menu-search/app-menu-search.component';
 
 @Component({
@@ -35,6 +36,7 @@ import MenuSearchComponent from '../../shared/app-menu-search/app-menu-search.co
     NzSpinComponent,
     MenuSearchComponent,
     NotificationBellComponent,
+    ReportJobCenterComponent,
   ],
   standalone: true,
 })

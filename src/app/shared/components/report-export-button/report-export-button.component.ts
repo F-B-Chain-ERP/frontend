@@ -4,7 +4,7 @@ import { NzDropdownModule } from 'ng-zorro-antd/dropdown';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
-import { Subscription, Observable, firstValueFrom, interval, EMPTY } from 'rxjs';
+import { Subscription, Observable, firstValueFrom, interval, timer, EMPTY } from 'rxjs';
 import { catchError, filter, switchMap, takeWhile } from 'rxjs/operators';
 import { ReportService, ExportResult, ReportJobResponse } from '../../services/report.service';
 import { ReportConfigService } from '../../services/report-config.service';
@@ -112,38 +112,58 @@ export class ReportExportButtonComponent implements OnInit, OnDestroy {
       }
     });
 
-    // 2. Polling fallback khi SSE bị gián đoạn / không bật
-    const pollInterval = Math.max(this.reportConfig.getPollIntervalMs(), 1500);
-    this.pollSub = interval(pollInterval)
+    // 2. Polling fallback / Safety sync:
+    // - Khi SSE kết nối bình thường: KHÔNG short-poll liên tục để tránh spam server.
+    //   Chỉ gửi 1 safety check mỗi 25 giây phòng khi mất gói tin mạng hoặc SSE bị delay.
+    // - Khi SSE mất kết nối (fallback mode): Thăm dò định kỳ mỗi 5 giây để không bị miss kết quả.
+    const pollIntervalMs = Math.max(this.reportConfig.getPollIntervalMs(), 3000);
+    const maxPollAttempts = 120;
+    let pollAttempts = 0;
+    let elapsedSeconds = 0;
+
+    this.pollSub = timer(5000, 5000)
       .pipe(
         takeWhile(() => this.pending() && this.activeJobId === job.id),
+        filter(() => {
+          elapsedSeconds += 5;
+          const isSseConnected = this.reportConfig.isSseEnabled() && this.realtime.isConnected();
+          if (!isSseConnected) {
+            // Chế độ Fallback: SSE không hoạt động -> thăm dò mỗi chu kỳ (mỗi 5s)
+            return true;
+          }
+          // Chế độ Realtime: SSE đang kết nối -> chỉ kiểm tra an toàn (safety sync) mỗi 25s
+          return elapsedSeconds % 25 === 0;
+        }),
         switchMap(() =>
           this.reportService.getJobStatus(job.id).pipe(
             // Lỗi mạng tạm thời: bỏ qua lần này, vòng lặp vẫn tiếp tục
             catchError(() => EMPTY),
           ),
         ),
-        takeWhile(s => s.status === 'PENDING' || s.status === 'PROCESSING'),
+        // inclusive = true để emit giá trị dừng (DONE/FAILED/CANCELLED/EXPIRED) vào next()
+        takeWhile(s => s.status === 'PENDING' || s.status === 'PROCESSING', true),
       )
       .subscribe({
-        next() {
-          /* còn đang xử lý — tiếp tục vòng lặp */
+        next: s => {
+          if (this.activeJobId !== job.id || !this.pending()) return;
+
+          pollAttempts++;
+          if (s.status === 'DONE') {
+            this.finishJobSuccess(job.id);
+          } else if (s.status === 'FAILED') {
+            this.finishJobFailure(job.id, s.errorMessage || 'Báo cáo xử lý thất bại.');
+          } else if (s.status === 'CANCELLED') {
+            this.finishJobFailure(job.id, 'Tác vụ xuất báo cáo đã bị hủy.');
+          } else if (s.status === 'EXPIRED') {
+            this.finishJobFailure(job.id, 'Tác vụ xuất báo cáo đã hết hạn.');
+          } else if (pollAttempts >= maxPollAttempts) {
+            this.finishJobFailure(
+              job.id,
+              'Tác vụ xử lý ngầm đang mất nhiều thời gian hơn dự kiến. Bạn có thể kiểm tra tiến độ trong Trung tâm tác vụ báo cáo.',
+            );
+          }
         },
         error: () => undefined,
-        complete: () => {
-          // Vòng lặp dừng khi trạng thái khác PENDING/PROCESSING hoặc bị hủy
-          if (this.activeJobId !== job.id || !this.pending()) return;
-          this.reportService.getJobStatus(job.id).subscribe({
-            next: s => {
-              if (s.status === 'DONE') {
-                this.finishJobSuccess(job.id);
-              } else if (s.status === 'FAILED') {
-                this.finishJobFailure(job.id, s.errorMessage || 'Báo cáo xử lý thất bại.');
-              }
-            },
-            error: () => this.finishJobFailure(job.id, 'Không kiểm tra được tiến độ báo cáo.'),
-          });
-        },
       });
   }
 

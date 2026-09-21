@@ -7,7 +7,7 @@ export interface ReportJobResponse {
   id: string;
   module: string;
   reportType: string;
-  status: 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
   format: 'EXCEL' | 'PDF';
   requestedBy: string;
   branchId?: string;
@@ -23,7 +23,7 @@ export interface ReportJobSummaryResponse {
   id: string;
   module: string;
   reportType: string;
-  status: 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
   format: 'EXCEL' | 'PDF';
   fileUrl?: string;
   completedAt?: string;

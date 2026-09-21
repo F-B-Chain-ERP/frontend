@@ -85,7 +85,22 @@ export class RealtimeNotificationService {
         const payload = JSON.parse(event.data);
         if (isReportSseEvent(payload)) {
           // Sự kiện hoàn tất/thất bại báo cáo bất đồng bộ -> chuyển tới reportEvents
+          const hasActiveListener = this.reportEvents.observed;
           this.reportEvents.next(payload);
+          if (!hasActiveListener) {
+            this.playNotificationSound();
+            if (payload.status === 'DONE') {
+              this.toast.success(
+                'Báo cáo đã hoàn tất',
+                `Báo cáo ${payload.reportType || ''} (${payload.fileName || 'tệp kết xuất'}) đã hoàn tất. Bạn có thể vào lịch sử báo cáo để tải về.`
+              );
+            } else {
+              this.toast.error(
+                'Xuất báo cáo thất bại',
+                payload.errorMessage || 'Đã có lỗi xảy ra trong quá trình xử lý báo cáo.'
+              );
+            }
+          }
           return;
         }
         const notif: AppNotification = payload;

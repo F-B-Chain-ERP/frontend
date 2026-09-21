@@ -145,6 +145,17 @@
       </div>
     </nz-dropdown-menu>
 
+    <!-- Report Job Center (Lịch sử & Tác vụ xuất báo cáo) -->
+    <button
+      type="button"
+      class="topbar__icon-btn"
+      title="Trung tâm tác vụ xuất báo cáo"
+      (click)="reportJobCenter.open()"
+    >
+      <nz-icon nzType="cloud-download"></nz-icon>
+    </button>
+    <app-report-job-center #reportJobCenter></app-report-job-center>
+
     <!-- Realtime Notifications -->
     <app-notification-bell></app-notification-bell>
 
