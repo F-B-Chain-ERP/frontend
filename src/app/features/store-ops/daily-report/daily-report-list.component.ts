@@ -92,6 +92,12 @@ export class StoreDailyReportListComponent extends BaseComponent implements OnIn
   readonly isApproving = signal<boolean>(false);
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Cửa hàng', url: '/admin/store/shifts/list' },
+      { label: 'Báo cáo ngày', url: '/admin/store/reports/list' },
+    ]);
+
     this.initForms();
     this.branchService.loadMine().subscribe(() => {
       const current = this.branchService.currentBranch();

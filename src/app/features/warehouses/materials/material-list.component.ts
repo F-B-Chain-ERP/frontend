@@ -155,7 +155,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
-      { label: 'Kho & Cung ứng', url: '/admin/inventory/materials/list' },
+      { label: 'Kho', url: '/admin/inventory/materials/list' },
       { label: 'Nguyên vật liệu', url: '/admin/inventory/materials/list' },
     ]);
 

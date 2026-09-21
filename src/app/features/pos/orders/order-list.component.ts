@@ -16,6 +16,7 @@ import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { BreadcrumbsService } from '../../../shared/app-breadcrumbs/breadcrumbs.service';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
@@ -130,6 +131,8 @@ export class PosOrderListComponent implements OnInit {
   private readonly realtimeNotification = inject(RealtimeNotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
+  private readonly breadcrumbsService = inject(BreadcrumbsService);
+
   onPageSizeChange(size: number): void {
     this.pageSize.set(size);
     this.pageIndex.set(DEFAULT_PAGE_INDEX);
@@ -156,6 +159,12 @@ export class PosOrderListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Bán hàng (POS)', url: '/admin/pos/orders/list' },
+      { label: 'Đơn hàng', url: '/admin/pos/orders/list' },
+    ]);
+
     this.branchService.loadMine().subscribe();
     this.load();
 

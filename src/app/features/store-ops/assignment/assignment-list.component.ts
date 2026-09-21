@@ -100,6 +100,12 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   bulkForm!: FormGroup;
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Cửa hàng', url: '/admin/store/shifts/list' },
+      { label: 'Phân ca', url: '/admin/store/assignments/list' },
+    ]);
+
     this.initForms();
     this.loadUsers();
     this.branchService.loadMine().subscribe(() => {

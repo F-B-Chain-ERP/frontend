@@ -176,6 +176,12 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   shiftForm!: FormGroup;
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Cửa hàng', url: '/admin/store/shifts/list' },
+      { label: 'Ca làm việc', url: '/admin/store/shifts/list' },
+    ]);
+
     this.initForms();
     this.branchService.loadMine().subscribe(() => {
       const current = this.branchService.currentBranch();

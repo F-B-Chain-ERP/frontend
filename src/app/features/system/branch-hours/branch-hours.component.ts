@@ -98,6 +98,12 @@ export class BranchHoursComponent extends BaseComponent implements OnInit {
   private originalData: BranchHours[] = [];
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Tổ chức', url: '/admin/system/branches/list' },
+      { label: 'Giờ hoạt động', url: '/admin/system/branch-hours/list' },
+    ]);
+
     this.loadBranchesList();
   }
 

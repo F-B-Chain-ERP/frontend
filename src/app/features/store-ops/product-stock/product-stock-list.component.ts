@@ -79,6 +79,12 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
   restockForm!: FormGroup;
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Cửa hàng', url: '/admin/store/shifts/list' },
+      { label: 'Tồn sản phẩm', url: '/admin/store/product-stock/list' },
+    ]);
+
     this.initForms();
     this.branchService.loadMine().subscribe(() => {
       const current = this.branchService.currentBranch();

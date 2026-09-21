@@ -126,7 +126,7 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
-      { label: 'Kho & Cung ứng', url: '/admin/inventory/warehouses/list' },
+      { label: 'Kho', url: '/admin/inventory/warehouses/list' },
       { label: 'Chuyển kho', url: '/admin/inventory/transfers/list' },
     ]);
     this.loadWarehouses();

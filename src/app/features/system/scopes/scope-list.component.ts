@@ -137,7 +137,7 @@ export class ScopeListComponent extends BaseComponent implements OnInit {
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
-      { label: 'Hệ thống', url: '/admin/system/accounts/list' },
+      { label: 'Tổ chức', url: '/admin/system/branches/list' },
       { label: 'Quản lý phạm vi', url: '/admin/system/scopes/list' },
     ]);
 
