@@ -14,23 +14,9 @@ import { LoginService } from '../login/login.service';
 import { AccountService } from '../../core/auth/account.service';
 import { StateStorageService } from '../../core/auth/state-storage.service';
 import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
-import { LoginException } from '../login/login.model';
+import { LoginException, SelectableBranch } from '../login/login.model';
 import { ThemeService } from '../../core/theme/theme.service';
 import { StoreBranchService } from '../store/services/store-branch.service';
-
-/**
- * Chi nhánh hiển thị trên trang chọn (dùng chung cho nhân viên và khách hàng).
- * Nhân viên: BranchResponse. Khách hàng: SalesBranch.
- */
-interface SelectableBranch {
-  id: string;
-  code: string;
-  name: string;
-  address?: string | null;
-  phone?: string | null;
-  status?: string | null;
-  parentName?: string | null;
-}
 
 /**
  * Trang chọn chi nhánh dùng cho cả nhân viên (chọn đơn vị công tác) và
