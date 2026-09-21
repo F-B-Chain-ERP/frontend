@@ -1,0 +1,460 @@
+<div class="report-jobs-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Trung tâm tác vụ &amp; Lịch sử xuất báo cáo</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        Giám sát tiến độ xử lý ngầm các báo cáo dung lượng lớn &bull; Tải về tệp kết quả Excel/PDF &bull; Quản lý lịch sử và trạng thái xuất dữ liệu toàn hệ thống
+      </p>
+    </div>
+    <div class="page__header__right">
+      <!-- Realtime SSE Status Indicator -->
+      <div
+        class="sse-status-badge"
+        [class.sse-status-badge--online]="isRealtimeConnected()"
+        [title]="isRealtimeConnected() ? 'Realtime: Đang nhận tín hiệu cập nhật tự động từ máy chủ qua SSE' : 'Đang kết nối lại realtime...'"
+      >
+        <span class="sse-status-badge__dot"></span>
+        <span class="sse-status-badge__text">
+          {{ isRealtimeConnected() ? 'Realtime SSE: Trực tuyến' : 'Đang kết nối SSE...' }}
+        </span>
+      </div>
+
+      <!-- Refresh Button -->
+      <app-button
+        variant="secondary"
+        leftIcon="reload"
+        [loading]="loading()"
+        (click)="loadJobs()"
+      >
+        Làm mới
+      </app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. Statistics Overview (KPI Cards) ───────────────────────────── -->
+  <div class="report-stats-grid">
+    <div class="stat-card stat-card--total">
+      <div class="stat-card__icon-box">
+        <nz-icon nzType="file-text"></nz-icon>
+      </div>
+      <div class="stat-card__info">
+        <span class="stat-card__label">Tổng tác vụ ghi nhận</span>
+        <span class="stat-card__value">{{ statsTotal() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--processing" [class.stat-card--active-pulse]="statsProcessing() > 0">
+      <div class="stat-card__icon-box">
+        <nz-icon nzType="sync" [nzSpin]="statsProcessing() > 0"></nz-icon>
+      </div>
+      <div class="stat-card__info">
+        <span class="stat-card__label">Đang xử lý / Chờ</span>
+        <span class="stat-card__value">{{ statsProcessing() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--done">
+      <div class="stat-card__icon-box">
+        <nz-icon nzType="check-circle"></nz-icon>
+      </div>
+      <div class="stat-card__info">
+        <span class="stat-card__label">Hoàn thành (Sẵn sàng)</span>
+        <span class="stat-card__value">{{ statsDone() }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-card--failed">
+      <div class="stat-card__icon-box">
+        <nz-icon nzType="close-circle"></nz-icon>
+      </div>
+      <div class="stat-card__info">
+        <span class="stat-card__label">Thất bại / Đã hủy</span>
+        <span class="stat-card__value">{{ statsFailed() }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 3. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <!-- Search Input -->
+      <div class="filter-item filter-item--grow">
+        <label class="form-label">Tìm kiếm tác vụ</label>
+        <nz-input-group [nzPrefix]="searchPrefixTpl">
+          <input
+            type="text"
+            nz-input
+            placeholder="Tìm theo mã tác vụ, tên báo cáo, phân hệ..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event); onSearch()"
+          />
+        </nz-input-group>
+        <ng-template #searchPrefixTpl>
+          <nz-icon nzType="search"></nz-icon>
+        </ng-template>
+      </div>
+
+      <!-- Status Selector -->
+      <div class="filter-item">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [ngModel]="statusFilter()"
+          (ngModelChange)="statusFilter.set($event)"
+          style="width: 170px"
+        >
+          <nz-option nzValue="ALL" nzLabel="Tất cả trạng thái"></nz-option>
+          <nz-option nzValue="PROCESSING" nzLabel="Đang xử lý"></nz-option>
+          <nz-option nzValue="PENDING" nzLabel="Chờ xử lý"></nz-option>
+          <nz-option nzValue="DONE" nzLabel="Hoàn thành"></nz-option>
+          <nz-option nzValue="FAILED" nzLabel="Thất bại"></nz-option>
+          <nz-option nzValue="CANCELLED" nzLabel="Đã hủy"></nz-option>
+          <nz-option nzValue="EXPIRED" nzLabel="Hết hạn"></nz-option>
+        </nz-select>
+      </div>
+
+      <!-- Format Selector -->
+      <div class="filter-item">
+        <label class="form-label">Định dạng file</label>
+        <nz-select
+          [ngModel]="formatFilter()"
+          (ngModelChange)="formatFilter.set($event)"
+          style="width: 140px"
+        >
+          <nz-option nzValue="ALL" nzLabel="Tất cả"></nz-option>
+          <nz-option nzValue="EXCEL" nzLabel="Excel (.xlsx)"></nz-option>
+          <nz-option nzValue="PDF" nzLabel="PDF (.pdf)"></nz-option>
+        </nz-select>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="page__filter-box__actions">
+        <app-button variant="secondary" leftIcon="clear" (click)="resetFilters()">
+          Đặt lại
+        </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Main Data Table ─────────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #reportTable
+      [nzData]="filteredJobs()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1100px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="60px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="140px">Mã tác vụ</th>
+          <th scope="col" nzWidth="260px">Tên báo cáo &amp; Phân hệ</th>
+          <th scope="col" nzWidth="110px" nzAlign="center">Định dạng</th>
+          <th scope="col" nzWidth="180px">Thời điểm yêu cầu</th>
+          <th scope="col" nzWidth="180px">Thời điểm hoàn tất</th>
+          <th scope="col" nzWidth="150px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="170px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (job of filteredJobs(); track job.id; let idx = $index) {
+          <tr class="job-table-row" [class.job-table-row--processing]="job.status === 'PROCESSING'">
+            <!-- STT -->
+            <td nzAlign="center" class="table-cell--muted">
+              {{ (pageIndex() - 1) * pageSize() + idx + 1 }}
+            </td>
+
+            <!-- Mã tác vụ (Short ID with Copy) -->
+            <td>
+              <div class="job-id-cell">
+                <span class="job-id-code" [title]="job.id">
+                  {{ job.id.slice(0, 8) }}...
+                </span>
+                <button
+                  type="button"
+                  class="job-id-copy-btn"
+                  title="Sao chép toàn bộ mã tác vụ"
+                  (click)="copyToClipboard(job.id)"
+                >
+                  <nz-icon nzType="copy"></nz-icon>
+                </button>
+              </div>
+            </td>
+
+            <!-- Tên báo cáo & Phân hệ -->
+            <td>
+              <div class="report-info-cell">
+                <div class="report-info-top">
+                  <span class="report-info-title">{{ getReportTitle(job.reportType) }}</span>
+                </div>
+                <div class="report-info-meta">
+                  <span class="report-module-tag">
+                    <nz-icon [nzType]="getModuleIcon(job.module)"></nz-icon>
+                    {{ getModuleLabel(job.module) }}
+                  </span>
+                  <span class="report-type-code">{{ job.reportType }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Định dạng file -->
+            <td nzAlign="center">
+              <span
+                class="format-pill"
+                [class.format-pill--excel]="job.format === 'EXCEL'"
+                [class.format-pill--pdf]="job.format === 'PDF'"
+              >
+                <nz-icon [nzType]="job.format === 'EXCEL' ? 'file-excel' : 'file-pdf'"></nz-icon>
+                {{ job.format }}
+              </span>
+            </td>
+
+            <!-- Thời điểm yêu cầu -->
+            <td>
+              <div class="timestamp-cell">
+                <nz-icon nzType="clock-circle" class="timestamp-icon"></nz-icon>
+                <span>{{ job.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+              </div>
+            </td>
+
+            <!-- Thời điểm hoàn tất -->
+            <td>
+              @if (job.completedAt) {
+                <div class="timestamp-cell">
+                  <nz-icon nzType="check-circle" class="timestamp-icon timestamp-icon--success"></nz-icon>
+                  <span>{{ job.completedAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+                </div>
+              } @else if (job.status === 'PROCESSING') {
+                <span class="processing-hint">
+                  <nz-spin nzSimple nzSize="small"></nz-spin>
+                  Đang ghi nhận dữ liệu...
+                </span>
+              } @else {
+                <span class="table-cell--muted">—</span>
+              }
+            </td>
+
+            <!-- Trạng thái -->
+            <td nzAlign="center">
+              <span class="status-badge" [ngClass]="getStatusClass(job.status)">
+                @if (job.status === 'PROCESSING') {
+                  <nz-icon nzType="loading" class="status-icon--spin"></nz-icon>
+                } @else if (job.status === 'DONE') {
+                  <nz-icon nzType="check" class="status-icon"></nz-icon>
+                } @else if (job.status === 'FAILED') {
+                  <nz-icon nzType="close" class="status-icon"></nz-icon>
+                } @else if (job.status === 'CANCELLED') {
+                  <nz-icon nzType="stop" class="status-icon"></nz-icon>
+                } @else if (job.status === 'EXPIRED') {
+                  <nz-icon nzType="warning" class="status-icon"></nz-icon>
+                } @else {
+                  <nz-icon nzType="clock-circle" class="status-icon"></nz-icon>
+                }
+                {{ getStatusLabel(job.status) }}
+              </span>
+            </td>
+
+            <!-- Thao tác Actions -->
+            <td nzAlign="center">
+              <div class="action-btn-group">
+                <!-- Nút Tải về (Nếu hoàn thành) -->
+                @if (job.status === 'DONE') {
+                  <app-button
+                    variant="primary"
+                    leftIcon="download"
+                    [loading]="downloadingJobIds().has(job.id)"
+                    (click)="downloadFile(job)"
+                    title="Tải tệp báo cáo về máy"
+                  >
+                    Tải về
+                  </app-button>
+                }
+
+                <!-- Nút Hủy (Nếu đang chờ xử lý) -->
+                @if (job.status === 'PENDING') {
+                  <app-button
+                    variant="danger"
+                    leftIcon="close-circle"
+                    nz-popconfirm
+                    nzPopconfirmTitle="Bạn có chắc chắn muốn hủy tác vụ xuất báo cáo này?"
+                    nzOkText="Hủy tác vụ"
+                    nzCancelText="Quay lại"
+                    (nzOnConfirm)="cancelJob(job.id)"
+                    title="Hủy tác vụ"
+                  >
+                    Hủy
+                  </app-button>
+                }
+
+                <!-- Nút Xem chi tiết -->
+                <app-button
+                  variant="ghost"
+                  [iconOnly]="'eye'"
+                  (click)="viewJobDetail(job.id)"
+                  title="Xem thông tin chi tiết tác vụ"
+                ></app-button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="table-empty-row">
+              <nz-empty
+                nzNotFoundImage="simple"
+                nzNotFoundContent="Không tìm thấy tác vụ xuất báo cáo nào phù hợp"
+              ></nz-empty>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="totalElements()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      ></app-pagination>
+    </div>
+  </nz-card>
+</div>
+
+<!-- ── 5. Job Detail Modal ──────────────────────────────────────────── -->
+<app-modal
+  [visible]="detailModalVisible()"
+  (visibleChange)="detailModalVisible.set($event)"
+  [title]="'Chi tiết tác vụ xuất báo cáo'"
+  [footer]="null"
+  size="md"
+  (cancelEmit)="closeDetailModal()"
+>
+  @if (detailLoading()) {
+    <div class="modal-loading-box">
+      <nz-spin nzSimple nzTip="Đang tải thông tin chi tiết tác vụ..."></nz-spin>
+    </div>
+  } @else if (selectedJob(); as job) {
+    <div class="job-detail-content">
+      <!-- Title Bar -->
+      <div class="job-detail-header">
+        <div class="job-detail-header__icon">
+          <nz-icon [nzType]="getModuleIcon(job.module)"></nz-icon>
+        </div>
+        <div class="job-detail-header__text">
+          <h3 class="job-detail-title">{{ getReportTitle(job.reportType) }}</h3>
+          <span class="job-detail-subtitle">Phân hệ: {{ getModuleLabel(job.module) }} ({{ job.module }})</span>
+        </div>
+        <div class="job-detail-header__status">
+          <span class="status-badge" [ngClass]="getStatusClass(job.status)">
+            {{ getStatusLabel(job.status) }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Info Grid -->
+      <div class="job-detail-grid">
+        <div class="detail-grid-item">
+          <span class="detail-grid-label">Mã tác vụ (UUID)</span>
+          <div class="detail-grid-value-copy">
+            <span class="detail-uuid">{{ job.id }}</span>
+            <button type="button" class="job-id-copy-btn" (click)="copyToClipboard(job.id)">
+              <nz-icon nzType="copy"></nz-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-grid-item">
+          <span class="detail-grid-label">Định dạng tệp</span>
+          <span class="detail-grid-val">
+            <span class="format-pill" [class.format-pill--excel]="job.format === 'EXCEL'" [class.format-pill--pdf]="job.format === 'PDF'">
+              <nz-icon [nzType]="job.format === 'EXCEL' ? 'file-excel' : 'file-pdf'"></nz-icon>
+              {{ job.format }}
+            </span>
+          </span>
+        </div>
+
+        <div class="detail-grid-item">
+          <span class="detail-grid-label">Mã loại báo cáo</span>
+          <span class="detail-grid-val font-mono">{{ job.reportType }}</span>
+        </div>
+
+        <div class="detail-grid-item">
+          <span class="detail-grid-label">Thời điểm yêu cầu</span>
+          <span class="detail-grid-val">{{ job.createdAt | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+        </div>
+
+        <div class="detail-grid-item">
+          <span class="detail-grid-label">Thời điểm bắt đầu xử lý</span>
+          <span class="detail-grid-val">
+            {{ job.startedAt ? (job.startedAt | date: 'dd/MM/yyyy HH:mm:ss') : 'Chưa bắt đầu' }}
+          </span>
+        </div>
+
+        <div class="detail-grid-item">
+          <span class="detail-grid-label">Thời điểm hoàn tất</span>
+          <span class="detail-grid-val">
+            {{ job.completedAt ? (job.completedAt | date: 'dd/MM/yyyy HH:mm:ss') : 'Đang xử lý / Chưa xong' }}
+          </span>
+        </div>
+
+        @if (job.estimatedRows) {
+          <div class="detail-grid-item">
+            <span class="detail-grid-label">Số bản ghi dự kiến</span>
+            <span class="detail-grid-val">{{ job.estimatedRows | number }} dòng</span>
+          </div>
+        }
+
+        @if (job.branchId) {
+          <div class="detail-grid-item">
+            <span class="detail-grid-label">Chi nhánh áp dụng</span>
+            <span class="detail-grid-val font-mono">{{ job.branchId }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Error Message Callout if FAILED -->
+      @if (job.errorMessage) {
+        <div class="job-error-callout">
+          <div class="job-error-callout__icon">
+            <nz-icon nzType="warning"></nz-icon>
+          </div>
+          <div class="job-error-callout__body">
+            <span class="job-error-callout__title">Thông báo lỗi từ hệ thống:</span>
+            <p class="job-error-callout__msg">{{ job.errorMessage }}</p>
+          </div>
+        </div>
+      }
+
+      <!-- Actions Footer -->
+      <div class="job-detail-actions">
+        @if (job.status === 'DONE') {
+          <app-button
+            variant="primary"
+            leftIcon="download"
+            [loading]="downloadingJobIds().has(job.id)"
+            (click)="downloadFile(job)"
+          >
+            Tải về tệp báo cáo
+          </app-button>
+        } @else if (job.status === 'PENDING') {
+          <app-button
+            variant="danger"
+            leftIcon="close-circle"
+            (click)="cancelJob(job.id)"
+          >
+            Hủy tác vụ này
+          </app-button>
+        }
+        <app-button variant="secondary" (click)="closeDetailModal()">
+          Đóng
+        </app-button>
+      </div>
+    </div>
+  }
+</app-modal>
