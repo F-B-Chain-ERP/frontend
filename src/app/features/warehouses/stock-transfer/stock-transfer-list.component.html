@@ -1,4 +1,4 @@
-<div class="stock-transfer-page">
+﻿<div class="stock-transfer-page">
   <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
   <div class="page__header">
     <div class="page__header__left">
@@ -110,6 +110,19 @@
                     (click)="openEditModal(item)"
                   >
                   </app-button>
+                }
+                @if (canApproveTransfer(item.status)) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DUYET_DIEU_CHUYEN]"
+                    variant="ghost"
+                    iconOnly="check-circle"
+                    nz-tooltip
+                    nzTooltipTitle="Duyệt / Từ chối yêu cầu"
+                    (click)="openApproveModal(item)"
+                  >
+                  </app-button>
+                }
+                @if (canDispatchTransfer(item.status)) {
                   <app-button
                     *erpUTTHasSomeAuthority="[ROLE.CHUYEN_KHO.UPDATE]"
                     variant="ghost"
@@ -516,6 +529,46 @@
       <div class="modal-footer-actions">
         <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeCancelModal()"> Hủy bỏ </app-button>
         <app-button variant="primary" leftIcon="check" [loading]="isSaving()" (click)="onSubmitCancel()"> Xác nhận hủy </app-button>
+      </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 8. Approve Modal (Duyệt / Từ chối yêu cầu) ───────────────────── -->
+  <app-modal
+    [visible]="isApproveModalVisible()"
+    (visibleChange)="isApproveModalVisible.set($event)"
+    title="Duyệt yêu cầu điều chuyển"
+    size="md"
+    [maskClosable]="false"
+    [footer]="approveModalFooter"
+    (cancelEmit)="closeApproveModal()"
+  >
+    <form [formGroup]="approveForm">
+      <label class="form-label required">Quyết định</label>
+      <nz-select formControlName="decision" style="width: 100%">
+        <nz-option nzValue="approve" nzLabel="Duyệt — chuyển sang chờ xuất"></nz-option>
+        <nz-option nzValue="reject" nzLabel="Từ chối — hủy yêu cầu"></nz-option>
+      </nz-select>
+      <label class="form-label" style="margin-top: 12px" [class.required]="approveForm.get('decision')?.value === 'reject'">
+        Lý do (bắt buộc khi từ chối)
+      </label>
+      <nz-input-wrapper>
+        <textarea nz-input formControlName="reason" rows="3" maxlength="500" placeholder="Nhập lý do từ chối"></textarea>
+      </nz-input-wrapper>
+      <span class="form-hint">Người duyệt phải khác người tạo yêu cầu. Duyệt xong, người phe kho bấm xuất hàng.</span>
+    </form>
+    <ng-template #approveModalFooter>
+      <div class="modal-footer-actions">
+        <app-button variant="ghost" leftIcon="close" [disabled]="isSaving()" (click)="closeApproveModal()"> Hủy bỏ </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.DUYET_DIEU_CHUYEN]"
+          variant="primary"
+          leftIcon="check"
+          [loading]="isSaving()"
+          (click)="onSubmitApprove()"
+        >
+          Xác nhận
+        </app-button>
       </div>
     </ng-template>
   </app-modal>

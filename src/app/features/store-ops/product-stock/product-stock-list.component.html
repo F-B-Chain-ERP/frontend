@@ -16,6 +16,8 @@
     </div>
   </div>
 
+  <nz-tabs [nzSelectedIndex]="selectedTabIndex" (nzSelectedIndexChange)="onTabChange($event)">
+    <nz-tab nzTitle="Tồn theo ly">
   <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
   <nz-card class="page__filter-box" [nzBordered]="false">
     <div class="page__filter-box__row">
@@ -57,8 +59,19 @@
 
   <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
   <nz-card class="page__list" [nzBordered]="false">
+    @if (!loading() && (lowCount() > 0 || outCount() > 0)) {
+      <div class="stock-alert-banner">
+        @if (outCount() > 0) {
+          <span class="tbl-badge tbl-badge--danger">{{ outCount() }} size đã hết hàng</span>
+        }
+        @if (lowCount() > 0) {
+          <span class="tbl-badge tbl-badge--warning">{{ lowCount() }} size sắp hết (≤ 20%)</span>
+        }
+        <span class="text-muted">Kiểm tra quầy và chốt tồn bổ sung.</span>
+      </div>
+    }
     <nz-table #stockTable [nzData]="stocks()" [nzLoading]="loading()" [nzShowPagination]="false"
-      [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1080px' }">
+      [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1240px' }">
       <thead>
         <tr>
           <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
@@ -69,6 +82,7 @@
           <th scope="col" nzWidth="140px" nzAlign="right">Đã bán qua POS</th>
           <th scope="col" nzWidth="140px" nzAlign="right">Tồn còn lại</th>
           <th scope="col" nzWidth="120px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Thao tác</th>
         </tr>
       </thead>
       <tbody>
@@ -107,13 +121,31 @@
             </span>
           </td>
           <td nzAlign="center">
-            <span
-              [class]="s.remainingQuantity > 0 ? 'tbl-badge tbl-badge--success' : 'tbl-badge tbl-badge--danger'"
-              nz-tooltip
-              [nzTooltipTitle]="s.remainingQuantity > 0 ? 'Mặt hàng đang mở bán bình thường trên POS' : 'Mặt hàng đã hết hạn mức bán trong ngày'"
-            >
-              {{ s.remainingQuantity > 0 ? 'Đang mở bán' : 'Tạm hết hàng' }}
+            <span [class]="stockMeta(s).badgeClass" nz-tooltip [nzTooltipTitle]="stockMeta(s).tooltip">
+              {{ stockMeta(s).label }}
             </span>
+          </td>
+          <td nzAlign="center">
+            <div class="tbl-actions">
+              <app-button
+                *erpUTTHasSomeAuthority="[ROLE.XEM_LICH_SU_TON_SAN_PHAM.VIEW]"
+                variant="ghost"
+                iconOnly="history"
+                nz-tooltip
+                nzTooltipTitle="Lịch sử biến động tồn"
+                (click)="openHistory(s)"
+              >
+              </app-button>
+              <app-button
+                *erpUTTHasSomeAuthority="[ROLE.XEM_TON_SAN_PHAM.VIEW]"
+                variant="ghost"
+                iconOnly="plus-circle"
+                nz-tooltip
+                nzTooltipTitle="Chốt tồn dòng này"
+                (click)="openRestockForRow(s)"
+              >
+              </app-button>
+            </div>
           </td>
         </tr>
         }
@@ -127,6 +159,91 @@
         (pageSizeChange)="onPageSizeChange($event)"></app-pagination>
     </div>
   </nz-card>
+    </nz-tab>
+
+    <!-- ── Tab NVL & Cấp hàng: kế hoạch × BOM vs tồn kho bar ────────── -->
+    <nz-tab nzTitle="NVL & Cấp hàng">
+      <nz-card class="page__list" [nzBordered]="false">
+        <div class="shortage-toolbar">
+          <span class="text-muted">
+            Đối soát NVL ngày {{ shortage()?.businessDate || '' }} — kho quán
+            {{ shortage()?.warehouseCode || '…' }} ← kho tổng {{ shortage()?.centralWarehouseCode || '…' }}.
+            @if (!shortageLoading() && shortage()) {
+              @if (shortageCount() > 0) {
+                <span class="tbl-badge tbl-badge--warning">{{ shortageCount() }} NVL thiếu</span>
+              } @else {
+                <span class="tbl-badge tbl-badge--success">Đủ hàng</span>
+              }
+            }
+          </span>
+          <div class="shortage-toolbar__actions">
+            <app-button variant="ghost" iconOnly="reload" nz-tooltip nzTooltipTitle="Tải lại" (click)="loadShortage()">
+            </app-button>
+            <app-button
+              *erpUTTHasSomeAuthority="[ROLE.CHUYEN_KHO.CREATE]"
+              variant="primary"
+              leftIcon="plus"
+              [loading]="isRequesting()"
+              [disabled]="shortageLoading() || shortageCount() === 0"
+              (click)="openRequestReplenishment()"
+            >
+              Xin cấp hàng
+            </app-button>
+          </div>
+        </div>
+        <nz-table
+          [nzData]="shortage()?.lines || []"
+          [nzLoading]="shortageLoading()"
+          [nzShowPagination]="false"
+          [nzFrontPagination]="false"
+          nzSize="middle"
+          [nzScroll]="{ x: '1080px' }"
+        >
+          <thead>
+            <tr>
+              <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+              <th scope="col" nzWidth="240px" nzAlign="left">Nguyên vật liệu</th>
+              <th scope="col" nzWidth="90px" nzAlign="left">ĐVT</th>
+              <th scope="col" nzWidth="120px" nzAlign="right">Cần (kế hoạch)</th>
+              <th scope="col" nzWidth="120px" nzAlign="right">Đã dùng</th>
+              <th scope="col" nzWidth="120px" nzAlign="right">Tồn kho bar</th>
+              <th scope="col" nzWidth="120px" nzAlign="right">Thiếu</th>
+              <th scope="col" nzAlign="left">Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (l of shortage()?.lines || []; track l.materialId; let i = $index) {
+              <tr>
+                <td nzAlign="center" class="font-mono text-muted">{{ i + 1 }}</td>
+                <td nzAlign="left">
+                  <div class="font-semibold">{{ l.materialName || '—' }}</div>
+                  <div class="text-xs text-secondary font-mono">{{ l.materialCode || '' }}</div>
+                </td>
+                <td nzAlign="left">{{ l.baseUnitCode || '—' }}</td>
+                <td nzAlign="right" class="font-mono">{{ l.plannedQuantity }}</td>
+                <td nzAlign="right" class="font-mono">{{ l.consumedQuantity }}</td>
+                <td nzAlign="right" class="font-mono">{{ l.onHandQuantity }}</td>
+                <td nzAlign="right">
+                  @if (l.shortageQuantity > 0) {
+                    <span class="font-mono font-bold tbl-badge tbl-badge--warning">{{ l.shortageQuantity }}</span>
+                  } @else {
+                    <span class="font-mono text-muted">0</span>
+                  }
+                </td>
+                <td nzAlign="left" class="text-muted">
+                  @if (l.unitMismatch) {
+                    <span>Lệch đơn vị — đối chiếu tay</span>
+                  } @else {
+                    <span>—</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </nz-card>
+    </nz-tab>
+  </nz-tabs>
 
   <!-- ── 4. Modal Chốt tồn mở bán / Restock ──────────────────────────── -->
   <app-modal [visible]="isRestockModalVisible()" (visibleChange)="isRestockModalVisible.set($event)"
@@ -157,23 +274,44 @@
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
-        <label class="form-label" for="restock-variant-id">Mã định danh biến thể sản phẩm (Variant UUID) *</label>
-        <nz-input-wrapper>
-          <input
-            id="restock-variant-id"
-            nz-input
-            formControlName="variantId"
-            [nzStatus]="restockForm.get('variantId')?.invalid && restockForm.get('variantId')?.touched ? 'error' : ''"
-            placeholder="Nhập UUID của biến thể sản phẩm..."
-          />
-        </nz-input-wrapper>
+        <label class="form-label" for="restock-product">Món *</label>
+        <nz-select
+          id="restock-product"
+          formControlName="productId"
+          nzShowSearch
+          nzPlaceHolder="Chọn món..."
+          [nzLoading]="loadingRestockProducts()"
+          (ngModelChange)="onRestockProductChange($event)"
+          style="width: 100%"
+        >
+          @for (o of restockProducts(); track o.value) {
+            <nz-option [nzLabel]="o.label" [nzValue]="o.value"></nz-option>
+          }
+        </nz-select>
+        @if (restockForm.get('productId')?.invalid && restockForm.get('productId')?.touched) {
+          <div class="form-error">
+            <span>Vui lòng chọn món</span>
+          </div>
+        }
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="restock-variant">Size / Biến thể *</label>
+        <nz-select
+          id="restock-variant"
+          formControlName="variantId"
+          nzShowSearch
+          nzPlaceHolder="Chọn size..."
+          [nzLoading]="loadingRestockVariants()"
+          style="width: 100%"
+        >
+          @for (o of restockVariants(); track o.value) {
+            <nz-option [nzLabel]="o.label" [nzValue]="o.value"></nz-option>
+          }
+        </nz-select>
         @if (restockForm.get('variantId')?.invalid && restockForm.get('variantId')?.touched) {
           <div class="form-error">
-            @if (restockForm.get('variantId')?.errors?.['serverError']; as err) {
-              <span>{{ err }}</span>
-            } @else {
-              <span>Mã biến thể không được để trống</span>
-            }
+            <span>Vui lòng chọn size</span>
           </div>
         }
       </div>
@@ -213,6 +351,67 @@
           Lưu chốt tồn mở bán
         </app-button>
       </div>
+    </ng-template>
+  </app-modal>
+
+  <!-- ── 5. Modal Lịch sử biến động tồn ─────────────────────────────── -->
+  <app-modal
+    [visible]="isHistoryVisible()"
+    (visibleChange)="isHistoryVisible.set($event)"
+    title="Lịch sử biến động tồn"
+    size="lg"
+    [centered]="true"
+    [maskClosable]="false"
+    [footer]="historyModalFooter"
+    (cancelEmit)="closeHistory()"
+  >
+    <ng-container>
+      @if (historyTarget; as t) {
+        <div class="text-muted" style="margin-bottom: 12px">
+          {{ t.productName || '' }} • {{ t.variantName || '' }} ({{ t.sku || t.variantCode || '—' }})
+        </div>
+      }
+      <nz-table
+        [nzData]="historyItems()"
+        [nzLoading]="historyLoading()"
+        [nzShowPagination]="false"
+        [nzFrontPagination]="false"
+        nzSize="middle"
+        [nzScroll]="{ x: '640px' }"
+      >
+        <thead>
+          <tr>
+            <th scope="col" nzWidth="150px" nzAlign="left">Loại biến động</th>
+            <th scope="col" nzWidth="110px" nzAlign="right">Số lượng</th>
+            <th scope="col" nzWidth="170px" nzAlign="left">Thời gian</th>
+            <th scope="col" nzAlign="left">Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of historyItems(); track h.id) {
+            <tr>
+              <td nzAlign="left">
+                <span [class]="changeTypeMeta(h.changeType).badgeClass">{{ changeTypeMeta(h.changeType).label }}</span>
+              </td>
+              <td nzAlign="right" class="font-mono">{{ h.quantityChange > 0 ? '+' : '' }}{{ h.quantityChange }}</td>
+              <td nzAlign="left">{{ formatDateTime(h.createdAt) }}</td>
+              <td nzAlign="left" class="text-muted">{{ h.note || '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+      <div class="page__pagination">
+        <app-pagination
+          [total]="historyTotal()"
+          [pageIndex]="historyPageIndex()"
+          [pageSize]="historyPageSize()"
+          (pageIndexChange)="onHistoryPageChange($event)"
+        >
+        </app-pagination>
+      </div>
+    </ng-container>
+    <ng-template #historyModalFooter>
+      <app-button variant="ghost" (click)="closeHistory()">Đóng</app-button>
     </ng-template>
   </app-modal>
 </div>

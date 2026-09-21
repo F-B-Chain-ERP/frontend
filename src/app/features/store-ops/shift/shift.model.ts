@@ -212,13 +212,78 @@ export interface UpdateDailyReportPayload {
 export interface PosDailyStock {
   branchId: string;
   variantId: string;
-  productName?: string;
+  variantCode?: string | null;
   variantName?: string;
+  productId?: string | null;
+  productCode?: string | null;
+  productName?: string;
   sku?: string;
   businessDate: string;
   openingQuantity: number;
   remainingQuantity: number;
   soldQuantity: number;
+}
+
+export interface PosDailyStockFilter {
+  branchId?: string | null;
+  date?: string | null;
+  search?: string | null;
+  pageIndex: number;
+  pageSize: number;
+}
+
+export interface PosDailyStockListResponse {
+  items: PosDailyStock[];
+  total: number;
+  pageIndex: number;
+  pageSize: number;
+}
+
+export interface PosStockHistory {
+  id: string;
+  variantId: string;
+  variantCode?: string | null;
+  variantName?: string | null;
+  changeType: string;
+  quantityChange: number;
+  referenceId?: string | null;
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface PosStockHistoryListResponse {
+  items: PosStockHistory[];
+  total: number;
+  pageIndex: number;
+  pageSize: number;
+}
+
+export interface MaterialShortageLine {
+  materialId: string;
+  materialCode: string | null;
+  materialName: string | null;
+  baseUnitCode: string | null;
+  plannedQuantity: number;
+  consumedQuantity: number;
+  onHandQuantity: number;
+  shortageQuantity: number;
+  unitMismatch: boolean;
+}
+
+export interface MaterialShortage {
+  branchId: string;
+  businessDate: string;
+  warehouseId: string;
+  warehouseCode: string | null;
+  centralWarehouseId: string;
+  centralWarehouseCode: string | null;
+  lines: MaterialShortageLine[];
+}
+
+export interface ReplenishmentResult {
+  id: string;
+  code: string;
+  status: string;
 }
 
 export interface RestockDailyStockPayload {
