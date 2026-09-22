@@ -509,6 +509,13 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
             activePrefix: '/admin/platform/templates',
             authorities: [ROLE.MAU_THONG_BAO.VIEW],
           },
+          {
+            kind: 'child',
+            id: 'sys-reports',
+            title: 'Tác vụ xuất báo cáo',
+            route: '/admin/reports/jobs',
+            activePrefix: '/admin/reports',
+          },
         ],
       },
       {

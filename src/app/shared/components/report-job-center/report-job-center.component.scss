@@ -4,11 +4,11 @@
   gap: 8px;
   font-weight: 600;
   font-size: 16px;
-  color: #1e293b;
+  color: var(--text-primary);
 
   .job-center-icon {
     font-size: 18px;
-    color: #2563eb;
+    color: var(--brand-500);
   }
 }
 
@@ -37,22 +37,22 @@
 
 .job-card {
   padding: 14px 16px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
   transition: all 0.2s ease;
   display: flex;
   flex-direction: column;
   gap: 10px;
 
   &:hover {
-    border-color: #cbd5e1;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
   }
 
   &--processing {
-    border-color: #93c5fd;
-    background: #f8fafc;
+    border-color: var(--info, #3b82f6);
+    background: var(--surface-sunken);
   }
 
   &__header {

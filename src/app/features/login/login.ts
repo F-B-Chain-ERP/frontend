@@ -238,7 +238,7 @@ export class LoginComponent implements OnInit, OnDestroy {
           auth.requiresScopeAssignment
             ? '/select-branch'
             : auth.principalType === 'CUSTOMER'
-              ? '/store'
+              ? '/select-branch'
               : '/admin/home';
         // Giữ loading cho đến khi điều hướng thực sự hoàn tất.
         this.router.navigate([target]).finally(() => this.googleLoading.set(false));
@@ -273,7 +273,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         if (auth.requiresScopeAssignment) {
           this.router.navigate(['/select-branch']);
         } else if (auth.principalType === 'CUSTOMER') {
-          this.router.navigate(['/store']);
+          this.router.navigate(['/select-branch']);
         } else {
           this.router.navigate(['/admin/home']);
         }

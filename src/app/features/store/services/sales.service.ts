@@ -28,6 +28,7 @@ export interface SalesProductFilter {
   isFeatured?: boolean | null;
   isBestSeller?: boolean | null;
   sortBy?: string;
+  branchId?: string | null;
 }
 
 interface BackendPageResponse<T> {
@@ -111,6 +112,9 @@ export class SalesService {
     }
     if (filter?.sortBy) {
       params = params.set('sortBy', filter.sortBy);
+    }
+    if (filter?.branchId) {
+      params = params.set('branchId', filter.branchId);
     }
 
     return this.http.get<ApiResponse<BackendPageResponse<Product>>>(url, { params }).pipe(
