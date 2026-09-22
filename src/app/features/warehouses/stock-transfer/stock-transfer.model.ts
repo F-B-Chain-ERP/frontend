@@ -1,5 +1,5 @@
 /** Phiếu chuyển kho (map từ StockTransferResponse của BE). */
-export type StockTransferStatus = 'PENDING' | 'IN_TRANSIT' | 'RECEIVED' | 'CANCELLED';
+export type StockTransferStatus = 'PENDING' | 'REQUESTED' | 'IN_TRANSIT' | 'RECEIVED' | 'CANCELLED';
 
 export interface StockTransferItem {
   id: string;
@@ -24,6 +24,11 @@ export interface StockTransfer {
   transferDate: string;
   status: StockTransferStatus;
   note: string | null;
+  requestedBy: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  dispatchedBy: string | null;
+  dispatchedAt: string | null;
   receivedBy: string | null;
   receivedAt: string | null;
   items: StockTransferItem[];
@@ -66,6 +71,7 @@ export interface ReceiveTransferItemPayload {
 
 export const TRANSFER_STATUS_OPTIONS = [
   { value: null, label: 'Tất cả trạng thái' },
+  { value: 'REQUESTED', label: 'Chờ duyệt' },
   { value: 'PENDING', label: 'Chờ xuất hàng' },
   { value: 'IN_TRANSIT', label: 'Đang chuyển' },
   { value: 'RECEIVED', label: 'Đã nhận đủ' },
@@ -74,6 +80,8 @@ export const TRANSFER_STATUS_OPTIONS = [
 
 export function getTransferStatusMeta(status: StockTransferStatus): { label: string; badgeClass: string } {
   switch (status) {
+    case 'REQUESTED':
+      return { label: 'Chờ duyệt', badgeClass: 'tbl-badge tbl-badge--neutral' };
     case 'PENDING':
       return { label: 'Chờ xuất hàng', badgeClass: 'tbl-badge tbl-badge--warning' };
     case 'IN_TRANSIT':
@@ -88,7 +96,11 @@ export function getTransferStatusMeta(status: StockTransferStatus): { label: str
 }
 
 export function canEditTransfer(status: StockTransferStatus): boolean {
-  return status === 'PENDING';
+  return status === 'PENDING' || status === 'REQUESTED';
+}
+
+export function canApproveTransfer(status: StockTransferStatus): boolean {
+  return status === 'REQUESTED';
 }
 
 export function canDispatchTransfer(status: StockTransferStatus): boolean {
@@ -100,5 +112,5 @@ export function canReceiveTransfer(status: StockTransferStatus): boolean {
 }
 
 export function canCancelTransfer(status: StockTransferStatus): boolean {
-  return status === 'PENDING' || status === 'IN_TRANSIT';
+  return status === 'REQUESTED' || status === 'PENDING' || status === 'IN_TRANSIT';
 }

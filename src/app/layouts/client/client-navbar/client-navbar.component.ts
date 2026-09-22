@@ -110,6 +110,11 @@ export class ClientNavbarComponent {
     this.router.navigate(['/store/orders']);
   }
 
+  goToSelectBranch(): void {
+    this.isUserMenuOpen.set(false);
+    this.router.navigate(['/select-branch']);
+  }
+
   logout(): void {
     this.loginService.logout().subscribe();
   }

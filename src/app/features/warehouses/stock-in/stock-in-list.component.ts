@@ -269,7 +269,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
-      { label: 'Kho & Cung ứng', url: '/admin/inventory/stock-in/list' },
+      { label: 'Kho', url: '/admin/inventory/stock-in/list' },
       { label: 'Nhập kho', url: '/admin/inventory/stock-in/list' },
     ]);
 

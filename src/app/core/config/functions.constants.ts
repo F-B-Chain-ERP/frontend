@@ -73,6 +73,7 @@ export const ROLE = {
   NHAP_KHO: grp('inv:stock_in:view', 'inv:stock_in:create', 'inv:stock_in:update', 'inv:stock_in:delete'),
   XUAT_KHO: grp('inv:stock_out:view', 'inv:stock_out:create', 'inv:stock_out:update', 'inv:stock_out:delete'),
   CHUYEN_KHO: grp('inv:stock_transfer:view', 'inv:stock_transfer:create', 'inv:stock_transfer:update', 'inv:stock_transfer:delete'),
+  DUYET_DIEU_CHUYEN: 'inv:stock_transfer:approve',
   KIEM_KE: grp('inv:stock_count:view', 'inv:stock_count:create', 'inv:stock_count:update', 'inv:stock_count:delete'),
 
   // ── STORE (5 resource) ──────────────────────────────────────────

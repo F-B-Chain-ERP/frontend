@@ -12,6 +12,7 @@ import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { BreadcrumbsService } from '../../../shared/app-breadcrumbs/breadcrumbs.service';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
@@ -72,6 +73,8 @@ export class PosDeliveryBoardComponent implements OnInit {
   selectedBranchId: string | null = null;
   selectedShipperId: string | null = null;
   failReason = '';
+  private lastDeliveryEventKey = '';
+  private lastDeliveryEventAt = 0;
 
   getDeliveryStatusMeta = getDeliveryStatusMeta;
   getOrderStatusMeta = getOrderStatusMeta;
@@ -82,7 +85,15 @@ export class PosDeliveryBoardComponent implements OnInit {
   private readonly realtimeNotification = inject(RealtimeNotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
+  private readonly breadcrumbsService = inject(BreadcrumbsService);
+
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Bán hàng (POS)', url: '/admin/pos/orders/list' },
+      { label: 'Giao hàng', url: '/admin/pos/deliveries/list' },
+    ]);
+
     this.branchService.loadMine().subscribe();
     this.load();
 
@@ -90,6 +101,14 @@ export class PosDeliveryBoardComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(event => {
         if (!event) return;
+        // Chống reload dồn khi burst event trùng trong 3s.
+        const eventKey = `${event.orderId}:${event.orderStatus || ''}:${event.deliveryStatus || ''}`;
+        const now = Date.now();
+        if (eventKey === this.lastDeliveryEventKey && now - this.lastDeliveryEventAt < 3000) {
+          return;
+        }
+        this.lastDeliveryEventKey = eventKey;
+        this.lastDeliveryEventAt = now;
         const currentBranch = this.branchService.currentBranch()?.id;
         if (this.selectedBranchId && event.branchId && this.selectedBranchId !== event.branchId) {
           return;

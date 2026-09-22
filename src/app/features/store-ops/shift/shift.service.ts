@@ -18,6 +18,12 @@ import {
   GenerateDailyReportPayload,
   UpdateDailyReportPayload,
   PosDailyStock,
+  PosDailyStockFilter,
+  PosDailyStockListResponse,
+  PosStockHistoryListResponse,
+  MaterialShortage,
+  ReplenishmentResult,
+  RestockBatchResult,
   RestockDailyStockPayload,
 } from './shift.model';
 
@@ -326,6 +332,90 @@ export class StoreShiftService {
       map(res => res.data),
       catchError(err => throwError(() => this.errorMessage(err))),
     );
+  }
+
+  restockBatch(
+    branchId: string,
+    items: { variantId: string; openingQuantity: number }[],
+    note?: string | null,
+  ): Observable<RestockBatchResult> {
+    return this.http
+      .post<ApiEnvelope<RestockBatchResult>>(`${this.posStockApi}/restock-batch`, {
+        branchId,
+        note: note ?? null,
+        items,
+      })
+      .pipe(
+        map(res => res.data),
+        catchError(err => throwError(() => this.errorMessage(err))),
+      );
+  }
+
+  listStocks(filter: PosDailyStockFilter): Observable<PosDailyStockListResponse> {
+    let params = new HttpParams()
+      .set('page', String(Math.max(filter.pageIndex - 1, 0)))
+      .set('size', String(filter.pageSize));
+    if (filter.branchId) params = params.set('branchId', filter.branchId);
+    if (filter.date) params = params.set('date', filter.date);
+    if (filter.search?.trim()) params = params.set('search', filter.search.trim());
+    return this.http.get<ApiEnvelope<PageEnvelope<PosDailyStock>>>(this.posStockApi, { params }).pipe(
+      map(res => ({
+        items: (res.data?.content ?? []).map(s => ({
+          ...s,
+          sku: s.variantCode || s.sku,
+        })),
+        total: res.data?.totalElements ?? 0,
+        pageIndex: (res.data?.pageNumber ?? 0) + 1,
+        pageSize: res.data?.pageSize ?? filter.pageSize,
+      })),
+      catchError(err => throwError(() => this.errorMessage(err))),
+    );
+  }
+
+  stockHistory(params: {
+    branchId?: string | null;
+    variantId?: string | null;
+    pageIndex: number;
+    pageSize: number;
+  }): Observable<PosStockHistoryListResponse> {    let httpParams = new HttpParams()
+      .set('page', String(Math.max(params.pageIndex - 1, 0)))
+      .set('size', String(params.pageSize));
+    if (params.branchId) httpParams = httpParams.set('branchId', params.branchId);
+    if (params.variantId) httpParams = httpParams.set('variantId', params.variantId);
+    return this.http
+      .get<ApiEnvelope<PageEnvelope<PosStockHistoryListResponse['items'][number]>>>(
+        `${this.posStockApi}/history`,
+        { params: httpParams },
+      )
+      .pipe(
+        map(res => ({
+          items: res.data?.content ?? [],
+          total: res.data?.totalElements ?? 0,
+          pageIndex: (res.data?.pageNumber ?? 0) + 1,
+          pageSize: res.data?.pageSize ?? params.pageSize,
+        })),
+        catchError(err => throwError(() => this.errorMessage(err))),
+      );
+  }
+
+  getMaterialShortage(branchId: string, date?: string | null): Observable<MaterialShortage> {
+    let params = new HttpParams().set('branchId', branchId);
+    if (date) params = params.set('date', date);
+    return this.http.get<ApiEnvelope<MaterialShortage>>(`${this.posStockApi}/material-shortage`, { params }).pipe(
+      map(res => res.data),
+      catchError(err => throwError(() => this.errorMessage(err))),
+    );
+  }
+
+  requestReplenishment(branchId: string, date?: string | null): Observable<ReplenishmentResult> {
+    let params = new HttpParams().set('branchId', branchId);
+    if (date) params = params.set('date', date);
+    return this.http
+      .post<ApiEnvelope<ReplenishmentResult>>(`${this.posStockApi}/request-replenishment`, null, { params })
+      .pipe(
+        map(res => res.data),
+        catchError(err => throwError(() => this.errorMessage(err))),
+      );
   }
 
   private errorMessage(err: unknown): ShiftServiceError {

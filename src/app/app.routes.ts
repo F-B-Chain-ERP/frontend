@@ -188,7 +188,7 @@ export const routes: Routes = [
       },
       {
         path: 'pos/kds/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
+        loadChildren: () => import('./features/pos/kds/kds.routes'),
         title: 'Bếp (KDS)',
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.KDS_TICKET.VIEW] },
@@ -471,6 +471,16 @@ export const routes: Routes = [
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.MAU_THONG_BAO.VIEW] },
       },
+      // ── REPORTS (Trung tâm tác vụ báo cáo) ────────
+      {
+        path: 'reports/jobs',
+        loadChildren: () => import('./features/reports/report-jobs/report-jobs.routes'),
+      },
+      {
+        path: 'reports',
+        redirectTo: 'reports/jobs',
+        pathMatch: 'full',
+      },
       {
         path: 'error-pages',
         loadChildren: () => import('./features/error-pages/error-pages.routes'),
@@ -572,6 +582,16 @@ export const routes: Routes = [
   {
     path: 'pickup-slots',
     redirectTo: 'admin/system/pickup-slots/list',
+    pathMatch: 'full',
+  },
+  {
+    path: 'reports/jobs',
+    redirectTo: 'admin/reports/jobs',
+    pathMatch: 'full',
+  },
+  {
+    path: 'reports',
+    redirectTo: 'admin/reports/jobs',
     pathMatch: 'full',
   },
 

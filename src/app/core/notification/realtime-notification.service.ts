@@ -1,12 +1,18 @@
-import {HttpClient} from '@angular/common/http';
-import {Injectable, computed, inject, signal} from '@angular/core';
-import {Observable, Subject, map, tap} from 'rxjs';
-import {Router} from '@angular/router';
-import {AccountService} from '../auth/account.service';
-import {ApplicationConfigService} from '../config/application-config.service';
-import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
-import {ApiResponse} from '../../features/login/login.model';
-import {AppNotification, OrderRealtimePayload, SseTicketResponse} from './notification.model';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, Subject, map, tap } from 'rxjs';
+import { Router } from '@angular/router';
+import { AccountService } from '../auth/account.service';
+import { ApplicationConfigService } from '../config/application-config.service';
+import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
+import { ApiResponse } from '../../features/login/login.model';
+import {
+  AppNotification,
+  OrderRealtimePayload,
+  ReportSseEvent,
+  SseTicketResponse,
+  isReportSseEvent,
+} from './notification.model';
 
 /**
  * Quản lý thông báo thời gian thực (realtime notifications) qua Server-Sent Events (SSE)
@@ -32,6 +38,9 @@ export class RealtimeNotificationService {
   readonly unreadCount = computed(() => this.notifications().filter(n => !n.readAt).length);
   readonly isConnected = signal<boolean>(false);
   readonly isConnecting = signal<boolean>(false);
+
+  /** Sự kiện báo cáo bất đồng bộ hoàn tất (REPORT_DONE) hoặc thất bại (REPORT_FAILED) qua SSE. */
+  readonly reportEvents = new Subject<ReportSseEvent>();
   readonly orderEvents$ = new Subject<OrderRealtimePayload>();
 
   /**
@@ -94,7 +103,29 @@ export class RealtimeNotificationService {
 
     this.eventSource.addEventListener('notification', (event: MessageEvent) => {
       try {
-        const notif: AppNotification = JSON.parse(event.data);
+        const payload = JSON.parse(event.data);
+        if (isReportSseEvent(payload)) {
+          // Sự kiện hoàn tất/thất bại báo cáo bất đồng bộ -> chuyển tới reportEvents
+          const hasActiveListener = this.reportEvents.observed;
+          this.reportEvents.next(payload);
+          if (!hasActiveListener) {
+            this.playNotificationSound();
+            if (payload.status === 'DONE') {
+              this.toast.success(
+                'Báo cáo đã hoàn tất',
+                `Báo cáo ${payload.reportType || ''} (${payload.fileName || 'tệp kết xuất'}) đã hoàn tất. Bạn có thể vào lịch sử báo cáo để tải về.`
+              );
+            } else {
+              this.toast.error(
+                'Xuất báo cáo thất bại',
+                payload.errorMessage || 'Đã có lỗi xảy ra trong quá trình xử lý báo cáo.'
+              );
+            }
+          }
+          return;
+        }
+
+        const notif: AppNotification = payload;
         this.mergeNotifications([notif]);
         const orderCode = this.extractOrderCode(notif.actionUrl) ?? this.extractOrderCode(`${notif.title} ${notif.body}`);
         if (orderCode) {
@@ -198,9 +229,7 @@ export class RealtimeNotificationService {
    */
   markAllAsRead(): void {
     const now = new Date().toISOString();
-    this.notifications.update(list =>
-      list.map(n => ({...n, readAt: n.readAt || now, status: 'READ'}))
-    );
+    this.notifications.update(list => list.map(n => ({ ...n, readAt: n.readAt || now, status: 'READ' })));
     this.http.patch(this.appConfig.getEndpointFor('api/v1/notifications/read-all'), {}).subscribe();
   }
 
@@ -279,7 +308,7 @@ export class RealtimeNotificationService {
    */
   private playNotificationSound(): void {
     try {
-      const AudioCtx = window.AudioContext || (window as unknown as {webkitAudioContext: typeof AudioContext}).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) {
         return;
       }

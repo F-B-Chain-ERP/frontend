@@ -16,9 +16,11 @@ import { NzStepsModule } from 'ng-zorro-antd/steps';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
+import { BreadcrumbsService } from '../../../shared/app-breadcrumbs/breadcrumbs.service';
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
+import { ReportExportButtonComponent } from '../../../shared/components/report-export-button/report-export-button.component';
 import { AppNotificationService } from '../../../shared/app-notification/app-notification.service';
 import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
 import { BranchService } from '../../../core/auth/branch.service';
@@ -72,6 +74,7 @@ function toISODate(d: Date | null): string | null {
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
+    ReportExportButtonComponent,
     HasSomeAuthorityDirective,
   ],
   templateUrl: './order-list.component.html',
@@ -109,12 +112,28 @@ export class PosOrderListComponent implements OnInit {
   fromDate: Date | null = null;
   toDate: Date | null = null;
   cancelReason = '';
+  private lastOrderEventKey = '';
+  private lastOrderEventAt = 0;
+
+  /** Payload xuất báo cáo danh sách đơn POS theo bộ lọc hiện tại. */
+  get exportPayload(): Record<string, any> {
+    return {
+      branchId: this.selectedBranchId || undefined,
+      orderType: this.selectedOrderType || undefined,
+      status: this.selectedStatus || undefined,
+      fromDate: toISODate(this.fromDate) || undefined,
+      toDate: toISODate(this.toDate) || undefined,
+      reportType: 'POS_ORDER_EXPORT',
+    };
+  }
 
   private readonly api = inject(PosStaffApiService);
   private readonly toast = inject(AppNotificationService);
   private readonly route = inject(ActivatedRoute);
   private readonly realtimeNotification = inject(RealtimeNotificationService);
   private readonly destroyRef = inject(DestroyRef);
+
+  private readonly breadcrumbsService = inject(BreadcrumbsService);
 
   onPageSizeChange(size: number): void {
     this.pageSize.set(size);
@@ -142,6 +161,12 @@ export class PosOrderListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Bán hàng (POS)', url: '/admin/pos/orders/list' },
+      { label: 'Đơn hàng', url: '/admin/pos/orders/list' },
+    ]);
+
     this.branchService.loadMine().subscribe();
     this.load();
 
@@ -171,6 +196,15 @@ export class PosOrderListComponent implements OnInit {
 
   private handleRealtimeOrder(event: OrderRealtimePayload): void {
     if (!event) return;
+    // Chống reload dồn khi burst event trùng (retry Redis/SSE): cùng đơn + cùng trạng
+    // thái trong 3s thì bỏ qua.
+    const eventKey = `${event.orderId}:${event.orderStatus || ''}:${event.deliveryStatus || ''}`;
+    const now = Date.now();
+    if (eventKey === this.lastOrderEventKey && now - this.lastOrderEventAt < 3000) {
+      return;
+    }
+    this.lastOrderEventKey = eventKey;
+    this.lastOrderEventAt = now;
     const currentBranch = this.branchService.currentBranch()?.id;
     if (this.selectedBranchId && event.branchId && this.selectedBranchId !== event.branchId) {
       return;
@@ -192,7 +226,10 @@ export class PosOrderListComponent implements OnInit {
       this.orders.set(updated);
 
       if (this.detailVisible() && this.detail()?.id === event.orderId) {
-        this.openDetail(target);
+        // Chi tiết đang mở đúng đơn này và trạng thái không đổi thì khỏi fetch lại.
+        if (event.orderStatus && this.detail()?.status !== event.orderStatus) {
+          this.openDetail(target);
+        }
       }
     } else {
       this.load();
@@ -326,9 +363,7 @@ export class PosOrderListComponent implements OnInit {
   confirmPayment(): void {
     const target = this.paymentTarget();
     if (!target) return;
-    this.doAction(this.api.updatePayment(target.id, 'PAID', null), 'Đã thu tiền thành công', () =>
-      this.paymentTarget.set(null),
-    );
+    this.doAction(this.api.updatePayment(target.id, 'PAID', null), 'Đã thu tiền thành công', () => this.paymentTarget.set(null));
   }
 
   closePaymentModal(): void {

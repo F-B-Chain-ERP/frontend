@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Observable, map, switchMap, from } from 'rxjs';
 import { ApplicationConfigService } from '../../core/config/application-config.service';
 
@@ -7,7 +7,7 @@ export interface ReportJobResponse {
   id: string;
   module: string;
   reportType: string;
-  status: 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
   format: 'EXCEL' | 'PDF';
   requestedBy: string;
   branchId?: string;
@@ -23,7 +23,7 @@ export interface ReportJobSummaryResponse {
   id: string;
   module: string;
   reportType: string;
-  status: 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED';
+  status: 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
   format: 'EXCEL' | 'PDF';
   fileUrl?: string;
   completedAt?: string;
@@ -78,13 +78,13 @@ export class ReportService {
           if (mode === 'ASYNC' || res.status === 202) {
             // Đọc blob dưới dạng JSON để lấy thông tin ReportJob
             return from(res.body!.text()).pipe(
-              map((text) => {
+              map(text => {
                 const envelope: ApiEnvelope<ReportJobResponse> = JSON.parse(text);
                 return {
                   isAsync: true,
                   job: envelope.data,
-                } as ExportResult;
-              })
+                };
+              }),
             );
           } else {
             // Nhận file trực tiếp
@@ -102,11 +102,32 @@ export class ReportService {
                 isAsync: false,
                 blob: res.body!,
                 filename,
-              } as ExportResult)
+              } as ExportResult),
             );
           }
-        })
+        }),
       );
+  }
+
+  /**
+   * Tải file báo cáo hoàn thành của tác vụ bất đồng bộ từ MinIO proxy.
+   * Stream nhị phân về client, tự suy ra tên file từ Content-Disposition.
+   */
+  downloadJobFile(jobId: string): Observable<{ blob: Blob; filename: string }> {
+    const url = this.config.getEndpointFor(`api/v1/reports/jobs/${jobId}/download`);
+    return this.http.get(url, { observe: 'response', responseType: 'blob' }).pipe(
+      map((res: HttpResponse<Blob>) => {
+        const contentDisposition = res.headers.get('Content-Disposition') || '';
+        let filename = `BaoCao_TacVu_${jobId.slice(0, 8)}.xlsx`;
+
+        if (contentDisposition.includes("filename*=UTF-8''")) {
+          filename = decodeURIComponent(contentDisposition.split("filename*=UTF-8''")[1].replace(/"/g, ''));
+        } else if (contentDisposition.includes('filename=')) {
+          filename = contentDisposition.split('filename=')[1].replace(/["']/g, '');
+        }
+        return { blob: new Blob([res.body!]), filename };
+      }),
+    );
   }
 
   /**
@@ -128,7 +149,7 @@ export class ReportService {
    */
   getJobStatus(jobId: string): Observable<ReportJobResponse> {
     const url = this.config.getEndpointFor(`api/v1/reports/jobs/${jobId}`);
-    return this.http.get<ApiEnvelope<ReportJobResponse>>(url).pipe(map((res) => res.data));
+    return this.http.get<ApiEnvelope<ReportJobResponse>>(url).pipe(map(res => res.data));
   }
 
   /**
@@ -136,7 +157,7 @@ export class ReportService {
    */
   listMyJobs(page = 0, size = 20): Observable<PageEnvelope<ReportJobSummaryResponse>> {
     const url = this.config.getEndpointFor(`api/v1/reports/jobs?page=${page}&size=${size}`);
-    return this.http.get<ApiEnvelope<PageEnvelope<ReportJobSummaryResponse>>>(url).pipe(map((res) => res.data));
+    return this.http.get<ApiEnvelope<PageEnvelope<ReportJobSummaryResponse>>>(url).pipe(map(res => res.data));
   }
 
   /**

@@ -135,6 +135,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     name: ['', [Validators.required, Validators.maxLength(150)]],
     categoryId: [null as string | null, [Validators.required]],
     baseUnitId: [null as string | null, [Validators.required]],
+    packUnitId: [null as string | null],
+    packToBaseFactor: [null as number | null, [finiteNumberValidator(), maxFractionDigitsValidator(6)]],
     minStockAlert: [10, [Validators.required, Validators.min(0), finiteNumberValidator(), maxFractionDigitsValidator(2)]],
     shelfLifeDays: [null as number | null, [Validators.min(1), Validators.pattern(/^\d+$/), finiteNumberValidator()]],
     isPerishable: [false],
@@ -152,10 +154,18 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     return 'Cập nhật thông tin nguyên vật liệu';
   }
 
+  /** Hiển thị đóng gói: "1 Hộp = 380 G" hoặc "—" khi không dùng. */
+  formatPack(item: Material): string {
+    if (!item.packUnitId || !(Number(item.packToBaseFactor) > 0)) return '—';
+    const pack = item.packUnitName || 'đóng gói';
+    const base = item.baseUnitName || '';
+    return `1 ${pack} = ${item.packToBaseFactor}${base ? ` ${base}` : ''}`;
+  }
+
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
-      { label: 'Kho & Cung ứng', url: '/admin/inventory/materials/list' },
+      { label: 'Kho', url: '/admin/inventory/materials/list' },
       { label: 'Nguyên vật liệu', url: '/admin/inventory/materials/list' },
     ]);
 
@@ -229,6 +239,7 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       ...m,
       categoryName: m.categoryName || cats.find(c => c.value === m.categoryId)?.label || '—',
       baseUnitName: m.baseUnitName || units.find(u => u.value === m.baseUnitId)?.label || '—',
+      packUnitName: m.packUnitName || units.find(u => u.value === m.packUnitId)?.label || '',
     }));
   }
 
@@ -311,6 +322,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       name: '',
       categoryId: null,
       baseUnitId: null,
+      packUnitId: null,
+      packToBaseFactor: null,
       minStockAlert: 10.0,
       shelfLifeDays: 7,
       isPerishable: false,
@@ -337,6 +350,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
             name: d.name,
             categoryId: d.category?.id || d.categoryId || null,
             baseUnitId: d.baseUnit?.id || d.baseUnitId || null,
+            packUnitId: d.packUnitId || null,
+            packToBaseFactor: d.packToBaseFactor ?? null,
             minStockAlert: d.minStockAlert,
             shelfLifeDays: d.shelfLifeDays ?? null,
             isPerishable: d.isPerishable,
@@ -366,6 +381,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
             name: d.name,
             categoryId: d.category?.id || d.categoryId || null,
             baseUnitId: d.baseUnit?.id || d.baseUnitId || null,
+            packUnitId: d.packUnitId || null,
+            packToBaseFactor: d.packToBaseFactor ?? null,
             minStockAlert: d.minStockAlert,
             shelfLifeDays: d.shelfLifeDays ?? null,
             isPerishable: d.isPerishable,
@@ -404,6 +421,8 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
       name: formRaw.name?.trim(),
       categoryId: formRaw.categoryId,
       baseUnitId: formRaw.baseUnitId,
+      packUnitId: formRaw.packUnitId || null,
+      packToBaseFactor: formRaw.packToBaseFactor ?? null,
       minStockAlert: formRaw.minStockAlert ?? 0,
       shelfLifeDays: formRaw.shelfLifeDays ?? null,
       isPerishable: Boolean(formRaw.isPerishable),
@@ -411,6 +430,22 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     // NVL dễ hỏng bắt buộc có HSD.
     if (base.isPerishable && (base.shelfLifeDays === null || base.shelfLifeDays < 1)) {
       this.toastService.error('NVL dễ hỏng phải nhập hạn sử dụng (≥ 1 ngày).');
+      this.isSaving.set(false);
+      return;
+    }
+    // Đóng gói: đơn vị và hệ số phải đi cùng nhau, hệ số > 0, khác đơn vị gốc.
+    if (base.packUnitId && !(Number(base.packToBaseFactor) > 0)) {
+      this.toastService.error('Đã chọn đơn vị đóng gói thì phải nhập hệ số quy đổi lớn hơn 0.');
+      this.isSaving.set(false);
+      return;
+    }
+    if (!base.packUnitId && base.packToBaseFactor !== null) {
+      this.toastService.error('Đã nhập hệ số quy đổi thì phải chọn đơn vị đóng gói.');
+      this.isSaving.set(false);
+      return;
+    }
+    if (base.packUnitId && base.packUnitId === base.baseUnitId) {
+      this.toastService.error('Đơn vị đóng gói phải khác đơn vị cơ bản.');
       this.isSaving.set(false);
       return;
     }

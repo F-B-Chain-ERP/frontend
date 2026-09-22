@@ -24,6 +24,7 @@ import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-bre
 import { AppButtonComponent } from '../../../shared/app-button/app-button.component';
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
+import { ReportExportButtonComponent } from '../../../shared/components/report-export-button/report-export-button.component';
 import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
 import { ROLE } from '../../../core/config/functions.constants';
 import { AccountService } from '../../../core/auth/account.service';
@@ -74,6 +75,7 @@ import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS } from
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
+    ReportExportButtonComponent,
     HasSomeAuthorityDirective,
   ],
   templateUrl: './shift-list.component.html',
@@ -229,6 +231,14 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   operationPageSize = DEFAULT_PAGE_SIZE;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
 
+  /** Payload xuất biên bản chốt ca (STORE_SHIFT_REPORT) theo bộ lọc hiện tại. */
+  get shiftExportPayload(): Record<string, any> {
+    return {
+      branchId: this.selectedBranchId || undefined,
+      businessDate: this.selectedWorkDate ? this.formatDate(this.selectedWorkDate) : undefined,
+    };
+  }
+
   // Drawer Xem biên bản đối soát
   readonly isDrawerVisible = signal<boolean>(false);
   readonly selectedAssignment = signal<ShiftAssignment | null>(null);
@@ -288,6 +298,12 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   shiftForm!: FormGroup;
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Cửa hàng', url: '/admin/store/shifts/list' },
+      { label: 'Ca làm việc', url: '/admin/store/shifts/list' },
+    ]);
+
     this.initForms();
     this.accountService.identity().subscribe(account => {
       if (!account) return;
@@ -370,15 +386,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     const status = this.selectedStatus || undefined;
 
     this.shiftService
-      .searchAssignments(
-        branchId,
-        dateStr,
-        dateStr,
-        undefined,
-        status,
-        this.operationPageIndex - 1,
-        this.operationPageSize,
-      )
+      .searchAssignments(branchId, dateStr, dateStr, undefined, status, this.operationPageIndex - 1, this.operationPageSize)
       .subscribe({
         next: page => {
           const list = page?.content ?? [];

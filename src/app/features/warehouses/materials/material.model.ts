@@ -25,6 +25,12 @@ export interface Material {
   baseUnitName?: string;
   unitName?: string;
   baseUnit?: MaterialBaseUnit;
+  /** Đơn vị đóng gói hay nhập (VD hộp/thùng, null = không dùng). */
+  packUnitId?: string | null;
+  /** Tên đơn vị đóng gói (resolve từ master). */
+  packUnitName?: string;
+  /** 1 đơn vị đóng gói = bao nhiêu đơn vị cơ sở. */
+  packToBaseFactor?: number | null;
   minStockAlert: number;
   shelfLifeDays?: number | null;
   isPerishable: boolean;

@@ -1,20 +1,21 @@
 import {Component, OnDestroy, OnInit, computed, inject, signal} from '@angular/core';
-import {RouterLink} from '@angular/router';
+import {RouterLink, RouterLinkActive} from '@angular/router';
 import {FormsModule} from '@angular/forms';
 import {NzIconDirective} from 'ng-zorro-antd/icon';
+import {NzBadgeModule} from 'ng-zorro-antd/badge';
 import {LayoutService} from '../service/layout.service';
 import {ThemeService} from '../../core/theme/theme.service';
 import {NzAvatarComponent} from 'ng-zorro-antd/avatar';
 import {NzDropdownDirective, NzDropdownMenuComponent} from 'ng-zorro-antd/dropdown';
 import {NzMenuDirective, NzMenuItemComponent, NzMenuDividerDirective} from 'ng-zorro-antd/menu';
 import {NzSpinComponent} from 'ng-zorro-antd/spin';
-import {NzTooltipDirective} from 'ng-zorro-antd/tooltip';
 import {AccountService} from '../../core/auth/account.service';
 import {LoginService} from '../../features/login/login.service';
 import {BranchService} from '../../core/auth/branch.service';
 import {AppNotificationService} from '../../shared/app-notification/app-notification.service';
 import {BranchResponse} from '../../features/login/login.model';
 import {RealtimeNotificationService} from '../../core/notification/realtime-notification.service';
+import {ReportService} from '../../shared/services/report.service';
 import {NotificationBellComponent} from './notification-bell/notification-bell.component';
 import MenuSearchComponent from '../../shared/app-menu-search/app-menu-search.component';
 
@@ -24,8 +25,10 @@ import MenuSearchComponent from '../../shared/app-menu-search/app-menu-search.co
   styleUrls: ['./header.component.scss'],
   imports: [
     RouterLink,
+    RouterLinkActive,
     FormsModule,
     NzIconDirective,
+    NzBadgeModule,
     NzAvatarComponent,
     NzDropdownDirective,
     NzDropdownMenuComponent,
@@ -46,15 +49,18 @@ export class HeaderComponent implements OnInit, OnDestroy {
   private readonly branchService = inject(BranchService);
   private readonly toast = inject(AppNotificationService);
   private readonly realtimeNotificationService = inject(RealtimeNotificationService);
+  private readonly reportService = inject(ReportService);
 
   protected account = this.accountService.account;
   protected sidebarCollapsed = this.layoutService.sidebarCollapsed;
   protected isVisibleUserMenu = signal(false);
+  protected hasActiveReportJobs = signal(false);
+  protected activeReportJobCount = signal(0);
+  private reportSseSub?: any;
 
   // Branch switcher state
   protected currentBranch = this.branchService.currentBranch;
   protected availableBranches = this.branchService.branches;
-  protected isBranchesLoading = this.branchService.loading;
   protected isVisibleBranchMenu = signal(false);
   protected isSwitchingBranch = signal(false);
   protected branchSearchText = signal('');
@@ -77,10 +83,26 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.branchService.loadMine().subscribe();
     this.realtimeNotificationService.loadRecent().subscribe();
     this.realtimeNotificationService.connect();
+    this.checkActiveReportJobs();
+    this.reportSseSub = this.realtimeNotificationService.reportEvents.subscribe(() => {
+      this.checkActiveReportJobs();
+    });
   }
 
   ngOnDestroy(): void {
     this.realtimeNotificationService.disconnect();
+    this.reportSseSub?.unsubscribe();
+  }
+
+  private checkActiveReportJobs(): void {
+    this.reportService.listMyJobs(0, 10).subscribe({
+      next: res => {
+        const active = (res.content ?? []).filter(j => j.status === 'PENDING' || j.status === 'PROCESSING');
+        this.activeReportJobCount.set(active.length);
+        this.hasActiveReportJobs.set(active.length > 0);
+      },
+      error: () => undefined,
+    });
   }
 
   onToggleSidebar(): void {

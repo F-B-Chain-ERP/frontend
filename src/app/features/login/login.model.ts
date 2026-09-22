@@ -116,6 +116,20 @@ export interface BranchResponse {
   parentName?: string | null;
 }
 
+/**
+ * Chi nhánh hiển thị trên trang chọn đơn vị/chi nhánh (dùng chung cho nhân viên và khách hàng).
+ * Nhân viên: BranchResponse. Khách hàng: SalesBranch.
+ */
+export interface SelectableBranch {
+  id: string;
+  code: string;
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  status?: string | null;
+  parentName?: string | null;
+}
+
 export type LoginError = 'INVALID_CREDENTIALS' | 'ACCOUNT_LOCKED' | 'ACCOUNT_DELETED' | 'UNKNOWN' | 'NO_ORGANIZATION';
 
 export class LoginException extends Error {

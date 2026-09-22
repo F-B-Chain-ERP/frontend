@@ -111,7 +111,7 @@ export class StockCountListComponent extends BaseComponent implements OnInit {
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
-      { label: 'Kho & Cung ứng', url: '/admin/inventory/warehouses/list' },
+      { label: 'Kho', url: '/admin/inventory/warehouses/list' },
       { label: 'Kiểm kê kho', url: '/admin/inventory/counts/list' },
     ]);
     this.loadWarehouses();

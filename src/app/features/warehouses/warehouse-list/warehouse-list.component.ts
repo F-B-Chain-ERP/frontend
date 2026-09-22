@@ -20,7 +20,6 @@ import { AppButtonComponent } from '../../../shared/app-button/app-button.compon
 import { AppPaginationComponent } from '../../../shared/app-pagination/app-pagination.component';
 import { AppModalComponent } from '../../../shared/app-modal/app-modal.component';
 import { AppBreadcrumbsComponent } from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
-import { AppTableSearchInputComponent } from '../../../shared/app-table-search-input/app-table-search-input.component';
 import { AppSelectionBarComponent } from '../../../shared/app-selection-bar/app-selection-bar.component';
 import { ColumnTextFilter } from '../../../shared/utils/column-text-filter';
 import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
@@ -61,7 +60,6 @@ import { Branch } from '../../system/branches/branch.model';
     AppButtonComponent,
     AppPaginationComponent,
     AppModalComponent,
-    AppTableSearchInputComponent,
     AppSelectionBarComponent,
     HasSomeAuthorityDirective,
   ],
@@ -149,6 +147,12 @@ export class WarehouseListComponent extends BaseComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Kho', url: '/admin/inventory/warehouses/list' },
+      { label: 'Kho hàng', url: '/admin/inventory/warehouses/list' },
+    ]);
+
     this.loadBranches();
     this.loadData();
   }

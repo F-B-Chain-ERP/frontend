@@ -157,21 +157,40 @@ export function getDeliveryStatusMeta(status: string | null | undefined): Status
  * strictPayment=false: hiện Hoàn tất để staff bấm, BE từ chối nếu chưa trả (dùng ở
  * bảng list vì summary BE không có paymentStatus).
  */
-export function nextOrderActions(orderType: string, status: string, paymentStatus: string, strictPayment = true): string[] {
+export function nextOrderActions(
+  orderType: string,
+  status: string,
+  paymentStatus: string,
+  strictPayment = true,
+  deliveryStatus?: string | null,
+): string[] {
   const s = (status ?? '').toUpperCase();
   const type = (orderType ?? '').toUpperCase();
   const paid = (paymentStatus ?? '').toUpperCase() === 'PAID';
+  const delivery = (deliveryStatus ?? '').toUpperCase();
+  const deliveryKnown = !!delivery;
   const actions: string[] = [];
   if (s === 'PENDING') actions.push('CONFIRMED');
   if (s === 'CONFIRMED') actions.push('PREPARING');
   if (s === 'PREPARING') actions.push('READY');
   if (s === 'READY') {
-    if (type === 'DELIVERY') actions.push('DELIVERING');
-    else if (paid || !strictPayment) actions.push('COMPLETED');
+    if (type === 'DELIVERY') {
+      // Hậu giao thất bại: cho hủy để thoát kẹt (BE chỉ cho khi delivery FAILED).
+      if (delivery === 'FAILED') actions.push('CANCELLED');
+      return [...actions, ...cancelReject(s)];
+    } else if (paid || !strictPayment) actions.push('COMPLETED');
   }
-  if (s === 'DELIVERING' && (paid || !strictPayment)) actions.push('COMPLETED');
-  if (['PENDING', 'CONFIRMED', 'PREPARING'].includes(s)) actions.push('CANCELLED', 'REJECTED');
-  return actions;
+  if (s === 'DELIVERING' && (paid || !strictPayment)) {
+    // Chốt: đơn giao chỉ hoàn tất sau DELIVERED (BE chặn). Bảng list không có
+    // delivery info thì vẫn hiện nút, BE báo lỗi hướng sang màn Giao hàng.
+    if (type !== 'DELIVERY' || !deliveryKnown || delivery === 'DELIVERED') actions.push('COMPLETED');
+  }
+  return [...actions, ...cancelReject(s)];
+}
+
+function cancelReject(s: string): string[] {
+  if (['PENDING', 'CONFIRMED', 'PREPARING'].includes(s)) return ['CANCELLED', 'REJECTED'];
+  return [];
 }
 
 export const ORDER_STATUS_ACTION_LABELS: Record<string, string> = {

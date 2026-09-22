@@ -6,6 +6,11 @@
       <app-breadcrumbs></app-breadcrumbs>
     </div>
     <div class="page__header__right">
+      <app-report-export-button
+        endpoint="api/v1/reports/pos/orders/export"
+        [payload]="exportPayload"
+        label="Xuất báo cáo"
+      ></app-report-export-button>
       <app-button variant="secondary" leftIcon="reload" (click)="load()" [loading]="loading()"> Tải lại </app-button>
     </div>
   </div>
@@ -282,7 +287,7 @@
     </ng-container>
     <ng-template #detailModalFooter>
       @if (detail(); as d) {
-        @for (action of nextActions(d.orderType, d.status, d.paymentStatus); track action) {
+        @for (action of nextActions(d.orderType, d.status, d.paymentStatus, true, d.delivery?.status); track action) {
           <app-button
             [variant]="action === 'CANCELLED' || action === 'REJECTED' ? 'ghost' : 'primary'"
             *erpUTTHasSomeAuthority="[ROLE.DON_HANG.UPDATE]"

@@ -249,11 +249,6 @@ export class StoreComponent implements OnInit, OnDestroy {
       .subscribe({ next: () => this.cartService.refresh(), error: () => undefined });
   }
 
-  onBranchChange(branchId: string): void {
-    this.storeBranches.selectBranch(branchId);
-    this.cartService.refresh();
-  }
-
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
@@ -290,7 +285,7 @@ export class StoreComponent implements OnInit, OnDestroy {
   loadStoreProducts(): void {
     this.isLoadingProducts.set(true);
     this.salesService
-      .getProducts({ pageSize: 100 })
+      .getProducts({ pageSize: 100, branchId: this.storeBranches.branchId() })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {

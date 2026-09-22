@@ -1,17 +1,17 @@
-import {Component, OnInit, inject, signal} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import { Component, OnInit, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import {NzTableModule} from 'ng-zorro-antd/table';
-import {NzCardModule} from 'ng-zorro-antd/card';
-import {NzInputModule} from 'ng-zorro-antd/input';
-import {NzSelectModule} from 'ng-zorro-antd/select';
-import {NzDatePickerModule} from 'ng-zorro-antd/date-picker';
-import {NzGridModule} from 'ng-zorro-antd/grid';
-import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
-import {NzIconModule} from 'ng-zorro-antd/icon';
-import {NzSpinModule} from 'ng-zorro-antd/spin';
-import {NzAlertModule} from 'ng-zorro-antd/alert';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { NzAlertModule } from 'ng-zorro-antd/alert';
 
 import {BaseComponent} from '../../../shared/base-component/base.component';
 import {AppBreadcrumbsComponent} from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
@@ -98,6 +98,12 @@ export class StoreDailyReportListComponent extends BaseComponent implements OnIn
   readonly isDayShiftsLoading = signal<boolean>(false);
 
   ngOnInit(): void {
+    this.breadcrumbsService.set([
+      { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
+      { label: 'Cửa hàng', url: '/admin/store/shifts/list' },
+      { label: 'Báo cáo ngày', url: '/admin/store/reports/list' },
+    ]);
+
     this.initForms();
     this.branchService.loadMine().subscribe(() => {
       const current = this.branchService.currentBranch();

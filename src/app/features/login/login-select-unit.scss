@@ -7,6 +7,7 @@
   display: flex;
   font-family: var(--font-sans);
   background: linear-gradient(160deg, #FFF8F2 0%, #FCEEE4 40%, #F8D8C8 100%);
+  transition: background 0.35s ease;
   position: relative;
   overflow: hidden;
 
@@ -901,8 +902,23 @@
 }
 
 [data-theme="dark"] .select-unit {
-  background: var(--surface-app);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--surface-app) 92%, var(--brand-500)),
+    var(--surface-app) 45%,
+    color-mix(in srgb, var(--surface-sunken) 88%, var(--brand-700))
+  );
   &::before, &::after { opacity: 0.12; }
+  .mockup-mobile, .mockup-laptop {
+    opacity: 0.85;
+    filter: saturate(0.7) brightness(0.9);
+  }
+  .mockup-laptop__screen,
+  .mockup-mobile__screen {
+    background: var(--surface-sunken);
+    border-color: var(--border-strong);
+  }
+  .select-unit__showcase { opacity: 0.9; }
 }
 
 @keyframes slideUpFade {
