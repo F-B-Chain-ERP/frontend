@@ -104,7 +104,7 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
             title: 'Ca làm việc',
             route: '/admin/store/shifts/list',
             activePrefix: '/admin/store/shifts',
-            authorities: [ROLE.CA_LAM_VIEC.VIEW],
+            authorities: [ROLE.CA_LAM_VIEC.VIEW, 'ROLE_CASHIER', 'ROLE_MANAGER'],
           },
           {
             kind: 'child',

@@ -1,4 +1,6 @@
-import {Component, OnInit, inject, signal} from '@angular/core';
+import {Component, DestroyRef, OnInit, computed, inject, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {EMPTY, Subscription, expand, reduce} from 'rxjs';
 import {CommonModule} from '@angular/common';
 import {FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 
@@ -13,6 +15,7 @@ import {NzModalModule} from 'ng-zorro-antd/modal';
 import {NzTooltipModule} from 'ng-zorro-antd/tooltip';
 import {NzIconModule} from 'ng-zorro-antd/icon';
 import {NzTagModule} from 'ng-zorro-antd/tag';
+import {NzAlertModule} from 'ng-zorro-antd/alert';
 
 import {BaseComponent} from '../../../shared/base-component/base.component';
 import {AppBreadcrumbsComponent} from '../../../shared/app-breadcrumbs/app-breadcrumbs.component';
@@ -53,6 +56,7 @@ import {DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE, DEFAULT_PAGE_SIZE_OPTIONS} from '
     NzTooltipModule,
     NzIconModule,
     NzTagModule,
+    NzAlertModule,
     AppBreadcrumbsComponent,
     AppButtonComponent,
     AppPaginationComponent,
@@ -75,12 +79,58 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   readonly loading = signal<boolean>(false);
   readonly total = signal<number>(0);
 
+  readonly currentBranchName = computed(() => {
+    if (!this.selectedBranchId()) return this.branchService.currentBranch()?.name ?? '';
+    if (this.branchService.branches().length === 0) return this.branchService.currentBranch()?.name ?? '';
+    return this.branchService.branches().find(b => b.id === this.selectedBranchId())?.name ?? '';
+  });
+
+  readonly branchUsers = computed(() => {
+    const all = this.availableUsers();
+    if (!this.selectedBranchId()) return all;
+    const filtered = all.filter(u => !u.primaryBranchId || u.primaryBranchId === this.selectedBranchId());
+    return filtered.length > 0 ? filtered : all;
+  });
+
+  readonly coverageWarning = computed(() => {
+    if (this.loading()) return null;
+    const branchLabel = this.currentBranchName() || 'chi nhánh đang chọn';
+    if (this.assignments().length > 0) {
+      const codes = new Set(this.assignments().map(a => (a.shiftCode ?? '').trim().toUpperCase()));
+      const missing: string[] = [];
+      const configured = new Map(
+        this.availableShifts()
+          .filter(s => ['CA_A', 'CA_B'].includes((s.shiftCode ?? '').trim().toUpperCase()))
+          .map(s => [(s.shiftCode ?? '').trim().toUpperCase(), s]),
+      );
+      const source = [
+        configured.get('CA_A') ?? ({shiftCode: 'CA_A', shiftName: 'Ca A', startTime: '06:30:00', endTime: '15:00:00'} as Shift),
+        configured.get('CA_B') ?? ({shiftCode: 'CA_B', shiftName: 'Ca B', startTime: '15:00:00', endTime: '23:00:00'} as Shift),
+      ];
+      for (const s of source) {
+        const code = (s.shiftCode ?? '').trim().toUpperCase();
+        if (!code || codes.has(code)) continue;
+        const hours = s.startTime && s.endTime ? ` (${s.startTime} - ${s.endTime})` : '';
+        missing.push(`${s.shiftName || code}${hours}`);
+      }
+      if (missing.length === 0) return null;
+      return `Ca trống tại ${branchLabel}: ${missing.join(' • ')} chưa có người trực`;
+    }
+    if (this.selectedBranchId() && (this.selectedStartDate || this.selectedEndDate)) {
+      if (this.availableShifts().length === 0) {
+        return `Chi nhánh ${branchLabel} chưa có khung ca nào — kiểm tra lại Danh mục Khung ca chuẩn`;
+      }
+      return `Chi nhánh ${branchLabel} chưa xếp ai trong khoảng ngày đã chọn`;
+    }
+    return null;
+  });
+
   // Available options
   readonly availableShifts = signal<Shift[]>([]);
   readonly availableUsers = signal<User[]>([]);
 
   // Filter params
-  selectedBranchId: string | null = null;
+  readonly selectedBranchId = signal<string | null>(null);
   selectedAccountId: string | null = null;
   selectedStartDate: Date | null = null;
   selectedEndDate: Date | null = null;
@@ -92,6 +142,11 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   // Single Assign Modal
   readonly isAssignModalVisible = signal<boolean>(false);
   readonly isSavingAssign = signal<boolean>(false);
+  readonly assignedAccountIds = signal<Set<string>>(new Set());
+  readonly isLoadingAssigned = signal(false);
+  readonly assignedLookupFailed = signal(false);
+  private readonly destroyRef = inject(DestroyRef);
+  private assignedLookup?: Subscription;
   assignForm!: FormGroup;
 
   // Bulk Assign Modal
@@ -111,11 +166,25 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
     this.branchService.loadMine().subscribe(() => {
       const current = this.branchService.currentBranch();
       if (current) {
-        this.selectedBranchId = current.id;
+        this.selectedBranchId.set(current.id);
         this.loadShiftsForBranch(current.id);
       }
+      this.syncBranchSelection();
       this.loadData();
     });
+  }
+
+  private syncBranchSelection(): void {
+    const list = this.branchService.branches();
+    const current = this.branchService.currentBranch();
+    if (!this.selectedBranchId()) {
+      if (current) this.selectedBranchId.set(current.id);
+      else if (list.length > 0) this.selectedBranchId.set(list[0].id);
+      return;
+    }
+    if (list.length > 0 && !list.some(b => b.id === this.selectedBranchId())) {
+      this.selectedBranchId.set(current?.id ?? list[0].id);
+    }
   }
 
   private initForms(): void {
@@ -153,10 +222,14 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   }
 
   loadData(): void {
+    if (this.selectedStartDate && this.selectedEndDate && this.selectedStartDate > this.selectedEndDate) {
+      this.toastService.error('Khoảng ngày không hợp lệ', 'Từ ngày phải <= Đến ngày');
+      return;
+    }
     this.loading.set(true);
     const start = this.selectedStartDate ? this.formatDate(this.selectedStartDate) : undefined;
     const end = this.selectedEndDate ? this.formatDate(this.selectedEndDate) : undefined;
-    const branchId = this.selectedBranchId || undefined;
+    const branchId = this.selectedBranchId() || undefined;
     const accountId = this.selectedAccountId || undefined;
     const status = this.selectedStatus || undefined;
 
@@ -186,12 +259,20 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
     this.selectedEndDate = null;
     this.selectedStatus = null;
     this.pageIndex = 1;
+    const current = this.branchService.currentBranch();
+    if (current) this.selectedBranchId.set(current.id);
     this.loadData();
   }
 
-  onBranchChange(branchId: string): void {
-    this.selectedBranchId = branchId;
-    this.loadShiftsForBranch(branchId);
+  onBranchChange(branchId: string | null): void {
+    const list = this.branchService.branches();
+    const fallback = this.branchService.currentBranch()?.id ?? list[0]?.id ?? null;
+    this.selectedBranchId.set(branchId || fallback);
+    const matched = list.find(b => b.id === this.selectedBranchId());
+    if (matched) {
+      if (matched.id !== this.branchService.currentBranch()?.id) this.branchService.setCurrentBranch(matched);
+      this.loadShiftsForBranch(matched.id);
+    }
     this.onSearch();
   }
 
@@ -207,8 +288,51 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   }
 
   // ── Phân ca đơn lẻ ────────────────────────────────────────────────
+  loadAssignedForDate(): void {
+    this.assignedLookup?.unsubscribe();
+    this.assignedAccountIds.set(new Set());
+    this.assignedLookupFailed.set(false);
+    const {branchId, workDate} = this.assignForm.value;
+    this.assignForm.get('accountId')?.reset('');
+    if (!branchId || !/^\d{4}-\d{2}-\d{2}$/.test(workDate ?? '')) {
+      this.isLoadingAssigned.set(false);
+      return;
+    }
+
+    this.isLoadingAssigned.set(true);
+    this.assignedLookup = this.shiftService
+      .searchAssignments(branchId, workDate, workDate, undefined, undefined, 0, 100)
+      .pipe(
+        expand(page => page.pageNumber + 1 < page.totalPages
+          ? this.shiftService.searchAssignments(branchId, workDate, workDate, undefined, undefined, page.pageNumber + 1, 100)
+          : EMPTY),
+        reduce((ids, page) => {
+          for (const assignment of page.content ?? []) {
+            if (assignment.branchId === branchId && assignment.workDate === workDate
+              && !['CANCELLED', 'ABSENT'].includes(assignment.status.toUpperCase())) {
+              ids.add(assignment.accountId);
+            }
+          }
+          return ids;
+        }, new Set<string>()),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ids => {
+          this.assignedAccountIds.set(ids);
+          this.isLoadingAssigned.set(false);
+        },
+        error: () => {
+          this.isLoadingAssigned.set(false);
+          this.assignedLookupFailed.set(true);
+          this.toastService.warning('Chưa kiểm tra được lịch', 'Vui lòng thử tải lại lịch phân ca của nhân viên.');
+        },
+      });
+  }
+
   openAssignModal(): void {
-    const branchId = this.selectedBranchId || this.branchService.branches()[0]?.id || '';
+    const branchId = this.selectedBranchId() || this.branchService.currentBranch()?.id || this.branchService.branches()[0]?.id || '';
+    this.selectedBranchId.set(branchId);
     this.loadShiftsForBranch(branchId);
     this.assignForm.reset({
       branchId,
@@ -218,13 +342,22 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
       note: '',
     });
     this.isAssignModalVisible.set(true);
+    this.loadAssignedForDate();
   }
 
   closeAssignModal(): void {
+    this.assignedLookup?.unsubscribe();
+    this.isLoadingAssigned.set(false);
     this.isAssignModalVisible.set(false);
   }
 
   submitAssignForm(): void {
+    if (this.isLoadingAssigned() || this.assignedLookupFailed() || this.isSavingAssign()) return;
+    if (this.assignedAccountIds().has(this.assignForm.value.accountId)) {
+      this.assignForm.get('accountId')?.reset('');
+      this.toastService.warning('Nhân viên đã có ca', 'Vui lòng chọn nhân viên chưa được phân ca trong ngày.');
+      return;
+    }
     if (this.assignForm.invalid) {
       this.assignForm.markAllAsTouched();
       return;
@@ -257,7 +390,8 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
 
   // ── Phân ca hàng loạt ─────────────────────────────────────────────
   openBulkModal(): void {
-    const branchId = this.selectedBranchId || this.branchService.branches()[0]?.id || '';
+    const branchId = this.selectedBranchId() || this.branchService.currentBranch()?.id || this.branchService.branches()[0]?.id || '';
+    this.selectedBranchId.set(branchId);
     this.loadShiftsForBranch(branchId);
     this.bulkForm.reset({
       branchId,
@@ -317,7 +451,8 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
       next: list => {
         this.isSavingBulk.set(false);
         this.isBulkModalVisible.set(false);
-        this.toastService.success('Phân ca hàng loạt thành công', `Đã tạo ${list.length} lượt phân ca làm việc`);
+        const skipped = assignments.length - list.length;
+        this.toastService.success('Phân ca hàng loạt thành công', skipped > 0 ? `Đã tạo ${list.length} lượt, bỏ qua ${skipped} lượt trùng` : `Đã tạo ${list.length} lượt phân ca làm việc`);
         this.loadData();
       },
       error: (err: ShiftServiceError) => {
@@ -338,13 +473,15 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
 
   // ── Hủy ca ────────────────────────────────────────────────────────
   cancelAssignment(a: ShiftAssignment): void {
+    const reason = window.prompt(`Nhập lý do hủy ca của ${a.employeeName} ngày ${a.workDate}:`, 'Quản lý hủy ca trực');
+    if (reason === null) return;
     this.modalService.confirm({
       nzTitle: 'Xác nhận hủy phân ca',
       nzContent: `Bạn có chắc chắn muốn hủy ca phân công cho ${a.employeeName} vào ngày ${a.workDate} không?`,
       nzOkText: 'Hủy phân ca',
       nzOkDanger: true,
       nzOnOk: () => {
-        this.shiftService.cancelAssignment(a.id, 'Quản lý hủy ca trực').subscribe({
+        this.shiftService.cancelAssignment(a.id, reason || 'Quản lý hủy ca trực').subscribe({
           next: () => {
             this.toastService.success('Thành công', 'Đã hủy ca phân công');
             this.loadData();

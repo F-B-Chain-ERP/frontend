@@ -27,7 +27,9 @@ import { AppModalComponent } from '../../../shared/app-modal/app-modal.component
 import { ReportExportButtonComponent } from '../../../shared/components/report-export-button/report-export-button.component';
 import { HasSomeAuthorityDirective } from '../../../core/auth/has-some-authority.directive';
 import { ROLE } from '../../../core/config/functions.constants';
+import { AccountService } from '../../../core/auth/account.service';
 import { BranchService } from '../../../core/auth/branch.service';
+import { LoginService } from '../../login/login.service';
 import { StoreShiftService } from './shift.service';
 import {
   Shift,
@@ -89,12 +91,123 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
 
   readonly branchService = inject(BranchService);
   readonly shiftService = inject(StoreShiftService);
+  readonly accountService = inject(AccountService);
+  readonly loginService = inject(LoginService);
+  readonly isSwitchingBranch = signal(false);
+
+  readonly isManagerOrAdmin = computed(() => {
+    const account = this.accountService.account();
+    if (!account) return false;
+    const authorities = account.authorities;
+    return (
+      authorities.includes('ROLE_MANAGER') ||
+      authorities.includes('ROLE_ADMIN') ||
+      authorities.includes('ADMIN') ||
+      authorities.includes('FULL_PERMISSION') ||
+      account.login === 'admin'
+    );
+  });
+  readonly isCashierSelfService = computed(
+    () => this.accountService.account()?.authorities.includes('ROLE_CASHIER') === true && !this.isManagerOrAdmin(),
+  );
+  readonly isManagementMode = computed(() => {
+    const account = this.accountService.account();
+    if (!account) return false;
+    return !this.isCashierSelfService() && (this.isManagerOrAdmin() || account.authorities.includes(ROLE.CA_LAM_VIEC.VIEW));
+  });
+  readonly canManageTemplates = computed(() => this.accountService.hasAnyAuthority(ROLE.CA_LAM_VIEC.VIEW));
 
   // Tab State: 'operations' | 'templates'
   activeTab = signal<'operations' | 'templates'>('operations');
 
   onTabChange(index: number): void {
     this.activeTab.set(index === 0 ? 'operations' : 'templates');
+  }
+
+  readonly currentBranchName = computed(() => {
+    const id = this.selectedBranchId();
+    if (!id) return this.branchService.currentBranch()?.name ?? '';
+    if (this.branchService.branches().length === 0) return this.branchService.currentBranch()?.name ?? '';
+    return this.branchService.branches().find(b => b.id === id)?.name ?? '';
+  });
+
+  isSystemShiftCode(code: string | null | undefined): boolean {
+    const c = (code ?? '').trim().toUpperCase();
+    return c === 'CA_A' || c === 'CA_B';
+  }
+
+  readonly coverageWarnings = computed(() => {
+    const list = this.assignments();
+    const branchLabel = this.currentBranchName() || 'chi nhánh đang chọn';
+    if (!list || list.length === 0) {
+      if (this.shifts().length === 0 && this.selectedBranchId()) {
+        return [`Chi nhánh ${branchLabel} chưa có khung ca nào — kiểm tra lại Danh mục Khung ca chuẩn`];
+      }
+      return [`Ngày làm việc này tại ${branchLabel} chưa xếp ai trực`];
+    }
+    const shifts = this.shifts();
+    const codes = new Set(list.map(a => (a.shiftCode ?? '').trim().toUpperCase()));
+    const configured = new Map(
+      shifts
+        .filter(s => this.isSystemShiftCode(s.shiftCode))
+        .map(s => [(s.shiftCode ?? '').trim().toUpperCase(), s]),
+    );
+    const source = [
+      configured.get('CA_A') ?? ({ shiftCode: 'CA_A', shiftName: 'Ca A', startTime: '06:30:00', endTime: '15:00:00' } as Shift),
+      configured.get('CA_B') ?? ({ shiftCode: 'CA_B', shiftName: 'Ca B', startTime: '15:00:00', endTime: '23:00:00' } as Shift),
+    ];
+    const warns: string[] = [];
+    for (const s of source) {
+      const code = (s.shiftCode ?? '').trim().toUpperCase();
+      if (!code || codes.has(code)) continue;
+      const hours = s.startTime && s.endTime ? ` (${s.startTime} - ${s.endTime})` : '';
+      warns.push(`${s.shiftName || code}${hours} chưa có người trực`);
+    }
+    return warns;
+  });
+
+  onBranchChange(branchId: string | null): void {
+    if (this.isCashierSelfService()) return;
+    const list = this.branchService.branches();
+    const fallback = this.branchService.currentBranch()?.id ?? list[0]?.id ?? null;
+    const nextBranchId = branchId || fallback;
+    const matched = list.find(b => b.id === nextBranchId);
+    if (!matched) return;
+    if (matched.id === this.branchService.currentBranch()?.id) {
+      this.selectedBranchId.set(matched.id);
+      return;
+    }
+
+    this.isSwitchingBranch.set(true);
+    this.loginService.selectBranch(matched.id).subscribe({
+      next: () => {
+        this.isSwitchingBranch.set(false);
+        this.branchService.setCurrentBranch(matched);
+        this.selectedBranchId.set(matched.id);
+        this.operationPageIndex = 1;
+        this.templatePageIndex = 1;
+        this.loadOperationsData();
+        if (this.canManageTemplates()) this.loadShiftsData();
+      },
+      error: err => {
+        this.isSwitchingBranch.set(false);
+        this.selectedBranchId.set(this.branchService.currentBranch()?.id ?? fallback);
+        this.toastService.error('Không thể đổi chi nhánh', err.message || 'Vui lòng thử lại.');
+      },
+    });
+  }
+
+  private syncBranchSelection(): void {
+    const list = this.branchService.branches();
+    const current = this.branchService.currentBranch();
+    if (!this.selectedBranchId()) {
+      if (current) this.selectedBranchId.set(current.id);
+      else if (list.length > 0) this.selectedBranchId.set(list[0].id);
+      return;
+    }
+    if (list.length > 0 && !list.some(b => b.id === this.selectedBranchId())) {
+      this.selectedBranchId.set(current?.id ?? list[0].id);
+    }
   }
 
   // ════════════════════════════════════════════════════════════════════
@@ -111,7 +224,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   readonly todayDifference = signal<number>(0);
 
   // Filter params cho vận hành ca
-  selectedBranchId: string | null = null;
+  readonly selectedBranchId = signal<string | null>(null);
   selectedWorkDate: Date = new Date();
   selectedStatus: string | null = null;
   operationPageIndex = DEFAULT_PAGE_INDEX;
@@ -159,6 +272,14 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     return actual - expected;
   });
 
+  // Ngưỡng lệch cho phép: max(10k, 0.5% doanh thu ca) — đồng bộ BE.
+  readonly toleranceAmount = computed(() => {
+    const total = this.closingSummary()?.totalSales || 0;
+    return Math.max(10000, total * 0.005);
+  });
+
+  readonly needsDifferenceReason = computed(() => Math.abs(this.calculatedDifference()) > this.toleranceAmount());
+
   // ════════════════════════════════════════════════════════════════════
   // 2. STATE TAB 2: KHUNG CA CHUẨN (SHIFT TEMPLATES)
   // ════════════════════════════════════════════════════════════════════
@@ -167,6 +288,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   readonly totalShifts = signal<number>(0);
   templatePageIndex = DEFAULT_PAGE_INDEX;
   templatePageSize = DEFAULT_PAGE_SIZE;
+  readonly templateSearchQuery = signal<string>('');
 
   // Modal Thêm / Sửa khung ca
   readonly isShiftModalVisible = signal<boolean>(false);
@@ -183,13 +305,22 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     ]);
 
     this.initForms();
-    this.branchService.loadMine().subscribe(() => {
-      const current = this.branchService.currentBranch();
-      if (current) {
-        this.selectedBranchId = current.id;
+    this.accountService.identity().subscribe(account => {
+      if (!account) return;
+      if (this.isCashierSelfService()) {
+        this.loadOperationsData();
+        return;
       }
-      this.loadOperationsData();
-      this.loadShiftsData();
+
+      this.branchService.loadMine().subscribe(() => {
+        const current = this.branchService.currentBranch();
+        if (current) {
+          this.selectedBranchId.set(current.id);
+        }
+        this.syncBranchSelection();
+        this.loadOperationsData();
+        if (this.canManageTemplates()) this.loadShiftsData();
+      });
     });
   }
 
@@ -229,8 +360,29 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
 
   loadOperationsData(): void {
     this.isOperationsLoading.set(true);
+    if (this.isCashierSelfService()) {
+      this.shiftService.getMyActiveShift().subscribe({
+        next: assignment => {
+          this.assignments.set(assignment ? [assignment] : []);
+          this.totalOperations.set(assignment ? 1 : 0);
+          this.todayRevenue.set(0);
+          this.todayCash.set(0);
+          this.todayTransfer.set(0);
+          this.todayDifference.set(0);
+          this.isOperationsLoading.set(false);
+        },
+        error: err => {
+          this.assignments.set([]);
+          this.totalOperations.set(0);
+          this.isOperationsLoading.set(false);
+          this.toastService.error('Lỗi tải ca làm việc', err.message);
+        },
+      });
+      return;
+    }
+
     const dateStr = this.selectedWorkDate ? this.formatDate(this.selectedWorkDate) : undefined;
-    const branchId = this.selectedBranchId || undefined;
+    const branchId = this.selectedBranchId() || undefined;
     const status = this.selectedStatus || undefined;
 
     this.shiftService
@@ -295,6 +447,10 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
 
   // ── Mở ca ──────────────────────────────────────────────────────────
   openOpenShiftModal(a: ShiftAssignment): void {
+    if (a.cashHandler !== true) {
+      this.toastService.warning('Không thể mở ca', 'Ca này không được phân công cầm két.');
+      return;
+    }
     this.targetAssignmentForOpen.set(a);
     this.openShiftForm.reset({
       initialCash: a.initialCash || 1000000,
@@ -344,6 +500,10 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
 
   // ── Đóng ca & Chốt két ──────────────────────────────────────────────
   openCloseShiftModal(a: ShiftAssignment): void {
+    if (a.cashHandler !== true) {
+      this.toastService.warning('Không thể chốt ca', 'Ca này không vận hành két tiền.');
+      return;
+    }
     this.targetAssignmentForClose.set(a);
     this.isCloseModalVisible.set(true);
     this.isSummaryLoading.set(true);
@@ -385,8 +545,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     if (!a) return;
 
     const formVal = this.closeShiftForm.value;
-    const diff = this.calculatedDifference();
-    if (diff !== 0 && (!formVal.differenceReason?.trim() || formVal.differenceReason.trim().length < 10)) {
+    if (this.needsDifferenceReason() && (!formVal.differenceReason?.trim() || formVal.differenceReason.trim().length < 10)) {
       this.closeShiftForm.get('differenceReason')?.setErrors({ minlength: true });
       this.closeShiftForm.get('differenceReason')?.markAsTouched();
       this.toastService.warning('Cần giải trình', 'Két tiền bị chênh lệch! Vui lòng nhập lý do giải trình (tối thiểu 10 ký tự).');
@@ -394,8 +553,9 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     }
 
     this.isClosingShift.set(true);
+    const actualCash = Number(formVal.actualCash);
     const payload: CloseShiftPayload = {
-      actualCash: Number(formVal.actualCash) != null && !isNaN(Number(formVal.actualCash)) ? Number(formVal.actualCash) : 0,
+      actualCash: Number.isFinite(actualCash) ? actualCash : 0,
       cashPayout: Number(formVal.cashPayout) || 0,
       differenceReason: formVal.differenceReason?.trim() || undefined,
       note: formVal.note?.trim() || undefined,
@@ -420,6 +580,39 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
           });
         }
         this.toastService.error('Không thể chốt ca', err.message || 'Đã xảy ra lỗi khi chốt ca.');
+      },
+    });
+  }
+
+  // ── Điểm danh vào/ra cho nhân viên không cầm két (chấm công) ──────
+  readonly isCheckingAttendance = signal<boolean>(false);
+
+  onCheckInAttendance(a: ShiftAssignment): void {
+    this.isCheckingAttendance.set(true);
+    this.shiftService.checkInAttendance(a.id).subscribe({
+      next: () => {
+        this.isCheckingAttendance.set(false);
+        this.toastService.success('Điểm danh thành công', `${a.employeeName} đã vào ca ${a.shiftName}`);
+        this.loadOperationsData();
+      },
+      error: err => {
+        this.isCheckingAttendance.set(false);
+        this.toastService.error('Không thể điểm danh vào', err.message);
+      },
+    });
+  }
+
+  onCheckOutAttendance(a: ShiftAssignment): void {
+    this.isCheckingAttendance.set(true);
+    this.shiftService.checkOutAttendance(a.id).subscribe({
+      next: () => {
+        this.isCheckingAttendance.set(false);
+        this.toastService.success('Điểm danh thành công', `${a.employeeName} đã ra ca ${a.shiftName}`);
+        this.loadOperationsData();
+      },
+      error: err => {
+        this.isCheckingAttendance.set(false);
+        this.toastService.error('Không thể điểm danh ra', err.message);
       },
     });
   }
@@ -467,15 +660,43 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     });
   }
 
+  onRejectShiftReport(): void {
+    const report = this.selectedReport();
+    if (!report) return;
+
+    const reason = window.prompt('Nhập lý do từ chối biên bản (tối thiểu 10 ký tự) để thu ngân sửa và nộp lại:', '');
+    if (reason === null) return;
+    if (!reason.trim() || reason.trim().length < 10) {
+      this.toastService.warning('Lý do chưa đạt', 'Vui lòng nhập lý do từ chối tối thiểu 10 ký tự.');
+      return;
+    }
+
+    this.isApprovingReport.set(true);
+    this.shiftService.rejectShiftReport(report.id, reason.trim()).subscribe({
+      next: updated => {
+        this.isApprovingReport.set(false);
+        this.toastService.success('Đã từ chối', 'Biên bản đã trả về, ca được mở lại để thu ngân chốt lại');
+        this.selectedReport.set(updated);
+        this.loadOperationsData();
+      },
+      error: err => {
+        this.isApprovingReport.set(false);
+        this.toastService.error('Không thể từ chối', err.message);
+      },
+    });
+  }
+
   // ════════════════════════════════════════════════════════════════════
   // 4. LOGIC TAB 2: KHUNG CA CHUẨN (SHIFT TEMPLATES)
   // ════════════════════════════════════════════════════════════════════
 
   loadShiftsData(): void {
+    if (!this.canManageTemplates()) return;
     this.isShiftsLoading.set(true);
-    const branchId = this.selectedBranchId || undefined;
+    const branchId = this.selectedBranchId() || undefined;
+    const query = this.templateSearchQuery().trim() || undefined;
 
-    this.shiftService.searchShifts(branchId, undefined, this.templatePageIndex - 1, this.templatePageSize).subscribe({
+    this.shiftService.searchShifts(branchId, undefined, this.templatePageIndex - 1, this.templatePageSize, query).subscribe({
       next: page => {
         this.shifts.set(page?.content ?? []);
         this.totalShifts.set(page?.totalElements ?? 0);
@@ -491,7 +712,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   openCreateShiftModal(): void {
     this.shiftModalMode.set('create');
     this.editingShiftId.set(null);
-    const defaultBranch = this.selectedBranchId || this.branchService.branches()[0]?.id || '';
+    const defaultBranch = this.selectedBranchId() || this.branchService.currentBranch()?.id || this.branchService.branches()[0]?.id || '';
     this.shiftForm.reset({
       branchId: defaultBranch,
       shiftCode: '',
@@ -578,6 +799,17 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
         });
       },
     });
+  }
+
+  onSearchTemplates(): void {
+    this.templatePageIndex = 1;
+    this.loadShiftsData();
+  }
+
+  onResetTemplates(): void {
+    this.templateSearchQuery.set('');
+    this.templatePageIndex = 1;
+    this.loadShiftsData();
   }
 
   onTemplatePageIndexChange(idx: number): void {

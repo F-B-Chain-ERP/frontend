@@ -80,6 +80,7 @@ export interface ShiftAssignment {
   status: ShiftAssignmentStatus | string;
   checkInAt?: string | null;
   checkOutAt?: string | null;
+  cashHandler?: boolean | null;
   initialCash: number;
   finalCash: number;
   cashDifference: number;
@@ -189,6 +190,7 @@ export interface StoreDailyReport {
   netRevenue: number;
   cashAmount: number;
   transferAmount: number;
+  cashPayout?: number;
   status: DailyReportStatus | string;
   submittedById?: string;
   submittedByName?: string;
@@ -343,6 +345,13 @@ export function getShiftReportStatusMeta(status: string | null | undefined): { l
       return { label: 'Chờ duyệt chốt két', badgeClass: 'tbl-badge tbl-badge--warning' };
   }
 }
+
+export const DAILY_REPORT_STATUS_OPTIONS = [
+  { value: null, label: 'Tất cả trạng thái' },
+  { value: DailyReportStatus.OPEN, label: 'Đang mở' },
+  { value: DailyReportStatus.SUBMITTED, label: 'Chờ khóa sổ' },
+  { value: DailyReportStatus.RECONCILED, label: 'Đã khóa sổ' },
+];
 
 export function getDailyReportStatusMeta(status: string | null | undefined): { label: string; badgeClass: string } {
   const str = String(status).toUpperCase();

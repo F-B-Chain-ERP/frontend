@@ -80,10 +80,11 @@ export class StoreShiftService {
   // 1. KHUNG CA CHUẨN (SHIFT TEMPLATES)
   // ════════════════════════════════════════════════════════════════════
 
-  searchShifts(branchId?: string, status?: string, page = 0, size = 20): Observable<PageEnvelope<Shift>> {
+  searchShifts(branchId?: string, status?: string, page = 0, size = 20, query?: string): Observable<PageEnvelope<Shift>> {
     let params = new HttpParams().set('page', String(page)).set('size', String(size));
     if (branchId) params = params.set('branchId', branchId);
     if (status) params = params.set('status', status);
+    if (query?.trim()) params = params.set('query', query.trim());
 
     return this.http.get<ApiEnvelope<PageEnvelope<Shift>>>(this.shiftApi, { params }).pipe(
       map(res => res.data),
@@ -185,6 +186,20 @@ export class StoreShiftService {
       );
   }
 
+  checkInAttendance(id: string): Observable<ShiftAssignment> {
+    return this.http.post<ApiEnvelope<ShiftAssignment>>(`${this.assignmentApi}/${id}/check-in`, {}).pipe(
+      map(res => res.data),
+      catchError(err => throwError(() => this.errorMessage(err))),
+    );
+  }
+
+  checkOutAttendance(id: string): Observable<ShiftAssignment> {
+    return this.http.post<ApiEnvelope<ShiftAssignment>>(`${this.assignmentApi}/${id}/check-out`, {}).pipe(
+      map(res => res.data),
+      catchError(err => throwError(() => this.errorMessage(err))),
+    );
+  }
+
   // ════════════════════════════════════════════════════════════════════
   // 3. VẬN HÀNH CA & CHỐT KÉT (SHIFT OPERATIONS)
   // ════════════════════════════════════════════════════════════════════
@@ -192,7 +207,7 @@ export class StoreShiftService {
   getMyActiveShift(): Observable<ShiftAssignment | null> {
     return this.http.get<ApiEnvelope<ShiftAssignment>>(`${this.operationApi}/my-active`).pipe(
       map(res => res.data ?? null),
-      catchError(() => [null]),
+      catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
@@ -227,6 +242,15 @@ export class StoreShiftService {
   confirmShiftReport(reportId: string, payload?: ConfirmShiftReportPayload): Observable<ShiftReport> {
     return this.http
       .put<ApiEnvelope<ShiftReport>>(`${this.operationApi}/reports/${reportId}/confirm`, payload ?? {})
+      .pipe(
+        map(res => res.data),
+        catchError(err => throwError(() => this.errorMessage(err))),
+      );
+  }
+
+  rejectShiftReport(reportId: string, reason: string): Observable<ShiftReport> {
+    return this.http
+      .put<ApiEnvelope<ShiftReport>>(`${this.operationApi}/reports/${reportId}/reject`, { reason })
       .pipe(
         map(res => res.data),
         catchError(err => throwError(() => this.errorMessage(err))),
@@ -270,11 +294,12 @@ export class StoreShiftService {
     );
   }
 
-  searchDailyReports(branchId?: string, startDate?: string, endDate?: string, page = 0, size = 20): Observable<PageEnvelope<StoreDailyReport>> {
+  searchDailyReports(branchId?: string, startDate?: string, endDate?: string, page = 0, size = 20, status?: string): Observable<PageEnvelope<StoreDailyReport>> {
     let params = new HttpParams().set('page', String(page)).set('size', String(size));
     if (branchId) params = params.set('branchId', branchId);
     if (startDate) params = params.set('startDate', startDate);
     if (endDate) params = params.set('endDate', endDate);
+    if (status) params = params.set('status', status);
 
     return this.http.get<ApiEnvelope<PageEnvelope<StoreDailyReport>>>(this.dailyReportApi, { params }).pipe(
       map(res => res.data),

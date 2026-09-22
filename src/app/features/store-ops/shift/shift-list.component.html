@@ -7,6 +7,9 @@
       <p class="page__header__description">
         Bàn giao ca làm việc &bull; Đối soát tiền mặt thu ngân &bull; Khớp nối doanh thu POS với tiền mặt thực nộp vào
         két an toàn
+        @if (currentBranchName()) {
+        <span> &bull; Đang xem: <b>{{ currentBranchName() }}</b></span>
+        }
       </p>
     </div>
     <div class="page__header__right">
@@ -17,7 +20,7 @@
         label="Xuất biên bản ca"
       ></app-report-export-button>
       }
-      @if (activeTab() === 'templates') {
+      @if (canManageTemplates() && activeTab() === 'templates') {
       <app-button *erpUTTHasSomeAuthority="[ROLE.CA_LAM_VIEC.CREATE]" variant="primary" leftIcon="plus"
         (click)="openCreateShiftModal()">
         Tạo khung ca mới
@@ -27,6 +30,7 @@
   </div>
 
   <!-- ── 2. KPI Summary Cards ───────────────────────────────────────── -->
+  @if (isManagementMode()) {
   <div nz-row class="kpi-row" [nzGutter]="[16, 16]">
     <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
       <nz-card [nzBordered]="false" class="stat-card">
@@ -93,6 +97,7 @@
       </nz-card>
     </div>
   </div>
+  }
 
   <!-- ── 3. Main Tabs Navigation ────────────────────────────────────── -->
   <nz-tabs [nzSelectedIndex]="activeTab() === 'operations' ? 0 : 1" (nzSelectedIndexChange)="onTabChange($event)"
@@ -102,13 +107,14 @@
     <!-- ════════════════════════════════════════════════════════════════ -->
     <nz-tab nzTitle="Vận hành ca &amp; Đối soát két">
       <!-- Filter Box -->
+      @if (isManagementMode()) {
       <nz-card class="page__filter-box" [nzBordered]="false">
         <div class="page__filter-box__row">
           <!-- Chi nhánh -->
           <div class="filter-item filter-item--grow">
-            <label class="form-label">Chi nhánh</label>
-            <nz-select [(ngModel)]="selectedBranchId" (ngModelChange)="onSearchOperations()"
-              nzPlaceHolder="Chọn chi nhánh" style="width: 100%">
+            <label class="form-label">Chi nhánh @if (currentBranchName()) { ({{ currentBranchName() }}) }</label>
+            <nz-select [ngModel]="selectedBranchId()" (ngModelChange)="onBranchChange($event)"
+              nzPlaceHolder="Chọn chi nhánh" nzShowSearch [nzLoading]="branchService.loading() || isSwitchingBranch()" style="width: 100%">
               @for (b of branchService.branches(); track b.id) {
               <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
               }
@@ -140,6 +146,18 @@
           </div>
         </div>
       </nz-card>
+      }
+
+      <!-- Cảnh báo thiếu ca trực -->
+      @if (canManageTemplates() && coverageWarnings().length > 0) {
+      <nz-alert nzType="warning" nzShowIcon style="margin-bottom: 12px"
+        [nzMessage]="coverageWarnings().join(' • ')"></nz-alert>
+      }
+
+      @if (isCashierSelfService() && assignments()[0]?.cashHandler === false) {
+      <nz-alert nzType="warning" nzShowIcon style="margin-bottom: 12px"
+        nzMessage="Ca này không được phân công cầm két; không thể mở hoặc chốt ca."></nz-alert>
+      }
 
       <!-- Main Data Table -->
       <nz-card class="page__list" [nzBordered]="false">
@@ -211,16 +229,28 @@
                     (click)="onViewReconciliation(a)"></app-button>
                   }
 
-                  <!-- Nút Mở ca (khi SCHEDULED) -->
-                  @if (a.status === 'SCHEDULED') {
-                  <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.UPDATE]" variant="ghost" iconOnly="login"
+                  <!-- Nút Mở ca (khi SCHEDULED, thu ngân/quản lý) -->
+                  @if (a.status === 'SCHEDULED' && a.cashHandler === true) {
+                  <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.UPDATE, 'ROLE_MANAGER', isCashierSelfService()]" variant="ghost" iconOnly="login"
                     nz-tooltip nzTooltipTitle="Mở ca làm việc (Nhận tiền két)" (click)="openOpenShiftModal(a)"></app-button>
                   }
 
-                  <!-- Nút Đóng ca & Chốt két (khi CHECKED_IN) -->
-                  @if (a.status === 'CHECKED_IN') {
-                  <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.UPDATE]" variant="ghost" iconOnly="logout"
+                  <!-- Nút Điểm danh vào (khi SCHEDULED, nhân viên không cầm két) -->
+                  @if (isManagementMode() && a.status === 'SCHEDULED' && a.cashHandler === false) {
+                  <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.UPDATE, 'ROLE_MANAGER']" variant="ghost" iconOnly="check-circle"
+                    nz-tooltip nzTooltipTitle="Điểm danh vào ca (chấm công)" [loading]="isCheckingAttendance()" (click)="onCheckInAttendance(a)"></app-button>
+                  }
+
+                  <!-- Nút Đóng ca & Chốt két (khi CHECKED_IN, thu ngân/quản lý) -->
+                  @if (a.status === 'CHECKED_IN' && a.cashHandler === true) {
+                  <app-button *erpUTTHasSomeAuthority="[ROLE.BAO_CAO_CA.CREATE, 'ROLE_MANAGER', isCashierSelfService()]" variant="ghost" iconOnly="logout"
                     nz-tooltip nzTooltipTitle="Đóng ca &amp; Chốt két kiểm tiền" (click)="openCloseShiftModal(a)"></app-button>
+                  }
+
+                  <!-- Nút Điểm danh ra (khi CHECKED_IN, nhân viên không cầm két) -->
+                  @if (isManagementMode() && a.status === 'CHECKED_IN' && a.cashHandler === false) {
+                  <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.UPDATE, 'ROLE_MANAGER']" variant="ghost" iconOnly="logout"
+                    nz-tooltip nzTooltipTitle="Điểm danh ra ca (chấm công)" [loading]="isCheckingAttendance()" (click)="onCheckOutAttendance(a)"></app-button>
                   }
                 </div>
               </td>
@@ -230,18 +260,52 @@
         </nz-table>
 
         <!-- Pagination -->
+        @if (isManagementMode()) {
         <div class="page__pagination">
           <app-pagination [total]="totalOperations()" [pageIndex]="operationPageIndex" [pageSize]="operationPageSize"
             [pageSizeOptions]="pageSizeOptions" (pageIndexChange)="onOperationPageIndexChange($event)"
             (pageSizeChange)="onOperationPageSizeChange($event)"></app-pagination>
         </div>
+        }
       </nz-card>
     </nz-tab>
 
     <!-- ════════════════════════════════════════════════════════════════ -->
     <!-- TAB 2: KHUNG CA CHUẨN (SHIFT TEMPLATES) ───────────────────────── -->
     <!-- ════════════════════════════════════════════════════════════════ -->
+    @if (canManageTemplates()) {
     <nz-tab nzTitle="Danh mục Khung ca chuẩn">
+      <nz-card class="page__filter-box" [nzBordered]="false" style="margin-bottom: 12px;">
+        <div class="page__filter-box__row">
+          <div class="filter-item filter-item--grow">
+            <label class="form-label">Chi nhánh @if (currentBranchName()) { ({{ currentBranchName() }}) }</label>
+            <nz-select [ngModel]="selectedBranchId()" (ngModelChange)="onBranchChange($event)"
+              nzPlaceHolder="Chọn chi nhánh" nzShowSearch [nzLoading]="branchService.loading() || isSwitchingBranch()" style="width: 100%">
+              @for (b of branchService.branches(); track b.id) {
+              <nz-option [nzLabel]="b.name" [nzValue]="b.id"></nz-option>
+              }
+            </nz-select>
+          </div>
+          <div class="filter-item filter-item--grow">
+            <label class="form-label" for="template-search-input">Tìm kiếm</label>
+            <nz-input-wrapper [nzAllowClear]="true">
+              <nz-icon nzInputPrefix nzType="search" />
+              <input
+                id="template-search-input"
+                nz-input
+                [ngModel]="templateSearchQuery()"
+                (ngModelChange)="templateSearchQuery.set($event)"
+                (keyup.enter)="onSearchTemplates()"
+                placeholder="Tìm theo mã ca, tên ca..."
+              />
+            </nz-input-wrapper>
+          </div>
+          <div class="page__filter-box__actions">
+            <app-button variant="primary" leftIcon="search" (click)="onSearchTemplates()">Tìm kiếm</app-button>
+            <app-button variant="secondary" leftIcon="reload" (click)="onResetTemplates()">Làm mới</app-button>
+          </div>
+        </div>
+      </nz-card>
       <nz-card class="page__list" [nzBordered]="false">
         <nz-table #templateTable [nzData]="shifts()" [nzLoading]="isShiftsLoading()" [nzShowPagination]="false"
           [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '980px' }">
@@ -280,10 +344,14 @@
               </td>
               <td nzAlign="center">
                 <div class="tbl-actions">
+                  @if (!isSystemShiftCode(s.shiftCode)) {
                   <app-button *erpUTTHasSomeAuthority="[ROLE.CA_LAM_VIEC.UPDATE]" variant="ghost" iconOnly="edit"
                     nz-tooltip nzTooltipTitle="Chỉnh sửa khung ca" (click)="openEditShiftModal(s)"></app-button>
                   <app-button *erpUTTHasSomeAuthority="[ROLE.CA_LAM_VIEC.DELETE]" variant="ghost" iconOnly="delete"
                     nz-tooltip nzTooltipTitle="Xóa khung ca" (click)="deleteShiftTemplate(s)"></app-button>
+                  } @else {
+                  <nz-icon nzType="lock" nzTheme="outline" class="text-secondary" nz-tooltip nzTooltipTitle="Ca A/B mặc định toàn hệ thống" />
+                  }
                 </div>
               </td>
             </tr>
@@ -299,6 +367,7 @@
         </div>
       </nz-card>
     </nz-tab>
+    }
   </nz-tabs>
 
   <!-- ── 4. Modal Mở ca làm việc ────────────────────────────────────── -->
@@ -423,11 +492,12 @@
           } @else {
           <span class="badge-sub"> (Thừa tiền trong két)</span>
           }
+        <span class="badge-sub"> — Ngưỡng cho phép: {{ toleranceAmount() | number: '1.0-0' }} ₫</span>
       </div>
 
-      @if (calculatedDifference() !== 0) {
+      @if (needsDifferenceReason()) {
       <div class="form-group" style="margin-top: 12px;">
-        <label class="form-label" for="close-diff-reason">Lý do giải trình chênh lệch két * (tối thiểu 10 ký tự)</label>
+        <label class="form-label" for="close-diff-reason">Lý do giải trình chênh lệch két * (vượt ngưỡng, tối thiểu 10 ký tự)</label>
         <textarea id="close-diff-reason" nz-input formControlName="differenceReason" rows="2"
           [nzStatus]="closeShiftForm.get('differenceReason')?.invalid && closeShiftForm.get('differenceReason')?.touched ? 'error' : ''"
           placeholder="Nhập lý do chênh lệch tiền mặt (tối thiểu 10 ký tự)..."></textarea>
@@ -688,7 +758,16 @@
             <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
             @if (report.status === 'SUBMITTED') {
               <app-button
-                *erpUTTHasSomeAuthority="[ROLE.CA_LAM_VIEC.UPDATE]"
+                *erpUTTHasSomeAuthority="[ROLE.BAO_CAO_CA.UPDATE, 'ROLE_MANAGER']"
+                variant="secondary"
+                leftIcon="close-circle"
+                [loading]="isApprovingReport()"
+                (click)="onRejectShiftReport()"
+              >
+                Từ chối
+              </app-button>
+              <app-button
+                *erpUTTHasSomeAuthority="[ROLE.BAO_CAO_CA.UPDATE, 'ROLE_MANAGER']"
                 variant="primary"
                 leftIcon="safety-certificate"
                 [loading]="isApprovingReport()"
