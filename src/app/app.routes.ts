@@ -212,7 +212,7 @@ export const routes: Routes = [
         path: 'store/shifts',
         loadChildren: () => import('./features/store-ops/shift/shift.routes'),
         canActivate: [UserRouteAccessService],
-        data: { authorities: [ROLE.CA_LAM_VIEC.VIEW] },
+        data: { authorities: [ROLE.CA_LAM_VIEC.VIEW, 'ROLE_CASHIER', 'ROLE_MANAGER'] },
       },
       {
         path: 'store/shifts/list',

@@ -78,7 +78,9 @@ export const ROLE = {
   // ── STORE (5 resource) ──────────────────────────────────────────
   CA_LAM_VIEC: grp('store:shift:view', 'store:shift:create', 'store:shift:update', 'store:shift:delete'),
   PHAN_CA: grp('store:shift_assignment:view', 'store:shift_assignment:create', 'store:shift_assignment:update', 'store:shift_assignment:delete'),
+  BAO_CAO_CA: grp('store:shift_report:view', 'store:shift_report:create', 'store:shift_report:confirm', 'store:shift_report:confirm'),
   BAO_CAO_NGAY: grp('store:daily_report:view', 'store:daily_report:create', 'store:daily_report:update', 'store:daily_report:delete'),
+  KHOA_SO_NGAY: { APPROVE: 'store:daily_report:approve' } as const,
   XEM_TON_SAN_PHAM: grp('store:product_stock:view', 'store:product_stock:view', 'store:product_stock:view', 'store:product_stock:view'),
   XEM_LICH_SU_TON_SAN_PHAM: grp('store:product_stock_history:view', 'store:product_stock_history:view', 'store:product_stock_history:view', 'store:product_stock_history:view'),
 

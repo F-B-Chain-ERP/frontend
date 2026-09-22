@@ -7,6 +7,9 @@
       <p class="page__header__description">
         Lập lịch ca trực cho nhân viên thu ngân &bull; Theo dõi trạng thái ca làm việc &bull; Hỗ trợ phân ca linh hoạt
         theo tuần
+        @if (currentBranchName()) {
+        <span> &bull; Đang xem: <b>{{ currentBranchName() }}</b></span>
+        }
       </p>
     </div>
     <div class="page__header__right">
@@ -34,11 +37,13 @@
     <div class="page__filter-box__row">
       <!-- Chi nhánh -->
       <div class="filter-item">
-        <label class="form-label">Chi nhánh</label>
+        <label class="form-label">Chi nhánh @if (currentBranchName()) { ({{ currentBranchName() }}) }</label>
         <nz-select
-          [(ngModel)]="selectedBranchId"
+          [ngModel]="selectedBranchId()"
           (ngModelChange)="onBranchChange($event)"
           nzPlaceHolder="Tất cả chi nhánh"
+          nzShowSearch
+          [nzLoading]="branchService.loading()"
           style="width: 100%"
         >
           @for (b of branchService.branches(); track b.id) {
@@ -57,7 +62,7 @@
           [nzAllowClear]="true"
           style="width: 100%"
         >
-          @for (u of availableUsers(); track u.id) {
+          @for (u of branchUsers(); track u.id) {
             <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')'" [nzValue]="u.id"></nz-option>
           }
         </nz-select>
@@ -112,6 +117,9 @@
   </nz-card>
 
   <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
+  @if (coverageWarning()) {
+  <nz-alert nzType="warning" nzShowIcon style="margin-bottom: 12px" [nzMessage]="coverageWarning()"></nz-alert>
+  }
   <nz-card class="page__list" [nzBordered]="false">
     <nz-table
       #assignmentTable

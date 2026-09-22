@@ -36,6 +36,7 @@
           [(ngModel)]="selectedBranchId"
           (ngModelChange)="onSearch()"
           nzPlaceHolder="Chọn chi nhánh"
+          nzShowSearch
           style="width: 100%"
         >
           @for (b of branchService.branches(); track b.id) {
@@ -68,6 +69,22 @@
         ></nz-date-picker>
       </div>
 
+      <!-- Trạng thái -->
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onSearch()"
+          nzPlaceHolder="Tất cả trạng thái"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.label) {
+            <nz-option [nzLabel]="opt.label" [nzValue]="opt.value"></nz-option>
+          }
+        </nz-select>
+      </div>
+
       <!-- Actions -->
       <div class="page__filter-box__actions">
         <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
@@ -96,7 +113,7 @@
         <th scope="col" nzWidth="120px" nzAlign="right">Giảm giá</th>
         <th scope="col" nzWidth="150px" nzAlign="right">Doanh thu thuần</th>
         <th scope="col" nzWidth="140px" nzAlign="right">Tiền mặt POS</th>
-        <th scope="col" nzWidth="140px" nzAlign="right">Chuyển khoản</th>
+        <th scope="col" nzWidth="140px" nzAlign="right">CK/Ví/Thẻ</th>
         <th scope="col" nzWidth="130px" nzAlign="right">Tiền quỹ mở</th>
         <th scope="col" nzWidth="130px" nzAlign="right">Tiền quỹ chốt</th>
         <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
@@ -126,7 +143,7 @@
               <span class="font-mono font-semibold" nz-tooltip [nzTooltipTitle]="'Doanh số tiền mặt qua POS: ' + (r.cashAmount | number: '1.0-0') + ' ₫'">{{ r.cashAmount | number: '1.0-0' }} ₫</span>
             </td>
             <td nzAlign="right">
-              <span class="font-mono text-secondary" nz-tooltip [nzTooltipTitle]="'Doanh số chuyển khoản: ' + (r.transferAmount | number: '1.0-0') + ' ₫'">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
+              <span class="font-mono text-secondary" nz-tooltip [nzTooltipTitle]="'CK + ví + thẻ về tài khoản: ' + (r.transferAmount | number: '1.0-0') + ' ₫'">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
             </td>
             <td nzAlign="right">
               <span class="font-mono" nz-tooltip [nzTooltipTitle]="'Tiền quỹ mở đầu ngày: ' + (r.openingCash | number: '1.0-0') + ' ₫'">{{ r.openingCash | number: '1.0-0' }} ₫</span>
@@ -226,7 +243,12 @@
       </div>
       <p class="form-help-text" style="margin-top: 8px; color: var(--text-secondary); font-size: 13px;">
         <nz-icon nzType="info-circle" style="color: var(--brand);"></nz-icon>
-        Hệ thống sẽ tự động tổng hợp toàn bộ các đơn hàng POS và các ca làm việc đã kết ca trong ngày được chọn.
+        Hệ thống sẽ tự động tổng hợp các ca đã duyệt trong ngày được chọn.
+        @if (prevDayClosing() !== null) {
+        <span>Quỹ mở mặc định nối từ chốt hôm trước: <b class="font-mono">{{ prevDayClosing() | number: '1.0-0' }} ₫</b>.</span>
+        } @else {
+        <span>Chưa có báo cáo hôm trước nên quỹ mở mặc định 0 ₫.</span>
+        }
       </p>
     </form>
     <ng-template #generateModalFooter>
@@ -374,9 +396,25 @@
             <div class="flow-noncash-note">
               <nz-icon nzType="qrcode" class="note-icon"></nz-icon>
               <div class="note-content">
-                <span class="note-title">Doanh thu Chuyển khoản / Thẻ / VietQR:</span>
+                <span class="note-title">Doanh thu CK / Ví / Thẻ:</span>
                 <span class="note-val font-mono font-semibold">{{ r.transferAmount | number: '1.0-0' }} ₫</span>
                 <span class="note-desc">(Đã chuyển vào tài khoản ngân hàng chi nhánh, không tồn quỹ tiền mặt)</span>
+              </div>
+            </div>
+
+            <!-- Chi tiền mặt trong ngày -->
+            <div class="flow-row">
+              <div class="flow-row__left">
+                <div class="flow-icon flow-icon--danger">
+                  <nz-icon nzType="arrow-up"></nz-icon>
+                </div>
+                <div class="flow-texts">
+                  <span class="flow-title">Chi tiền mặt trong ngày</span>
+                  <span class="flow-desc">Cộng chi nóng từ két của các ca đã duyệt</span>
+                </div>
+              </div>
+              <div class="flow-row__right font-mono font-semibold text-danger">
+                -{{ (r.cashPayout || 0) | number: '1.0-0' }} ₫
               </div>
             </div>
           </div>
@@ -415,13 +453,61 @@
                 {{ r.closingCash | number: '1.0-0' }} ₫
               </div>
               <div class="calc-card__formula">
-                (Tổng tiền mặt thực tế kiểm đếm chốt sổ)
+                (Quỹ mở + Mặt thu − Chi trong ngày)
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 5.5 Footer thanh tác vụ -->
+        <!-- 5.5 Chi tiết từng ca đã duyệt trong ngày -->
+        <div class="recon-section">
+          <div class="recon-section__header">
+            <span class="recon-section__title">
+              <nz-icon nzType="team" class="title-icon"></nz-icon>
+              Chi tiết từng ca trong ngày
+            </span>
+            <span class="recon-section__hint">Chỉ cộng các ca đã duyệt vào tổng trên</span>
+          </div>
+
+          @if (isDayShiftsLoading()) {
+            <div class="spin-center"><nz-spin nzSimple></nz-spin></div>
+          } @else if (dayShiftReports().length === 0) {
+            <div class="drawer-empty" style="text-align: center; padding: 16px; color: var(--text-secondary);">
+              Chưa có biên bản ca nào trong ngày này
+            </div>
+          } @else {
+            <nz-table [nzData]="dayShiftReports()" [nzShowPagination]="false" [nzFrontPagination]="false" nzSize="small">
+              <thead>
+                <tr>
+                  <th scope="col">Người nộp</th>
+                  <th scope="col" nzAlign="right">Đơn</th>
+                  <th scope="col" nzAlign="right">Mặt</th>
+                  <th scope="col" nzAlign="right">CK/Ví/Thẻ</th>
+                  <th scope="col" nzAlign="right">Lệch</th>
+                  <th scope="col" nzAlign="center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of dayShiftReports(); track s.id) {
+                  <tr>
+                    <td>{{ s.submittedByName || '—' }}</td>
+                    <td nzAlign="right" class="font-mono">{{ s.ordersCount }}</td>
+                    <td nzAlign="right" class="font-mono">{{ s.cashSales | number: '1.0-0' }}</td>
+                    <td nzAlign="right" class="font-mono">{{ (s.bankTransferSales + s.cardSales + s.ewalletSales) | number: '1.0-0' }}</td>
+                    <td nzAlign="right" class="font-mono font-bold" [class.text-danger]="s.difference < 0" [class.text-success]="s.difference >= 0">
+                      {{ s.difference > 0 ? '+' : '' }}{{ s.difference | number: '1.0-0' }}
+                    </td>
+                    <td nzAlign="center">
+                      <span [class]="getShiftReportStatusMeta(s.status).badgeClass">{{ getShiftReportStatusMeta(s.status).label }}</span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </nz-table>
+          }
+        </div>
+
+        <!-- 5.6 Footer thanh tác vụ -->
         <div class="modal-footer-wrapper">
           <div class="footer-info">
             <nz-icon nzType="safety-certificate" class="footer-info__icon"></nz-icon>
@@ -431,7 +517,7 @@
             <app-button variant="secondary" (click)="onCloseDrawer()">Đóng</app-button>
             @if (r.status !== 'RECONCILED') {
               <app-button
-                *erpUTTHasSomeAuthority="[ROLE.BAO_CAO_NGAY.UPDATE]"
+                *erpUTTHasSomeAuthority="[ROLE.KHOA_SO_NGAY.APPROVE]"
                 variant="primary"
                 leftIcon="check-circle"
                 [loading]="isApproving()"
