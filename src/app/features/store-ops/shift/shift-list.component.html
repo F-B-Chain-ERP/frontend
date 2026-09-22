@@ -319,9 +319,6 @@
               <td nzAlign="center">{{ (templatePageIndex - 1) * templatePageSize + i + 1 }}</td>
               <td>
                 <span class="po-code" nz-tooltip [nzTooltipTitle]="'Mã ca: ' + s.shiftCode">{{ s.shiftCode }}</span>
-                @if (isSystemShiftCode(s.shiftCode)) {
-                <span class="tbl-badge tbl-badge--info" nz-tooltip nzTooltipTitle="Ca hệ thống mặc định, không được sửa/xóa">Hệ thống</span>
-                }
               </td>
               <td>
                 <span class="font-semibold" nz-tooltip [nzTooltipTitle]="'Tên khung ca: ' + s.shiftName">{{ s.shiftName }}</span>

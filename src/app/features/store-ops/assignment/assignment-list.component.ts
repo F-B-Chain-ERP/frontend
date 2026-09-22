@@ -1,4 +1,6 @@
-import {Component, OnInit, computed, inject, signal} from '@angular/core';
+import {Component, DestroyRef, OnInit, computed, inject, signal} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+import {EMPTY, Subscription, expand, reduce} from 'rxjs';
 import {CommonModule} from '@angular/common';
 import {FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 
@@ -140,6 +142,11 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   // Single Assign Modal
   readonly isAssignModalVisible = signal<boolean>(false);
   readonly isSavingAssign = signal<boolean>(false);
+  readonly assignedAccountIds = signal<Set<string>>(new Set());
+  readonly isLoadingAssigned = signal(false);
+  readonly assignedLookupFailed = signal(false);
+  private readonly destroyRef = inject(DestroyRef);
+  private assignedLookup?: Subscription;
   assignForm!: FormGroup;
 
   // Bulk Assign Modal
@@ -275,6 +282,48 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   }
 
   // ── Phân ca đơn lẻ ────────────────────────────────────────────────
+  loadAssignedForDate(): void {
+    this.assignedLookup?.unsubscribe();
+    this.assignedAccountIds.set(new Set());
+    this.assignedLookupFailed.set(false);
+    const {branchId, workDate} = this.assignForm.value;
+    this.assignForm.get('accountId')?.reset('');
+    if (!branchId || !/^\d{4}-\d{2}-\d{2}$/.test(workDate ?? '')) {
+      this.isLoadingAssigned.set(false);
+      return;
+    }
+
+    this.isLoadingAssigned.set(true);
+    this.assignedLookup = this.shiftService
+      .searchAssignments(branchId, workDate, workDate, undefined, undefined, 0, 100)
+      .pipe(
+        expand(page => page.pageNumber + 1 < page.totalPages
+          ? this.shiftService.searchAssignments(branchId, workDate, workDate, undefined, undefined, page.pageNumber + 1, 100)
+          : EMPTY),
+        reduce((ids, page) => {
+          for (const assignment of page.content ?? []) {
+            if (assignment.branchId === branchId && assignment.workDate === workDate
+              && !['CANCELLED', 'ABSENT'].includes(assignment.status.toUpperCase())) {
+              ids.add(assignment.accountId);
+            }
+          }
+          return ids;
+        }, new Set<string>()),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: ids => {
+          this.assignedAccountIds.set(ids);
+          this.isLoadingAssigned.set(false);
+        },
+        error: () => {
+          this.isLoadingAssigned.set(false);
+          this.assignedLookupFailed.set(true);
+          this.toastService.warning('Chưa kiểm tra được lịch', 'Vui lòng thử tải lại lịch phân ca của nhân viên.');
+        },
+      });
+  }
+
   openAssignModal(): void {
     const branchId = this.selectedBranchId() || this.branchService.currentBranch()?.id || this.branchService.branches()[0]?.id || '';
     this.selectedBranchId.set(branchId);
@@ -287,13 +336,22 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
       note: '',
     });
     this.isAssignModalVisible.set(true);
+    this.loadAssignedForDate();
   }
 
   closeAssignModal(): void {
+    this.assignedLookup?.unsubscribe();
+    this.isLoadingAssigned.set(false);
     this.isAssignModalVisible.set(false);
   }
 
   submitAssignForm(): void {
+    if (this.isLoadingAssigned() || this.assignedLookupFailed() || this.isSavingAssign()) return;
+    if (this.assignedAccountIds().has(this.assignForm.value.accountId)) {
+      this.assignForm.get('accountId')?.reset('');
+      this.toastService.warning('Nhân viên đã có ca', 'Vui lòng chọn nhân viên chưa được phân ca trong ngày.');
+      return;
+    }
     if (this.assignForm.invalid) {
       this.assignForm.markAllAsTouched();
       return;

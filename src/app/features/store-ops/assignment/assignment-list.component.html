@@ -236,7 +236,7 @@
         <nz-select
           id="assign-branch"
           formControlName="branchId"
-          (ngModelChange)="loadShiftsForBranch($event)"
+          (ngModelChange)="loadShiftsForBranch($event); loadAssignedForDate()"
           [nzStatus]="assignForm.get('branchId')?.invalid && assignForm.get('branchId')?.touched ? 'error' : ''"
           style="width: 100%"
         >
@@ -285,15 +285,25 @@
         <nz-select
           id="assign-employee"
           formControlName="accountId"
+          [nzLoading]="isLoadingAssigned()"
+          [nzDisabled]="isLoadingAssigned() || assignedLookupFailed() || !assignForm.value.workDate || !assignForm.value.branchId"
           nzShowSearch
           nzPlaceHolder="Chọn nhân viên nhận ca"
           [nzStatus]="assignForm.get('accountId')?.invalid && assignForm.get('accountId')?.touched ? 'error' : ''"
           style="width: 100%"
         >
           @for (u of availableUsers(); track u.id) {
-            <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')'" [nzValue]="u.id"></nz-option>
+            <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')' + (assignedAccountIds().has('' + u.id) ? ' — đã phân ca' : '')"
+              [nzValue]="u.id" [nzDisabled]="assignedAccountIds().has('' + u.id)"></nz-option>
           }
         </nz-select>
+        @if (isLoadingAssigned()) {
+          <div class="form-help-text">Đang kiểm tra lịch phân ca trong ngày...</div>
+        } @else if (assignedLookupFailed()) {
+          <app-button variant="secondary" (click)="loadAssignedForDate()">Tải lại lịch phân ca</app-button>
+        } @else {
+          <div class="form-help-text">Nhân viên đã được phân ca trong ngày sẽ hiển thị mờ và không thể chọn.</div>
+        }
         @if (assignForm.get('accountId')?.invalid && assignForm.get('accountId')?.touched) {
           <div class="form-error">
             @if (assignForm.get('accountId')?.errors?.['serverError']; as err) {
@@ -313,6 +323,7 @@
             type="date"
             nz-input
             formControlName="workDate"
+            (ngModelChange)="loadAssignedForDate()"
             [nzStatus]="assignForm.get('workDate')?.invalid && assignForm.get('workDate')?.touched ? 'error' : ''"
           />
         </nz-input-wrapper>
@@ -336,7 +347,8 @@
     <ng-template #assignModalFooter>
       <div class="modal-footer-actions">
         <app-button variant="secondary" (click)="closeAssignModal()">Hủy</app-button>
-        <app-button variant="primary" leftIcon="save" [loading]="isSavingAssign()" (click)="submitAssignForm()">
+        <app-button variant="primary" leftIcon="save" [loading]="isSavingAssign()"
+          [disabled]="isLoadingAssigned() || assignedLookupFailed()" (click)="submitAssignForm()">
           Lưu phân ca
         </app-button>
       </div>
