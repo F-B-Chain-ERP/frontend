@@ -17,7 +17,7 @@
   </div>
 
   <nz-tabs [nzSelectedIndex]="selectedTabIndex" (nzSelectedIndexChange)="onTabChange($event)">
-    <nz-tab nzTitle="Tồn theo ly">
+    <nz-tab nzTitle="Tồn theo biến thể">
   <!-- ── 2. Filter Box ──────────────────────────────────────────────── -->
   <nz-card class="page__filter-box" [nzBordered]="false">
     <div class="page__filter-box__row">
@@ -53,25 +53,38 @@
       <div class="page__filter-box__actions">
         <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
         <app-button variant="secondary" leftIcon="reload" (click)="onReset()">Làm mới</app-button>
+        <app-button
+          variant="secondary"
+          leftIcon="check-circle"
+          nz-tooltip
+          nzTooltipTitle="Đặt mở bán = NVL đủ cho các biến thể có công thức (trang hiện tại)"
+          (click)="openBulkRestock()"
+          [loading]="isSavingRestock()"
+        >
+          Chốt theo gợi ý
+        </app-button>
       </div>
     </div>
   </nz-card>
 
   <!-- ── 3. Main Data Table ─────────────────────────────────────────── -->
   <nz-card class="page__list" [nzBordered]="false">
-    @if (!loading() && (lowCount() > 0 || outCount() > 0)) {
+    @if (!loading() && (lowCount() > 0 || outCount() > 0 || unstockedCount() > 0)) {
       <div class="stock-alert-banner">
         @if (outCount() > 0) {
-          <span class="tbl-badge tbl-badge--danger">{{ outCount() }} size đã hết hàng</span>
+          <span class="tbl-badge tbl-badge--danger">{{ outCount() }} biến thể đã hết hàng</span>
         }
         @if (lowCount() > 0) {
-          <span class="tbl-badge tbl-badge--warning">{{ lowCount() }} size sắp hết (≤ 20%)</span>
+          <span class="tbl-badge tbl-badge--warning">{{ lowCount() }} biến thể sắp hết (≤ 20%)</span>
+        }
+        @if (unstockedCount() > 0) {
+          <span class="tbl-badge">{{ unstockedCount() }} biến thể chưa chốt tồn</span>
         }
         <span class="text-muted">Kiểm tra quầy và chốt tồn bổ sung.</span>
       </div>
     }
     <nz-table #stockTable [nzData]="stocks()" [nzLoading]="loading()" [nzShowPagination]="false"
-      [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1240px' }">
+      [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1400px' }">
       <thead>
         <tr>
           <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
@@ -79,6 +92,7 @@
           <th scope="col" nzWidth="260px" nzAlign="left">Tên sản phẩm &amp; Biến thể</th>
           <th scope="col" nzWidth="120px" nzAlign="center">Ngày bán</th>
           <th scope="col" nzWidth="140px" nzAlign="right">Tồn mở bán đầu ngày</th>
+          <th scope="col" nzWidth="130px" nzAlign="right">Ước bán được</th>
           <th scope="col" nzWidth="140px" nzAlign="right">Đã bán qua POS</th>
           <th scope="col" nzWidth="140px" nzAlign="right">Tồn còn lại</th>
           <th scope="col" nzWidth="120px" nzAlign="center">Trạng thái</th>
@@ -98,26 +112,41 @@
             <div class="font-semibold" nz-tooltip [nzTooltipTitle]="'Sản phẩm: ' + (s.productName || 'Trà Sữa Oolong Nướng')">
               {{ s.productName || 'Trà Sữa Oolong Nướng' }}
             </div>
-            <div class="text-xs text-secondary" nz-tooltip [nzTooltipTitle]="'Biến thể: ' + (s.variantName || 'Size L - Mặc định')">
-              {{ s.variantName || 'Size L - Mặc định' }}
+            <div class="text-xs text-secondary" nz-tooltip [nzTooltipTitle]="'Biến thể: ' + (s.variantName || '—')">
+              {{ s.variantName || '—' }}
             </div>
           </td>
           <td nzAlign="center">
             <span nz-tooltip [nzTooltipTitle]="'Ngày mở bán: ' + s.businessDate">{{ s.businessDate }}</span>
           </td>
           <td nzAlign="right">
-            <span class="font-mono font-medium" nz-tooltip [nzTooltipTitle]="'Tồn mở bán đầu ngày: ' + s.openingQuantity">
-              {{ s.openingQuantity }}
+            <span class="font-mono font-medium" nz-tooltip [nzTooltipTitle]="'Tồn mở bán đầu ngày: ' + (s.openingQuantity ?? '—')">
+              {{ s.openingQuantity ?? '—' }}
             </span>
           </td>
           <td nzAlign="right">
-            <span class="font-mono text-success" nz-tooltip [nzTooltipTitle]="'Số lượng đã bán qua POS: ' + s.soldQuantity">
-              {{ s.soldQuantity }}
+            @if (hasCapability(s)) {
+              <span
+                class="font-mono"
+                nz-tooltip
+                [nzTooltipTitle]="'NVL trong kho đủ pha tối đa ' + s.capabilityQuantity + ' đơn vị bán'"
+              >
+                {{ s.capabilityQuantity }}
+              </span>
+            } @else if (s.hasRecipe === false) {
+              <span class="text-muted" nz-tooltip nzTooltipTitle="Biến thể chưa có công thức — không tính được">chưa CT</span>
+            } @else {
+              <span class="text-muted">—</span>
+            }
+          </td>
+          <td nzAlign="right">
+            <span class="font-mono text-success" nz-tooltip [nzTooltipTitle]="'Số lượng đã bán qua POS: ' + (s.soldQuantity ?? '—')">
+              {{ s.soldQuantity ?? '—' }}
             </span>
           </td>
           <td nzAlign="right">
-            <span class="font-mono font-bold text-brand" nz-tooltip [nzTooltipTitle]="'Số lượng còn lại: ' + s.remainingQuantity">
-              {{ s.remainingQuantity }}
+            <span class="font-mono font-bold text-brand" nz-tooltip [nzTooltipTitle]="'Số lượng còn lại: ' + (s.remainingQuantity ?? '—')">
+              {{ s.remainingQuantity ?? '—' }}
             </span>
           </td>
           <td nzAlign="center">
@@ -296,12 +325,12 @@
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
-        <label class="form-label" for="restock-variant">Size / Biến thể *</label>
+          <label class="form-label" for="restock-variant">Biến thể *</label>
         <nz-select
           id="restock-variant"
           formControlName="variantId"
           nzShowSearch
-          nzPlaceHolder="Chọn size..."
+          nzPlaceHolder="Chọn biến thể..."
           [nzLoading]="loadingRestockVariants()"
           style="width: 100%"
         >
@@ -311,7 +340,7 @@
         </nz-select>
         @if (restockForm.get('variantId')?.invalid && restockForm.get('variantId')?.touched) {
           <div class="form-error">
-            <span>Vui lòng chọn size</span>
+              <span>Vui lòng chọn biến thể</span>
           </div>
         }
       </div>

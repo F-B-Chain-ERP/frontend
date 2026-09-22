@@ -254,8 +254,13 @@
         <form [formGroup]="convForm" class="unit-modal-form">
           <div nz-row [nzGutter]="[16, 16]">
             <div nz-col [nzSpan]="24" [nzMd]="12">
-              <label class="form-label required">Từ đơn vị</label>
-              <nz-select formControlName="fromUnitId" nzPlaceHolder="Chọn đơn vị nguồn" style="width: 100%">
+              <label class="form-label required" for="conv-from-unit">Từ đơn vị</label>
+              <nz-select
+                id="conv-from-unit"
+                formControlName="fromUnitId"
+                nzPlaceHolder="Chọn đơn vị nguồn"
+                style="width: 100%"
+              >
                 @for (o of convUnitOptions(); track o.value) {
                   <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
                 }
@@ -267,8 +272,13 @@
               }
             </div>
             <div nz-col [nzSpan]="24" [nzMd]="12">
-              <label class="form-label required">Sang đơn vị</label>
-              <nz-select formControlName="toUnitId" nzPlaceHolder="Chọn đơn vị đích" style="width: 100%">
+              <label class="form-label required" for="conv-to-unit">Sang đơn vị</label>
+              <nz-select
+                id="conv-to-unit"
+                formControlName="toUnitId"
+                nzPlaceHolder="Chọn đơn vị đích"
+                style="width: 100%"
+              >
                 @for (o of convUnitOptions(); track o.value) {
                   <nz-option [nzValue]="o.value" [nzLabel]="o.label"></nz-option>
                 }
@@ -280,8 +290,9 @@
               }
             </div>
             <div nz-col [nzSpan]="24">
-              <label class="form-label required">Hệ số (số đích = số nguồn × hệ số)</label>
+              <label class="form-label required" for="conv-factor">Hệ số (số đích = số nguồn × hệ số)</label>
               <nz-input-number
+                id="conv-factor"
                 formControlName="factor"
                 [nzMin]="0"
                 [nzStep]="1"

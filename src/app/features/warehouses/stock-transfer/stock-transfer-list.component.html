@@ -544,16 +544,16 @@
     (cancelEmit)="closeApproveModal()"
   >
     <form [formGroup]="approveForm">
-      <label class="form-label required">Quyết định</label>
-      <nz-select formControlName="decision" style="width: 100%">
+      <label class="form-label required" for="approve-decision">Quyết định</label>
+      <nz-select id="approve-decision" formControlName="decision" style="width: 100%">
         <nz-option nzValue="approve" nzLabel="Duyệt — chuyển sang chờ xuất"></nz-option>
         <nz-option nzValue="reject" nzLabel="Từ chối — hủy yêu cầu"></nz-option>
       </nz-select>
-      <label class="form-label" style="margin-top: 12px" [class.required]="approveForm.get('decision')?.value === 'reject'">
+      <label class="form-label" for="approve-reason" style="margin-top: 12px" [class.required]="approveForm.get('decision')?.value === 'reject'">
         Lý do (bắt buộc khi từ chối)
       </label>
       <nz-input-wrapper>
-        <textarea nz-input formControlName="reason" rows="3" maxlength="500" placeholder="Nhập lý do từ chối"></textarea>
+        <textarea id="approve-reason" nz-input formControlName="reason" rows="3" maxlength="500" placeholder="Nhập lý do từ chối"></textarea>
       </nz-input-wrapper>
       <span class="form-hint">Người duyệt phải khác người tạo yêu cầu. Duyệt xong, người phe kho bấm xuất hàng.</span>
     </form>

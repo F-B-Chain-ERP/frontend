@@ -219,9 +219,14 @@ export interface PosDailyStock {
   productName?: string;
   sku?: string;
   businessDate: string;
-  openingQuantity: number;
-  remainingQuantity: number;
-  soldQuantity: number;
+  /** null = biến thể đang bán nhưng chưa có dòng tồn hôm nay. */
+  openingQuantity: number | null;
+  remainingQuantity: number | null;
+  soldQuantity: number | null;
+  /** Số ly tối đa pha được từ tồn NVL (null = chưa có công thức/không xác định). */
+  capabilityQuantity?: number | null;
+  /** false = biến thể chưa có dòng BOM nào. */
+  hasRecipe?: boolean;
 }
 
 export interface PosDailyStockFilter {
@@ -291,6 +296,11 @@ export interface RestockDailyStockPayload {
   variantId: string;
   openingQuantity: number;
   note?: string;
+}
+
+export interface RestockBatchResult {
+  succeeded: number;
+  failed: number;
 }
 
 // ── Helper Options & Badges Meta (Đồng bộ UI Kit) ───────────────────

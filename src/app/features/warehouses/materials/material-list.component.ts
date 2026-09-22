@@ -154,6 +154,14 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
     return 'Cập nhật thông tin nguyên vật liệu';
   }
 
+  /** Hiển thị đóng gói: "1 Hộp = 380 G" hoặc "—" khi không dùng. */
+  formatPack(item: Material): string {
+    if (!item.packUnitId || !(Number(item.packToBaseFactor) > 0)) return '—';
+    const pack = item.packUnitName || 'đóng gói';
+    const base = item.baseUnitName || '';
+    return `1 ${pack} = ${item.packToBaseFactor}${base ? ` ${base}` : ''}`;
+  }
+
   ngOnInit(): void {
     this.breadcrumbsService.set([
       { label: 'Trang chủ', url: '/admin/home', icon: 'home' },
@@ -505,14 +513,6 @@ export class MaterialListComponent extends BaseComponent implements OnInit {
           });
       },
     });
-  }
-
-  /** Hiển thị đóng gói: "1 Hộp = 380 G" hoặc "—" khi không dùng. */
-  formatPack(item: Material): string {
-    if (!item.packUnitId || !(Number(item.packToBaseFactor) > 0)) return '—';
-    const pack = item.packUnitName || 'đóng gói';
-    const base = item.baseUnitName || '';
-    return `1 ${pack} = ${item.packToBaseFactor}${base ? ` ${base}` : ''}`;
   }
 
   private refreshCheckState(): void {

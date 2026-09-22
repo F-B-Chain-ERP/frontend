@@ -82,6 +82,35 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
   readonly ROLE = ROLE;
 
   readonly branchService = inject(BranchService);
+
+  changeTypeMeta = changeTypeMeta;
+
+  // Tab NVL & Cấp hàng
+  selectedTabIndex = 0;
+  readonly shortage = signal<MaterialShortage | null>(null);
+  readonly shortageLoading = signal(false);
+  readonly isRequesting = signal(false);
+
+  // Modal Chốt tồn mở bán / Restock
+  readonly isRestockModalVisible = signal<boolean>(false);
+  readonly isSavingRestock = signal<boolean>(false);
+  restockForm!: FormGroup;
+
+  // Dropdown Món → Biến thể trong modal restock (thay nhập UUID tay)
+  readonly restockProducts = signal<{ value: string; label: string }[]>([]);
+  readonly restockVariants = signal<{ value: string; label: string }[]>([]);
+  readonly loadingRestockProducts = signal(false);
+  readonly loadingRestockVariants = signal(false);
+
+  // Modal Lịch sử biến động tồn (theo biến thể)
+  readonly isHistoryVisible = signal<boolean>(false);
+  readonly historyLoading = signal<boolean>(false);
+  readonly historyItems = signal<PosStockHistory[]>([]);
+  readonly historyTotal = signal(0);
+  readonly historyPageIndex = signal(DEFAULT_PAGE_INDEX);
+  readonly historyPageSize = signal(DEFAULT_PAGE_SIZE);
+  historyTarget: PosDailyStock | null = null;
+
   private readonly shiftService = inject(StoreShiftService);
   private readonly salesService = inject(SalesService);
   private readonly variantService = inject(ProductVariantService);
@@ -98,32 +127,6 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
   pageSize = DEFAULT_PAGE_SIZE;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
 
-  // Tab NVL & Cấp hàng
-  selectedTabIndex = 0;
-  readonly shortage = signal<MaterialShortage | null>(null);
-  readonly shortageLoading = signal(false);
-  readonly isRequesting = signal(false);
-
-  // Modal Chốt tồn mở bán / Restock
-  readonly isRestockModalVisible = signal<boolean>(false);
-  readonly isSavingRestock = signal<boolean>(false);
-  restockForm!: FormGroup;
-
-  // Dropdown Món → Size trong modal restock (thay nhập UUID tay)
-  readonly restockProducts = signal<{ value: string; label: string }[]>([]);
-  readonly restockVariants = signal<{ value: string; label: string }[]>([]);
-  readonly loadingRestockProducts = signal(false);
-  readonly loadingRestockVariants = signal(false);
-
-  // Modal Lịch sử biến động tồn (theo biến thể)
-  readonly isHistoryVisible = signal<boolean>(false);
-  readonly historyLoading = signal<boolean>(false);
-  readonly historyItems = signal<PosStockHistory[]>([]);
-  readonly historyTotal = signal(0);
-  readonly historyPageIndex = signal(DEFAULT_PAGE_INDEX);
-  readonly historyPageSize = signal(DEFAULT_PAGE_SIZE);
-  historyTarget: PosDailyStock | null = null;
-
   ngOnInit(): void {
     this.initForms();
     this.branchService.loadMine().subscribe(() => {
@@ -132,16 +135,6 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
         this.selectedBranchId = current.id;
       }
       this.loadData();
-    });
-  }
-
-  private initForms(): void {
-    this.restockForm = this.fb.group({
-      branchId: ['', [Validators.required]],
-      productId: [null as string | null, [Validators.required]],
-      variantId: ['', [Validators.required]],
-      openingQuantity: [100, [Validators.required, Validators.min(0)]],
-      note: [''],
     });
   }
 
@@ -225,6 +218,35 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
     this.isRestockModalVisible.set(false);
   }
 
+  /** Có gợi ý NVL (không null/undefined) thì mới chốt theo. */
+  hasCapability(s: PosDailyStock): boolean {
+    return s.capabilityQuantity !== null && s.capabilityQuantity !== undefined;
+  }
+
+  /** Các dòng có gợi ý NVL (trang hiện tại). */
+  bulkCandidates(): PosDailyStock[] {
+    return this.stocks().filter(s => this.hasCapability(s) && (s.capabilityQuantity ?? 0) >= 0);
+  }
+
+  openBulkRestock(): void {
+    const rows = this.bulkCandidates();
+    if (!this.selectedBranchId) {
+      this.toastService.warning('Chưa chọn chi nhánh', 'Vui lòng chọn chi nhánh trước khi chốt.');
+      return;
+    }
+    if (rows.length === 0) {
+      this.toastService.info('Không có gợi ý', 'Trang hiện tại không có biến thể nào tính được năng lực NVL.');
+      return;
+    }
+    this.modalService.confirm({
+      nzTitle: 'Chốt tồn theo gợi ý NVL',
+      nzContent: `Đặt mở bán = NVL đủ cho <strong>${rows.length}</strong> biến thể (trang hiện tại)? Dòng chưa có công thức được bỏ qua.`,
+      nzOkText: 'Chốt',
+      nzCancelText: 'Hủy',
+      nzOnOk: () => this.doBulkRestock(rows),
+    });
+  }
+
   /** Mở modal chốt tồn với chi nhánh + biến thể của dòng đang xem. */
   openRestockForRow(row: PosDailyStock): void {
     this.restockForm.reset({
@@ -262,7 +284,7 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
       });
   }
 
-  /** Đổi món → nạp size của món đó. */
+  /** Đổi món → nạp biến thể của món đó. */
   onRestockProductChange(productId: string | null): void {
     this.restockForm.get('variantId')?.setValue('');
     this.restockVariants.set([]);
@@ -270,31 +292,15 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
     this.loadRestockVariants(productId);
   }
 
-  private loadRestockVariants(productId: string, preselectVariantId?: string | null): void {
-    this.loadingRestockVariants.set(true);
-    this.variantService.getVariants(productId).subscribe({
-      next: list => {
-        this.restockVariants.set(
-          (list ?? [])
-            .filter(v => v.status !== 'INACTIVE')
-            .map(v => ({ value: v.id, label: `${v.variantCode} — ${v.variantName}` })),
-        );
-        this.loadingRestockVariants.set(false);
-        if (preselectVariantId) {
-          this.restockForm.get('variantId')?.setValue(preselectVariantId);
-        }
-      },
-      error: () => {
-        this.restockVariants.set([]);
-        this.loadingRestockVariants.set(false);
-      },
-    });
-  }
-
-  changeTypeMeta = changeTypeMeta;
-
-  /** Badge 3 nấc: hết hàng / sắp hết (≤20% mở bán) / đang bán. */
+  /** Badge 4 nấc: chưa chốt / hết hàng / sắp hết (≤20% mở bán) / đang bán. */
   stockMeta(s: PosDailyStock): { label: string; badgeClass: string; tooltip: string } {
+    if (s.openingQuantity == null || s.remainingQuantity == null) {
+      return {
+        label: 'Chưa chốt',
+        badgeClass: 'tbl-badge tbl-badge--neutral',
+        tooltip: 'Biến thể đang bán nhưng chưa chốt tồn hôm nay — bấm Chốt tồn để mở bán',
+      };
+    }
     if (s.remainingQuantity <= 0) {
       return {
         label: 'Tạm hết hàng',
@@ -318,12 +324,21 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
 
   lowCount(): number {
     return this.stocks().filter(
-      s => s.remainingQuantity > 0 && s.openingQuantity > 0 && s.remainingQuantity / s.openingQuantity <= 0.2,
+      s =>
+        s.openingQuantity != null &&
+        s.remainingQuantity != null &&
+        s.remainingQuantity > 0 &&
+        s.openingQuantity > 0 &&
+        s.remainingQuantity / s.openingQuantity <= 0.2,
     ).length;
   }
 
   outCount(): number {
-    return this.stocks().filter(s => s.remainingQuantity <= 0).length;
+    return this.stocks().filter(s => s.remainingQuantity != null && s.remainingQuantity <= 0).length;
+  }
+
+  unstockedCount(): number {
+    return this.stocks().filter(s => s.openingQuantity == null).length;
   }
 
   formatDateTime(value: string | null | undefined): string {
@@ -398,27 +413,6 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
     });
   }
 
-  private doRequestReplenishment(): void {
-    if (!this.selectedBranchId) return;
-    this.isRequesting.set(true);
-    this.shiftService
-      .requestReplenishment(this.selectedBranchId, toISODate(this.selectedBusinessDate))
-      .subscribe({
-        next: res => {
-          this.isRequesting.set(false);
-          this.toastService.success(
-            'Tạo yêu cầu thành công',
-            `Phiếu ${res.code} đang chờ kho tổng duyệt (màn Điều chuyển).`,
-          );
-          this.loadShortage();
-        },
-        error: (err: Error) => {
-          this.isRequesting.set(false);
-          this.toastService.error(err.message || 'Không tạo được yêu cầu cấp hàng.');
-        },
-      });
-  }
-
   loadHistory(): void {
     const target = this.historyTarget;
     if (!target || !this.selectedBranchId) return;
@@ -451,7 +445,7 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
     this.isSavingRestock.set(true);
     const val = this.restockForm.value;
 
-    // Chỉ gửi đúng RestockDailyStockPayload BE (bỏ productId chỉ dùng chọn size trên UI).
+    // Chỉ gửi đúng RestockDailyStockPayload BE (bỏ productId chỉ dùng chọn biến thể trên UI).
     this.shiftService
       .restock({
         branchId: val.branchId,
@@ -489,5 +483,87 @@ export class StoreProductStockListComponent extends BaseComponent implements OnI
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  }
+
+  private initForms(): void {
+    this.restockForm = this.fb.group({
+      branchId: ['', [Validators.required]],
+      productId: [null as string | null, [Validators.required]],
+      variantId: ['', [Validators.required]],
+      openingQuantity: [100, [Validators.required, Validators.min(0)]],
+      note: [''],
+    });
+  }
+
+  private doBulkRestock(rows: PosDailyStock[]): void {
+    const branchId = this.selectedBranchId;
+    if (!branchId) return;
+    this.isSavingRestock.set(true);
+    this.shiftService
+      .restockBatch(
+        branchId,
+        rows.map(r => ({ variantId: r.variantId, openingQuantity: r.capabilityQuantity ?? 0 })),
+        'Chốt theo gợi ý NVL',
+      )
+      .subscribe({
+        next: res => {
+          this.isSavingRestock.set(false);
+          if (res.failed > 0) {
+            this.toastService.warning(
+              'Chốt xong một phần',
+              `Đã chốt ${res.succeeded}/${rows.length} dòng, ${res.failed} dòng lỗi.`,
+            );
+          } else {
+            this.toastService.success('Chốt theo gợi ý thành công', `Đã chốt ${res.succeeded} dòng.`);
+          }
+          this.loadData();
+        },
+        error: (err: Error) => {
+          this.isSavingRestock.set(false);
+          this.toastService.error(err.message || 'Không chốt được tồn hàng loạt.');
+        },
+      });
+  }
+
+  private loadRestockVariants(productId: string, preselectVariantId?: string | null): void {
+    this.loadingRestockVariants.set(true);
+    this.variantService.getVariants(productId).subscribe({
+      next: list => {
+        this.restockVariants.set(
+          (list ?? [])
+            .filter(v => v.status !== 'INACTIVE')
+            .map(v => ({ value: v.id, label: `${v.variantCode} — ${v.variantName}` })),
+        );
+        this.loadingRestockVariants.set(false);
+        if (preselectVariantId) {
+          this.restockForm.get('variantId')?.setValue(preselectVariantId);
+        }
+      },
+      error: () => {
+        this.restockVariants.set([]);
+        this.loadingRestockVariants.set(false);
+      },
+    });
+  }
+
+  private doRequestReplenishment(): void {
+    if (!this.selectedBranchId) return;
+    this.isRequesting.set(true);
+    this.shiftService
+      .requestReplenishment(this.selectedBranchId, toISODate(this.selectedBusinessDate))
+      .subscribe({
+        next: res => {
+          this.isRequesting.set(false);
+          this.toastService.success(
+            'Tạo yêu cầu thành công',
+            `Phiếu ${res.code} đang chờ kho tổng duyệt (màn Điều chuyển).`,
+          );
+          this.loadShortage();
+        },
+        error: (err: Error) => {
+          this.isRequesting.set(false);
+          this.toastService.error(err.message || 'Không tạo được yêu cầu cấp hàng.');
+        },
+      });
   }
 }

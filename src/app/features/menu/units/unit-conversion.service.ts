@@ -39,14 +39,14 @@ export class UnitConversionService {
 
   create(req: CreateUnitConversionRequest): Observable<UnitConversion> {
     return this.http.post<ApiResponse<UnitConversion>>(this.baseUrl, req).pipe(
-      map(res => res.data as UnitConversion),
+      map(res => res.data),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }
 
   update(id: string, req: UpdateUnitConversionRequest): Observable<UnitConversion> {
     return this.http.put<ApiResponse<UnitConversion>>(`${this.baseUrl}/${id}`, req).pipe(
-      map(res => res.data as UnitConversion),
+      map(res => res.data),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),
     );
   }

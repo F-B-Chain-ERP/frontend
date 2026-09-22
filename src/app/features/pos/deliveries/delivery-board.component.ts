@@ -72,6 +72,8 @@ export class PosDeliveryBoardComponent implements OnInit {
   selectedBranchId: string | null = null;
   selectedShipperId: string | null = null;
   failReason = '';
+  private lastDeliveryEventKey = '';
+  private lastDeliveryEventAt = 0;
 
   getDeliveryStatusMeta = getDeliveryStatusMeta;
   getOrderStatusMeta = getOrderStatusMeta;
@@ -90,6 +92,14 @@ export class PosDeliveryBoardComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(event => {
         if (!event) return;
+        // Chống reload dồn khi burst event trùng trong 3s.
+        const eventKey = `${event.orderId}:${event.orderStatus || ''}:${event.deliveryStatus || ''}`;
+        const now = Date.now();
+        if (eventKey === this.lastDeliveryEventKey && now - this.lastDeliveryEventAt < 3000) {
+          return;
+        }
+        this.lastDeliveryEventKey = eventKey;
+        this.lastDeliveryEventAt = now;
         const currentBranch = this.branchService.currentBranch()?.id;
         if (this.selectedBranchId && event.branchId && this.selectedBranchId !== event.branchId) {
           return;

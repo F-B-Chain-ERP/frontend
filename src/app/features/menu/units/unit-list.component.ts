@@ -98,9 +98,6 @@ export class UnitListComponent extends BaseComponent implements OnInit {
     unitType: this.fb.control<string | null>(null, [Validators.required]),
   });
 
-  private readonly unitService = inject(UnitService);
-  private readonly conversionService = inject(UnitConversionService);
-
   // ── Tab Quy đổi đơn vị ───────────────────────────────────────────────
   selectedTabIndex = 0;
   readonly conversions = signal<UnitConversion[]>([]);
@@ -108,13 +105,16 @@ export class UnitListComponent extends BaseComponent implements OnInit {
   readonly convSaving = signal(false);
   readonly isConvModalVisible = signal(false);
   readonly convUnitOptions = signal<{ value: string; label: string }[]>([]);
-  private convLoaded = false;
 
   readonly convForm = this.fb.group({
     fromUnitId: this.fb.control<string | null>(null, [Validators.required]),
     toUnitId: this.fb.control<string | null>(null, [Validators.required]),
     factor: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.000001)]),
   });
+
+  private readonly unitService = inject(UnitService);
+  private readonly conversionService = inject(UnitConversionService);
+  private convLoaded = false;
 
   // ── Lifecycle ───────────────────────────────────────────────────────
   ngOnInit(): void {
@@ -296,21 +296,6 @@ export class UnitListComponent extends BaseComponent implements OnInit {
     }
   }
 
-  private loadConvUnits(): void {
-    this.unitService
-      .getUnits({ pageIndex: 1, pageSize: 100 })
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: res =>
-          this.convUnitOptions.set(
-            (res.items ?? [])
-              .filter(u => u.status === 'ACTIVE')
-              .map(u => ({ value: u.id, label: `${u.name} (${u.code})` })),
-          ),
-        error: () => this.convUnitOptions.set([]),
-      });
-  }
-
   loadConversions(): void {
     this.convLoading.set(true);
     this.conversionService
@@ -414,5 +399,20 @@ export class UnitListComponent extends BaseComponent implements OnInit {
           });
       },
     });
+  }
+
+  private loadConvUnits(): void {
+    this.unitService
+      .getUnits({ pageIndex: 1, pageSize: 100 })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res =>
+          this.convUnitOptions.set(
+            (res.items ?? [])
+              .filter(u => u.status === 'ACTIVE')
+              .map(u => ({ value: u.id, label: `${u.name} (${u.code})` })),
+          ),
+        error: () => this.convUnitOptions.set([]),
+      });
   }
 }
