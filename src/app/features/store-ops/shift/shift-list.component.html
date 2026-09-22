@@ -350,7 +350,7 @@
                   <app-button *erpUTTHasSomeAuthority="[ROLE.CA_LAM_VIEC.DELETE]" variant="ghost" iconOnly="delete"
                     nz-tooltip nzTooltipTitle="Xóa khung ca" (click)="deleteShiftTemplate(s)"></app-button>
                   } @else {
-                  <span class="text-xs text-secondary" nz-tooltip nzTooltipTitle="Ca A/B mặc định toàn hệ thống">🔒</span>
+                  <nz-icon nzType="lock" nzTheme="outline" class="text-secondary" nz-tooltip nzTooltipTitle="Ca A/B mặc định toàn hệ thống" />
                   }
                 </div>
               </td>
