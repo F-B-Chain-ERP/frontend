@@ -112,6 +112,8 @@ export class PosOrderListComponent implements OnInit {
   fromDate: Date | null = null;
   toDate: Date | null = null;
   cancelReason = '';
+  private lastOrderEventKey = '';
+  private lastOrderEventAt = 0;
 
   /** Payload xuất báo cáo danh sách đơn POS theo bộ lọc hiện tại. */
   get exportPayload(): Record<string, any> {
@@ -194,6 +196,15 @@ export class PosOrderListComponent implements OnInit {
 
   private handleRealtimeOrder(event: OrderRealtimePayload): void {
     if (!event) return;
+    // Chống reload dồn khi burst event trùng (retry Redis/SSE): cùng đơn + cùng trạng
+    // thái trong 3s thì bỏ qua.
+    const eventKey = `${event.orderId}:${event.orderStatus || ''}:${event.deliveryStatus || ''}`;
+    const now = Date.now();
+    if (eventKey === this.lastOrderEventKey && now - this.lastOrderEventAt < 3000) {
+      return;
+    }
+    this.lastOrderEventKey = eventKey;
+    this.lastOrderEventAt = now;
     const currentBranch = this.branchService.currentBranch()?.id;
     if (this.selectedBranchId && event.branchId && this.selectedBranchId !== event.branchId) {
       return;
@@ -215,7 +226,10 @@ export class PosOrderListComponent implements OnInit {
       this.orders.set(updated);
 
       if (this.detailVisible() && this.detail()?.id === event.orderId) {
-        this.openDetail(target);
+        // Chi tiết đang mở đúng đơn này và trạng thái không đổi thì khỏi fetch lại.
+        if (event.orderStatus && this.detail()?.status !== event.orderStatus) {
+          this.openDetail(target);
+        }
       }
     } else {
       this.load();

@@ -25,6 +25,7 @@ import {
   StockTransfer,
   StockTransferFilter,
   TRANSFER_STATUS_OPTIONS,
+  canApproveTransfer,
   canCancelTransfer,
   canDispatchTransfer,
   canEditTransfer,
@@ -66,6 +67,7 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
   readonly ROLE = ROLE;
   readonly getTransferStatusMeta = getTransferStatusMeta;
   readonly canEditTransfer = canEditTransfer;
+  readonly canApproveTransfer = canApproveTransfer;
   readonly canDispatchTransfer = canDispatchTransfer;
   readonly canReceiveTransfer = canReceiveTransfer;
   readonly canCancelTransfer = canCancelTransfer;
@@ -112,6 +114,13 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
   });
 
   readonly cancelForm = this.fb.group({
+    reason: this.fb.control<string | null>(null, [Validators.maxLength(500)]),
+  });
+
+  readonly isApproveModalVisible = signal(false);
+  approveTarget: StockTransfer | null = null;
+  readonly approveForm = this.fb.group({
+    decision: this.fb.control<'approve' | 'reject'>('approve', [Validators.required]),
     reason: this.fb.control<string | null>(null, [Validators.maxLength(500)]),
   });
 
@@ -453,6 +462,53 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
     this.isCancelModalVisible.set(true);
   }
 
+  openApproveModal(record: StockTransfer): void {
+    this.approveTarget = record;
+    this.approveForm.reset({ decision: 'approve', reason: null });
+    this.isApproveModalVisible.set(true);
+  }
+
+  closeApproveModal(): void {
+    this.isApproveModalVisible.set(false);
+    this.approveTarget = null;
+  }
+
+  onSubmitApprove(): void {
+    const target = this.approveTarget;
+    if (!target) {
+      return;
+    }
+    const decision = this.approveForm.get('decision')?.value;
+    const reason = (this.approveForm.get('reason')?.value as string | null)?.trim() || null;
+    if (decision !== 'approve' && decision !== 'reject') {
+      this.toastService.error('Lỗi', 'Vui lòng chọn Duyệt hoặc Từ chối.');
+      return;
+    }
+    if (decision === 'reject' && !reason) {
+      this.toastService.error('Lỗi', 'Từ chối yêu cầu phải nhập lý do.');
+      return;
+    }
+    this.isSaving.set(true);
+    this.stockTransferService
+      .approveTransfer(target.id, decision === 'approve', reason)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          this.isSaving.set(false);
+          this.toastService.success(
+            'Thành công',
+            decision === 'approve' ? 'Đã duyệt yêu cầu, phiếu chuyển sang chờ xuất.' : 'Đã từ chối yêu cầu.',
+          );
+          this.closeApproveModal();
+          this.loadData();
+        },
+        error: err => {
+          this.isSaving.set(false);
+          this.toastService.error('Lỗi', err.message || 'Không thể duyệt yêu cầu.');
+        },
+      });
+  }
+
   closeCancelModal(): void {
     this.isCancelModalVisible.set(false);
     this.cancelTarget = null;
@@ -464,8 +520,8 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
       return;
     }
     const reason = (this.cancelForm.get('reason')?.value as string | null)?.trim() || null;
-    if (target.status === 'IN_TRANSIT' && !reason) {
-      this.toastService.error('Lỗi', 'Vui lòng nhập lý do hủy khi phiếu đang đi đường.');
+    if ((target.status === 'IN_TRANSIT' || target.status === 'REQUESTED') && !reason) {
+      this.toastService.error('Lỗi', 'Vui lòng nhập lý do hủy khi phiếu đang đi đường hoặc đang chờ duyệt.');
       return;
     }
     this.isSaving.set(true);

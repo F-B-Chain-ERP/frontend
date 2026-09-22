@@ -188,7 +188,7 @@ export const routes: Routes = [
       },
       {
         path: 'pos/kds/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
+        loadChildren: () => import('./features/pos/kds/kds.routes'),
         title: 'Bếp (KDS)',
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.KDS_TICKET.VIEW] },

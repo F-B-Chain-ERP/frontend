@@ -88,6 +88,18 @@ export class StockTransferService {
     );
   }
 
+  approveTransfer(id: string, approved: boolean, reason?: string | null): Observable<StockTransfer> {
+    return this.http
+      .post<ApiResponse<StockTransfer>>(`${this.baseUrl}/${id}/approve`, {
+        approved,
+        reason: reason ?? null,
+      })
+      .pipe(
+        map(res => res.data),
+        catchError(err => throwError(() => new Error(this.errorMessage(err)))),
+      );
+  }
+
   receiveTransfer(id: string, items: ReceiveTransferItemPayload[]): Observable<StockTransfer> {
     return this.http.post<ApiResponse<StockTransfer>>(`${this.baseUrl}/${id}/receive`, { items }).pipe(
       map(res => res.data),
