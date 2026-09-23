@@ -201,11 +201,15 @@ export const routes: Routes = [
         data: { authorities: [ROLE.HOAN_TIEN.VIEW] },
       },
       {
-        path: 'pos/payments/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Thanh toán',
+        path: 'pos/payments',
+        loadChildren: () => import('./features/pos/payments/payments.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.Y_DINH_THANH_TOAN.VIEW] },
+      },
+      {
+        path: 'pos/payments/list',
+        redirectTo: 'pos/payments',
+        pathMatch: 'full',
       },
       // ── STORE ────────────────────────────────────
       {

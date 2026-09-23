@@ -1,0 +1,213 @@
+<div class="pos-payment-page">
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Thanh toán</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+    </div>
+    <div class="page__header__right">
+      <app-button variant="secondary" leftIcon="reload" (click)="load()" [loading]="loading()"> Tải lại </app-button>
+    </div>
+  </div>
+
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Tìm kiếm</span>
+        <nz-input-group [nzPrefix]="searchPrefix">
+          <input
+            nz-input
+            type="text"
+            placeholder="Mã đơn (HD-...), khách hàng, SĐT..."
+            [(ngModel)]="searchText"
+            (keyup.enter)="onFilterChange()"
+          />
+        </nz-input-group>
+        <ng-template #searchPrefix>
+          <nz-icon nzType="search" />
+        </ng-template>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Trạng thái thanh toán</span>
+        <nz-select
+          [(ngModel)]="selectedPaymentStatus"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Cách thanh toán</span>
+        <nz-select
+          [(ngModel)]="selectedPaymentMethod"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả"
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (opt of methodOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--grow">
+        <span class="form-label">Chi nhánh</span>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Tất cả chi nhánh"
+          nzShowSearch
+          [nzAllowClear]="true"
+          style="width: 100%"
+        >
+          @for (b of branchService.branches(); track b.id) {
+            <nz-option [nzValue]="b.id" [nzLabel]="b.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item">
+        <span class="form-label">Từ ngày</span>
+        <nz-date-picker
+          [(ngModel)]="fromDate"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Từ ngày"
+          nzFormat="dd/MM/yyyy"
+        ></nz-date-picker>
+      </div>
+
+      <div class="filter-item">
+        <span class="form-label">Đến ngày</span>
+        <nz-date-picker
+          [(ngModel)]="toDate"
+          (ngModelChange)="onFilterChange()"
+          nzPlaceHolder="Đến ngày"
+          nzFormat="dd/MM/yyyy"
+        ></nz-date-picker>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onFilterChange()"> Tìm kiếm </app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()"> Làm mới </app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      [nzData]="items()"
+      [nzLoading]="loading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1100px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="150px" nzAlign="left">Mã đơn</th>
+          <th scope="col" nzWidth="180px" nzAlign="left">Khách hàng</th>
+          <th scope="col" nzWidth="140px" nzAlign="right">Tổng tiền</th>
+          <th scope="col" nzWidth="150px" nzAlign="left">Cách trả</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái đơn</th>
+          <th scope="col" nzWidth="160px" nzAlign="center">Trạng thái TT</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Ngày tạo</th>
+          <th scope="col" nzWidth="120px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (o of items(); track o.id; let idx = $index) {
+          <tr>
+            <td nzAlign="center" class="font-mono text-muted">{{ (pageIndex() - 1) * pageSize() + idx + 1 }}</td>
+            <td nzAlign="left">{{ o.orderCode }}</td>
+            <td nzAlign="left">{{ o.receiverName }}</td>
+            <td nzAlign="right">{{ formatPrice(o.totalAmount) }}</td>
+            <td nzAlign="left">{{ getPaymentMethodLabel(o.paymentMethod) }}</td>
+            <td nzAlign="center">
+              <span class="tbl-badge" [class]="getOrderStatusMeta(o.status).badgeClass">{{ getOrderStatusMeta(o.status).label }}</span>
+            </td>
+            <td nzAlign="center">
+              <span class="tbl-badge" [class]="getPaymentStatusMeta(o.paymentStatus).badgeClass">{{
+                getPaymentStatusMeta(o.paymentStatus).label
+              }}</span>
+            </td>
+            <td nzAlign="center">{{ formatDateTime(o.createdAt) }}</td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                @if (canCollectPayment(o)) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.DON_HANG.UPDATE]"
+                    variant="ghost"
+                    iconOnly="dollar"
+                    nz-tooltip
+                    [nzTooltipTitle]="
+                      isOnlineManualMethod(o.paymentMethod)
+                        ? 'Thu tay tạm — chưa đối soát cổng (VNPay/MoMo sắp tới)'
+                        : 'Xác nhận đã thu tiền'
+                    "
+                    (click)="openPayment(o)"
+                    [disabled]="actionLoading()"
+                  >
+                  </app-button>
+                } @else if (isTerminalOrderStatus(o.status) && o.paymentStatus === 'UNPAID') {
+                  <span class="text-muted" nz-tooltip nzTooltipTitle="Đơn đã kết thúc nên BE cấm đổi thanh toán" style="font-size: 12px"
+                    >—</span
+                  >
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <nz-modal
+    [nzVisible]="!!paymentTarget()"
+    nzTitle="Xác nhận đã thu tiền"
+    [nzMaskClosable]="false"
+    [nzClosable]="!actionLoading()"
+    [nzOkText]="'Đã thu tiền'"
+    [nzOkLoading]="actionLoading()"
+    [nzOkDisabled]="actionLoading()"
+    [nzCancelText]="'Đóng'"
+    (nzOnOk)="confirmPayment()"
+    (nzOnCancel)="closePaymentModal()"
+  >
+    <ng-container *nzModalContent>
+      <p>
+        Xác nhận đã thu <strong>{{ paymentTarget() ? formatPrice(paymentTarget()!.totalAmount) : '' }}</strong> của đơn
+        <strong>{{ paymentTarget()?.orderCode }}</strong
+        >?
+      </p>
+      @if (paymentTarget() && isOnlineManualMethod(paymentTarget()!.paymentMethod)) {
+        <p style="margin-bottom: 8px; color: var(--warning-color, #fa8c16)">
+          Đơn {{ getPaymentMethodLabel(paymentTarget()!.paymentMethod) }} chưa có đối soát cổng — thu tay chỉ là tạm, cần kiểm tra tiền về
+          tài khoản trước khi bấm.
+        </p>
+      }
+      <p style="margin-bottom: 0; color: var(--text-secondary)">
+        Tiền đã thu không đảo ngược tay được — muốn hoàn phải hủy đơn để sinh phiếu hoàn tiền.
+      </p>
+    </ng-container>
+  </nz-modal>
+</div>
