@@ -26,6 +26,10 @@
   padding: 50px 0 60px 0;
   position: relative;
 
+  @media (max-width: 480px) {
+    padding: 36px 0 48px 0;
+  }
+
   &__wrapper {
     max-width: 1240px;
     margin: 0 auto;
@@ -74,6 +78,12 @@
     line-height: 1.08;
     margin: 0 0 20px 0;
     text-transform: uppercase;
+
+    // Màn 360px: chữ 34px hoa chiếm ~3-4 dòng, thu xuống cho cân với hero.
+    @media (max-width: 480px) {
+      font-size: 29px;
+      margin-bottom: 14px;
+    }
   }
 
   &__subtitle {
@@ -367,6 +377,9 @@
   max-width: 1240px;
   margin: 0 auto;
   padding: 60px var(--space-6);
+  // Navbar client sticky cao 76px: cuộn tới block:start sẽ che mất tiêu đề
+  // nếu không chừa khoảng offset.
+  scroll-margin-top: 90px;
 
   @media (max-width: 768px) {
     padding: 40px var(--space-4);
@@ -632,6 +645,28 @@
     color: var(--brand);
     transform: translateX(6px);
   }
+
+  // Thiết bị không có hover: tắt hiệu ứng nâng/dịch thẻ để khỏi kẹt trạng thái
+  // sau khi chạm và hết nhảy thẻ khi layout reflow lúc resize.
+  @media (hover: none) {
+    &:hover {
+      transform: translateZ(0);
+      box-shadow: var(--shadow-sm);
+    }
+
+    &:hover .style-item__bg {
+      transform: none;
+      filter: none;
+    }
+
+    &:hover .style-item__content {
+      transform: none;
+    }
+
+    &:hover .style-item__arrow {
+      transform: none;
+    }
+  }
 }
 
 // ── 6. Filter & All Drinks Grid ───────────────────────────
@@ -652,9 +687,10 @@
     position: sticky;
     top: 68px;
     z-index: 20;
-    background: color-mix(in srgb, var(--surface-app) 90%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    // Nền đặc thay vì backdrop-filter blur: blur trên sticky bar bắt GPU vẽ lại
+    // toàn vùng mỗi frame khi cuộn/resize -> rớt frame, giật khung hình
+    // (navbar client cũng đã dùng nền đặc vì lý do này).
+    background: var(--surface-app);
     padding: 12px 16px;
     border-radius: var(--radius-xl);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
@@ -865,6 +901,27 @@
     justify-content: center;
     text-align: center;
   }
+
+  // Mobile 360px: controls xếp dọc full-width, dãy số trang nhiều thì cuộn
+  // ngang trong khung thay vì tràn trang.
+  @media (max-width: 480px) {
+    &__controls {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    &__size {
+      width: 100%;
+    }
+
+    nz-pagination {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+  }
 }
 
 // ── 7. Customer Reviews Section ───────────────────────────
@@ -923,6 +980,12 @@
     transform: translateY(-3px);
     box-shadow: var(--shadow-md);
     border-color: var(--border-strong);
+  }
+
+  @media (hover: none) {
+    &:hover {
+      transform: none;
+    }
   }
 
   &__stars {

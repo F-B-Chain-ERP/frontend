@@ -72,6 +72,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   &__title-group {
@@ -335,6 +337,15 @@
 
   &:hover &__delete-btn {
     opacity: 1;
+  }
+
+  // Cảm ứng không có hover: luôn hiện nút xóa để thao tác được.
+  @media (hover: none) {
+    &__delete-btn {
+      opacity: 1;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
   }
 
   &__title {

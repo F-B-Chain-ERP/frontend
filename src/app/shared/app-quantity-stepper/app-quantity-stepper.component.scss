@@ -111,4 +111,28 @@
       cursor: not-allowed;
     }
   }
+
+  // Cảm ứng: nút stepper là thao tác chạm liên tục, nâng hit-target tối thiểu
+  // 32px để bấm được trên mobile (desktop giữ nguyên).
+  @media (pointer: coarse) {
+    &--sm {
+      height: 32px;
+
+      .app-stepper__btn {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+      }
+    }
+
+    &--default {
+      height: 38px;
+
+      .app-stepper__btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+      }
+    }
+  }
 }

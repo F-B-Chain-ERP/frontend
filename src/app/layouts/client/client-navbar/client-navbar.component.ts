@@ -76,14 +76,21 @@ export class ClientNavbarComponent {
     }
   }
 
+  /**
+   * Map nút header -> section của landing page (/store):
+   * Thực Đơn -> #all-drinks, Món Mới -> #new-arrivals,
+   * Bán Chạy -> #top-selling, Khám Phá -> #browse-style.
+   * Template dùng <button> (không routerLink) nên không còn race với router.
+   */
   scrollToSection(sectionId: string): void {
     this.isMobileMenuOpen.set(false);
-    if (this.router.url.startsWith('/store')) {
-      const el = document.getElementById(sectionId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+    // Chỉ cuộn trực tiếp khi đang đứng đúng trang /store (nơi các section tồn tại).
+    const currentPath = this.router.url.split('?')[0].split('#')[0];
+    if (currentPath === '/store' || currentPath === '/store/') {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
+      // Đang ở trang khác (giỏ hàng, checkout...): về /store kèm fragment,
+      // StoreComponent đăng ký route.fragment để cuộn sau khi navigation xong.
       this.router.navigate(['/store'], { fragment: sectionId });
     }
   }

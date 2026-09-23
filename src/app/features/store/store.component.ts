@@ -211,7 +211,19 @@ export class StoreComponent implements OnInit, OnDestroy {
       if (params['q']) {
         this.searchQuery = params['q'];
         this.onFilterChange();
-        this.scrollToSection('all-drinks');
+        // Defer qua navigation: scrollPositionRestoration:'top' của router chạy ở
+        // NavigationEnd sẽ giật về đầu trang và giết smooth-scroll nếu cuộn ngay.
+        setTimeout(() => this.scrollToSection('all-drinks'), 100);
+      }
+    });
+
+    // Navbar client điều hướng kèm fragment khi đang ở trang khác (giỏ hàng,
+    // checkout...). Router không bật anchorScrolling nên tự cuộn tay.
+    // Dùng subscribe (bắt cả reuse-route) + retry vì view có thể chưa render
+    // xong ở tick đầu; clear timer khi destroy để khỏi rò rỉ.
+    this.route.fragment.pipe(takeUntil(this.destroy$)).subscribe(fragment => {
+      if (fragment) {
+        this.scrollToFragmentWithRetry(fragment);
       }
     });
 
@@ -250,6 +262,10 @@ export class StoreComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.fragmentScrollTimer) {
+      clearInterval(this.fragmentScrollTimer);
+      this.fragmentScrollTimer = undefined;
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -421,6 +437,32 @@ export class StoreComponent implements OnInit, OnDestroy {
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  }
+
+  /** Cuộn tới fragment với retry: tick đầu view có thể chưa render xong. */
+  private fragmentScrollTimer?: ReturnType<typeof setInterval>;
+
+  private scrollToFragmentWithRetry(fragment: string): void {
+    if (this.fragmentScrollTimer) {
+      clearInterval(this.fragmentScrollTimer);
+      this.fragmentScrollTimer = undefined;
+    }
+    let attempts = 0;
+    this.fragmentScrollTimer = setInterval(() => {
+      const el = document.getElementById(fragment);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (this.fragmentScrollTimer) {
+          clearInterval(this.fragmentScrollTimer);
+          this.fragmentScrollTimer = undefined;
+        }
+      } else if (++attempts >= 20) {
+        if (this.fragmentScrollTimer) {
+          clearInterval(this.fragmentScrollTimer);
+          this.fragmentScrollTimer = undefined;
+        }
+      }
+    }, 100);
   }
 
   selectStyleCategory(catId: string): void {

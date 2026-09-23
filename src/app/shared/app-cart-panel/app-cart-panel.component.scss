@@ -304,5 +304,34 @@
     display: flex;
     align-items: center;
     gap: var(--space-3);
+
+    // Mobile (drawer ~336px usable): 2 nút nowrap không đủ chỗ -> xếp dọc full.
+    @media (max-width: 480px) {
+      flex-direction: column;
+      align-items: stretch;
+
+      ::ng-deep app-button,
+      ::ng-deep .app-btn,
+      ::ng-deep button {
+        width: 100%;
+      }
+    }
+  }
+
+  // Mobile: drawer full-bleed sát mép + nút đóng đủ lớn để bấm.
+  @media (max-width: 480px) {
+    .cart-drawer {
+      &__header,
+      &__body,
+      &__footer {
+        padding-left: var(--space-4);
+        padding-right: var(--space-4);
+      }
+
+      &__close-btn {
+        width: 40px;
+        height: 40px;
+      }
+    }
   }
 }

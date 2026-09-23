@@ -516,6 +516,8 @@
   &__body {
     max-height: 280px;
     overflow-y: auto;
+    // Bảng 730px trong dropdown ~331px ở mobile: cho cuộn ngang thay vì cắt cột.
+    overflow-x: auto;
 
     &::-webkit-scrollbar {
       width: 6px;

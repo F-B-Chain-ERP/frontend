@@ -2,6 +2,15 @@
   max-width: 1240px;
   margin: 0 auto;
   padding: 32px 24px 64px 24px;
+
+  // Đồng bộ lề mobile với các trang client khác (16px), tránh chật ở 360px.
+  @media (max-width: 768px) {
+    padding: 24px var(--space-4) 48px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 20px var(--space-4) 40px;
+  }
 }
 
 // ── 1. Top Breadcrumbs Bar ──
@@ -68,7 +77,11 @@
 // ── 2. Main Grid Layout ──
 .detail-main-grid {
   display: grid;
-  grid-template-columns: 500px 1fr;
+  // Cột trái cố định 500px nhưng cho co (minmax) + min-width:0 ở con:
+  // nếu không, nội dung cột phải (pills fit-content, size grid minmax 130px,
+  // nút min-width 200px) sẽ ép grid tràn ngang ở vùng 1024-1200px -> xuất hiện
+  // scrollbar ngang + giật layout khi resize qua vùng này.
+  grid-template-columns: minmax(0, 500px) minmax(0, 1fr);
   gap: 40px;
   align-items: start;
 
@@ -81,11 +94,17 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    min-width: 0;
   }
 
   &__right {
     position: sticky;
     top: 84px;
+    min-width: 0;
+
+    @media (max-width: 1024px) {
+      position: static;
+    }
   }
 }
 
@@ -335,6 +354,12 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  @media (max-width: 480px) {
+    padding: 20px 16px;
+    border-radius: 20px;
+    gap: 16px;
+  }
 }
 
 .order-config-header {
@@ -728,7 +753,7 @@
 // ── Skeleton Loader ──
 .detail-skeleton-container {
   display: grid;
-  grid-template-columns: 500px 1fr;
+  grid-template-columns: minmax(0, 500px) minmax(0, 1fr);
   gap: 40px;
 
   @media (max-width: 1024px) {

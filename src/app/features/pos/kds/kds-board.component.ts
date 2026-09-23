@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Observable } from 'rxjs';
@@ -31,6 +32,8 @@ import {
 } from '../kds.model';
 import { getOrderStatusMeta } from '../order.model';
 import { DEFAULT_PAGE_INDEX, DEFAULT_PAGE_SIZE } from '../../../shared/constants/constant';
+import { RealtimeNotificationService } from '../../../core/notification/realtime-notification.service';
+import { OrderRealtimePayload } from '../../../core/notification/notification.model';
 
 function toISODate(d: Date | null): string | null {
   if (!d) return null;
@@ -90,12 +93,23 @@ export class KdsBoardComponent implements OnInit, OnDestroy {
 
   private readonly api = inject(KdsApiService);
   private readonly toast = inject(AppNotificationService);
+  private readonly realtimeNotification = inject(RealtimeNotificationService);
+  private readonly destroyRef = inject(DestroyRef);
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  private lastKdsEventKey = '';
+  private lastKdsEventAt = 0;
 
   ngOnInit(): void {
     this.branchService.loadMine().subscribe();
     this.load();
-    this.refreshTimer = setInterval(() => this.load(true), 15000);
+    // Realtime chính: đơn mới/đổi trạng thái/hủy/giao xong -> board bếp cập nhật
+    // ngay thay vì chờ poll. Poll 60s chỉ còn làm fallback khi mất SSE.
+    // An toàn client: component này chỉ tồn tại dưới layout /admin (StaffGuard +
+    // quyền KDS), handler chỉ reload im lặng, không toast/kêu gì ra client.
+    this.realtimeNotification.orderEvents$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(event => this.handleRealtimeOrder(event));
+    this.refreshTimer = setInterval(() => this.load(true), 60000);
   }
 
   ngOnDestroy(): void {
@@ -201,6 +215,46 @@ export class KdsBoardComponent implements OnInit, OnDestroy {
 
   closeDetail(): void {
     this.detailVisible.set(false);
+  }
+
+  /**
+   * Bếp chỉ quan tâm event làm đổi ticket: đơn mới, đổi trạng thái đơn, và 2 ca
+   * giao hàng kéo theo đơn (DELIVERED -> đơn COMPLETED/ticket dọn; FAILED ->
+   * đơn về READY/ticket đồng bộ lại). Các event giao hàng khác bỏ qua để khỏi
+   * reload thừa. Lọc đúng chi nhánh đang xem như màn Đơn/Giao hàng.
+   */
+  private handleRealtimeOrder(event: OrderRealtimePayload): void {
+    if (!event) {
+      return;
+    }
+    const relevant =
+      event.eventType === 'ORDER_CREATED' ||
+      event.eventType === 'ORDER_STATUS_CHANGED' ||
+      (event.eventType === 'DELIVERY_STATUS_CHANGED' &&
+        (event.deliveryStatus === 'DELIVERED' || event.deliveryStatus === 'FAILED'));
+    if (!relevant) {
+      return;
+    }
+    // Chống reload dồn khi burst event trùng trong 3s.
+    const eventKey = `${event.orderId}:${event.orderStatus || ''}:${event.deliveryStatus || ''}`;
+    const now = Date.now();
+    if (eventKey === this.lastKdsEventKey && now - this.lastKdsEventAt < 3000) {
+      return;
+    }
+    this.lastKdsEventKey = eventKey;
+    this.lastKdsEventAt = now;
+    const currentBranch = this.branchService.currentBranch()?.id;
+    if (this.selectedBranchId && event.branchId && this.selectedBranchId !== event.branchId) {
+      return;
+    }
+    if (!this.selectedBranchId && currentBranch && event.branchId && currentBranch !== event.branchId) {
+      return;
+    }
+    this.load(true);
+    const detail = this.detail();
+    if (this.detailVisible() && detail && detail.orderId === event.orderId) {
+      this.openDetail(detail);
+    }
   }
 
   advance(ticket: KdsTicketSummary, target: string): void {
