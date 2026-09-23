@@ -413,18 +413,26 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
-        path: 'finance/expenses/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Chi phí',
+        path: 'finance/expenses',
+        loadChildren: () => import('./features/finance/expenses/expenses.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.CHI_PHI.VIEW] },
       },
       {
-        path: 'finance/summaries/list',
-        loadComponent: () => import('./features/coming-soon/coming-soon.component'),
-        title: 'Tổng hợp CN',
+        path: 'finance/expenses/list',
+        redirectTo: 'finance/expenses',
+        pathMatch: 'full',
+      },
+      {
+        path: 'finance/financial-summaries',
+        loadChildren: () => import('./features/finance/financial-summaries/financial-summaries.routes'),
         canActivate: [UserRouteAccessService],
         data: { authorities: [ROLE.TONG_HOP_TAI_CHINH.VIEW] },
+      },
+      {
+        path: 'finance/financial-summaries/list',
+        redirectTo: 'finance/financial-summaries',
+        pathMatch: 'full',
       },
       // ── CUSTOMER ───────────────────────────────
       {

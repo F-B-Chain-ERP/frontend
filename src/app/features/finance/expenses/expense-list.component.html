@@ -1,0 +1,325 @@
+<div class="expense-list-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Chi phí vận hành</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        Ghi nhận &amp; theo dõi chi phí vận hành theo chi nhánh/ngày &bull; Chi phí trung tâm (chưa phân bổ) &bull; Tự động cập nhật vào tổng hợp tài chính ngày
+      </p>
+    </div>
+    <div class="page__header__right">
+      <app-button *erpUTTHasSomeAuthority="[ROLE.CHI_PHI.CREATE]" variant="primary" leftIcon="plus" (click)="onOpenCreateModal()">Ghi nhận chi phí</app-button>
+    </div>
+  </div>
+
+  <!-- ── 2. KPI Summary Cards ───────────────────────────────────────── -->
+  <div nz-row class="kpi-row" [nzGutter]="[16, 16]">
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Tổng chi phí (trang hiện tại)</span>
+          <span class="stat-card__icon stat-card__icon--danger">
+            <nz-icon nzType="pay-circle"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">{{ totalExpensePage() | number: '1.0-0' }} ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--danger">Tính trên trang đang xem</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Số khoản chi phí</span>
+          <span class="stat-card__icon stat-card__icon--brand">
+            <nz-icon nzType="file-text"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">{{ expenses().length }}</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub">Trên trang đang xem</span>
+        </div>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- ── 3. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--grow">
+        <label class="form-label" for="expense-search-input">Tìm kiếm</label>
+        <nz-input-wrapper [nzAllowClear]="true">
+          <nz-icon nzInputPrefix nzType="search" />
+          <input id="expense-search-input" nz-input [(ngModel)]="searchQuery" (keyup.enter)="onSearch()"
+            placeholder="Tìm theo loại chi phí, mô tả..." />
+        </nz-input-wrapper>
+      </div>
+
+      <div class="filter-item filter-item--select">
+        <label class="form-label">Chi nhánh</label>
+        <nz-select [(ngModel)]="selectedBranchId" nzAllowClear nzShowSearch nzPlaceHolder="Tất cả chi nhánh"
+          style="width: 100%;" (ngModelChange)="onBranchChange()">
+          @for (b of branchOptions(); track b.id) {
+            <nz-option [nzValue]="b.id" [nzLabel]="b.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select [(ngModel)]="selectedStatus" nzAllowClear nzPlaceHolder="Tất cả" style="width: 100%;"
+          (ngModelChange)="onStatusChange()">
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--daterange">
+        <label class="form-label">Khoảng ngày chi phí</label>
+        <nz-range-picker [(ngModel)]="dateRange" (ngModelChange)="onDateRangeChange()"
+          style="width: 100%;"></nz-range-picker>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table #expenseTable [nzData]="expenses()" [nzLoading]="isLoading()" [nzShowPagination]="false"
+      [nzFrontPagination]="false" nzSize="middle" [nzScroll]="{ x: '1000px' }">
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th scope="col" nzWidth="130px" nzAlign="center" [nzSortFn]="true"
+            [nzSortOrder]="sortOrderFor('expenseDate')"
+            (nzSortOrderChange)="onSortChange('expenseDate', $event)">Ngày chi phí</th>
+          <th scope="col" nzWidth="200px" nzAlign="left">Chi nhánh</th>
+          <th scope="col" nzWidth="180px" nzAlign="left">Loại chi phí</th>
+          <th scope="col" nzWidth="150px" nzAlign="right" [nzSortFn]="true"
+            [nzSortOrder]="sortOrderFor('amount')" (nzSortOrderChange)="onSortChange('amount', $event)">Số tiền</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="140px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of expenseTable.data; track e.id; let i = $index) {
+        <tr>
+          <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+          <td nzAlign="center">
+            <span class="font-mono">{{ e.expenseDate }}</span>
+          </td>
+          <td>
+            <span class="font-semibold" [class.central-highlight]="isCentral(e)">
+              <nz-icon nzType="bank" *ngIf="isCentral(e)" class="mr-2"></nz-icon>
+              {{ branchDisplayName(e) }}
+            </span>
+          </td>
+          <td>
+            <span class="tag-compact">{{ e.expenseCategory }}</span>
+          </td>
+          <td nzAlign="right">
+            <span class="font-mono font-bold" [class.text-danger]="isCentral(e)">{{ e.amount | number: '1.0-0' }} ₫</span>
+          </td>
+          <td nzAlign="center">
+            <span class="tbl-badge" [ngClass]="getStatusMeta(e.status).badgeClass">
+              {{ getStatusMeta(e.status).label }}
+            </span>
+          </td>
+          <td nzAlign="center">
+            <div class="tbl-actions">
+              <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết"
+                (click)="onViewExpense(e)">
+              </app-button>
+              @if (e.status === 'ACTIVE') {
+                <app-button *erpUTTHasSomeAuthority="[ROLE.CHI_PHI.UPDATE]" variant="ghost" iconOnly="edit" nz-tooltip nzTooltipTitle="Chỉnh sửa"
+                  (click)="onOpenEditModal(e)">
+                </app-button>
+                <app-button *erpUTTHasSomeAuthority="[ROLE.CHI_PHI.DELETE]" variant="ghost" iconOnly="delete" nz-tooltip nzTooltipTitle="Xóa chi phí"
+                  (click)="onOpenDeleteModal(e)">
+                </app-button>
+              }
+            </div>
+          </td>
+        </tr>
+        } @empty {
+        <tr>
+          <td colspan="7" class="text-center text-secondary py-4">
+            @if (isLoading()) {
+              <nz-icon nzType="loading" class="mr-2"></nz-icon> Đang tải dữ liệu...
+            } @else {
+              Không có dữ liệu chi phí
+            }
+          </td>
+        </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination [total]="total()" [pageIndex]="pageIndex" [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions" (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)">
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Expense Detail Modal ─────────────────────────────────────── -->
+  <nz-modal [nzVisible]="isDetailModalVisible()" [nzTitle]="detailTitleTpl" [nzWidth]="620"
+    (nzOnCancel)="onCloseDetailModal()" [nzFooter]="detailFooter">
+    <ng-container *nzModalContent>
+      @if (getDetailExpense(); as e) {
+      <div class="detail-body">
+        <div class="expense-summary">
+          <div class="expense-summary__item">
+            <span class="label">Loại chi phí:</span>
+            <span class="val font-semibold">{{ e.expenseCategory }}</span>
+          </div>
+          <div class="expense-summary__item">
+            <span class="label">Số tiền:</span>
+            <span class="val font-mono font-semibold text-danger">{{ e.amount | number: '1.0-0' }} ₫</span>
+          </div>
+        </div>
+
+        <div class="expense-info-grid">
+          <div class="expense-info-item">
+            <nz-icon nzType="calendar" class="expense-info-item__icon expense-info-item__icon--brand"></nz-icon>
+            <div>
+              <div class="expense-info-item__label">Ngày chi phí</div>
+              <div class="expense-info-item__value font-mono">{{ e.expenseDate }}</div>
+            </div>
+          </div>
+          <div class="expense-info-item">
+            <nz-icon nzType="bank" class="expense-info-item__icon expense-info-item__icon--purple"></nz-icon>
+            <div>
+              <div class="expense-info-item__label">Chi nhánh / Trung tâm</div>
+              <div class="expense-info-item__value">{{ branchDisplayName(e) }}</div>
+            </div>
+          </div>
+          <div class="expense-info-item">
+            <nz-icon nzType="tag" class="expense-info-item__icon expense-info-item__icon--teal"></nz-icon>
+            <div>
+              <div class="expense-info-item__label">Trạng thái</div>
+              <div class="expense-info-item__value">
+                <span class="tbl-badge" [ngClass]="getStatusMeta(e.status).badgeClass">
+                  {{ getStatusMeta(e.status).label }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="expense-info-item">
+            <nz-icon nzType="clock-circle" class="expense-info-item__icon expense-info-item__icon--success"></nz-icon>
+            <div>
+              <div class="expense-info-item__label">Ghi nhận lúc</div>
+              <div class="expense-info-item__value font-mono">{{ e.createdAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="expense-desc">
+          <div class="expense-desc__label">Mô tả</div>
+          <div class="expense-desc__content">{{ e.description || '—' }}</div>
+        </div>
+
+        @if (isCentral(e)) {
+        <div class="read-only-notice">
+          <nz-icon nzType="info-circle" style="color: var(--brand);"></nz-icon>
+          <span>Chi phí trung tâm (chưa phân bổ) — chưa được tính vào tổng hợp tài chính chi nhánh cho đến khi BA định nghĩa cơ chế phân bổ</span>
+        </div>
+        }
+      </div>
+      }
+    </ng-container>
+    <ng-template #detailFooter>
+      <app-button variant="secondary" (click)="onCloseDetailModal()">Đóng</app-button>
+      @if (getDetailExpense()?.status === 'ACTIVE') {
+        <app-button *erpUTTHasSomeAuthority="[ROLE.CHI_PHI.UPDATE]" variant="primary" leftIcon="edit" (click)="onOpenEditModal(getDetailExpense()!)">
+          Chỉnh sửa
+        </app-button>
+      }
+    </ng-template>
+  </nz-modal>
+  <ng-template #detailTitleTpl>
+    <div class="detail-title">
+      <nz-icon nzType="pay-circle" style="color: var(--brand); margin-right: 8px;"></nz-icon>
+      <span>Chi Tiết Khoản Chi Phí</span>
+    </div>
+  </ng-template>
+
+  <!-- ── 6. Create / Edit Modal ──────────────────────────────────────── -->
+  <nz-modal [nzVisible]="isFormModalVisible()" [nzTitle]="formMode === 'create' ? 'Ghi Nhận Chi Phí Vận Hành' : 'Chỉnh Sửa Chi Phí Vận Hành'"
+    (nzOnCancel)="onCloseFormModal()" (nzOnOk)="onConfirmForm()"
+    [nzOkLoading]="isSubmittingForm()" [nzOkDisabled]="!isFormValid"
+    nzOkText="Lưu" nzCancelText="Hủy" nzWidth="600px">
+    <ng-container *nzModalContent>
+      <div class="create-form">
+        <div class="form-group">
+          <label class="form-label font-medium">Ngày chi phí <span class="text-danger">*</span></label>
+          <nz-date-picker [(ngModel)]="formExpenseDate" nzPlaceHolder="Chọn ngày phát sinh chi phí"
+            style="width: 100%;"></nz-date-picker>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Chi nhánh / Trung tâm</label>
+          <nz-select [(ngModel)]="formBranchValue" nzShowSearch style="width: 100%;">
+            <nz-option [nzValue]="centralBranchValue" nzLabel="Chi phí trung tâm (chưa phân bổ)"></nz-option>
+            @for (b of branchOptions(); track b.id) {
+              <nz-option [nzValue]="b.id" [nzLabel]="b.name"></nz-option>
+            }
+          </nz-select>
+          <div class="text-secondary text-xs" style="margin-top: 4px;">
+            Để trống => chi phí trung tâm, chưa tính vào tổng hợp chi nhánh
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Loại chi phí <span class="text-danger">*</span></label>
+          <input type="text" nz-input [(ngModel)]="formCategory" maxlength="50"
+            placeholder="VD: Điện nước, Thuê mặt bằng, Nhân công..." />
+          <div class="text-secondary text-xs" style="margin-top: 4px;">
+            {{ formCategory.length }}/50 ký tự
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Số tiền (VNĐ) <span class="text-danger">*</span></label>
+          <input type="number" nz-input [(ngModel)]="formAmount" min="0" step="any" class="font-mono"
+            placeholder="Nhập số tiền chi phí" />
+        </div>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label class="form-label font-medium">Mô tả</label>
+          <textarea nz-input [(ngModel)]="formDescription" [nzAutosize]="{ minRows: 2, maxRows: 4 }"
+            maxlength="500" placeholder="Mô tả nội dung chi phí..."></textarea>
+        </div>
+      </div>
+    </ng-container>
+  </nz-modal>
+
+  <!-- ── 7. Delete Confirm Modal ──────────────────────────────────── -->
+  <nz-modal [nzVisible]="isConfirmDeleteVisible()" nzTitle="Xác nhận xóa chi phí"
+    (nzOnCancel)="onCloseDeleteModal()" (nzOnOk)="onConfirmDelete()"
+    nzOkText="Xóa" nzCancelText="Hủy" nzWidth="420px">
+    <ng-container *nzModalContent>
+      <p>Bạn có chắc chắn muốn xóa (vô hiệu) khoản chi phí này?</p>
+      @if (deleteTarget(); as e) {
+        <div style="margin-top: 12px; padding: 12px; background: #fff2f0; border: 1px solid #ffccc7; border-radius: 6px;">
+          <p style="margin: 0; color: #cf1322; font-weight: 500;">
+            {{ e.expenseCategory }} | {{ e.amount | number: '1.0-0' }} ₫
+          </p>
+          <p style="margin: 4px 0 0; font-size: 13px; color: #666;">
+            {{ e.expenseDate }} | {{ branchDisplayName(e) }}
+          </p>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+</div>

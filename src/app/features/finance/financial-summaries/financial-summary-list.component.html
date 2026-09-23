@@ -1,0 +1,613 @@
+<div class="financial-summary-page">
+  <!-- ── 1. Page Header ─────────────────────────────────────────────── -->
+  <div class="page__header">
+    <div class="page__header__left">
+      <h1 class="page__header__title">Báo cáo tài chính</h1>
+      <app-breadcrumbs></app-breadcrumbs>
+      <p class="page__header__description">
+        Tổng hợp tài chính ngày theo chi nhánh &bull; Doanh thu thuần, Giá vốn, Chi phí &amp; Lợi nhuận &bull; Đối soát nguồn dữ liệu trước
+        khi chốt kỳ
+      </p>
+    </div>
+  </div>
+
+  <!-- ── 2. KPI Summary Cards (trang hiện tại) ─────────────────────── -->
+  <div nz-row class="kpi-row" [nzGutter]="[16, 16]">
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Doanh thu thuần (trang hiện tại)</span>
+          <span class="stat-card__icon stat-card__icon--brand">
+            <nz-icon nzType="dollar"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">{{ kpiNetRevenue() | number: '1.0-0' }} ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--brand">Tổng doanh thu thuần sau chiết khấu</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Giá vốn (trang hiện tại)</span>
+          <span class="stat-card__icon stat-card__icon--purple">
+            <nz-icon nzType="inbox"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">{{ kpiTotalCogs() | number: '1.0-0' }} ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--purple">Tổng giá vốn hàng bán (COGS)</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Chi phí (trang hiện tại)</span>
+          <span class="stat-card__icon stat-card__icon--danger">
+            <nz-icon nzType="pay-circle"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">{{ kpiTotalExpense() | number: '1.0-0' }} ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--danger">Tổng chi phí vận hành</span>
+        </div>
+      </nz-card>
+    </div>
+
+    <div nz-col [nzXs]="24" [nzSm]="12" [nzLg]="6">
+      <nz-card [nzBordered]="false" class="stat-card">
+        <div class="stat-card__header">
+          <span class="stat-card__title">Lợi nhuận ròng (trang hiện tại)</span>
+          <span class="stat-card__icon stat-card__icon--success">
+            <nz-icon nzType="line-chart"></nz-icon>
+          </span>
+        </div>
+        <div class="stat-card__value font-mono">{{ kpiNetProfit() | number: '1.0-0' }} ₫</div>
+        <div class="stat-card__footer">
+          <span class="stat-card__sub stat-card__sub--success">Lợi nhuận ròng sau chi phí</span>
+        </div>
+      </nz-card>
+    </div>
+  </div>
+
+  <!-- ── 3. Filter Box ──────────────────────────────────────────────── -->
+  <nz-card class="page__filter-box" [nzBordered]="false">
+    <div class="page__filter-box__row">
+      <div class="filter-item filter-item--select">
+        <label class="form-label">Chi nhánh</label>
+        <nz-select
+          [(ngModel)]="selectedBranchId"
+          nzAllowClear
+          nzShowSearch
+          nzPlaceHolder="Tất cả chi nhánh"
+          style="width: 100%"
+          (ngModelChange)="onSearch()"
+        >
+          @for (b of branchOptions(); track b.id) {
+            <nz-option [nzValue]="b.id" [nzLabel]="b.name"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="filter-item filter-item--date">
+        <label class="form-label">Từ ngày</label>
+        <nz-date-picker
+          [(ngModel)]="fromDate"
+          nzFormat="yyyy-MM-dd"
+          nzPlaceHolder="Từ ngày"
+          style="width: 100%"
+          (ngModelChange)="onSearch()"
+        ></nz-date-picker>
+      </div>
+
+      <div class="filter-item filter-item--date">
+        <label class="form-label">Đến ngày</label>
+        <nz-date-picker
+          [(ngModel)]="toDate"
+          nzFormat="yyyy-MM-dd"
+          nzPlaceHolder="Đến ngày"
+          style="width: 100%"
+          (ngModelChange)="onSearch()"
+        ></nz-date-picker>
+      </div>
+
+      <div class="filter-item filter-item--status">
+        <label class="form-label">Trạng thái</label>
+        <nz-select [(ngModel)]="selectedStatus" nzAllowClear nzPlaceHolder="Tất cả" style="width: 100%" (ngModelChange)="onSearch()">
+          @for (opt of statusOptions; track opt.value) {
+            <nz-option [nzValue]="opt.value" [nzLabel]="opt.label"></nz-option>
+          }
+        </nz-select>
+      </div>
+
+      <div class="page__filter-box__actions">
+        <app-button variant="primary" leftIcon="search" (click)="onSearch()">Tìm kiếm</app-button>
+        <app-button variant="secondary" leftIcon="reload" (click)="onResetFilters()">Làm mới</app-button>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ── 4. Main Data Table Card ────────────────────────────────────── -->
+  <nz-card class="page__list" [nzBordered]="false">
+    <nz-table
+      #summaryTable
+      [nzData]="summaries()"
+      [nzLoading]="isLoading()"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+      nzSize="middle"
+      [nzScroll]="{ x: '1400px' }"
+    >
+      <thead>
+        <tr>
+          <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
+          <th
+            scope="col"
+            nzWidth="130px"
+            nzAlign="center"
+            [nzSortFn]="true"
+            [nzSortOrder]="sortOrderFor('businessDate')"
+            (nzSortOrderChange)="onSortChange('businessDate', $event)"
+          >
+            Ngày
+          </th>
+          <th scope="col" nzWidth="180px" nzAlign="left">Chi nhánh</th>
+          <th
+            scope="col"
+            nzWidth="150px"
+            nzAlign="right"
+            [nzSortFn]="true"
+            [nzSortOrder]="sortOrderFor('netRevenue')"
+            (nzSortOrderChange)="onSortChange('netRevenue', $event)"
+          >
+            Doanh thu thuần
+          </th>
+          <th scope="col" nzWidth="130px" nzAlign="right">Giá vốn</th>
+          <th scope="col" nzWidth="130px" nzAlign="right">Chi phí</th>
+          <th scope="col" nzWidth="150px" nzAlign="right">Lợi nhuận gộp</th>
+          <th
+            scope="col"
+            nzWidth="150px"
+            nzAlign="right"
+            [nzSortFn]="true"
+            [nzSortOrder]="sortOrderFor('netProfit')"
+            (nzSortOrderChange)="onSortChange('netProfit', $event)"
+          >
+            Lợi nhuận ròng
+          </th>
+          <th scope="col" nzWidth="100px" nzAlign="center">Số đơn</th>
+          <th scope="col" nzWidth="130px" nzAlign="center">Trạng thái</th>
+          <th scope="col" nzWidth="160px" nzAlign="center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of summaryTable.data; track s.id; let i = $index) {
+          <tr>
+            <td nzAlign="center">{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
+            <td nzAlign="center">
+              <span class="font-mono">{{ s.businessDate }}</span>
+            </td>
+            <td>
+              <span class="font-semibold">{{ s.branchName || '—' }}</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-bold">{{ s.netRevenue | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono">{{ s.totalCogs | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono">{{ s.totalExpense | number: '1.0-0' }} ₫</span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono" [class.text-danger]="s.grossProfit < 0"> {{ s.grossProfit | number: '1.0-0' }} ₫ </span>
+            </td>
+            <td nzAlign="right">
+              <span class="font-mono font-bold" [class.text-danger]="s.netProfit < 0"> {{ s.netProfit | number: '1.0-0' }} ₫ </span>
+            </td>
+            <td nzAlign="center">
+              <span class="tag-compact">{{ s.orderCount }}</span>
+            </td>
+            <td nzAlign="center">
+              <span class="tbl-badge" [ngClass]="getStatusMeta(s.status).badgeClass">
+                {{ getStatusMeta(s.status).label }}
+              </span>
+            </td>
+            <td nzAlign="center">
+              <div class="tbl-actions">
+                <app-button variant="ghost" iconOnly="eye" nz-tooltip nzTooltipTitle="Xem chi tiết" (click)="onViewSummary(s)">
+                </app-button>
+                @if (isDraft(s)) {
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.TONG_HOP_TAI_CHINH.UPDATE]"
+                    variant="ghost"
+                    iconOnly="sync"
+                    nz-tooltip
+                    nzTooltipTitle="Tính lại"
+                    (click)="onOpenRecalcModal(s)"
+                  >
+                  </app-button>
+                  <app-button
+                    *erpUTTHasSomeAuthority="[ROLE.TONG_HOP_TAI_CHINH.UPDATE]"
+                    variant="ghost"
+                    iconOnly="lock"
+                    nz-tooltip
+                    nzTooltipTitle="Chốt kỳ"
+                    (click)="onOpenFinalizeModal(s)"
+                  >
+                  </app-button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="11" class="text-center text-secondary py-4">
+              @if (isLoading()) {
+                <nz-icon nzType="loading" class="mr-2"></nz-icon> Đang tải dữ liệu...
+              } @else {
+                Không có dữ liệu báo cáo tài chính
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+
+    <!-- Pagination -->
+    <div class="page__pagination">
+      <app-pagination
+        [total]="total()"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [pageSizeOptions]="pageSizeOptions"
+        (pageIndexChange)="onPageIndexChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      >
+      </app-pagination>
+    </div>
+  </nz-card>
+
+  <!-- ── 5. Detail Modal (3 tab đối soát nguồn) ───────────────────────── -->
+  <nz-modal
+    [nzVisible]="isDetailVisible()"
+    [nzTitle]="detailTitleTpl"
+    [nzWidth]="960"
+    (nzOnCancel)="onCloseDetail()"
+    [nzFooter]="detailFooter"
+  >
+    <ng-container *nzModalContent>
+      @if (detailSummary(); as s) {
+        <div class="detail-body">
+          <div class="summary-meta">
+            <div class="summary-meta__item">
+              <span class="label">Chi nhánh</span>
+              <span class="val font-semibold">{{ s.branchName || '—' }}</span>
+            </div>
+            <div class="summary-meta__item">
+              <span class="label">Ngày</span>
+              <span class="val font-mono">{{ s.businessDate }}</span>
+            </div>
+            <div class="summary-meta__item">
+              <span class="label">Trạng thái</span>
+              <span class="val">
+                <span class="tbl-badge" [ngClass]="getStatusMeta(s.status).badgeClass">
+                  {{ getStatusMeta(s.status).label }}
+                </span>
+              </span>
+            </div>
+            <div class="summary-meta__item">
+              <span class="label">Số đơn</span>
+              <span class="val font-mono">{{ s.orderCount }}</span>
+            </div>
+          </div>
+
+          <div class="detail-financial-grid">
+            <div class="fin-item">
+              <span class="fin-item__label">Doanh thu gộp</span>
+              <span class="fin-item__value font-mono">{{ s.grossRevenue | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="fin-item">
+              <span class="fin-item__label">Chiết khấu</span>
+              <span class="fin-item__value font-mono text-secondary">{{ s.discountAmount | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="fin-item fin-item--highlight">
+              <span class="fin-item__label">Doanh thu thuần</span>
+              <span class="fin-item__value font-mono font-bold text-brand">{{ s.netRevenue | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="fin-item">
+              <span class="fin-item__label">Giá vốn (COGS)</span>
+              <span class="fin-item__value font-mono">{{ s.totalCogs | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="fin-item">
+              <span class="fin-item__label">Lợi nhuận gộp</span>
+              <span class="fin-item__value font-mono" [class.text-danger]="s.grossProfit < 0">
+                {{ s.grossProfit | number: '1.0-0' }} ₫
+              </span>
+            </div>
+            <div class="fin-item">
+              <span class="fin-item__label">Chi phí vận hành</span>
+              <span class="fin-item__value font-mono">{{ s.totalExpense | number: '1.0-0' }} ₫</span>
+            </div>
+            <div class="fin-item fin-item--highlight">
+              <span class="fin-item__label">Lợi nhuận ròng</span>
+              <span class="fin-item__value font-mono font-bold" [class.text-danger]="s.netProfit < 0">
+                {{ s.netProfit | number: '1.0-0' }} ₫
+              </span>
+            </div>
+          </div>
+
+          <!-- 3 tab đối soát -->
+          <nz-tabs [nzSelectedIndex]="activeTabIndex()" (nzSelectedIndexChange)="onTabChange($event)">
+            <nz-tab nzTitle="Đơn hàng">
+              <nz-table
+                #orderTab
+                [nzData]="orderSources()"
+                [nzLoading]="isSourcesLoading()"
+                [nzShowPagination]="false"
+                [nzFrontPagination]="false"
+                nzSize="small"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col" nzWidth="60px" nzAlign="center">STT</th>
+                    <th scope="col" nzWidth="160px" nzAlign="left">Mã đơn</th>
+                    <th scope="col" nzWidth="200px" nzAlign="center">Hoàn thành lúc</th>
+                    <th scope="col" nzWidth="140px" nzAlign="right">Tổng tiền</th>
+                    <th scope="col" nzWidth="120px" nzAlign="right">Chiết khấu</th>
+                    <th scope="col" nzWidth="140px" nzAlign="right">Giá vốn</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (o of orderTab.data; track o.orderId; let i = $index) {
+                    <tr>
+                      <td nzAlign="center">{{ (sourcePageIndex - 1) * sourcePageSize + i + 1 }}</td>
+                      <td>
+                        <span class="font-semibold">{{ o.orderCode }}</span>
+                      </td>
+                      <td nzAlign="center">
+                        <span class="font-mono">{{ o.completedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                      </td>
+                      <td nzAlign="right">
+                        <span class="font-mono">{{ o.subtotalAmount | number: '1.0-0' }} ₫</span>
+                      </td>
+                      <td nzAlign="right">
+                        <span class="font-mono">{{ o.discountAmount | number: '1.0-0' }} ₫</span>
+                      </td>
+                      <td nzAlign="right">
+                        <span class="font-mono">{{ o.totalCogsAmount | number: '1.0-0' }} ₫</span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="6" class="text-center text-secondary py-3">
+                        @if (isSourcesLoading()) {
+                          <nz-icon nzType="loading" class="mr-2"></nz-icon> Đang tải...
+                        } @else {
+                          Không có đơn hàng
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </nz-table>
+            </nz-tab>
+
+            <nz-tab nzTitle="Hoàn tiền">
+              <nz-table
+                #refundTab
+                [nzData]="refundSources()"
+                [nzLoading]="isSourcesLoading()"
+                [nzShowPagination]="false"
+                [nzFrontPagination]="false"
+                nzSize="small"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col" nzWidth="60px" nzAlign="center">STT</th>
+                    <th scope="col" nzWidth="160px" nzAlign="left">Mã hoàn tiền</th>
+                    <th scope="col" nzWidth="160px" nzAlign="left">Đơn hàng</th>
+                    <th scope="col" nzWidth="200px" nzAlign="center">Xử lý lúc</th>
+                    <th scope="col" nzWidth="140px" nzAlign="right">Số tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of refundTab.data; track r.refundId; let i = $index) {
+                    <tr>
+                      <td nzAlign="center">{{ (sourcePageIndex - 1) * sourcePageSize + i + 1 }}</td>
+                      <td>
+                        <span class="font-semibold">{{ r.refundCode }}</span>
+                      </td>
+                      <td>
+                        <span class="font-mono">{{ r.orderId || '—' }}</span>
+                      </td>
+                      <td nzAlign="center">
+                        <span class="font-mono">{{ r.processedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+                      </td>
+                      <td nzAlign="right">
+                        <span class="font-mono font-bold">{{ r.amount | number: '1.0-0' }} ₫</span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5" class="text-center text-secondary py-3">
+                        @if (isSourcesLoading()) {
+                          <nz-icon nzType="loading" class="mr-2"></nz-icon> Đang tải...
+                        } @else {
+                          Không có khoản hoàn tiền
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </nz-table>
+            </nz-tab>
+
+            <nz-tab nzTitle="Chi phí">
+              <nz-table
+                #expenseTab
+                [nzData]="expenseSources()"
+                [nzLoading]="isSourcesLoading()"
+                [nzShowPagination]="false"
+                [nzFrontPagination]="false"
+                nzSize="small"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col" nzWidth="60px" nzAlign="center">STT</th>
+                    <th scope="col" nzWidth="170px" nzAlign="left">Loại chi phí</th>
+                    <th scope="col" nzWidth="130px" nzAlign="center">Ngày chi phí</th>
+                    <th scope="col" nzWidth="140px" nzAlign="right">Số tiền</th>
+                    <th scope="col" nzAlign="left">Mô tả</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (x of expenseTab.data; track x.expenseId; let i = $index) {
+                    <tr>
+                      <td nzAlign="center">{{ (sourcePageIndex - 1) * sourcePageSize + i + 1 }}</td>
+                      <td>
+                        <span class="font-semibold">{{ x.expenseCategory }}</span>
+                      </td>
+                      <td nzAlign="center">
+                        <span class="font-mono">{{ x.expenseDate }}</span>
+                      </td>
+                      <td nzAlign="right">
+                        <span class="font-mono font-bold">{{ x.amount | number: '1.0-0' }} ₫</span>
+                      </td>
+                      <td>
+                        <span class="text-secondary">{{ x.description || '—' }}</span>
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="5" class="text-center text-secondary py-3">
+                        @if (isSourcesLoading()) {
+                          <nz-icon nzType="loading" class="mr-2"></nz-icon> Đang tải...
+                        } @else {
+                          Không có chi phí
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </nz-table>
+            </nz-tab>
+          </nz-tabs>
+
+          <!-- Source Pagination -->
+          @if (sourcesCount()) {
+            <div class="page__pagination detail-pagination">
+              <app-pagination
+                [total]="sourceTotal()"
+                [pageIndex]="sourcePageIndex"
+                [pageSize]="sourcePageSize"
+                [pageSizeOptions]="pageSizeOptions"
+                (pageIndexChange)="onSourcePageIndexChange($event)"
+                (pageSizeChange)="onSourcePageSizeChange($event)"
+              >
+              </app-pagination>
+            </div>
+          }
+        </div>
+      }
+    </ng-container>
+    <ng-template #detailFooter>
+      <app-button variant="secondary" (click)="onCloseDetail()">Đóng</app-button>
+      @if (detailSummary() && isDraft(detailSummary()!)) {
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.TONG_HOP_TAI_CHINH.UPDATE]"
+          variant="secondary"
+          leftIcon="sync"
+          (click)="onOpenRecalcModal(detailSummary()!)"
+        >
+          Tính lại
+        </app-button>
+        <app-button
+          *erpUTTHasSomeAuthority="[ROLE.TONG_HOP_TAI_CHINH.UPDATE]"
+          variant="primary"
+          leftIcon="lock"
+          (click)="onOpenFinalizeModal(detailSummary()!)"
+        >
+          Chốt kỳ
+        </app-button>
+      }
+    </ng-template>
+  </nz-modal>
+  <ng-template #detailTitleTpl>
+    <div class="detail-title">
+      <nz-icon nzType="bar-chart" style="color: var(--brand); margin-right: 8px"></nz-icon>
+      <span>Chi Tiết Báo Cáo Tài Chính</span>
+    </div>
+  </ng-template>
+
+  <!-- ── 6. Recalculate Confirm Modal ─────────────────────────────────── -->
+  <nz-modal
+    [nzVisible]="isRecalcVisible()"
+    nzTitle="Xác nhận tính lại báo cáo"
+    (nzOnCancel)="onCloseRecalcModal()"
+    (nzOnOk)="onConfirmRecalculate()"
+    [nzOkLoading]="isRecalcSubmitting()"
+    nzOkText="Tính lại"
+    nzCancelText="Hủy"
+    nzWidth="480px"
+  >
+    <ng-container *nzModalContent>
+      <p>
+        Hệ thống sẽ tính lại toàn bộ chỉ tiêu từ dữ liệu nguồn (đơn hàng, hoàn tiền, chi phí). Kết quả sẽ ở trạng thái
+        <b>Chưa chốt</b> (DRAFT).
+      </p>
+      @if (recalcTarget(); as s) {
+        <div
+          style="
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+          "
+        >
+          <p style="margin: 0; font-weight: 500">{{ s.branchName || '—' }}</p>
+          <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-secondary)">
+            {{ s.businessDate }}
+          </p>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+
+  <!-- ── 7. Finalize Confirm Modal ───────────────────────────────────── -->
+  <nz-modal
+    [nzVisible]="isFinalizeVisible()"
+    nzTitle="Xác nhận chốt kỳ báo cáo"
+    (nzOnCancel)="onCloseFinalizeModal()"
+    (nzOnOk)="onConfirmFinalize()"
+    [nzOkLoading]="isFinalizeSubmitting()"
+    nzOkText="Chốt kỳ"
+    nzCancelText="Hủy"
+    nzWidth="480px"
+  >
+    <ng-container *nzModalContent>
+      <p>Chốt kỳ sẽ khóa báo cáo ở trạng thái <b>Đã chốt</b> (FINALIZED). Sau khi chốt, báo cáo chỉ được xem và không thể sửa đổi.</p>
+      @if (finalizeTarget(); as s) {
+        <div
+          style="
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--surface-sunken);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+          "
+        >
+          <p style="margin: 0; font-weight: 500">{{ s.branchName || '—' }}</p>
+          <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-secondary)">
+            {{ s.businessDate }}
+          </p>
+        </div>
+      }
+    </ng-container>
+  </nz-modal>
+</div>
