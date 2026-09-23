@@ -34,7 +34,7 @@
 
         <!-- Filters -->
         <div class="selector-filters">
-          <nz-select [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryFilterChange($event)"
+          <nz-select [ngModel]="selectedCategoryId()" (ngModelChange)="onCategoryFilterChange($event)"
                      nzPlaceHolder="Tất cả danh mục" [nzAllowClear]="true" class="selector-select">
             @for (cat of categories(); track cat.id) {
               <nz-option [nzValue]="cat.id" [nzLabel]="cat.name"></nz-option>
@@ -43,7 +43,7 @@
 
           <nz-input-wrapper class="selector-search" [nzAllowClear]="true">
             <nz-icon nzInputPrefix nzType="search"/>
-            <input type="text" nz-input [(ngModel)]="productSearchText" placeholder="Tìm tên hoặc mã món..."/>
+            <input type="text" nz-input [ngModel]="productSearchText()" (ngModelChange)="onProductSearchChange($event)" placeholder="Tìm tên hoặc mã món..."/>
           </nz-input-wrapper>
         </div>
 
@@ -164,10 +164,10 @@
             <div class="toolbar-right">
               <nz-input-wrapper class="table-search" [nzAllowClear]="true">
                 <nz-icon nzInputPrefix nzType="search"/>
-                <input type="text" nz-input [(ngModel)]="variantFilterQuery" placeholder="Tìm mã / tên / size..."/>
+                <input type="text" nz-input [ngModel]="variantFilterQuery()" (ngModelChange)="onVariantQueryChange($event)" placeholder="Tìm mã / tên / size..."/>
               </nz-input-wrapper>
 
-              <nz-select [(ngModel)]="selectedVariantStatus" nzPlaceHolder="Tất cả trạng thái" [nzAllowClear]="true"
+              <nz-select [ngModel]="selectedVariantStatus()" (ngModelChange)="onVariantStatusChange($event)" nzPlaceHolder="Tất cả trạng thái" [nzAllowClear]="true"
                          style="width: 140px">
                 <nz-option nzValue="ACTIVE" nzLabel="Đang áp dụng"></nz-option>
                 <nz-option nzValue="INACTIVE" nzLabel="Tạm dừng"></nz-option>
