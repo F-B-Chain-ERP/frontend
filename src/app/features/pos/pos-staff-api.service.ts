@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, of } from 'rxjs';
 import { ApplicationConfigService } from '../../core/config/application-config.service';
 import { ApiResponse } from '../login/login.model';
 import { PosDeliveryInfo, PosOrderDetail, PosOrderFilter, PosOrderHistory, PosOrderListResponse } from './order.model';
@@ -90,6 +90,17 @@ export class PosStaffApiService {
 
   getDelivery(orderId: string): Observable<PosDeliveryInfo> {
     return this.http.get<ApiResponse<PosDeliveryInfo>>(this.deliveriesUrl(`/${orderId}`)).pipe(map(res => res.data));
+  }
+
+  /** Tải giao hàng cho cả trang đơn trong 1 request (thay N request lẻ). */
+  getDeliveries(orderIds: string[]): Observable<PosDeliveryInfo[]> {
+    if (!orderIds.length) {
+      return of([]);
+    }
+    const params = new HttpParams().set('orderIds', orderIds.join(','));
+    return this.http
+      .get<ApiResponse<PosDeliveryInfo[]>>(this.deliveriesUrl('/by-orders'), { params })
+      .pipe(map(res => res.data ?? []));
   }
 
   assignDelivery(orderId: string, shipperId: string): Observable<PosDeliveryInfo> {

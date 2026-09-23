@@ -145,7 +145,9 @@ export class PosDeliveryBoardComponent implements OnInit {
           this.orders.set(res.items);
           this.total.set(res.total);
           this.loading.set(false);
-          res.items.forEach(o => this.loadDelivery(o.id));
+          // Gộp N request chi tiết thành 1 request batch: bảng hiện đủ cột giao
+          // cùng lúc thay vì pop-in từng dòng.
+          this.loadDeliveriesBatch(res.items.map(o => o.id));
         },
         error: err => {
           this.loading.set(false);
@@ -166,13 +168,40 @@ export class PosDeliveryBoardComponent implements OnInit {
 
   openAssign(order: PosOrderSummary): void {
     this.assignTarget.set(order);
-    this.selectedShipperId = null;
+    // Preselect shipper hiện tại của đơn (nếu đã gán) để modal "Đổi shipper"
+    // mở ra hiện đúng người đang giữ đơn thay vì trống.
+    this.selectedShipperId = this.deliveryOf(order.id)?.shipperId ?? null;
+    // Danh sách nhân viên cache theo phiên: mở modal lần 2+ không gọi lại API.
+    if (this.shippers().length > 0) {
+      this.ensureCurrentShipperVisible(order);
+      return;
+    }
     this.users.getUsers({ pageIndex: 1, pageSize: 100, status: UserStatus.ACTIVE }).subscribe({
       next: res => {
-        this.shippers.set((res?.items ?? []).map(u => ({ id: String(u.id), name: u.fullName || u.username })));
+        const list = (res?.items ?? []).map(u => ({ id: String(u.id), name: u.fullName || u.username }));
+        this.shippers.set(list);
+        this.ensureCurrentShipperVisible(order);
       },
       error: () => this.shippers.set([]),
     });
+  }
+
+  /**
+   * Shipper hiện tại không còn trong danh sách (nghỉ việc/khác chi nhánh):
+   * chèn thêm option để select vẫn hiện tên, tránh modal trống gây nhầm.
+   */
+  private ensureCurrentShipperVisible(order: PosOrderSummary): void {
+    const current = this.deliveryOf(order.id)?.shipperId;
+    if (current && !this.shippers().some(s => s.id === String(current))) {
+      this.users.getUserById(current).subscribe({
+        next: u => {
+          if (u) {
+            this.shippers.update(arr => [{ id: String(u.id), name: u.fullName || u.username }, ...arr]);
+          }
+        },
+        error: () => undefined,
+      });
+    }
   }
 
   confirmAssign(): void {
@@ -246,6 +275,26 @@ export class PosDeliveryBoardComponent implements OnInit {
       next: d => {
         const next = new Map(this.deliveries());
         next.set(orderId, d);
+        this.deliveries.set(next);
+      },
+      error: () => undefined,
+    });
+  }
+
+  /** Tải giao hàng cả trang trong 1 request (dùng sau list đơn). */
+  private loadDeliveriesBatch(orderIds: string[]): void {
+    if (!orderIds.length) {
+      this.deliveries.set(new Map());
+      return;
+    }
+    this.api.getDeliveries(orderIds).subscribe({
+      next: list => {
+        const next = new Map<string, PosDeliveryInfo>();
+        for (const d of list) {
+          if (d?.orderId) {
+            next.set(d.orderId, d);
+          }
+        }
         this.deliveries.set(next);
       },
       error: () => undefined,
