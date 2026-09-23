@@ -111,8 +111,11 @@
     gap: var(--space-2);
     font-size: 15px;
     font-weight: 500;
+    font-family: inherit;
     color: var(--text-secondary);
     text-decoration: none;
+    background: transparent;
+    border: 0;
     padding: 4px 0;
     cursor: pointer;
     white-space: nowrap;
@@ -378,6 +381,58 @@
 // Dark mode: subtle stronger shadow for depth (token already handles bg via color-mix)
 :host-context([data-theme='dark']) .client-navbar {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+// ── Màn rất nhỏ (<=480px): thu gọn để đủ chỗ cho hamburger + brand + actions.
+// Thực đo ở 360px khi chưa đăng nhập: hamburger + brand + color + cart + login
+// vượt ~420px nếu giữ nguyên -> tràn ngang, nút login bị ép méo.
+@media (max-width: 480px) {
+  .client-navbar {
+    &__container {
+      padding: 0 var(--space-3);
+      gap: var(--space-2);
+      height: 68px;
+    }
+
+    &__brand-logo {
+      font-size: 24px;
+    }
+
+    &__actions {
+      gap: 4px;
+    }
+
+    &__icon-btn {
+      width: 38px;
+      height: 38px;
+      font-size: 18px;
+    }
+
+    &__color-pick {
+      width: 28px;
+      height: 28px;
+    }
+
+    &__color-dot {
+      width: 20px;
+      height: 20px;
+    }
+
+    &__user {
+      padding: 3px 8px 3px 3px;
+    }
+
+    &__nav {
+      top: 68px;
+    }
+  }
+
+  .client-navbar__login-btn {
+    ::ng-deep .btn {
+      padding: 8px 16px !important;
+      font-size: 13px !important;
+    }
+  }
 }
 
 // Dropdown menu styles

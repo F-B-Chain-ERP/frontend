@@ -518,7 +518,9 @@
           }
         </div>
 
-        <!-- Vai trò (áp dụng chung cho các chi nhánh đã chọn) -->
+        <!-- Vai trò (áp dụng chung cho các chi nhánh đã chọn).
+             nzMaxTagCount=1: chỉ hiện 1 tag + tag "+N đã chọn", field luôn đúng
+             1 hàng, tick thêm role không còn đẩy form dài ra. -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label" for="modal-roles">Vai trò</label>
           <nz-select
@@ -526,6 +528,8 @@
             formControlName="roleIds"
             nzMode="multiple"
             nzPlaceHolder="Chọn vai trò (tùy chọn)"
+            [nzMaxTagCount]="1"
+            [nzMaxTagPlaceholder]="collapsedTagPlaceholder"
             style="width: 100%"
           >
             @for (role of roleOptions(); track role.value) {
@@ -534,7 +538,8 @@
           </nz-select>
         </div>
 
-        <!-- Chi nhánh áp dụng thêm (ngoài chi nhánh công tác) -->
+        <!-- Chi nhánh áp dụng thêm (ngoài chi nhánh công tác).
+             Collapse tag giống ô vai trò để tick thêm chi nhánh không dịch form. -->
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label" for="modal-branches">Chi nhánh áp dụng thêm</label>
           <nz-select
@@ -542,6 +547,8 @@
             formControlName="branchIds"
             nzMode="multiple"
             nzPlaceHolder="Tick thêm chi nhánh (tùy chọn)"
+            [nzMaxTagCount]="1"
+            [nzMaxTagPlaceholder]="collapsedTagPlaceholder"
             style="width: 100%"
           >
             @for (b of branchOptions(); track b.value) {
@@ -584,6 +591,9 @@
           ></textarea>
         </div>
       </div>
+
+      <!-- Placeholder dùng chung cho tag collapse của 2 ô multiple ở trên -->
+      <ng-template #collapsedTagPlaceholder let-selectedList>+ {{ selectedList.length }} đã chọn</ng-template>
     </form>
 
     <ng-template #formModalFooter>

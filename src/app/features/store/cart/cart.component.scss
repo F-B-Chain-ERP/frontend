@@ -383,7 +383,7 @@
       &.free {
         color: var(--success);
         background: var(--success-soft);
-        border: 1px solid color-mix\(in srgb, var\(--success\) 30%, transparent\);
+        border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
         padding: 2px 8px;
         border-radius: var(--radius-pill);
         font-size: 11px;

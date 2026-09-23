@@ -415,3 +415,11 @@ nz-descriptions {
 .text-muted {
   color: var(--text-muted);
 }
+
+// 2 ô multiple (vai trò / chi nhánh) đã collapse còn 1 tag + "+N": chặn wrap để
+// field luôn đúng 1 hàng kể cả khi tên tag dài.
+::ng-deep #modal-roles .ant-select-selection-overflow,
+::ng-deep #modal-branches .ant-select-selection-overflow {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}

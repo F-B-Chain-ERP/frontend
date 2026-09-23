@@ -32,7 +32,10 @@ export class RealtimeNotificationService {
   private reconnectTimer: any = null;
   private retryAttempt = 0;
   private isExplicitDisconnect = false;
+  // orderCode -> thời điểm toast lần cuối (cả 2 kênh notification/order_event).
   private readonly recentlyReceivedOrderCodes = new Map<string, number>();
+  // orderCode -> thời điểm nhận notification persistent (bản ghi DB thật).
+  private readonly persistentOrderCodes = new Map<string, number>();
 
   readonly notifications = signal<AppNotification[]>([]);
   readonly unreadCount = computed(() => this.notifications().filter(n => !n.readAt).length);
@@ -129,7 +132,18 @@ export class RealtimeNotificationService {
         this.mergeNotifications([notif]);
         const orderCode = this.extractOrderCode(notif.actionUrl) ?? this.extractOrderCode(`${notif.title} ${notif.body}`);
         if (orderCode) {
-          this.recentlyReceivedOrderCodes.set(orderCode, Date.now());
+          this.persistentOrderCodes.set(orderCode, Date.now());
+        }
+        // CUSTOMER: chỉ cập nhật chuông im lặng. Toast/âm thanh là ngôn ngữ nội bộ
+        // ("Đơn hàng mới", chuông bếp...) gây ồn trên máy khách; trạng thái đơn
+        // khách đã theo dõi ở màn Đơn của tôi (làm mới qua orderEvents$).
+        if (this.isCustomerPrincipal()) {
+          return;
+        }
+        // Chống double-toast 2 chiều: order_event và notification persistent cho
+        // cùng 1 đơn có thể đến lệch nhau vài giây theo thứ tự bất kỳ.
+        if (this.markOrderToastShown(orderCode)) {
+          return;
         }
         this.playNotificationSound();
         const targetUrl = this.resolveNotificationUrl(notif);
@@ -146,22 +160,33 @@ export class RealtimeNotificationService {
     this.eventSource.addEventListener('order_event', (event: MessageEvent) => {
       try {
         const payload: OrderRealtimePayload = JSON.parse(event.data);
+        // Luôn phát cho các màn hình (my-orders/admin list tự làm mới im lặng).
         this.orderEvents$.next(payload);
         const targetUrl = this.resolveOrderUrl(payload.orderCode);
-        const receivedPersistentNotification =
-          Date.now() - (this.recentlyReceivedOrderCodes.get(payload.orderCode) ?? 0) < 5000;
-
-        // Nhân viên thường nhận broadcast theo chi nhánh nhưng không có bản ghi cá nhân.
-        // Giữ item trong phiên để chuông vẫn phản ánh đúng sự kiện realtime.
-        if (!receivedPersistentNotification) {
+        // Đã có bản ghi persistent trong 5s qua -> khỏi tạo transient trùng chuông.
+        const hadPersistent =
+          !!payload.orderCode && Date.now() - (this.persistentOrderCodes.get(payload.orderCode) ?? 0) < 5000;
+        if (!hadPersistent) {
           this.mergeNotifications([this.toTransientNotification(payload, targetUrl)]);
-          if (payload.eventType === 'ORDER_CREATED') {
-            this.playOrderAlertSound();
-            this.toast.successAction(payload.title, payload.message, () => void this.router.navigateByUrl(targetUrl));
-          } else {
-            this.playNotificationSound();
-            this.toast.infoAction(payload.title, payload.message, () => void this.router.navigateByUrl(targetUrl));
-          }
+        }
+        // Đã toast trong 5s qua (kênh còn lại đến trước) -> thôi.
+        if (this.markOrderToastShown(payload.orderCode)) {
+          return;
+        }
+
+        // CUSTOMER: im lặng hoàn toàn (không toast, không chuông bếp). Khách vừa
+        // đặt đã có toast checkout; các đổi trạng thái sau xem ở Đơn của tôi.
+        // BE đã đảm bảo khách chỉ nhận event của đúng đơn mình (kênh cá nhân),
+        // nên đây thuần là quyết định UX, không phải vá rò rỉ dữ liệu.
+        if (this.isCustomerPrincipal()) {
+          return;
+        }
+        if (payload.eventType === 'ORDER_CREATED') {
+          this.playOrderAlertSound();
+          this.toast.successAction(payload.title, payload.message, () => void this.router.navigateByUrl(targetUrl));
+        } else {
+          this.playNotificationSound();
+          this.toast.infoAction(payload.title, payload.message, () => void this.router.navigateByUrl(targetUrl));
         }
       } catch (e) {
         console.error('Error parsing order_event SSE payload', e);
@@ -209,6 +234,31 @@ export class RealtimeNotificationService {
     this.disconnectInternal();
     this.notifications.set([]);
     this.recentlyReceivedOrderCodes.clear();
+    this.persistentOrderCodes.clear();
+  }
+
+  /**
+   * true = principal hiện tại là khách hàng (CUSTOMER), dùng để tắt toast/sound
+   * realtime phía client. Nhân viên/admin (ACCOUNT) giữ nguyên hành vi.
+   */
+  private isCustomerPrincipal(): boolean {
+    return this.accountService.account()?.principalType === 'CUSTOMER';
+  }
+
+  /**
+   * Chống toast trùng cho cùng 1 đơn trong 5s (2 kênh đến lệch thứ tự bất kỳ).
+   * @returns true nếu đã toast gần đây (bỏ qua), false nếu được phép toast (và đánh dấu).
+   */
+  private markOrderToastShown(orderCode: string | null | undefined): boolean {
+    if (!orderCode) {
+      return false;
+    }
+    const last = this.recentlyReceivedOrderCodes.get(orderCode) ?? 0;
+    if (Date.now() - last < 5000) {
+      return true;
+    }
+    this.recentlyReceivedOrderCodes.set(orderCode, Date.now());
+    return false;
   }
 
   /**

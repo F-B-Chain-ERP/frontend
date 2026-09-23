@@ -15,20 +15,22 @@
       <span class="client-navbar__brand-logo">UTT.CO</span>
     </a>
 
-    <!-- ── 2. Navigation Links ── -->
+    <!-- ── 2. Navigation Links (nút cuộn tới section của landing page: KHÔNG dùng
+         routerLink ở đây. routerLink navigate song song với scroll tay và
+         scrollPositionRestoration:'top' sẽ giật về đầu trang, giết animation) ── -->
     <nav class="client-navbar__nav" [class.client-navbar__nav--open]="isMobileMenuOpen()">
-      <a routerLink="/store" (click)="scrollToSection('all-drinks')" class="client-navbar__link">
+      <button type="button" (click)="scrollToSection('all-drinks')" class="client-navbar__link">
         <span>Thực Đơn</span>
-      </a>
-      <a routerLink="/store" (click)="scrollToSection('new-arrivals')" class="client-navbar__link">
+      </button>
+      <button type="button" (click)="scrollToSection('new-arrivals')" class="client-navbar__link">
         <span>Món Mới</span>
-      </a>
-      <a routerLink="/store" (click)="scrollToSection('top-selling')" class="client-navbar__link">
+      </button>
+      <button type="button" (click)="scrollToSection('top-selling')" class="client-navbar__link">
         <span>Bán Chạy</span>
-      </a>
-      <a routerLink="/store" (click)="scrollToSection('browse-style')" class="client-navbar__link">
+      </button>
+      <button type="button" (click)="scrollToSection('browse-style')" class="client-navbar__link">
         <span>Khám Phá</span>
-      </a>
+      </button>
     </nav>
 
     <!-- ── 3. Central Search Bar (Figma SHOP.CO style) ── -->

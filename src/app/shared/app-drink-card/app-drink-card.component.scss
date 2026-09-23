@@ -93,6 +93,26 @@
     transform: translateX(-50%) translateY(0);
   }
 
+  // Thiết bị không có hover (mobile/tablet cảm ứng): tắt hiệu ứng nâng thẻ.
+  // Vừa tránh trạng thái hover kẹt sau khi chạm, vừa hết hiện tượng thẻ nhảy
+  // khi layout reflow dưới ngón tay/cursor lúc resize.
+  @media (hover: none) {
+    &:hover {
+      transform: none;
+      box-shadow: var(--shadow-sm);
+      border-color: var(--border-subtle);
+    }
+
+    &:hover .drink-card__img {
+      transform: none;
+    }
+
+    &:hover .drink-card__quick-view {
+      opacity: 0;
+      transform: translateX(-50%) translateY(12px);
+    }
+  }
+
   // ── Info Body ──
   &__body {
     display: flex;
@@ -141,6 +161,12 @@
     justify-content: space-between;
     margin-top: auto;
     gap: 8px;
+
+    // Lưới 2 cột ở 360px: mỗi card ~160px, giá + nút không thể cùng hàng.
+    @media (max-width: 480px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 
   &__price-box {
@@ -156,6 +182,10 @@
     color: var(--text-primary);
     line-height: 1;
     letter-spacing: -0.01em;
+
+    @media (max-width: 480px) {
+      font-size: 16px;
+    }
   }
 
   &__original-price {

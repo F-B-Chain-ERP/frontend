@@ -103,6 +103,7 @@
             }
           </div>
 
+          @if (deliveryMethod() === 'delivery') {
           <div
             class="checkout-field"
             [class.checkout-field--error]="checkoutForm.get('address')?.invalid && checkoutForm.get('address')?.touched"
@@ -116,6 +117,12 @@
               <span class="checkout-field__error">Vui lòng nhập địa chỉ.</span>
             }
           </div>
+          }
+          @if (deliveryMethod() === 'pickup') {
+            <p class="text-muted" style="font-size: 13px; margin: 0;">
+              Nhận tại quầy{{ branchName() ? ' • ' + branchName() : '' }} — không cần địa chỉ giao hàng.
+            </p>
+          }
 
           <div class="checkout-field">
             <label for="voucherCode">Mã voucher (nếu có)</label>
@@ -185,7 +192,7 @@
                       [disabled]="!slot.isAvailable"
                       (click)="selectPickupSlot(slot.id)"
                       [style.border-color]="selectedPickupSlotId() === slot.id ? 'var(--brand, #0284c7)' : 'var(--border-color, #e2e8f0)'"
-                      [style.background]="selectedPickupSlotId() === slot.id ? 'var(--brand-light, #f0f9ff)' : '#fff'"
+                      [style.background]="selectedPickupSlotId() === slot.id ? 'var(--brand-light, #f0f9ff)' : 'var(--surface-card, #fff)'"
                       [style.opacity]="slot.isAvailable ? '1' : '0.5'"
                       style="padding: 8px 10px; border-radius: 8px; border-width: 1.5px; border-style: solid; cursor: pointer; text-align: center; transition: all 0.2s;"
                     >

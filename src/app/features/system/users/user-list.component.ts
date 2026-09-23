@@ -448,7 +448,17 @@ export class UserListComponent extends BaseComponent implements OnInit {
         next: assignments => {
           const primary = this.userForm.get('primaryBranchId')?.value as string | null;
           const byBranch = new Map<string, string[]>();
+          const now = Date.now();
           for (const a of assignments) {
+            // Chỉ nạp gán quyền còn hiệu lực (ACTIVE + chưa hết hạn). API trả cả
+            // bản ghi đã thu hồi (INACTIVE); không lọc thì vai trò đã gỡ vẫn hiện
+            // tick, lưu lại sẽ kích hoạt lại chúng ở BE -> "gỡ mãi không được".
+            if ((a.status ?? '').toUpperCase() !== 'ACTIVE') {
+              continue;
+            }
+            if (a.expiresAt && new Date(a.expiresAt).getTime() <= now) {
+              continue;
+            }
             if (!a.branchId) {
               this.hasSystemAssignment.set(true);
               continue;

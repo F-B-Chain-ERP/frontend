@@ -1,3 +1,10 @@
+// Giữ rãnh scrollbar luôn ổn định: khi thu/phóng viewport mà nội dung vừa chạm
+// ngưỡng tràn, scrollbar hiện/mất làm đổi chiều rộng layout -> media query lật
+// qua lật lại gây giật khung hình. Quy tắc này áp dụng toàn app (client + admin).
+html {
+  scrollbar-gutter: stable;
+}
+
 .tooltip-app,
 .tooltip-custom {
   max-width: 600px !important;

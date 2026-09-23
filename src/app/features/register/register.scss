@@ -976,6 +976,43 @@
       padding: 32px 20px;
     }
 
+    // Màn nhỏ (<=480px): giống trang login — hero/scene gọn, ẩn float-card
+    // trang trí khỏi chồng đè, social login xếp dọc, form 1 cột (đã có ở 640px).
+    @media (max-width: 480px) {
+      &__hero-title {
+        font-size: 26px;
+      }
+      &__left-inner {
+        padding: 20px 16px;
+      }
+      &__scene {
+        min-height: 220px;
+      }
+      .scene__coffee {
+        width: 130px;
+        height: 130px;
+      }
+      .float-card--ship,
+      .float-card--point {
+        display: none;
+      }
+      .float-card--time {
+        max-width: calc(100% - 32px);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      &__social {
+        grid-template-columns: 1fr;
+      }
+      &__right {
+        padding: 24px 16px;
+        // Trang ngắn: panel tự cao theo nội dung, khỏi double-scroll (trang + panel).
+        max-height: none;
+        overflow-y: visible;
+      }
+    }
+
     &__field-error {
       margin-top: 6px;
       font-size: 12.5px;

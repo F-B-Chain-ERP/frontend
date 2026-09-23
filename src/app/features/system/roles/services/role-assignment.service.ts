@@ -11,6 +11,8 @@ export interface AccountBranchAssignment {
   scopeId: string | null;
   scopeType: string | null;
   branchId: string | null;
+  status: string | null;
+  expiresAt: string | null;
 }
 
 /** Gán/thu hồi vai trò theo phạm vi: /api/v1/role-assignments. */
@@ -34,6 +36,10 @@ export class RoleAssignmentService {
           scopeId: a.scope?.id ?? null,
           scopeType: a.scope?.scopeType ?? null,
           branchId: a.scope?.branchId ?? null,
+          // BE trả toàn bộ assignments kể cả đã thu hồi (INACTIVE); caller phải
+          // tự lọc hiệu lực, nếu không vai trò đã gỡ vẫn hiện như đang gán.
+          status: a.status ?? null,
+          expiresAt: a.expiresAt ?? null,
         })),
       ),
       catchError(err => throwError(() => new Error(this.errorMessage(err)))),

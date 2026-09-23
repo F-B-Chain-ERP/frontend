@@ -4,7 +4,7 @@
   [nzDropdownMenu]="notificationMenu"
   nzTrigger="click"
   nzPlacement="bottomRight"
-  [nzOverlayStyle]="{ width: '420px' }"
+  [nzOverlayStyle]="{ width: '420px', maxWidth: 'calc(100vw - 16px)' }"
   [nzVisible]="isVisibleMenu()"
   (nzVisibleChange)="isVisibleMenu.set($event)"
   title="Thông báo hệ thống"
