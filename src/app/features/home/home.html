@@ -90,6 +90,32 @@
     </div>
   </div>
 
+  <!-- ── 2.5. Main Screens Quick Access ────────────────────────────── -->
+  <div class="home__quick">
+    <div class="home__quick__header">
+      <div>
+        <h3 class="home__quick__title">Màn hình chính</h3>
+        <p class="home__quick__sub">Truy cập nhanh các phân hệ nghiệp vụ</p>
+      </div>
+    </div>
+    <div nz-row [nzGutter]="[16, 16]">
+      @for (screen of mainScreens; track screen.route) {
+        <div nz-col [nzXs]="24" [nzSm]="12" [nzMd]="8">
+          <a class="quick-card" [routerLink]="screen.route">
+            <span class="quick-card__icon quick-card__icon--{{ screen.accent }}">
+              <nz-icon [nzType]="screen.icon"></nz-icon>
+            </span>
+            <div class="quick-card__body">
+              <span class="quick-card__title">{{ screen.title }}</span>
+              <span class="quick-card__sub">{{ screen.sub }}</span>
+            </div>
+            <nz-icon class="quick-card__arrow" nzType="arrow-right"></nz-icon>
+          </a>
+        </div>
+      }
+    </div>
+  </div>
+
   <!-- ── 3. Charts Section ──────────────────────────────────────────── -->
   <div nz-row class="home__charts" [nzGutter]="[16, 16]" nzAlign="stretch">
     <!-- Biểu đồ 1: Doanh thu & Chi phí theo Chi nhánh -->

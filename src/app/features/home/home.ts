@@ -82,6 +82,54 @@ export class HomeComponent implements AfterViewInit {
     {icon: 'experiment', accent: 'purple', title: 'Cập nhật định lượng món mới (BOM)', sub: 'Trà Sữa Dừa Nướng & Macchiato'},
   ];
 
+  readonly mainScreens = [
+    { title: 'Cửa hàng', sub: 'Ca làm việc, Phân ca, Báo cáo ngày', icon: 'shop', accent: 'teal', route: '/admin/store/shifts/list' },
+    {
+      title: 'Bán hàng (POS)',
+      sub: 'Đơn hàng, Giao hàng, Bếp KDS',
+      icon: 'shopping-cart',
+      accent: 'brand',
+      route: '/admin/pos/orders/list',
+    },
+    {
+      title: 'Vận hành cửa hàng',
+      sub: 'Ca làm việc, Phân ca, Báo cáo ngày',
+      icon: 'appstore',
+      accent: 'info',
+      route: '/admin/store/shifts/list',
+    },
+    { title: 'Thực đơn', sub: 'Sản phẩm, Biến thể, Topping, Combo', icon: 'coffee', accent: 'amber', route: '/admin/menu/products/list' },
+    {
+      title: 'Kho & Cung ứng',
+      sub: 'Kho, Nguyên vật liệu, Tồn kho',
+      icon: 'inbox',
+      accent: 'purple',
+      route: '/admin/inventory/warehouses/list',
+    },
+    {
+      title: 'Mua hàng',
+      sub: 'Nhà cung cấp, Bảng giá, Đơn PO',
+      icon: 'shopping',
+      accent: 'teal',
+      route: '/admin/procurement/suppliers/list',
+    },
+    {
+      title: 'Tài chính',
+      sub: 'Công nợ NCC, Chi phí, Tổng hợp CN',
+      icon: 'dollar',
+      accent: 'brand',
+      route: '/admin/finance/payables/list',
+    },
+    { title: 'Khách hàng', sub: 'Danh sách khách hàng, Loyalty', icon: 'team', accent: 'purple', route: '/admin/system/customers/list' },
+    {
+      title: 'Hệ thống',
+      sub: 'Người dùng, Vai trò, Phân quyền',
+      icon: 'safety-certificate',
+      accent: 'info',
+      route: '/admin/system/accounts/list',
+    },
+  ] as const;
+
   private barChart?: echarts.ECharts;
   private pieChart?: echarts.ECharts;
   private resizeObserver?: ResizeObserver;
