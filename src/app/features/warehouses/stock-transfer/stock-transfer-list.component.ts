@@ -146,6 +146,36 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
       .get('fromWarehouseId')
       ?.valueChanges.pipe(takeUntil(this.destroy$))
       .subscribe(warehouseId => this.refreshAllAvailabilities(warehouseId));
+    // Kho chi nhánh chỉ được nhận từ kho tổng: đổi kho đến là chi nhánh mà kho đi
+    // đang là chi nhánh khác -> rớt kho đi để user chọn lại (BE chặn nốt).
+    this.form
+      .get('toWarehouseId')
+      ?.valueChanges.pipe(takeUntil(this.destroy$))
+      .subscribe(toId => {
+        const fromId = this.form.get('fromWarehouseId')?.value as string | null;
+        if (toId && this.isBranchWarehouse(toId) && fromId && !this.isCentralWarehouse(fromId)) {
+          this.form.patchValue({ fromWarehouseId: null });
+        }
+      });
+  }
+
+  /** Kho đi khả dụng: kho đến là chi nhánh thì chỉ cho chọn kho tổng. */
+  get sourceWarehouseOptions(): Warehouse[] {
+    const toId = this.form.get('toWarehouseId')?.value as string | null;
+    if (toId && this.isBranchWarehouse(toId)) {
+      return this.warehouses.filter(w => this.isCentralWarehouse(w.id));
+    }
+    return this.warehouses;
+  }
+
+  private isBranchWarehouse(id: string | null | undefined): boolean {
+    const w = this.warehouses.find(x => String(x.id) === String(id ?? ''));
+    return !!w && String(w.warehouseType || '').toUpperCase() === 'BRANCH';
+  }
+
+  private isCentralWarehouse(id: string | null | undefined): boolean {
+    const w = this.warehouses.find(x => String(x.id) === String(id ?? ''));
+    return !!w && String(w.warehouseType || '').toUpperCase() === 'CENTRAL';
   }
 
   loadData(): void {
@@ -295,6 +325,11 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
       this.toastService.error('Lỗi', 'Kho xuất và kho nhận phải khác nhau.');
       return;
     }
+    // Kho chi nhánh chỉ được nhận từ kho tổng (không nhập NCC, không nhận CN khác).
+    if (this.isBranchWarehouse(raw.toWarehouseId) && !this.isCentralWarehouse(raw.fromWarehouseId)) {
+      this.toastService.error('Lỗi', 'Kho chi nhánh chỉ được nhận hàng từ kho tổng. Hãy chọn kho tổng làm kho đi.');
+      return;
+    }
     const materialIds = (raw.items as { materialId: string | null }[]).map(i => i.materialId);
     if (new Set(materialIds).size !== materialIds.length) {
       this.toastService.error('Lỗi', 'Một nguyên vật liệu không được xuất hiện nhiều lần trong cùng một phiếu.');
@@ -372,12 +407,16 @@ export class StockTransferListComponent extends BaseComponent implements OnInit 
           this.selectedTransfer.set(detail);
           this.linesArray.clear();
           for (const item of detail.items) {
+            // Đổ sẵn đủ số còn thiếu: phiếu đã chốt SL từ yêu cầu nên nhận 1 lần
+            // cho hết, khỏi nhập tay (tránh kẹt đơn do nhận thiếu). Thực nhận thiếu
+            // mới sửa giảm tay; dòng đã nhận đủ (còn thiếu = 0) thì để trống.
+            const remainingQty = Number(item.remainingQuantity) || 0;
             this.linesArray.push(
               this.fb.group({
                 itemId: this.fb.control(item.id),
                 materialLabel: this.fb.control(`${item.materialCode ?? ''} - ${item.materialName ?? ''}`),
                 remaining: this.fb.control(item.remainingQuantity),
-                receivedQuantity: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]),
+                receivedQuantity: this.fb.control<number | null>(remainingQty > 0 ? remainingQty : null, [Validators.required, Validators.min(0.001), finiteNumberValidator(), maxFractionDigitsValidator(3)]),
               }),
             );
           }

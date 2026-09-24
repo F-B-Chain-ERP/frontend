@@ -9,7 +9,6 @@ import {
   Validators,
   AbstractControl,
   FormGroup,
-  FormControl,
 } from '@angular/forms';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, Subject, forkJoin, of } from 'rxjs';
@@ -55,7 +54,6 @@ import {
   PurchaseOrder,
   PurchaseOrderDetail,
   PurchaseOrderFilter,
-  PurchaseOrderItemDetail,
   PurchaseOrderItemForm,
   PurchaseOrderStatus,
   PURCHASE_ORDER_STATUS_OPTIONS,
@@ -68,6 +66,7 @@ interface NameCodeBE {
   code?: string;
   name?: string;
   status?: string;
+  warehouseType?: string;
 }
 
 function supplierLabel(s: Supplier): string {
@@ -328,7 +327,6 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
           this.expectedDateAuto = false;
         }
       });
-    this.receiveForm.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcReceiveTotals());
 
     // Gõ tìm NCC -> debounce rồi mới gọi API (không spam mỗi ký tự).
     this.supplierSearch$
@@ -592,138 +590,15 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
       });
   }
 
-  onReceivePO(po: PurchaseOrder): void {
-    this.openReceiveModal(po);
-  }
-
   /**
    * Sang form Nhập kho với PO đã chọn sẵn (đổ dòng + link tự động).
-   * Luồng chuẩn để tăng tồn: PO.receive modal chỉ ghi sổ đơn, không tăng tồn kho.
+   * Đây là đường DUY NHẤT để ghi nhận nhận hàng + tăng tồn (BE đã chặn
+   * ghi tay qua POST /purchase-orders/{id}/receive).
    */
   goToStockIn(po: PurchaseOrder): void {
     this.router.navigate(['/admin/inventory/stock-in/list'], {
       queryParams: { poId: po.id },
     });
-  }
-
-  // ── Receive modal (nhập số lượng nhận thực tế) ───────────────────
-  readonly receiveTarget = signal<PurchaseOrder | null>(null);
-  readonly receiveItems = signal<PurchaseOrderItemDetail[]>([]);
-  readonly receiveUnitPrices = signal<number[]>([]);
-  readonly receiveForm: FormArray<FormGroup> = this.fb.array<FormGroup>([]);
-
-  get receiveItemsArray(): FormArray<FormGroup> {
-    return this.receiveForm;
-  }
-
-  receiveQtyControl(index: number): FormControl {
-    return (this.receiveForm.at(index) as FormGroup).get('receivedQuantity') as FormControl;
-  }
-
-  receiveQuantityValue(index: number): number {
-    const ctrl = this.receiveForm.at(index) as FormGroup;
-    return Number(ctrl.get('quantity')?.value) || 0;
-  }
-
-  /** SL còn thiếu = đặt − đã nhận (dùng cho nzMax + message, tránh OVER_RECEIPT). */
-  receiveRemaining(index: number): number {
-    const item = this.receiveItems()[index];
-    if (!item) return this.receiveQuantityValue(index);
-    return Math.max(0, (Number(item.quantity) || 0) - (Number(item.receivedQuantity) || 0));
-  }
-
-  openReceiveModal(po: PurchaseOrder): void {
-    this.receiveTarget.set(po);
-    this.getReceiveItems(po.id);
-  }
-
-  private getReceiveItems(poId: string | number): void {
-    this.purchaseOrderService
-      .getPurchaseOrderById(poId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: detail => {
-          if (!detail) {
-            this.toastService.error('Lỗi', 'Không thể tải danh sách nguyên vật liệu của đơn.');
-            this.closeReceiveModal();
-            return;
-          }
-          this.receiveItems.set(detail.items ?? []);
-          this.receiveUnitPrices.set((detail.items ?? []).map(it => Number(it.unitPrice) || 0));
-          const controls = (detail.items ?? []).map(it => {
-            const max = Number(it.quantity) || 0;
-            const remaining = Math.max(0, max - (Number(it.receivedQuantity) || 0));
-            return this.fb.group({
-              purchaseOrderItemId: [String(it.id ?? ''), [Validators.required]],
-              materialName: [it.materialName ?? ''],
-              quantity: [max],
-              receivedQuantity: [remaining, [Validators.required, Validators.min(0.001), Validators.max(remaining)]],
-            });
-          });
-          this.receiveForm.clear();
-          controls.forEach(c => this.receiveForm.push(c));
-          this.recalcReceiveTotals();
-        },
-        error: err => {
-          this.toastService.error('Lỗi', err?.message || 'Không thể tải danh sách nguyên vật liệu của đơn.');
-          this.closeReceiveModal();
-        },
-      });
-  }
-
-  readonly receiveTotals = signal<number[]>([]);
-  readonly receiveGrandTotal = computed(() => this.receiveTotals().reduce((sum, v) => sum + v, 0));
-
-  private recalcReceiveTotals(): void {
-    const prices = this.receiveUnitPrices();
-    const arr = this.receiveForm.controls.map((ctrl, i) => {
-      const g = ctrl as FormGroup;
-      const q = Number(g.get('receivedQuantity')?.value) || 0;
-      return q * (prices[i] || 0);
-    });
-    this.receiveTotals.set(arr);
-    this.appRef.tick();
-  }
-
-  closeReceiveModal(): void {
-    this.receiveTarget.set(null);
-    this.receiveForm.clear();
-    this.receiveItems.set([]);
-    this.receiveUnitPrices.set([]);
-  }
-
-  confirmReceive(): void {
-    if (!this.validateAndFocusFirstInvalid(this.receiveForm)) {
-      return;
-    }
-    const items = this.receiveForm.controls.map(ctrl => {
-      const g = ctrl as FormGroup;
-      const qty = Number(g.get('receivedQuantity')?.value);
-      return { purchaseOrderItemId: g.get('purchaseOrderItemId')?.value as string, receivedQuantity: qty };
-    });
-
-    const po = this.receiveTarget();
-    if (!po) return;
-
-    this.isSaving.set(true);
-    this.purchaseOrderService
-      .receive(po.id, items)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.isSaving.set(false);
-          this.toastService.success('Thành công', `Đã ghi nhận nhận hàng PO ${po.code} (chưa tăng tồn). Cần tạo phiếu nhập kho để tăng tồn thật.`);
-          this.closeReceiveModal();
-          this.loadData();
-        },
-        error: err => {
-          this.isSaving.set(false);
-          const msg = (err as { error?: { message?: string }; message?: string })?.error?.message
-            || (err as { message?: string })?.message
-            || 'Không thể ghi nhận nhập kho.';
-          this.toastService.error('Lỗi', msg);
-        },
-      });
   }
 
   // ── Preview / Print state ─────────────────────────────────────
@@ -1413,7 +1288,12 @@ export class PurchaseOrderListComponent extends BaseComponent implements OnInit 
     return this.http.get<{ data: NameCodeBE[] }>(url, { params }).pipe(
       tap(res => {
         const list: NameCodeBE[] = res?.data ?? [];
-        this.warehouseOptions.set(list.map(w => ({ label: `${w.code || ''} - ${w.name || ''}`.trim(), value: w.id })));
+        // Đơn NCC chỉ nhập về kho tổng: dropdown kho PO lọc CENTRAL (BE chặn nốt).
+        this.warehouseOptions.set(
+          list
+            .filter(w => (w.warehouseType || '').toUpperCase() === 'CENTRAL')
+            .map(w => ({ label: `${w.code || ''} - ${w.name || ''}`.trim(), value: w.id })),
+        );
       }),
       catchError(() => {
         this.warehouseOptions.set([]);

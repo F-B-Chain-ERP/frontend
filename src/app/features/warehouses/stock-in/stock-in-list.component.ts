@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
-import { catchError, map, takeUntil } from 'rxjs/operators';
+import { catchError, distinctUntilChanged, finalize, map, takeUntil } from 'rxjs/operators';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -164,6 +164,10 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   readonly loadingPos = signal(false);
   readonly loadingPoDetail = signal(false);
   private poParamHandled = false;
+  /** Chặn gọi lặp detail: id đang bay + PO đã nạp xong thì bỏ qua emit thừa. */
+  private poLoadingId: string | null = null;
+  /** Link PO gốc của phiếu đang xem/sửa (để phân biệt emit do reset() với user đổi PO). */
+  private editingSourcePoId: string | null = null;
 
   // Form (code/status do BE quản lý: code tự sinh, create luôn DRAFT)
   readonly stockInForm = this.fb.group({
@@ -195,7 +199,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     if (maxQty !== undefined && maxQty !== null && Number.isFinite(maxQty)) {
       qtyValidators.push(Validators.max(maxQty));
     }
-    return this.fb.group({
+    const group = this.fb.group({
       id: [item?.id || ''],
       purchaseOrderItemId: [item?.purchaseOrderItemId || ''],
       materialId: [item?.materialId || null, [Validators.required]],
@@ -205,6 +209,19 @@ export class StockInListComponent extends BaseComponent implements OnInit {
       batchNo: [item?.batchNo || ''],
       expiryDate: [item?.expiryDate || ''],
     });
+    // Đổi NVL trong dòng: đi qua valueChanges (distinct) thay vì (ngModelChange)
+    // trên template (binding đó chết với formControlName, xem chú thích ở ngOnInit).
+    // Giá trị khởi tạo lúc tạo dòng không phát emit nên không chạy thừa.
+    group
+      .get('materialId')
+      ?.valueChanges.pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(matId => {
+        const idx = this.itemsArray.controls.indexOf(group);
+        if (idx >= 0) {
+          this.onMaterialSelect(idx, matId as string);
+        }
+      });
+    return group;
   }
 
   addItem(item?: Partial<StockInItem>, maxQty?: number | null): void {
@@ -295,6 +312,26 @@ export class StockInListComponent extends BaseComponent implements OnInit {
           this.clearPoLink();
         } else {
           this.loadReceivablePOs(this.stockInForm.get('warehouseId')?.value as string | null);
+        }
+      });
+
+    // Chọn PO: đi qua valueChanges (distinct) thay vì (ngModelChange) trên template —
+    // nz-select (ng-zorro 21) không có output ngModelChange nên binding đó chết khi
+    // dùng kèm formControlName (chọn tay không chạy, không đổ dòng NVL).
+    // Chỉ tự fetch ở mode tạo: reset() trong xem/sửa cũng phát emit, fetch theo
+    // link PO cũ sẽ 404 (đơn đã bị xóa) rồi rớt link oan trên form.
+    // Mode sửa: chỉ fetch khi user đổi sang PO khác link gốc (nạp lại dòng như tạo).
+    this.stockInForm
+      .get('sourceReferenceId')
+      ?.valueChanges.pipe(distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe(poId => {
+        const key = (poId ?? '').toString().trim();
+        if (this.modalMode() === 'create') {
+          this.onPoSelect(key || null);
+          return;
+        }
+        if (this.modalMode() === 'edit' && key && key !== (this.editingSourcePoId ?? '')) {
+          this.onPoSelect(key);
         }
       });
 
@@ -474,6 +511,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     this.stockInForm.get('code')?.disable();
     this.stockInForm.get('status')?.disable();
     this.selectedPo.set(null);
+    this.editingSourcePoId = null;
     this.loadReceivablePOs(null);
     this.isModalVisible.set(true);
   }
@@ -513,19 +551,37 @@ export class StockInListComponent extends BaseComponent implements OnInit {
       });
   }
 
-  /** Chọn PO -> tự đổ dòng (NVL + SL còn lại + giá + link dòng PO), khỏi nhập tay. */
+  /** Chọn PO -> tự đổ dòng (NVL + SL còn lại + giá + link dòng PO), khỏi nhập tay.
+   * Chặn gọi lặp: cùng id đang bay hoặc PO đã nạp xong thì bỏ qua (tránh spam
+   * GET detail khi select re-emit / user bấm lại cùng đơn). */
   onPoSelect(poId: string | null): void {
-    if (!poId) {
-      this.clearPoLink();
+    const key = (poId ?? '').toString().trim();
+    if (!key) {
+      if (this.selectedPo()) {
+        this.clearPoLink();
+      }
       return;
     }
+    if (this.poLoadingId === key) {
+      return;
+    }
+    const loaded = this.selectedPo();
+    if (loaded && String(loaded.id) === key) {
+      return;
+    }
+    this.poLoadingId = key;
     this.loadingPoDetail.set(true);
     this.poService
-      .getPurchaseOrderById(poId)
-      .pipe(takeUntil(this.destroy$))
+      .getPurchaseOrderById(key)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => {
+          this.poLoadingId = null;
+          this.loadingPoDetail.set(false);
+        }),
+      )
       .subscribe({
         next: detail => {
-          this.loadingPoDetail.set(false);
           if (!detail) {
             this.toastService.error('Không tải được đơn mua hàng.');
             this.clearPoLink();
@@ -592,6 +648,9 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     if (skipped > 0 && this.itemsArray.length === 0) {
       this.toastService.warning(`Đơn ${detail.poCode} đã nhận đủ, không còn gì để nhập.`);
       this.clearPoLink();
+    } else if ((detail.items || []).length === 0 && this.itemsArray.length === 0) {
+      this.toastService.warning(`Đơn ${detail.poCode} không có dòng nguyên vật liệu nào.`);
+      this.clearPoLink();
     }
   }
 
@@ -605,6 +664,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   openViewModal(item: StockIn): void {
     this.modalMode.set('view');
     this.selectedStockIn.set(item);
+    this.editingSourcePoId = item.sourceReferenceId || null;
     this.isModalVisible.set(true);
     this.stockInService
       .getStockInById(item.id)
@@ -634,6 +694,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
   openEditModal(item: StockIn): void {
     this.modalMode.set('edit');
     this.selectedStockIn.set(item);
+    this.editingSourcePoId = item.sourceReferenceId || null;
     this.isModalVisible.set(true);
     this.stockInService
       .getStockInById(item.id)
@@ -682,6 +743,7 @@ export class StockInListComponent extends BaseComponent implements OnInit {
     this.stockInForm.reset();
     this.itemsArray.clear();
     this.selectedPo.set(null);
+    this.editingSourcePoId = null;
   }
 
   submitForm(): void {

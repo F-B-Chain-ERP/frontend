@@ -172,6 +172,10 @@ export class PurchaseOrderService {
       );
   }
 
+  /**
+   * @deprecated BE đã chặn ghi tay (mọi lời gọi đều bị từ chối với hướng dẫn
+   * tạo phiếu nhập kho). Nhận hàng duy nhất qua phiếu nhập kho.
+   */
   receive(id: string | number, items: { purchaseOrderItemId: string; receivedQuantity: number }[]): Observable<PurchaseOrderDetail> {
     return this.http.post<ApiEnvelope<PoResponseBE>>(`${this.poApi}/${id}/receive`, { items }).pipe(
       map(res => this.toDetail(res.data)),

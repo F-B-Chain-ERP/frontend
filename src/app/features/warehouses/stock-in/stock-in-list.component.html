@@ -444,10 +444,11 @@
         @if (stockInForm.get('sourceType')?.value === 'PURCHASE') {
           <div nz-col [nzSpan]="24" [nzMd]="8">
             <label class="form-label required" for="sin-po">Đơn mua hàng</label>
+            <!-- Chọn PO chạy qua valueChanges(sourceReferenceId) trong component
+                 ((ngModelChange) chết khi đi kèm formControlName nên đã bỏ). -->
             <nz-select
               id="sin-po"
               formControlName="sourceReferenceId"
-              (ngModelChange)="onPoSelect($event)"
               nzPlaceHolder="Chọn đơn (Đã duyệt / Đang nhận)"
               nzShowSearch
               style="width: 100%"
@@ -570,16 +571,20 @@
               </tr>
             </thead>
             <tbody formArrayName="items">
-              @for (ctrl of itemsArray.controls; track $index; let i = $index) {
+              <!-- Track theo object FormGroup (KHÔNG track $index): applyPoDetail
+                   clear()+tạo lại group mới — track $index sẽ tái dùng DOM cũ khiến
+                   input vẫn trỏ group cũ (hiện 1/0/trống) trong khi total đọc group mới. -->
+              @for (ctrl of itemsArray.controls; track ctrl; let i = $index) {
                 <tr [formGroupName]="i">
                   <td class="col-stt">{{ i + 1 }}</td>
                   <td class="col-material">
                     @if (modalMode() === 'view') {
                       <span class="material-name font-semibold">{{ ctrl.get('materialName')?.value }}</span>
                     } @else {
+                      <!-- Đổi NVL chạy qua valueChanges(materialId) trong component
+                           ((ngModelChange) chết khi đi kèm formControlName nên đã bỏ). -->
                       <nz-select
                         formControlName="materialId"
-                        (ngModelChange)="onMaterialSelect(i, $event)"
                         nzPlaceHolder="Chọn NVL"
                         style="width: 100%"
                       >
@@ -613,11 +618,6 @@
                       @if (ctrl.get('quantity')?.hasError('maxFraction')) {
                         <span class="form-error">Tối đa 3 số lẻ.</span>
                       }
-                    }
-                    @if (remainingFor(i) !== null) {
-                      <div class="text-muted" style="font-size: 12px; margin-top: 4px">
-                        Còn lại: {{ remainingFor(i) | number }}
-                      </div>
                     }
                   </td>
                   <td class="col-price">
