@@ -158,9 +158,11 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   // Map roleId -> roleCode (tải 1 lần từ api/v1/roles để chia nhóm dropdown).
   readonly roleIdToCode = signal<Map<string, string>>(new Map());
   readonly userGroupFilter = signal<string>('ALL');
+  // Chi nhánh đang chọn trong modal (đơn/bulk) — nhóm vai tính theo chi nhánh này.
+  readonly modalBranchId = signal<string>('');
 
-  /** Nhóm vai của 1 user theo roleIds: CASHIER | BARISTA | DUAL | OTHER. */
-  userGroup(u: User): 'CASHIER' | 'BARISTA' | 'DUAL' | 'OTHER' {
+  /** Role codes của user (từ map roleId->code). */
+  private userCodes(u: User): { cash: boolean; bar: boolean } {
     const map = this.roleIdToCode();
     let cash = false, bar = false;
     for (const id of u.roleIds ?? []) {
@@ -169,37 +171,67 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
       if ((ShiftAssignmentListComponent.CASH_ROLE_CODES as readonly string[]).includes(code)) cash = true;
       if ((ShiftAssignmentListComponent.BARISTA_ROLE_CODES as readonly string[]).includes(code)) bar = true;
     }
-    if (cash && bar) return 'DUAL';
-    if (cash) return 'CASHIER';
+    return { cash, bar };
+  }
+
+  /**
+   * User có thuộc chi nhánh không (theo primaryBranchId/assignedBranches).
+   * Không có thông tin chi nhánh thì coi như thuộc để khỏi chặn nhầm —
+   * BE mới là chốt chặn cuối (role hiệu lực theo scope + hạn).
+   */
+  private inScopeBranch(u: User, branchId?: string | null): boolean {
+    if (!branchId) return true;
+    const hasInfo = !!u.primaryBranchId || (u.assignedBranches?.length ?? 0) > 0;
+    if (!hasInfo) return true;
+    if (u.primaryBranchId === branchId) return true;
+    return (u.assignedBranches ?? []).some(b => b.id === branchId);
+  }
+
+  /** Nhóm vai của 1 user TẠI 1 chi nhánh: CASHIER | BARISTA | DUAL | OTHER. */
+  userGroup(u: User, branchId?: string | null): 'CASHIER' | 'BARISTA' | 'DUAL' | 'OTHER' {
+    const { cash, bar } = this.userCodes(u);
+    const cashHere = cash && this.inScopeBranch(u, branchId);
+    if (cashHere && bar) return 'DUAL';
+    if (cashHere) return 'CASHIER';
     if (bar) return 'BARISTA';
     return 'OTHER';
   }
 
+  /** Có code két nhưng không hiệu lực tại chi nhánh đang chọn. */
+  cashOutOfScope(u: User, branchId?: string | null): boolean {
+    return this.userCodes(u).cash && !this.inScopeBranch(u, branchId);
+  }
+
   /** Nhãn option dropdown: tiền tố nhóm vai + tên (email) + hậu tố trạng thái. */
-  userOptionLabel(u: User, showAssigned: boolean): string {
+  userOptionLabel(u: User, showAssigned: boolean, branchId?: string | null): string {
+    const group = this.userGroup(u, branchId);
+    const { cash } = this.userCodes(u);
     const prefix =
-      this.userGroup(u) === 'CASHIER' ? '[Thu ngân] ' :
-      this.userGroup(u) === 'BARISTA' ? '[Pha chế] ' :
-      this.userGroup(u) === 'DUAL' ? '[Cần tách vai] ' : '[Khác] ';
+      group === 'CASHIER' ? '[Thu ngân] ' :
+      group === 'BARISTA' ? '[Pha chế] ' :
+      group === 'DUAL' ? '[Cần tách vai] ' :
+      cash ? '[Thu ngân] ' : '[Khác] ';
     let label = `${prefix}${u.fullName} (${u.email})`;
-    if (this.userGroup(u) === 'DUAL') label += ' — cần tách vai, BE sẽ chặn';
+    if (group === 'DUAL') label += ' — cần tách vai, BE sẽ chặn';
+    if (this.cashOutOfScope(u, branchId)) label += ' — vai két không hiệu lực tại chi nhánh này';
     if (showAssigned && this.assignedAccountIds().has('' + u.id)) label += ' — đã phân ca';
     return label;
   }
 
   /** Acc 2 vai luôn disabled (BE chặn phân ca); ca đơn còn disable khi đã phân ca. */
-  isUserOptionDisabled(u: User, checkAssigned: boolean): boolean {
-    if (this.userGroup(u) === 'DUAL') return true;
+  isUserOptionDisabled(u: User, checkAssigned: boolean, branchId?: string | null): boolean {
+    if (this.userGroup(u, branchId) === 'DUAL') return true;
     return checkAssigned && this.assignedAccountIds().has('' + u.id);
   }
 
-  /** Danh sách user trong modal sau khi lọc theo nhóm vai. */
+  /** Danh sách user trong modal sau khi lọc theo nhóm vai (tại chi nhánh modal). */
   readonly modalUsers = computed(() => {
     const f = this.userGroupFilter();
+    const branchId = this.modalBranchId();
     // Đọc signal để recompute khi map role về.
     this.roleIdToCode();
     if (f === 'ALL') return this.availableUsers();
-    return this.availableUsers().filter(u => this.userGroup(u) === f);
+    return this.availableUsers().filter(u => this.userGroup(u, branchId) === f);
   });
 
   private loadRoleMap(): void {
@@ -429,6 +461,7 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
     const branchId = this.selectedBranchId() || this.branchService.currentBranch()?.id || this.branchService.branches()[0]?.id || '';
     this.selectedBranchId.set(branchId);
     this.userGroupFilter.set('ALL');
+    this.modalBranchId.set(branchId);
     this.loadRoleMap();
     this.loadShiftsForBranch(branchId);
     this.assignForm.reset({
@@ -490,6 +523,7 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
     const branchId = this.selectedBranchId() || this.branchService.currentBranch()?.id || this.branchService.branches()[0]?.id || '';
     this.selectedBranchId.set(branchId);
     this.userGroupFilter.set('ALL');
+    this.modalBranchId.set(branchId);
     this.loadRoleMap();
     this.loadShiftsForBranch(branchId);
     this.bulkForm.reset({
