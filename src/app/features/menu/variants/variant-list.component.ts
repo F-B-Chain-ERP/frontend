@@ -93,11 +93,11 @@ export class VariantListComponent extends BaseComponent implements OnInit {
   readonly selectedProduct = signal<Product | null>(null);
   readonly variants = signal<ProductVariant[]>([]);
 
-  // ── Filters & Search ────────────────────────────────────────────────
-  selectedCategoryId: string | null = null;
-  productSearchText: string = '';
-  variantFilterQuery: string = '';
-  selectedVariantStatus: string | null = null;
+  // ── Filters & Search (signals để computed reactive) ────────────────
+  readonly selectedCategoryId = signal<string | null>(null);
+  readonly productSearchText = signal('');
+  readonly variantFilterQuery = signal('');
+  readonly selectedVariantStatus = signal<string | null>(null);
 
   // ── Computed Statistics ─────────────────────────────────────────────
   readonly totalVariantsCount = computed(() => this.variants().length);
@@ -128,30 +128,34 @@ export class VariantListComponent extends BaseComponent implements OnInit {
 
   readonly filteredVariants = computed(() => {
     let list = this.variants();
-    const query = this.variantFilterQuery.trim().toLowerCase();
+    const query = this.variantFilterQuery().trim().toLowerCase();
     if (query) {
       list = list.filter(
         v =>
-          v.variantCode.toLowerCase().includes(query) ||
-          v.variantName.toLowerCase().includes(query) ||
-          v.sizeLabel.toLowerCase().includes(query),
+          (v.variantCode ?? '').toLowerCase().includes(query) ||
+          (v.variantName ?? '').toLowerCase().includes(query) ||
+          (v.sizeLabel ?? '').toLowerCase().includes(query),
       );
     }
-    if (this.selectedVariantStatus) {
-      list = list.filter(v => (v.status || 'ACTIVE') === this.selectedVariantStatus);
+    const statusFilter = this.selectedVariantStatus();
+    if (statusFilter) {
+      list = list.filter(v => (v.status || 'ACTIVE') === statusFilter);
     }
     return list;
   });
 
   readonly filteredProducts = computed(() => {
     let prods = this.products();
-    if (this.selectedCategoryId) {
-      prods = prods.filter(p => p.categoryId === this.selectedCategoryId);
+    const catId = this.selectedCategoryId();
+    if (catId) {
+      prods = prods.filter(p => p.categoryId === catId);
     }
-    const search = this.productSearchText.trim().toLowerCase();
+    const search = this.productSearchText().trim().toLowerCase();
     if (search) {
       prods = prods.filter(
-        p => p.name.toLowerCase().includes(search) || p.code.toLowerCase().includes(search),
+        p =>
+          (p.name ?? '').toLowerCase().includes(search) ||
+          (p.code ?? '').toLowerCase().includes(search),
       );
     }
     return prods;
@@ -510,14 +514,34 @@ export class VariantListComponent extends BaseComponent implements OnInit {
 
   // ── Quick Helpers ───────────────────────────────────────────────────
   onCategoryFilterChange(catId: string | null): void {
-    this.selectedCategoryId = catId;
+    this.selectedCategoryId.set(catId ?? null);
     const currentProd = this.selectedProduct();
-    if (currentProd && catId && currentProd.categoryId !== catId) {
-      const match = this.filteredProducts()[0];
-      if (match) {
-        this.onSelectProduct(match);
-      }
+    const filtered = this.filteredProducts();
+    if (filtered.length === 0) {
+      this.selectedProduct.set(null);
+      this.variants.set([]);
+      return;
     }
+    if (!currentProd || !filtered.some(p => p.id === currentProd.id)) {
+      this.onSelectProduct(filtered[0]);
+    }
+  }
+
+  onProductSearchChange(text: string): void {
+    this.productSearchText.set(text ?? '');
+  }
+
+  onVariantQueryChange(text: string): void {
+    this.variantFilterQuery.set(text ?? '');
+  }
+
+  onVariantStatusChange(status: string | null): void {
+    this.selectedVariantStatus.set(status ?? null);
+  }
+
+  clearProductFilters(): void {
+    this.selectedCategoryId.set(null);
+    this.productSearchText.set('');
   }
 
   navigateToProduct(productId: string): void {
