@@ -8,7 +8,7 @@ import { AppQuantityStepperComponent } from '../../../shared/app-quantity-steppe
 import { AppNotificationService } from '../../../shared/app-notification/app-notification.service';
 import { CartService } from '../../../shared/services/cart.service';
 import { DrinkItem } from '../../../shared/app-drink-card/app-drink-card.component';
-import { ProductDetail } from '../../menu/products/product.model';
+import { ComboItem, ProductDetail } from '../../menu/products/product.model';
 import { ProductVariant } from '../../menu/products/variants/variant.model';
 import { SalesService } from '../services/sales.service';
 import { PosApiService } from '../services/pos-api.service';
@@ -55,6 +55,9 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   readonly selectedToppingIds = signal<Set<string>>(new Set());
   readonly quantity = signal<number>(1);
   readonly quickNotes: string[] = ['Ít ngọt', 'Nhiều đá', 'Để riêng đá mang về', 'Không lấy ống hút', 'Uống nóng'];
+
+  /** Thành phần combo (chỉ có khi sản phẩm là combo). */
+  readonly comboItems = signal<ComboItem[]>([]);
 
   /** Topping thật từ BE (thay hardcode). Load theo SP + chi nhánh. */
   readonly toppingOptions = signal<DetailToppingOption[]>([]);
@@ -108,6 +111,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
           }
           this.product.set(detail);
           this.isLoading.set(false);
+          this.comboItems.set(detail.comboItems ?? []);
 
           // Configure available sizes
           const basePrice = detail.basePrice || 0;

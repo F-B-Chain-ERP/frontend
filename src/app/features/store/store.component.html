@@ -417,6 +417,28 @@
               <span>Đang tải kích cỡ &amp; tùy chọn pha chế...</span>
             </div>
           } @else {
+            @if (drink.isCombo && selectedComboItems().length > 0) {
+              <div class="option-section">
+                <div class="option-section__header">
+                  <span class="option-section__label">Thành phần combo</span>
+                  <span class="option-section__sub">Gồm {{ selectedComboItems().length }} món trong gói</span>
+                </div>
+                <div class="quick-combo-items">
+                  @for (c of selectedComboItems(); track c.comboItemId) {
+                    <div class="quick-combo-item">
+                      <span class="quick-combo-item__name">
+                        {{ c.productName }}
+                        @if (c.variantName && c.variantName !== c.productName) {
+                          — {{ c.variantName }}
+                        }
+                      </span>
+                      <span class="quick-combo-item__qty">×{{ c.quantity }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
             <!-- 1. Thẻ chọn Kích cỡ (Size Cards Grid) -->
             <div class="option-section">
               <div class="option-section__header">

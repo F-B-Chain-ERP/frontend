@@ -67,6 +67,18 @@
       background: var(--success);
       color: var(--on-brand);
     }
+
+    &--combo {
+      background: linear-gradient(90deg, #8b5cf6, #d946ef);
+      color: #ffffff;
+    }
+  }
+
+  &__combo-summary {
+    margin: 0 0 12px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
   }
 
   &__quick-view {

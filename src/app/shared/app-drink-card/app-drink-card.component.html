@@ -8,7 +8,9 @@
       loading="lazy"
       (error)="onImageError($event)"
     />
-    @if (item.badge) {
+    @if (item.isCombo) {
+      <span class="drink-card__badge drink-card__badge--combo">Combo</span>
+    } @else if (item.badge) {
       <span class="drink-card__badge drink-card__badge--{{ item.badgeType || 'signature' }}">
         {{ item.badge }}
       </span>
@@ -34,6 +36,10 @@
       </div>
       <span class="score">4.8/5</span>
     </div>
+
+    @if (item.isCombo && item.comboItemCount != null) {
+      <p class="drink-card__combo-summary">Gồm {{ item.comboItemCount }} món</p>
+    }
 
     <!-- ── 3. Price & Action ── -->
     <div class="drink-card__footer">

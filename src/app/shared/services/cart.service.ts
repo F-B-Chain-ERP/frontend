@@ -7,6 +7,7 @@ import { DrinkItem } from '../app-drink-card/app-drink-card.component';
 import { AppNotificationService } from '../app-notification/app-notification.service';
 import { PosApiService } from '../../features/store/services/pos-api.service';
 import { PosCartItem } from '../../features/store/models/pos.model';
+import { ComboItem } from '../../features/menu/products/product.model';
 import { StoreBranchService } from '../../features/store/services/store-branch.service';
 
 export interface CartItemOption {
@@ -29,6 +30,8 @@ export interface CartItem {
   totalPrice: number;
   optionsSummary: string;
   options: CartItemOption;
+  /** Thành phần combo (chỉ SPM combo). */
+  comboItems?: ComboItem[];
 }
 
 /**
@@ -219,6 +222,7 @@ export class CartService {
           variantId: i.variantId,
           toppings: (i.toppings ?? []).map(t => ({ id: t.toppingId, label: t.toppingName ?? '', price: t.unitPrice })),
         },
+        comboItems: i.comboItems,
       };
     });
     this.items.set(mapped);

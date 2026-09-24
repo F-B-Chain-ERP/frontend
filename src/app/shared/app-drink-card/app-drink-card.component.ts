@@ -15,6 +15,9 @@ export interface DrinkItem {
   badge?: string;
   badgeType?: 'signature' | 'bestseller' | 'new';
   sizes?: Array<{ label: string; priceDelta: number }>;
+  /** Sản phẩm dạng combo: hiển thị badge "Combo" + số món thay vì full danh sách. */
+  isCombo?: boolean;
+  comboItemCount?: number;
 }
 
 @Component({

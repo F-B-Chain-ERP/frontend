@@ -1,3 +1,5 @@
+import { ComboItem } from '../../menu/products/product.model';
+
 export interface PosCartToppingRequest {
   toppingId: string;
   quantity: number;
@@ -44,6 +46,8 @@ export interface PosCartItem {
   unitPrice: number;
   totalPrice: number;
   toppings: PosCartItemTopping[];
+  /** Thành phần combo theo số lượng line (rỗng với món đơn / BE cũ). */
+  comboItems?: ComboItem[];
 }
 
 export interface PosCart {

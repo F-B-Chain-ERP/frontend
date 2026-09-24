@@ -63,6 +63,24 @@
                 @if (item.optionsSummary) {
                   <p class="cart-item__options">{{ item.optionsSummary }}</p>
                 }
+
+                @if (item.comboItems?.length) {
+                  <div class="cart-item__combo">
+                    <span class="cart-item__combo-label">Bao gồm:</span>
+                    <span class="cart-item__combo-items">
+                      @for (c of item.comboItems; track c.comboItemId) {
+                        <span class="cart-item__combo-item">
+                          @if (c.variantName && c.variantName !== c.productName) {
+                            {{ c.productName }} — {{ c.variantName }} ×{{ c.quantity }}
+                          } @else {
+                            {{ c.productName }} ×{{ c.quantity }}
+                          }
+                        </span>
+                      }
+                    </span>
+                  </div>
+                }
+
                 <p class="cart-item__unit hide-desktop">{{ formatPrice(item.unitPrice) }}</p>
               </div>
             </div>
