@@ -239,7 +239,7 @@
         <nz-select
           id="assign-branch"
           formControlName="branchId"
-          (ngModelChange)="loadShiftsForBranch($event); loadAssignedForDate()"
+          (ngModelChange)="modalBranchId.set($event); loadShiftsForBranch($event); loadAssignedForDate()"
           [nzStatus]="assignForm.get('branchId')?.invalid && assignForm.get('branchId')?.touched ? 'error' : ''"
           style="width: 100%"
         >
@@ -313,8 +313,8 @@
           style="width: 100%"
         >
           @for (u of modalUsers(); track u.id) {
-            <nz-option [nzLabel]="userOptionLabel(u, true)"
-              [nzValue]="u.id" [nzDisabled]="isUserOptionDisabled(u, true)"></nz-option>
+            <nz-option [nzLabel]="userOptionLabel(u, true, modalBranchId())"
+              [nzValue]="u.id" [nzDisabled]="isUserOptionDisabled(u, true, modalBranchId())"></nz-option>
           }
         </nz-select>
         @if (isLoadingAssigned()) {
@@ -392,7 +392,7 @@
           <nz-select
             id="bulk-branch"
             formControlName="branchId"
-            (ngModelChange)="loadShiftsForBranch($event)"
+            (ngModelChange)="modalBranchId.set($event); loadShiftsForBranch($event)"
             [nzStatus]="bulkForm.get('branchId')?.invalid && bulkForm.get('branchId')?.touched ? 'error' : ''"
             style="width: 100%"
           >
@@ -464,7 +464,7 @@
           style="width: 100%"
         >
           @for (u of modalUsers(); track u.id) {
-            <nz-option [nzLabel]="userOptionLabel(u, false)" [nzValue]="u.id" [nzDisabled]="isUserOptionDisabled(u, false)"></nz-option>
+            <nz-option [nzLabel]="userOptionLabel(u, false, modalBranchId())" [nzValue]="u.id" [nzDisabled]="isUserOptionDisabled(u, false, modalBranchId())"></nz-option>
           }
         </nz-select>
         @if (bulkForm.get('accountIds')?.invalid && bulkForm.get('accountIds')?.touched) {
