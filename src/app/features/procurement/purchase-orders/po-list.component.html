@@ -322,18 +322,9 @@
                   </app-button>
                 }
 
-                <!-- APPROVED: Receive Stock into Warehouse -->
-                @if (po.status === PurchaseOrderStatus.APPROVED || po.status === '2') {
-                  <app-button
-                    *erpUTTHasSomeAuthority="[ROLE.DON_MUA_HANG.UPDATE]"
-                    variant="ghost"
-                    iconOnly="inbox"
-                    nz-tooltip
-                    nzTooltipTitle="Ghi nhận nhập kho"
-                    (click)="onReceivePO(po)"
-                  >
-                  </app-button>
-                }
+                <!-- ĐÃ XÓA nút "Ghi nhận nhập kho" tay: SL đã nhận + trạng thái đơn
+                     chỉ được cập nhật qua phiếu nhập kho (nút "Tạo phiếu nhập kho"
+                     bên dưới), tránh đơn nhảy Đã nhận đủ khi chưa nhập kho thật. -->
 
                 <!-- APPROVED/PARTIALLY_RECEIVED: sang phiếu Nhập kho (tăng tồn thật) -->
                 @if (
@@ -429,11 +420,11 @@
 
         <!-- Kho nhận -->
         <div nz-col [nzSpan]="24" [nzMd]="8">
-          <label class="form-label required">Kho nhận</label>
+          <label class="form-label required">Kho nhận (kho tổng)</label>
           <nz-select
             id="po-warehouse"
             formControlName="warehouseId"
-            nzPlaceHolder="Chọn kho nhận"
+            nzPlaceHolder="Chọn kho tổng nhận hàng"
             nzShowSearch
             [nzFilterOption]="filterByLabel"
           >
@@ -726,74 +717,8 @@
     </ng-container>
   </nz-modal>
 
-  <!-- ── Modal nhận hàng (nhập số lượng thực nhận) ────────────────── -->
-  <nz-modal
-    [nzVisible]="!!receiveTarget()"
-    nzTitle="Ghi nhận nhập kho"
-    [nzOkText]="'Xác nhận nhập kho'"
-    [nzOkLoading]="isSaving()"
-    [nzOkDisabled]="receiveForm.invalid"
-    [nzCancelText]="'Hủy'"
-    (nzOnOk)="confirmReceive()"
-    (nzOnCancel)="closeReceiveModal()"
-  >
-    <ng-container *nzModalContent>
-      <p style="margin-bottom: 12px">
-        Nhập số lượng thực nhận cho từng nguyên vật liệu của đơn
-        <strong>{{ receiveTarget()?.code }}</strong>.
-      </p>
-      <table class="po-items__table">
-        <thead>
-          <tr>
-            <th class="col-stt">#</th>
-            <th class="col-material">Nguyên vật liệu</th>
-            <th class="col-qty">SL đặt</th>
-            <th class="col-qty">SL nhận</th>
-            <th class="col-total">Thành tiền</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (item of receiveItemsArray.controls; track $index; let i = $index) {
-            <tr>
-              <td class="col-stt">{{ i + 1 }}</td>
-              <td class="col-material">{{ item.get('materialName')?.value }}</td>
-              <td class="col-qty font-mono">{{ item.get('quantity')?.value | number: '1.0-3' }}</td>
-              <td class="col-qty">
-                <nz-input-number
-                  [formControl]="receiveQtyControl(i)"
-                  [nzMin]="0.001"
-                  [nzStep]="1"
-                  [nzMax]="receiveRemaining(i)"
-                  style="width: 100%"
-                ></nz-input-number>
-                @if (item.get('receivedQuantity')?.touched || item.get('receivedQuantity')?.dirty) {
-                  @if (item.get('receivedQuantity')?.hasError('required')) {
-                    <span class="form-error">Vui lòng nhập số lượng nhận.</span>
-                  } @else if (item.get('receivedQuantity')?.hasError('min')) {
-                    <span class="form-error">Số lượng nhận phải lớn hơn 0.</span>
-                  } @else if (item.get('receivedQuantity')?.hasError('max')) {
-                    <span class="form-error">Không vượt SL còn thiếu ({{ receiveRemaining(i) }}).</span>
-                  }
-                }
-              </td>
-              <td class="col-total font-mono">
-                {{ receiveTotals()[i] | number: '1.0-0' }} ₫
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="5" class="po-items__empty">Không có nguyên vật liệu để nhận.</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-      <div class="po-items__footer">
-        <span class="po-items__grand-total font-mono font-semibold">
-          Tổng: {{ receiveGrandTotal() | number: '1.0-0' }} ₫
-        </span>
-      </div>
-    </ng-container>
-  </nz-modal>
+  <!-- ĐÃ XÓA modal "Ghi nhận nhập kho" tay: nhận hàng chỉ đi qua phiếu nhập kho
+       (nút "Tạo phiếu nhập kho" ở bảng), tránh ghi sổ chay lên đơn mua hàng. -->
 
   <!-- ── Modal Preview / In phiếu PO ─────────────────────────────── -->
   <nz-modal

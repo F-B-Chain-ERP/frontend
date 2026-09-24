@@ -230,7 +230,7 @@
           <nz-icon nzInputPrefix nzType="search" class="store-filter-search-icon" />
           <input
             nz-input
-            placeholder="Tìm kiếm cà phê, trà trái cây, macchiato theo tên hoặc mô tả..."
+            placeholder="Tìm kiếm theo tên, mã món hoặc mô tả..."
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearchInput($event)"
             class="store-filter-search-input"
@@ -240,10 +240,13 @@
 
       <div class="store-filter-card__meta">
         Hiển thị <strong>{{ filteredDrinks().length }}</strong> món đồ uống
+        <span class="store-branch-chip">
+          • Menu chi nhánh: <strong>{{ storeBranches.currentBranch()?.name || 'Chưa chọn' }}</strong>
+        </span>
       </div>
 
 <div class="store-filter-card__sort">
-        <nz-select [(ngModel)]="sortBy" (ngModelChange)="onFilterChange()" class="store-filter-select">
+        <nz-select [(ngModel)]="sortBy" (ngModelChange)="refreshListing()" class="store-filter-select">
           <nz-option nzValue="featured" nzLabel="Sắp xếp: Phổ biến nhất"></nz-option>
           <nz-option nzValue="price-asc" nzLabel="Giá: Thấp đến Cao"></nz-option>
           <nz-option nzValue="price-desc" nzLabel="Giá: Cao đến Thấp"></nz-option>
@@ -278,7 +281,7 @@
             <nz-icon nzType="inbox" class="drinks-empty__icon" />
             <h3>Không tìm thấy món nào phù hợp</h3>
             <p>Vui lòng thử tìm kiếm với từ khóa khác hoặc chọn danh mục khác nhé.</p>
-            <button type="button" class="section-btn-outline" (click)="onSelectCategory('all'); searchQuery = ''; onFilterChange()">
+            <button type="button" class="section-btn-outline" (click)="resetFilters()">
               Đặt lại bộ lọc
             </button>
           </div>

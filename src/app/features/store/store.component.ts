@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -102,6 +102,23 @@ export class StoreComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
   private readonly search$ = new Subject<string>();
   private readonly detailRequest$ = new Subject<DrinkItem>();
+
+  private lastStoreBranchId: string | null | undefined = undefined;
+  /**
+   * Đổi chi nhánh giữa chừng: tải lại menu theo chi nhánh mới.
+   * Trước đây menu chỉ tải 1 lần lúc vào trang nên dễ xem nhầm menu chi nhánh cũ.
+   */
+  private readonly branchWatcher = effect(() => {
+    const id = this.storeBranches.branchId();
+    if (this.lastStoreBranchId === undefined) {
+      this.lastStoreBranchId = id ?? null;
+      return;
+    }
+    if (id !== this.lastStoreBranchId) {
+      this.lastStoreBranchId = id ?? null;
+      this.loadStoreProducts();
+    }
+  });
 
   readonly normalizeImageUrl = normalizeImageUrl;
 
@@ -211,7 +228,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       if (params['q']) {
         this.searchQuery = params['q'];
-        this.onFilterChange();
+        this.refreshListing();
         // Defer qua navigation: scrollPositionRestoration:'top' của router chạy ở
         // NavigationEnd sẽ giật về đầu trang và giết smooth-scroll nếu cuộn ngay.
         setTimeout(() => this.scrollToSection('all-drinks'), 100);
@@ -228,8 +245,9 @@ export class StoreComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Gõ search debounce 300ms thay vì lọc mỗi ký tự
-    this.search$.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$)).subscribe(() => this.onFilterChange());
+    // Gõ search debounce 300ms thay vì lọc mỗi ký tự; điều phối qua refreshListing
+    // (có từ khóa -> server-side, trống -> local).
+    this.search$.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$)).subscribe(() => this.refreshListing());
 
     // Chi tiết modal đi qua switchMap: bấm món khác khi request cũ chưa về
     // thì hủy request cũ, response cũ không ghi đè modal mới (hết race).
@@ -414,7 +432,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     });
     this.topSelling.set(topItems.length > 0 ? topItems.slice(0, 4) : items.slice(0, 4));
 
-    this.onFilterChange();
+    this.refreshListing();
   }
 
   /**
@@ -513,7 +531,7 @@ export class StoreComponent implements OnInit, OnDestroy {
 
   onSelectCategory(catId: string): void {
     this.selectedCategoryId.set(catId);
-    this.onFilterChange();
+    this.refreshListing();
   }
 
   onPageIndexChange(index: number): void {
@@ -528,32 +546,94 @@ export class StoreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Lọc và sắp xếp sản phẩm linh hoạt
+   * Tìm kiếm server-side cho ô search: xuyên qua giới hạn 100 món đầu và so khớp
+   * cả mã sản phẩm (lọc local không thấy mã). Tôn trọng tab danh mục + sort đang chọn.
+   * Response cũ bị bỏ qua bằng request id (tránh race khi gõ nhanh).
+   */
+  private searchRequestId = 0;
+
+  private searchProductsRemote(q: string): void {
+    const reqId = ++this.searchRequestId;
+    this.isLoadingProducts.set(true);
+    this.salesService
+      .getProducts({ search: q, pageSize: 100, branchId: this.storeBranches.branchId() })
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: res => {
+          if (reqId !== this.searchRequestId) return;
+          this.isLoadingProducts.set(false);
+          const products = res.items || [];
+          // Bổ sung vào rawProducts để sort 'newest' tra được ngày tạo.
+          if (products.length > 0) {
+            const known = new Set(this.rawProducts().map(p => p.id));
+            const fresh = products.filter(p => !known.has(p.id));
+            if (fresh.length > 0) {
+              this.rawProducts.update(list => [...list, ...fresh]);
+            }
+          }
+          const items = products.map(p => this.mapProductToDrinkItem(p));
+          this.filteredDrinks.set(this.applyCategoryAndSort(items, false));
+          this.pageIndex.set(1);
+        },
+        error: () => {
+          if (reqId !== this.searchRequestId) return;
+          this.isLoadingProducts.set(false);
+          // Rớt mạng -> fallback lọc local như cũ, khỏi trắng trang.
+          this.onFilterChange();
+        },
+      });
+  }
+
+  /**
+   * Lọc và sắp xếp local trên danh sách đã tải.
    */
   onFilterChange(): void {
-    let list = [...this.drinksList()];
+    this.filteredDrinks.set(this.applyCategoryAndSort([...this.drinksList()], true));
+    this.pageIndex.set(1);
+  }
 
-    // Lọc theo Danh mục
-    if (this.selectedCategoryId() !== 'all') {
-      list = list.filter(d => d.category === this.selectedCategoryId());
+  /**
+   * Điều phối hiển thị duy nhất: có từ khóa thì tìm server-side (so khớp cả mã,
+   * xuyên 100 món, đúng chi nhánh), không thì lọc local.
+   */
+  refreshListing(): void {
+    const q = (this.searchQuery ?? '').trim();
+    if (q) {
+      this.searchProductsRemote(q);
+    } else {
+      this.searchRequestId++; // hủy remote đang bay (xóa từ khóa/đổi ý)
+      this.onFilterChange();
     }
+  }
 
-    // Lọc theo Từ khóa tìm kiếm
-    if (this.searchQuery.trim()) {
+  /** Nút "Đặt lại bộ lọc" ở trạng thái trống. */
+  resetFilters(): void {
+    this.selectedCategoryId.set('all');
+    this.searchQuery = '';
+    this.refreshListing();
+  }
+
+  private applyCategoryAndSort(list: DrinkItem[], applyLocalKeyword: boolean): DrinkItem[] {
+    // Lọc theo Danh mục
+    let result =
+      this.selectedCategoryId() !== 'all' ? list.filter(d => d.category === this.selectedCategoryId()) : [...list];
+
+    // Lọc theo Từ khóa (chỉ đường local; đường remote server đã lọc cả mã)
+    if (applyLocalKeyword && this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
-      list = list.filter(
+      result = result.filter(
         d => d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q) || d.categoryName.toLowerCase().includes(q),
       );
     }
 
-    // Sắp xếp
+    // Sắp xếp (sửa bug cũ: sort nhầm mảng gốc khiến lọc danh mục/từ khóa bị vứt bỏ)
     if (this.sortBy === 'price-asc') {
-      list.sort((a, b) => a.price - b.price);
+      result.sort((a, b) => a.price - b.price);
     } else if (this.sortBy === 'price-desc') {
-      list.sort((a, b) => b.price - a.price);
+      result.sort((a, b) => b.price - a.price);
     } else if (this.sortBy === 'newest') {
       const rawMap = new Map(this.rawProducts().map(p => [p.id, p]));
-      list.sort((a, b) => {
+      result.sort((a, b) => {
         const createdA = rawMap.get(a.id)?.createdAt;
         const createdB = rawMap.get(b.id)?.createdAt;
         const dateA = createdA ? new Date(createdA).getTime() : 0;
@@ -562,8 +642,7 @@ export class StoreComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.filteredDrinks.set(list);
-    this.pageIndex.set(1);
+    return result;
   }
 
   /**

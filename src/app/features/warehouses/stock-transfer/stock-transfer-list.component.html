@@ -343,7 +343,7 @@
         <div nz-col [nzSpan]="24" [nzMd]="12">
           <label class="form-label required">Kho đi</label>
           <nz-select formControlName="fromWarehouseId" nzPlaceHolder="Chọn kho đi" nzShowSearch style="width: 100%">
-            @for (w of warehouses; track w.id) {
+            @for (w of sourceWarehouseOptions; track w.id) {
               <nz-option [nzValue]="w.id" [nzLabel]="w.code + ' - ' + w.name"></nz-option>
             }
           </nz-select>
@@ -458,7 +458,7 @@
     [footer]="receiveModalFooter"
     (cancelEmit)="closeReceiveModal()"
   >
-    <p class="form-hint">Chỉ nhập dòng nhận đợt này, bỏ trống dòng không nhận. Không vượt số còn thiếu.</p>
+    <p class="form-hint">SL nhận đã đổ sẵn đủ số còn thiếu — kiểm hàng đủ thì bấm xác nhận luôn. Thực nhận thiếu mới sửa giảm tay, không vượt số còn thiếu.</p>
     <form [formGroup]="receiveForm">
       <div formArrayName="lines">
         @for (group of linesArray.controls; track $index; let i = $index) {

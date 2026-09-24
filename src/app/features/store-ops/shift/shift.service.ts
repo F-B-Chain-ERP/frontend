@@ -398,18 +398,28 @@ export class StoreShiftService {
       );
   }
 
-  getMaterialShortage(branchId: string, date?: string | null): Observable<MaterialShortage> {
+  getMaterialShortage(
+    branchId: string,
+    plan?: { planDays?: number | null; safetyFactor?: number | null; historyDays?: number | null },
+  ): Observable<MaterialShortage> {
     let params = new HttpParams().set('branchId', branchId);
-    if (date) params = params.set('date', date);
+    if (plan?.planDays != null) params = params.set('planDays', String(plan.planDays));
+    if (plan?.safetyFactor != null) params = params.set('safetyFactor', String(plan.safetyFactor));
+    if (plan?.historyDays != null) params = params.set('historyDays', String(plan.historyDays));
     return this.http.get<ApiEnvelope<MaterialShortage>>(`${this.posStockApi}/material-shortage`, { params }).pipe(
       map(res => res.data),
       catchError(err => throwError(() => this.errorMessage(err))),
     );
   }
 
-  requestReplenishment(branchId: string, date?: string | null): Observable<ReplenishmentResult> {
+  requestReplenishment(
+    branchId: string,
+    plan?: { planDays?: number | null; safetyFactor?: number | null; historyDays?: number | null },
+  ): Observable<ReplenishmentResult> {
     let params = new HttpParams().set('branchId', branchId);
-    if (date) params = params.set('date', date);
+    if (plan?.planDays != null) params = params.set('planDays', String(plan.planDays));
+    if (plan?.safetyFactor != null) params = params.set('safetyFactor', String(plan.safetyFactor));
+    if (plan?.historyDays != null) params = params.set('historyDays', String(plan.historyDays));
     return this.http
       .post<ApiEnvelope<ReplenishmentResult>>(`${this.posStockApi}/request-replenishment`, null, { params })
       .pipe(
