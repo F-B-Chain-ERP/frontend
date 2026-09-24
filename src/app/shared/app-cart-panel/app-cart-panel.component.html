@@ -61,6 +61,23 @@
                 <p class="cart-item-card__options">{{ item.optionsSummary }}</p>
               }
 
+              @if (item.comboItems?.length) {
+                <div class="cart-item-card__combo">
+                  <span class="cart-item-card__combo-label">Bao gồm:</span>
+                  <span class="cart-item-card__combo-items">
+                    @for (c of item.comboItems; track c.comboItemId) {
+                      <span class="cart-item-card__combo-item">
+                        @if (c.variantName && c.variantName !== c.productName) {
+                          {{ c.productName }} — {{ c.variantName }} ×{{ c.quantity }}
+                        } @else {
+                          {{ c.productName }} ×{{ c.quantity }}
+                        }
+                      </span>
+                    }
+                  </span>
+                </div>
+              }
+
               <div class="cart-item-card__bottom">
                 <app-quantity-stepper [value]="item.quantity" size="sm" (valueChange)="onQuantityChange(item.id, $event)" />
 

@@ -13,6 +13,8 @@ export interface Product {
   isFeatured: boolean;
   isBestSeller: boolean;
   isCombo: boolean;
+  /** Số món thành phần (chỉ kênh bán hàng trả; 0 với món đơn). */
+  comboItemCount?: number;
   availableIceLevels: string;
   availableSugarLevels: string;
   status: string;
@@ -27,6 +29,25 @@ import {ProductVariant} from './variants/variant.model';
 
 export interface ProductDetail extends Product {
   variants: ProductVariant[];
+  /** Thành phần combo (rỗng nếu không phải combo). */
+  comboItems?: ComboItem[];
+}
+
+/** Thành phần trong combo: combo_item -> product_variant -> product. */
+export interface ComboItem {
+  comboItemId: string;
+  variantId: string;
+  variantCode: string | null;
+  variantName: string;
+  sizeLabel: string;
+  productId: string;
+  productCode: string | null;
+  productName: string;
+  variantPrice: number;
+  quantity: number;
+  isSubstitutable: boolean;
+  status: string;
+  lineTotal: number;
 }
 
 export interface ProductFilter {

@@ -112,6 +112,35 @@
             }
           </div>
         </div>
+
+        <!-- Thành phần combo -->
+        @if (p.isCombo && comboItems().length > 0) {
+          <div class="product-info-block">
+            <div class="product-info-block__header-row">
+              <h3 class="product-info-block__title">Thành phần combo ({{ comboItems().length }})</h3>
+              <span class="status-badge-active"> <nz-icon nzType="gift" /> Gồm {{ comboItems().length }} món </span>
+            </div>
+
+            <div class="combo-items-table-card">
+              @for (c of comboItems(); track c.comboItemId) {
+                <div class="combo-item-row">
+                  <div class="combo-item-row__left">
+                    <strong class="combo-item-row__name">{{ c.productName }}</strong>
+                    @if (c.variantName && c.variantName !== c.productName) {
+                      <span class="combo-item-row__size">— {{ c.variantName }}</span>
+                    }
+                  </div>
+                  <div class="combo-item-row__right">
+                    <span class="combo-item-row__qty">×{{ c.quantity }}</span>
+                    @if (c.variantPrice != null) {
+                      <span class="combo-item-row__price">{{ formatPrice(c.variantPrice) }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
       </div>
 
       <!-- Cột Phải: Bảng Cấu Hình Đặt Món Trực Tiếp ("Order trong xem chi tiết") -->

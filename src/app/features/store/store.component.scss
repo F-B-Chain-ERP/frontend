@@ -2052,3 +2052,33 @@
     color: var(--brand);
   }
 }
+
+.quick-combo-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quick-combo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+
+  &__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  &__qty {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--brand);
+    flex-shrink: 0;
+  }
+}

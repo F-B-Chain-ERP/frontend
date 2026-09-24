@@ -163,7 +163,7 @@ export class ProductListComponent extends BaseComponent implements OnInit {
 
   loadCategories(): void {
     this.categoryService
-      .getCategories({pageIndex: 1, pageSize: 100, status: 'ACTIVE'})
+      .getCategories({pageIndex: 1, pageSize: 100, status: 'ACTIVE', categoryType: 'PRODUCT'})
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => this.categories.set(res.items || []),

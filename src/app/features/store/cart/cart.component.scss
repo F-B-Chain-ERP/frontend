@@ -485,3 +485,31 @@
   color: var(--text-primary);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
+
+.cart-item__combo {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  &-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  &-items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &-item {
+    display: block;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+  }
+}

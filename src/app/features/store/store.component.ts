@@ -13,7 +13,7 @@ import { AppQuantityStepperComponent } from '../../shared/app-quantity-stepper/a
 import { AppNotificationService } from '../../shared/app-notification/app-notification.service';
 import { CartService } from '../../shared/services/cart.service';
 import { Category } from '../menu/categories/category.model';
-import { Product, ProductDetail } from '../menu/products/product.model';
+import { ComboItem, Product, ProductDetail } from '../menu/products/product.model';
 import { ProductVariant } from '../menu/products/variants/variant.model';
 import { SalesService } from './services/sales.service';
 import { PosApiService } from './services/pos-api.service';
@@ -163,6 +163,7 @@ export class StoreComponent implements OnInit, OnDestroy {
   readonly isModalVisible = signal<boolean>(false);
   readonly selectedDrink = signal<DrinkItem | null>(null);
   readonly selectedProductDetail = signal<ProductDetail | null>(null);
+  readonly selectedComboItems = signal<ComboItem[]>([]);
   readonly availableSizes = signal<SizeOption[]>([]);
   readonly selectedSize = signal<string>('');
   readonly availableSugarOptions = signal<LevelOption[]>([]);
@@ -296,25 +297,51 @@ export class StoreComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Tải danh sách sản phẩm thực tế từ SalesService
+   * Tải toàn bộ thực đơn từ SalesService bằng cách nạp lần lượt từng page
+   * (mỗi page tối đa 100 sản phẩm) rồi gộp vào danh sách tích lũy:
+   * - Không duplicate product (dedupe theo id).
+   * - Dừng khi page cuối không đầy (items.length < pageSize) — tức đã hết catalogue.
+   * - Chỉ gọi processProducts() sau khi nạp đủ, tránh render nửa chừng.
+   * => POS luôn có đầy đủ catalogue (kể cả Combo nằm ở page > 0).
    */
-  loadStoreProducts(): void {
+  loadStoreProducts(pageIndex = 1, accumulated: Product[] = []): void {
     this.isLoadingProducts.set(true);
     this.salesService
-      .getProducts({ pageSize: 100, branchId: this.storeBranches.branchId() })
+      .getProducts({ pageIndex, pageSize: 100, branchId: this.storeBranches.branchId() })
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: res => {
-          this.isLoadingProducts.set(false);
-          const products = res.items || [];
-          this.rawProducts.set(products);
-          this.processProducts(products);
+          const items = res.items || [];
+          const merged = this.mergeUniqueProducts(accumulated, items);
+          const pageSize = res.pageSize || 100;
+          if (items.length >= pageSize && items.length > 0) {
+            this.loadStoreProducts(pageIndex + 1, merged);
+          } else {
+            this.isLoadingProducts.set(false);
+            this.rawProducts.set(merged);
+            this.processProducts(merged);
+          }
         },
         error: () => {
           this.isLoadingProducts.set(false);
           this.toast.error('Không thể tải thực đơn đồ uống. Vui lòng thử lại sau!', '');
         },
       });
+  }
+
+  private mergeUniqueProducts(existing: Product[], incoming: Product[]): Product[] {
+    const byId = new Map<string, Product>();
+    for (const p of existing) {
+      if (p?.id) {
+        byId.set(p.id, p);
+      }
+    }
+    for (const p of incoming) {
+      if (p?.id) {
+        byId.set(p.id, p);
+      }
+    }
+    return Array.from(byId.values());
   }
 
   /**
@@ -416,6 +443,8 @@ export class StoreComponent implements OnInit, OnDestroy {
       price: Number(p.basePrice) || 0,
       imageUrl: normalizeImageUrl(p.imageUrl) || DEFAULT_BEVERAGE_IMAGE,
       description: p.description || 'Thức uống thủ công tươi mới từ nguyên liệu tự nhiên chọn lọc.',
+      isCombo: p.isCombo,
+      comboItemCount: p.comboItemCount ?? 0,
       badge,
       badgeType,
     };
@@ -588,6 +617,7 @@ export class StoreComponent implements OnInit, OnDestroy {
     this.modalNote = '';
     this.selectedToppingIds.set(new Set());
     this.isLoadingVariants.set(true);
+    this.selectedComboItems.set([]);
     this.onModalVisibleChange(true);
 
     // Đi qua detailRequest$ (switchMap): tự hủy request cũ nếu bấm món khác
@@ -596,6 +626,7 @@ export class StoreComponent implements OnInit, OnDestroy {
 
   private applyProductDetail(detail: ProductDetail): void {
     this.selectedProductDetail.set(detail);
+    this.selectedComboItems.set(detail.comboItems ?? []);
 
     // 1. Cấu hình Size thực tế từ variants
     if (detail.variants && detail.variants.length > 0) {
@@ -643,6 +674,7 @@ export class StoreComponent implements OnInit, OnDestroy {
   }
 
   private applyProductDetailFallback(drink: DrinkItem): void {
+    this.selectedComboItems.set([]);
     this.availableSizes.set([
       {
         id: 'default',
