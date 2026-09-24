@@ -241,6 +241,13 @@
             }
           </tbody>
         </nz-table>
+        @if (!shortageLoading() && shortage() && (shortage()?.lines || []).length === 0) {
+          <div class="text-muted" style="padding: 16px 4px">
+            Chi nhánh mới chưa có lịch sử bán trong 14 ngày gần nhất nên chưa ước lượng được NVL.
+            Kiểm tra công thức BOM + nhập tồn đầu kỳ kho quán, phát sinh bán thử rồi quay lại.
+            Đây không phải lỗi khả dụng món (xem tab Tồn theo biến thể).
+          </div>
+        }
       </nz-card>
     </nz-tab>
   </nz-tabs>

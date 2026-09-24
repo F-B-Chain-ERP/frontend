@@ -81,8 +81,9 @@ export class CartService {
 
   /**
    * Thêm món lên server. Topping gửi tổng cả line (= 1 phần/ly × số ly, đúng A2 BE).
+   * Toast success chỉ bắn khi server xác nhận (tránh xanh/đỏ cùng hiện khi BE từ chối).
    */
-  addItem(drink: DrinkItem, options: CartItemOption = {}, quantity = 1): void {
+  addItem(drink: DrinkItem, options: CartItemOption = {}, quantity = 1, notify?: { title: string; message?: string }): void {
     const branchId = this.requireBranch();
     if (!branchId || !this.requireCustomer()) return;
     this.metaCache.set(drink.id, { ...drink, imageUrl: normalizeImageUrl(drink.imageUrl) });
@@ -99,7 +100,10 @@ export class CartService {
         toppings: (options.toppings ?? []).map(t => ({ toppingId: t.id, quantity })),
       })
       .subscribe({
-        next: () => this.refresh(),
+        next: () => {
+          this.refresh();
+          if (notify) this.toast.success(notify.title, notify.message ?? '');
+        },
         error: err => {
           console.error('[CartService] addItem', err);
           this.toast.error(err?.error?.message || 'Không thêm được món vào giỏ');

@@ -11,12 +11,14 @@ export const errorHandlerInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((err: HttpErrorResponse) => {
+      // Service đã toast message cụ thể từ BE thì không toast generic chồng lên.
+      const serverMessage = (err.error as { message?: string } | null)?.message;
       if (err.status === 403) {
-        toast.error('Không có quyền thực hiện thao tác này.');
+        if (!serverMessage) toast.error('Không có quyền thực hiện thao tác này.');
       } else if (err.status === 401) {
         // auth-expired interceptor xử lý refresh token, không toast ở đây
       } else if (err.status >= 500) {
-        toast.error('Lỗi hệ thống, vui lòng thử lại sau.');
+        if (!serverMessage) toast.error('Lỗi hệ thống, vui lòng thử lại sau.');
       }
 
       if (!(err.status === 401 && (err.message === '' || err.url?.includes('api/account')))) {
