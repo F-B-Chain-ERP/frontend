@@ -136,6 +136,16 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
     return c === 'CA_A' || c === 'CA_B';
   }
 
+  /** Ca SCHEDULED/CHECKED_IN mà ngày làm đã qua hôm nay => quá hạn, cần Hủy/Đóng. */
+  isOverdue(a: ShiftAssignment): boolean {
+    if (!a?.workDate || (a.status !== 'SCHEDULED' && a.status !== 'CHECKED_IN')) return false;
+    const today = new Date();
+    const y = today.getFullYear(), m = today.getMonth(), d = today.getDate();
+    const [yy, mm, dd] = String(a.workDate).slice(0, 10).split('-').map(Number);
+    if (!yy || !mm || !dd) return false;
+    return new Date(yy, mm - 1, dd).getTime() < new Date(y, m, d).getTime();
+  }
+
   readonly coverageWarnings = computed(() => {
     const list = this.assignments();
     const branchLabel = this.currentBranchName() || 'chi nhánh đang chọn';
@@ -231,11 +241,71 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
   operationPageSize = DEFAULT_PAGE_SIZE;
   readonly pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS;
 
+  // Banner ca kẹt qua đêm (CHECKED_IN quá hạn, tự quét khi tải màn hình)
+  readonly stuckShifts = signal<ShiftAssignment[]>([]);
+  readonly isScanningStuck = signal<boolean>(false);
+
+  private yesterdayStr(): string {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return this.formatDate(d);
+  }
+
+  /** Quét ca CHECKED_IN quá hạn để báo banner (chỉ management mode). */
+  scanStuckShifts(): void {
+    if (this.isCashierSelfService()) {
+      this.stuckShifts.set([]);
+      return;
+    }
+    this.isScanningStuck.set(true);
+    const branchId = this.selectedBranchId() || undefined;
+    this.shiftService
+      .searchAssignments(branchId, undefined, this.yesterdayStr(), undefined, 'CHECKED_IN', 0, 50)
+      .subscribe({
+        next: page => {
+          this.stuckShifts.set(page?.content ?? []);
+          this.isScanningStuck.set(false);
+        },
+        error: () => {
+          this.stuckShifts.set([]);
+          this.isScanningStuck.set(false);
+        },
+      });
+  }
+
+  /** Nhảy tới ca kẹt của nhân viên: ưu tiên mở modal đóng hộ ca két. */
+  jumpToStuckShift(accountId: string): void {
+    const branchId = this.selectedBranchId() || undefined;
+    this.shiftService
+      .searchAssignments(branchId, undefined, this.yesterdayStr(), accountId, 'CHECKED_IN', 0, 20)
+      .subscribe({
+        next: page => {
+          const list = page?.content ?? [];
+          if (list.length === 0) {
+            this.toastService.info('Không còn ca kẹt', 'Ca kẹt có thể đã được tự đóng, thử mở ca lại.');
+            this.loadOperationsData();
+            return;
+          }
+          const cash = list.find(x => x.cashHandler === true);
+          if (cash) {
+            this.openCloseShiftModal(cash);
+            return;
+          }
+          const first = list[0];
+          this.selectedWorkDate = new Date(first.workDate + 'T00:00:00');
+          this.selectedStatus = 'CHECKED_IN';
+          this.onSearchOperations();
+        },
+        error: err => this.toastService.error('Lỗi tìm ca kẹt', err.message),
+      });
+  }
+
   /** Payload xuất biên bản chốt ca (STORE_SHIFT_REPORT) theo bộ lọc hiện tại. */
   get shiftExportPayload(): Record<string, any> {
     return {
-      branchId: this.selectedBranchId || undefined,
+      branchId: this.selectedBranchId() || undefined,
       businessDate: this.selectedWorkDate ? this.formatDate(this.selectedWorkDate) : undefined,
+      status: this.selectedStatus || undefined,
     };
   }
 
@@ -360,6 +430,7 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
 
   loadOperationsData(): void {
     this.isOperationsLoading.set(true);
+    this.scanStuckShifts();
     if (this.isCashierSelfService()) {
       this.shiftService.getMyActiveShift().subscribe({
         next: assignment => {
@@ -494,6 +565,11 @@ export class ShiftListComponent extends BaseComponent implements OnInit {
           });
         }
         this.toastService.error('Không thể mở ca', err.message || 'Đã xảy ra lỗi khi mở ca.');
+        if (err?.errorCode === 'STORE_400_ACTIVE_SHIFT_EXISTS' && a.accountId) {
+          this.toastService.infoAction('Đi tới ca kẹt', 'Bấm để tìm ca chưa đóng của nhân viên này', () =>
+            this.jumpToStuckShift(a.accountId),
+          );
+        }
       },
     });
   }

@@ -163,6 +163,9 @@
             </td>
             <td nzAlign="center">
               <span nz-tooltip [nzTooltipTitle]="'Ngày làm việc: ' + a.workDate">{{ a.workDate }}</span>
+              @if (isOverdue(a)) {
+                <div><nz-tag nzColor="warning" nz-tooltip nzTooltipTitle="Ca quá hạn chưa mở/đóng — Hủy ca nếu không làm, hoặc Đóng ca đang mở">Quá hạn</nz-tag></div>
+              }
             </td>
             <td nzAlign="center">
               <span class="font-mono text-xs" nz-tooltip [nzTooltipTitle]="a.checkInAt ? ('Thời điểm vào ca: ' + (a.checkInAt | date: 'yyyy-MM-dd HH:mm:ss')) : 'Chưa điểm danh vào ca'">
@@ -281,6 +284,23 @@
       </div>
 
       <div class="form-group" style="margin-top: 12px;">
+        <label class="form-label" for="assign-user-group">Nhóm nhân viên</label>
+        <nz-select
+          id="assign-user-group"
+          [ngModel]="userGroupFilter()"
+          (ngModelChange)="userGroupFilter.set($event)"
+          [ngModelOptions]="{standalone: true}"
+          nzPlaceHolder="Lọc theo nhóm vai"
+          style="width: 100%"
+        >
+          @for (o of userGroupOptions; track o.value) {
+            <nz-option [nzLabel]="o.label" [nzValue]="o.value"></nz-option>
+          }
+        </nz-select>
+        <div class="form-help-text">Nhóm vai chỉ để gợi ý theo vai trò được gán; hệ thống kiểm tra lại khi lưu.</div>
+      </div>
+
+      <div class="form-group" style="margin-top: 12px;">
         <label class="form-label" for="assign-employee">Nhân viên *</label>
         <nz-select
           id="assign-employee"
@@ -292,9 +312,9 @@
           [nzStatus]="assignForm.get('accountId')?.invalid && assignForm.get('accountId')?.touched ? 'error' : ''"
           style="width: 100%"
         >
-          @for (u of availableUsers(); track u.id) {
-            <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')' + (assignedAccountIds().has('' + u.id) ? ' — đã phân ca' : '')"
-              [nzValue]="u.id" [nzDisabled]="assignedAccountIds().has('' + u.id)"></nz-option>
+          @for (u of modalUsers(); track u.id) {
+            <nz-option [nzLabel]="userOptionLabel(u, true)"
+              [nzValue]="u.id" [nzDisabled]="isUserOptionDisabled(u, true)"></nz-option>
           }
         </nz-select>
         @if (isLoadingAssigned()) {
@@ -417,6 +437,23 @@
       </div>
 
       <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label" for="bulk-user-group">Nhóm nhân viên</label>
+        <nz-select
+          id="bulk-user-group"
+          [ngModel]="userGroupFilter()"
+          (ngModelChange)="userGroupFilter.set($event)"
+          [ngModelOptions]="{standalone: true}"
+          nzPlaceHolder="Lọc theo nhóm vai"
+          style="width: 100%"
+        >
+          @for (o of userGroupOptions; track o.value) {
+            <nz-option [nzLabel]="o.label" [nzValue]="o.value"></nz-option>
+          }
+        </nz-select>
+        <div class="form-help-text">Nhóm vai chỉ để gợi ý theo vai trò được gán; hệ thống kiểm tra lại khi lưu.</div>
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
         <label class="form-label" for="bulk-employees">Chọn danh sách nhân viên nhận ca *</label>
         <nz-select
           id="bulk-employees"
@@ -426,8 +463,8 @@
           [nzStatus]="bulkForm.get('accountIds')?.invalid && bulkForm.get('accountIds')?.touched ? 'error' : ''"
           style="width: 100%"
         >
-          @for (u of availableUsers(); track u.id) {
-            <nz-option [nzLabel]="u.fullName + ' (' + u.email + ')'" [nzValue]="u.id"></nz-option>
+          @for (u of modalUsers(); track u.id) {
+            <nz-option [nzLabel]="userOptionLabel(u, false)" [nzValue]="u.id" [nzDisabled]="isUserOptionDisabled(u, false)"></nz-option>
           }
         </nz-select>
         @if (bulkForm.get('accountIds')?.invalid && bulkForm.get('accountIds')?.touched) {

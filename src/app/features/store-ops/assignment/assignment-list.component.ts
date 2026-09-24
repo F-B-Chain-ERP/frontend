@@ -2,6 +2,7 @@ import {Component, DestroyRef, OnInit, computed, inject, signal} from '@angular/
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {EMPTY, Subscription, expand, reduce} from 'rxjs';
 import {CommonModule} from '@angular/common';
+import {HttpClient} from '@angular/common/http';
 import {FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 
 import {NzTableModule} from 'ng-zorro-antd/table';
@@ -25,6 +26,7 @@ import {AppModalComponent} from '../../../shared/app-modal/app-modal.component';
 import {HasSomeAuthorityDirective} from '../../../core/auth/has-some-authority.directive';
 import {ROLE} from '../../../core/config/functions.constants';
 import {BranchService} from '../../../core/auth/branch.service';
+import {ApplicationConfigService} from '../../../core/config/application-config.service';
 import {UserService} from '../../system/users/user.service';
 import {User} from '../../system/users/user.model';
 import {StoreShiftService, ShiftServiceError} from '../shift/shift.service';
@@ -71,9 +73,33 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   readonly getShiftAssignmentStatusMeta = getShiftAssignmentStatusMeta;
   readonly statusOptions = SHIFT_ASSIGNMENT_STATUS_OPTIONS;
 
+  // Nhóm vai nhân viên trong dropdown phân ca — đồng bộ hằng số BE
+  // (ShiftAssignmentServiceImpl: CASH_ROLE_CODES / BARISTA_ROLE_CODES).
+  private static readonly CASH_ROLE_CODES = ['ADMIN', 'ROLE_MANAGER', 'ROLE_CASHIER'];
+  private static readonly BARISTA_ROLE_CODES = ['ROLE_BARISTA', 'ROLE_USER', 'STAFF', 'ROLE_STAFF'];
+  readonly userGroupOptions = [
+    { value: 'ALL', label: 'Tất cả nhóm' },
+    { value: 'CASHIER', label: 'Thu ngân (cầm két)' },
+    { value: 'BARISTA', label: 'Pha chế – phục vụ' },
+    { value: 'DUAL', label: 'Cần tách vai' },
+    { value: 'OTHER', label: 'Nhóm khác' },
+  ];
+
+  /** Ca SCHEDULED/CHECKED_IN mà ngày làm đã qua hôm nay => quá hạn, cần Hủy/Đóng. */
+  isOverdue(a: ShiftAssignment): boolean {
+    if (!a?.workDate || (a.status !== 'SCHEDULED' && a.status !== 'CHECKED_IN')) return false;
+    const today = new Date();
+    const y = today.getFullYear(), m = today.getMonth(), d = today.getDate();
+    const [yy, mm, dd] = String(a.workDate).slice(0, 10).split('-').map(Number);
+    if (!yy || !mm || !dd) return false;
+    return new Date(yy, mm - 1, dd).getTime() < new Date(y, m, d).getTime();
+  }
+
   readonly branchService = inject(BranchService);
   private readonly userService = inject(UserService);
   private readonly shiftService = inject(StoreShiftService);
+  private readonly http = inject(HttpClient);
+  private readonly appConfig = inject(ApplicationConfigService);
 
   readonly assignments = signal<ShiftAssignment[]>([]);
   readonly loading = signal<boolean>(false);
@@ -129,6 +155,74 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   readonly availableShifts = signal<Shift[]>([]);
   readonly availableUsers = signal<User[]>([]);
 
+  // Map roleId -> roleCode (tải 1 lần từ api/v1/roles để chia nhóm dropdown).
+  readonly roleIdToCode = signal<Map<string, string>>(new Map());
+  readonly userGroupFilter = signal<string>('ALL');
+
+  /** Nhóm vai của 1 user theo roleIds: CASHIER | BARISTA | DUAL | OTHER. */
+  userGroup(u: User): 'CASHIER' | 'BARISTA' | 'DUAL' | 'OTHER' {
+    const map = this.roleIdToCode();
+    let cash = false, bar = false;
+    for (const id of u.roleIds ?? []) {
+      const code = (map.get(String(id)) ?? '').trim().toUpperCase();
+      if (!code) continue;
+      if ((ShiftAssignmentListComponent.CASH_ROLE_CODES as readonly string[]).includes(code)) cash = true;
+      if ((ShiftAssignmentListComponent.BARISTA_ROLE_CODES as readonly string[]).includes(code)) bar = true;
+    }
+    if (cash && bar) return 'DUAL';
+    if (cash) return 'CASHIER';
+    if (bar) return 'BARISTA';
+    return 'OTHER';
+  }
+
+  /** Nhãn option dropdown: tiền tố nhóm vai + tên (email) + hậu tố trạng thái. */
+  userOptionLabel(u: User, showAssigned: boolean): string {
+    const prefix =
+      this.userGroup(u) === 'CASHIER' ? '[Thu ngân] ' :
+      this.userGroup(u) === 'BARISTA' ? '[Pha chế] ' :
+      this.userGroup(u) === 'DUAL' ? '[Cần tách vai] ' : '[Khác] ';
+    let label = `${prefix}${u.fullName} (${u.email})`;
+    if (this.userGroup(u) === 'DUAL') label += ' — cần tách vai, BE sẽ chặn';
+    if (showAssigned && this.assignedAccountIds().has('' + u.id)) label += ' — đã phân ca';
+    return label;
+  }
+
+  /** Acc 2 vai luôn disabled (BE chặn phân ca); ca đơn còn disable khi đã phân ca. */
+  isUserOptionDisabled(u: User, checkAssigned: boolean): boolean {
+    if (this.userGroup(u) === 'DUAL') return true;
+    return checkAssigned && this.assignedAccountIds().has('' + u.id);
+  }
+
+  /** Danh sách user trong modal sau khi lọc theo nhóm vai. */
+  readonly modalUsers = computed(() => {
+    const f = this.userGroupFilter();
+    // Đọc signal để recompute khi map role về.
+    this.roleIdToCode();
+    if (f === 'ALL') return this.availableUsers();
+    return this.availableUsers().filter(u => this.userGroup(u) === f);
+  });
+
+  private loadRoleMap(): void {
+    if (this.roleIdToCode().size > 0) return;
+    this.http
+      .get<{ data?: { content?: { id: string; name: string; code: string }[] } }>(
+        this.appConfig.getEndpointFor('api/v1/roles'),
+        { params: { page: '0', size: '100' } },
+      )
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        // Lỗi thì im lặng: dropdown vẫn hiện, nhóm rơi về [Khác], BE kiểm tra cuối.
+        next: res => {
+          const map = new Map<string, string>();
+          for (const r of res.data?.content ?? []) {
+            if (r?.id && r?.code) map.set(String(r.id), String(r.code));
+          }
+          this.roleIdToCode.set(map);
+        },
+        error: () => {},
+      });
+  }
+
   // Filter params
   readonly selectedBranchId = signal<string | null>(null);
   selectedAccountId: string | null = null;
@@ -163,6 +257,7 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
 
     this.initForms();
     this.loadUsers();
+    this.loadRoleMap();
     this.branchService.loadMine().subscribe(() => {
       const current = this.branchService.currentBranch();
       if (current) {
@@ -333,6 +428,8 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   openAssignModal(): void {
     const branchId = this.selectedBranchId() || this.branchService.currentBranch()?.id || this.branchService.branches()[0]?.id || '';
     this.selectedBranchId.set(branchId);
+    this.userGroupFilter.set('ALL');
+    this.loadRoleMap();
     this.loadShiftsForBranch(branchId);
     this.assignForm.reset({
       branchId,
@@ -392,6 +489,8 @@ export class ShiftAssignmentListComponent extends BaseComponent implements OnIni
   openBulkModal(): void {
     const branchId = this.selectedBranchId() || this.branchService.currentBranch()?.id || this.branchService.branches()[0]?.id || '';
     this.selectedBranchId.set(branchId);
+    this.userGroupFilter.set('ALL');
+    this.loadRoleMap();
     this.loadShiftsForBranch(branchId);
     this.bulkForm.reset({
       branchId,

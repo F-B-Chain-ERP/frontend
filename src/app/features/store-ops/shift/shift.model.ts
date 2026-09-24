@@ -140,6 +140,7 @@ export interface ClosingSummary {
   ordersCount: number;
   cashPayout: number;
   expectedCash: number;
+  unpaidCount?: number;
 }
 
 export interface ShiftReport {
