@@ -154,6 +154,25 @@
         [nzMessage]="coverageWarnings().join(' • ')"></nz-alert>
       }
 
+      <!-- Cảnh báo ca kẹt qua đêm chưa đóng -->
+      @if (isManagementMode() && stuckShifts().length > 0) {
+      <nz-alert nzType="error" nzShowIcon style="margin-bottom: 12px"
+        [nzMessage]="'Còn ' + stuckShifts().length + ' ca kẹt qua đêm chưa đóng — ca mới của các nhân viên này sẽ không mở được'"></nz-alert>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px">
+        @for (s of stuckShifts(); track s.id) {
+          @if (s.cashHandler === true) {
+            <app-button variant="secondary" nz-tooltip [nzTooltipTitle]="'Đóng hộ ca két ' + s.shiftCode + ' ngày ' + s.workDate + ' của ' + s.employeeName"
+              (click)="openCloseShiftModal(s)">Đóng hộ: {{ s.employeeName }} ({{ s.shiftCode }} {{ s.workDate }})</app-button>
+          } @else {
+            <span class="tbl-badge tbl-badge--warning" nz-tooltip
+              [nzTooltipTitle]="'Ca pha chế kẹt của ' + s.employeeName + ' sẽ tự đóng khi nhân viên điểm danh ca mới'">
+              {{ s.employeeName }} ({{ s.shiftCode }} {{ s.workDate }}) — tự đóng khi điểm danh
+            </span>
+          }
+        }
+      </div>
+      }
+
       @if (isCashierSelfService() && assignments()[0]?.cashHandler === false) {
       <nz-alert nzType="warning" nzShowIcon style="margin-bottom: 12px"
         nzMessage="Ca này không được phân công cầm két; không thể mở hoặc chốt ca."></nz-alert>
@@ -168,7 +187,7 @@
               <th scope="col" nzWidth="56px" nzAlign="center">STT</th>
               <th scope="col" nzWidth="130px" nzAlign="left">Mã ca</th>
               <th scope="col" nzWidth="200px" nzAlign="left">Khung ca / Giờ</th>
-              <th scope="col" nzWidth="180px" nzAlign="left">Thu ngân trực</th>
+              <th scope="col" nzWidth="180px" nzAlign="left">Nhân viên trực</th>
               <th scope="col" nzWidth="120px" nzAlign="center">Ngày làm việc</th>
               <th scope="col" nzWidth="130px" nzAlign="right">Tiền thối đầu ca</th>
               <th scope="col" nzWidth="140px" nzAlign="right">Tiền chốt két</th>
@@ -191,11 +210,14 @@
                 </div>
               </td>
               <td>
-                <div class="font-medium" nz-tooltip [nzTooltipTitle]="'Thu ngân nhận ca: ' + a.employeeName">{{ a.employeeName }}</div>
+                <div class="font-medium" nz-tooltip [nzTooltipTitle]="'Nhân viên nhận ca: ' + a.employeeName">{{ a.employeeName }}</div>
                 <div class="text-xs text-muted" nz-tooltip [nzTooltipTitle]="'Email: ' + a.employeeEmail">{{ a.employeeEmail }}</div>
               </td>
               <td nzAlign="center">
                 <span nz-tooltip [nzTooltipTitle]="'Ngày làm việc: ' + a.workDate">{{ a.workDate }}</span>
+                @if (isOverdue(a)) {
+                  <div><nz-tag nzColor="warning" nz-tooltip nzTooltipTitle="Ca quá hạn chưa mở/đóng — Hủy ca nếu không làm, hoặc Đóng ca đang mở">Quá hạn</nz-tag></div>
+                }
               </td>
               <td nzAlign="right">
                 <span class="font-mono" nz-tooltip [nzTooltipTitle]="'Tiền mặt bàn giao đầu ca: ' + ((a.initialCash || 0) | number: '1.0-0') + ' ₫'">
@@ -235,10 +257,10 @@
                     nz-tooltip nzTooltipTitle="Mở ca làm việc (Nhận tiền két)" (click)="openOpenShiftModal(a)"></app-button>
                   }
 
-                  <!-- Nút Điểm danh vào (khi SCHEDULED, nhân viên không cầm két) -->
+                  <!-- Nút Điểm danh vào (khi SCHEDULED, nhân viên không cầm két, tự bấm) -->
                   @if (isManagementMode() && a.status === 'SCHEDULED' && a.cashHandler === false) {
                   <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.UPDATE, 'ROLE_MANAGER']" variant="ghost" iconOnly="check-circle"
-                    nz-tooltip nzTooltipTitle="Điểm danh vào ca (chấm công)" [loading]="isCheckingAttendance()" (click)="onCheckInAttendance(a)"></app-button>
+                    nz-tooltip nzTooltipTitle="Điểm danh vào ca (nhân viên tự bấm, quản lý không chấm hộ)" [loading]="isCheckingAttendance()" (click)="onCheckInAttendance(a)"></app-button>
                   }
 
                   <!-- Nút Đóng ca & Chốt két (khi CHECKED_IN, thu ngân/quản lý) -->
@@ -247,10 +269,10 @@
                     nz-tooltip nzTooltipTitle="Đóng ca &amp; Chốt két kiểm tiền" (click)="openCloseShiftModal(a)"></app-button>
                   }
 
-                  <!-- Nút Điểm danh ra (khi CHECKED_IN, nhân viên không cầm két) -->
+                  <!-- Nút Điểm danh ra (khi CHECKED_IN, nhân viên không cầm két, tự bấm) -->
                   @if (isManagementMode() && a.status === 'CHECKED_IN' && a.cashHandler === false) {
                   <app-button *erpUTTHasSomeAuthority="[ROLE.PHAN_CA.UPDATE, 'ROLE_MANAGER']" variant="ghost" iconOnly="logout"
-                    nz-tooltip nzTooltipTitle="Điểm danh ra ca (chấm công)" [loading]="isCheckingAttendance()" (click)="onCheckOutAttendance(a)"></app-button>
+                    nz-tooltip nzTooltipTitle="Điểm danh ra ca (nhân viên tự bấm, quản lý không chấm hộ)" [loading]="isCheckingAttendance()" (click)="onCheckOutAttendance(a)"></app-button>
                   }
                 </div>
               </td>
@@ -445,6 +467,11 @@
         <span class="sum-val font-semibold">{{ sum.ordersCount }} đơn</span>
       </div>
     </div>
+
+    @if ((sum.unpaidCount || 0) > 0) {
+    <nz-alert nzType="error" nzShowIcon style="margin: 12px 0"
+      [nzMessage]="'Còn ' + sum.unpaidCount + ' đơn chưa thanh toán — thu tiền hoặc hủy đơn rồi mới chốt được ca'"></nz-alert>
+    }
 
     <nz-divider style="margin: 16px 0;"></nz-divider>
 

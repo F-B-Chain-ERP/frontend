@@ -309,8 +309,11 @@ export class PayableListComponent implements OnInit {
         this.isSubmittingPayment.set(false);
         this.loadData();
         this.loadSummary();
-        // Reload detail
-        this.onViewPayable(p);
+        // Reload header chi tiết từ server (p đang giữ là snapshot cũ trước thanh toán).
+        this.payableService.getPayableById(p.id).subscribe(fresh => {
+          if (fresh) this.selectedPayable.set(fresh);
+          this.loadPayments(p.id);
+        });
       },
       error: (err) => {
         this.toast.error('Lỗi', err.message || 'Không thể ghi nhận thanh toán');
