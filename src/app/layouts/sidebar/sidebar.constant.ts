@@ -370,9 +370,9 @@ export const SIDEBAR_MENU: SidebarGroup[] = [
           {
             kind: 'child',
             id: 'fin-summary',
-            title: 'Tổng hợp CN',
-            route: '/admin/finance/summaries/list',
-            activePrefix: '/admin/finance/summaries',
+            title: 'Báo cáo tài chính',
+            route: '/admin/finance/financial-summaries',
+            activePrefix: '/admin/finance/financial-summaries',
             authorities: [ROLE.TONG_HOP_TAI_CHINH.VIEW],
           },
         ],
