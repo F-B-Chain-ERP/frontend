@@ -253,11 +253,10 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
         note: noteText || undefined,
       },
       qty,
-    );
-
-    this.toast.success(
-      `Đã thêm ${qty}x "${p.name}" vào giỏ hàng!`,
-      noteText ? `Ghi chú: "${noteText}"` : 'Nhấp vào biểu tượng giỏ hàng để xem đơn hàng hoặc tiến hành thanh toán.',
+      {
+        title: `Đã thêm ${qty}x "${p.name}" vào giỏ hàng!`,
+        message: noteText ? `Ghi chú: "${noteText}"` : 'Nhấp vào biểu tượng giỏ hàng để xem đơn hàng hoặc tiến hành thanh toán.',
+      },
     );
   }
 

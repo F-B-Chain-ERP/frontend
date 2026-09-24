@@ -849,13 +849,13 @@ export class StoreComponent implements OnInit, OnDestroy {
         note: noteText || undefined,
       },
       qty,
+      {
+        title: `Đã thêm ${qty}x "${drink.name}" vào giỏ hàng!`,
+        message: noteText ? `Ghi chú: "${noteText}"` : 'Nhấn vào biểu tượng giỏ hàng để xem chi tiết hoặc thanh toán.',
+      },
     );
 
     this.closeCustomizeModal();
-    this.toast.success(
-      `Đã thêm ${qty}x "${drink.name}" vào giỏ hàng!`,
-      noteText ? `Ghi chú: "${noteText}"` : 'Nhấn vào biểu tượng giỏ hàng để xem chi tiết hoặc thanh toán.',
-    );
   }
 
   openCartSummary(): void {
